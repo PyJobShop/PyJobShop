@@ -30,6 +30,7 @@ class Operation:
     id: int
     job: Job
     machines: list[Machine]
+    durations: list[int]
     name: Optional[str] = None
 
     def __str__(self):
@@ -44,8 +45,8 @@ class Model:
         self._operations = []
         self._machine_graph = nx.DiGraph()
         self._operations_graph = nx.DiGraph()
-        self._ops_by_job = defaultdict(list)
-        self._ops_by_machine = defaultdict(list)
+        self._job2ops = defaultdict(list)
+        self._machine2ops = defaultdict(list)
 
     @property
     def jobs(self) -> list[Job]:
@@ -68,12 +69,12 @@ class Model:
         return self._operations_graph
 
     @property
-    def ops_by_job(self) -> dict[Job, list[Operation]]:
-        return self._ops_by_job
+    def job2ops(self) -> dict[Job, list[Operation]]:
+        return self._job2ops
 
     @property
-    def ops_by_machine(self) -> dict[Machine, list[Operation]]:
-        return self._ops_by_machine
+    def machine2ops(self) -> dict[Machine, list[Operation]]:
+        return self._machine2ops
 
     def add_job(self, name: Optional[str] = None) -> Job:
         job = Job(len(self.jobs), name)
@@ -85,18 +86,26 @@ class Model:
 
         self._machines.append(machine)
         self._machine_graph.add_node(machine.id)
-        self._ops_by_machine[machine] = []
 
         return machine
 
     def add_operation(
-        self, job: Job, machines: list[Machine], name: Optional[str] = None
+        self,
+        job: Job,
+        machines: list[Machine],
+        durations: list[int],
+        name: Optional[str] = None,
     ) -> Operation:
-        operation = Operation(len(self.operations), job, machines, name)
+        operation = Operation(
+            len(self.operations), job, machines, durations, name
+        )
 
         self._operations.append(operation)
         self._operations_graph.add_node(operation.id)
-        self._ops_by_job[job].append(operation)
+        self._job2ops[job].append(operation)
+
+        for machine in machines:
+            self._machine2ops[machine].append(operation)
 
         return operation
 
