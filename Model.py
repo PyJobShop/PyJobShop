@@ -120,8 +120,12 @@ class Model:
         self,
         machine1: Machine,
         machine2: Machine,
+        same_sequence: bool = False,
         edge_type: Optional[str] = None,
     ):
         self._machine_graph.add_edge(
-            machine1.id, machine2.id, edge_type=edge_type
+            machine1.id,
+            machine2.id,
+            same_sequence=same_sequence,
+            edge_type=edge_type,
         )
