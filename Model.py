@@ -11,8 +11,7 @@ class Job:
     name: Optional[str] = None
 
     def __str__(self):
-        text = self.id if self.name is None else self.name
-        return f"Job({text})"
+        return self.name if self.name else f"Job {self.id}"
 
 
 @dataclass(frozen=True, eq=True)
@@ -21,8 +20,7 @@ class Machine:
     name: Optional[str] = None
 
     def __str__(self):
-        text = self.id if self.name is None else self.name
-        return f"Machine({text})"
+        return self.name if self.name else f"Machine {self.id}"
 
 
 @dataclass(frozen=True, eq=True)
@@ -34,8 +32,7 @@ class Operation:
     name: Optional[str] = None
 
     def __str__(self):
-        text = self.id if self.name is None else self.name
-        return f"Operation({text})"
+        return self.name if self.name else f"Operation {self.id}"
 
 
 class Model:
