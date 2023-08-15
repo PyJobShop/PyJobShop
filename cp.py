@@ -5,7 +5,7 @@ import docplex.cp.model as docp
 from Model import Model
 
 
-class CPModel(docp.CpoModel):
+class CpModel(docp.CpoModel):
     """
     Light wrapper around docplex.cp.model.CpoModel.
     """
@@ -29,7 +29,7 @@ class CPModel(docp.CpoModel):
 
 
 def create_cp_model(data: Model):
-    m = CPModel()
+    m = CpModel()
 
     for op in data.operations:
         m.add_interval_var(name=f"O_{op.id}")
