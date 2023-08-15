@@ -1,0 +1,51 @@
+[tool.poetry]
+name = "fjsp"
+version = "0.1.0"
+description = "Flexible job-shop scheduling"
+authors = ["Leon Lan <l.lan@vu.nl>"]
+license = "MIT"
+readme = "README.md"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+
+[tool.poetry.dependencies]
+python = ">=3.9, <3.12"
+docplex = "^2.25.236"
+numpy = "^1.24.2"
+matplotlib = "^3.7.1"
+
+
+[tool.poetry.group.dev.dependencies]
+pre-commit = "^3.2.2"
+
+
+[tool.black]
+line-length = 79
+
+
+[tool.mypy]
+ignore_missing_imports = true
+
+
+[tool.ruff]
+select = [
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "F",  # pyflakes
+    "I",  # isort
+    "C",  # flake8-comprehensions
+    "B",  # flake8-bugbear
+]
+ignore = [
+    "E501",  # line too long, handled by black
+    "E741",  # ambiguous variable name, needed for indexing
+    "C901",  # too complex
+]
+
+
+[tool.ruff.per-file-ignores]
+"__init__.py" = ["F401"]
