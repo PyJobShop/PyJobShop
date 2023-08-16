@@ -2,7 +2,7 @@ from itertools import product
 
 import docplex.cp.model as docp
 
-from Model import Model
+from Model import Model, PrecedenceType
 
 
 class CpModel(docp.CpoModel):
@@ -26,6 +26,7 @@ class CpModel(docp.CpoModel):
         """
         var = self.interval_var(**kwargs)
         self._variables[var.name] = var
+        return var
 
     def add_sequence_var(self, **kwargs):
         """
@@ -34,6 +35,7 @@ class CpModel(docp.CpoModel):
         """
         var = self.sequence_var(**kwargs)
         self._variables[var.name] = var
+        return var
 
 
 def create_cp_model(data: Model):
@@ -43,11 +45,12 @@ def create_cp_model(data: Model):
         m.add_interval_var(name=f"O_{op.id}")
 
         for idx, machine in enumerate(op.machines):
-            m.add_interval_var(
-                size=op.durations[idx],
-                optional=True,
-                name=f"A_{op.id}_{machine.id}",
+            var = m.add_interval_var(
+                optional=True, name=f"A_{op.id}_{machine.id}"
             )
+            # The duration of the operation on the machine is at latest the
+            # duration of the operation; it could be longer due to blocking.
+            m.add(m.size_of(var) >= op.durations[idx])
 
     for machine, ops in data.machine2ops.items():
         vars = [m.variables[(f"A_{op.id}_{machine.id}")] for op in ops]
@@ -60,10 +63,29 @@ def create_cp_model(data: Model):
     m.add(m.minimize(m.max(completion_times)))
 
     # Obey the operation precedence constraints.
-    for frm, to in data.operations_graph.edges:
+    for frm, to, attr in data.operations_graph.edges(data=True):
         frm = m.variables[f"O_{frm}"]
         to = m.variables[f"O_{to}"]
-        m.add(m.end_before_start(frm, to))
+
+        for pt in attr["precedence_types"]:
+            if pt == PrecedenceType.START_AT_START:
+                m.add(m.start_before_start(frm, to))
+            elif pt == PrecedenceType.START_AT_END:
+                m.add(m.start_at_end(frm, to))
+            elif pt == PrecedenceType.START_BEFORE_START:
+                m.add(m.start_before_start(frm, to))
+            elif pt == PrecedenceType.START_BEFORE_END:
+                m.add(m.start_before_end(frm, to))
+            elif pt == PrecedenceType.END_AT_START:
+                m.add(m.end_at_start(frm, to))
+            elif pt == PrecedenceType.END_AT_END:
+                m.add(m.end_at_end(frm, to))
+            elif pt == PrecedenceType.END_BEFORE_START:
+                m.add(m.end_before_start(frm, to))
+            elif pt == PrecedenceType.END_BEFORE_END:
+                m.add(m.end_before_end(frm, to))
+            else:
+                raise ValueError(f"Unknown precedence type: {pt}")
 
     # An operation must be scheduled on exactly one machine.
     for op in data.operations:

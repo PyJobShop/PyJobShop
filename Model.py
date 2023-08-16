@@ -1,8 +1,33 @@
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Optional
+from enum import Enum
+from typing import Iterable, Optional
 
 import networkx as nx
+
+
+class PrecedenceType(Enum):
+    """
+    See https://ibmdecisionoptimization.github.io/docplex-doc/cp/docplex.cp.modeler.py.html.
+
+    START_AT_START:     s(i) == s(j)
+    START_AT_END:       s(i) == f(j)
+    START_BEFORE_START: s(i) <= s(j)
+    START_BEFORE_END:   s(i) <= f(j)
+    END_AT_START:       f(i) == s(j)
+    END_AT_END:         f(i) == f(j)
+    END_BEFORE_START:   f(i) <= s(j) [default]
+    END_BEFORE_END:     f(i) <= f(j)
+    """
+
+    START_AT_START = 1
+    START_AT_END = 2
+    START_BEFORE_START = 3
+    START_BEFORE_END = 4
+    END_AT_START = 5
+    END_AT_END = 6
+    END_BEFORE_START = 7
+    END_BEFORE_END = 8
 
 
 @dataclass(frozen=True, eq=True)
@@ -110,10 +135,16 @@ class Model:
         self,
         operation1: Operation,
         operation2: Operation,
+        precedence_types: Iterable[PrecedenceType] = (
+            PrecedenceType.END_BEFORE_START,
+        ),
         edge_type: Optional[str] = None,
     ):
         self._operations_graph.add_edge(
-            operation1.id, operation2.id, edge_type=edge_type
+            operation1.id,
+            operation2.id,
+            precedence_types=precedence_types,
+            edge_type=edge_type,
         )
 
     def add_machines_edge(

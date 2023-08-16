@@ -1,7 +1,7 @@
 import random
 
 from cp import create_cp_model
-from Model import Model
+from Model import Model, PrecedenceType
 from plot import plot
 
 NUM_JOBS = 10
@@ -29,7 +29,11 @@ def must():
 
         # Create precedence constraints between operations.
         for idx in range(len(ops) - 1):
-            model.add_operations_edge(ops[idx], ops[idx + 1])
+            model.add_operations_edge(
+                ops[idx],
+                ops[idx + 1],
+                precedence_types=[PrecedenceType.END_AT_START],  # blocking
+            )
 
     cp_model = create_cp_model(model)
     result = cp_model.solve(TimeLimit=10)
