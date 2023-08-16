@@ -9,17 +9,18 @@ import networkx as nx
 class PrecedenceType(Enum):
     """
     Types of precendence constraints between two operations $i$ and $j$.
-    Let $s(i)$ and $f(i)$ be the start and finish times of operation $i$.
-    The following types are supported (in CPLEX terminology):
+    Let $s(i)$ and $f(i)$ be the start and finish times of operation $i$,
+    and let $s(j)$ and $f(j)$ be defined similarly for operation $j$. The
+    following precedence constraints are supported (in CPLEX terminology):
 
-    START_AT_START:        s(i) == s(j)
-    START_AT_END:          s(i) == f(j)
-    START_BEFORE_START:    s(i) <= s(j)
-    START_BEFORE_END:      s(i) <= f(j)
-    END_AT_START:          f(i) == s(j)
-    END_AT_END:            f(i) == f(j)
-    END_BEFORE_START:      f(i) <= s(j)
-    END_BEFORE_END:        f(i) <= f(j)
+    - start_at_start:        $s(i) == s(j)$
+    - start_at_end:          $s(i) == f(j)$
+    - start_before_start:    $s(i) <= s(j)$
+    - start_before_end:      $s(i) <= f(j)$
+    - end_at_start:          $f(i) == s(j)$
+    - end_at_end:            $f(i) == f(j)$
+    - end_before_start:      $f(i) <= s(j)$
+    - end_before_end:        $f(i) <= f(j)$
     """
 
     START_AT_START = "start_at_start"
