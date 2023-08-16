@@ -2,7 +2,7 @@ from itertools import product
 
 import docplex.cp.model as docp
 
-from Model import Model, PrecedenceType
+from Model import Model
 
 
 class CpModel(docp.CpoModel):
@@ -68,21 +68,21 @@ def create_cp_model(data: Model):
         to = m.variables[f"O_{to}"]
 
         for pt in attr["precedence_types"]:
-            if pt == PrecedenceType.START_AT_START:
-                m.add(m.start_before_start(frm, to))
-            elif pt == PrecedenceType.START_AT_END:
+            if pt == "start_at_start":
+                m.add(m.start_at_start(frm, to))
+            elif pt == "start_at_end":
                 m.add(m.start_at_end(frm, to))
-            elif pt == PrecedenceType.START_BEFORE_START:
+            elif pt == "start_before_start":
                 m.add(m.start_before_start(frm, to))
-            elif pt == PrecedenceType.START_BEFORE_END:
+            elif pt == "start_before_end":
                 m.add(m.start_before_end(frm, to))
-            elif pt == PrecedenceType.END_AT_START:
+            elif pt == "end_at_start":
                 m.add(m.end_at_start(frm, to))
-            elif pt == PrecedenceType.END_AT_END:
+            elif pt == "end_at_end":
                 m.add(m.end_at_end(frm, to))
-            elif pt == PrecedenceType.END_BEFORE_START:
+            elif pt == "end_before_start":
                 m.add(m.end_before_start(frm, to))
-            elif pt == PrecedenceType.END_BEFORE_END:
+            elif pt == "end_before_end":
                 m.add(m.end_before_end(frm, to))
             else:
                 raise ValueError(f"Unknown precedence type: {pt}")

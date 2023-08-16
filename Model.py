@@ -8,26 +8,28 @@ import networkx as nx
 
 class PrecedenceType(Enum):
     """
-    See https://ibmdecisionoptimization.github.io/docplex-doc/cp/docplex.cp.modeler.py.html.
+    Types of precendence constraints between two operations $i$ and $j$.
+    Let $s(i)$ and $f(i)$ be the start and finish times of operation $i$.
+    The following types are supported (in CPLEX terminology):
 
-    START_AT_START:     s(i) == s(j)
-    START_AT_END:       s(i) == f(j)
-    START_BEFORE_START: s(i) <= s(j)
-    START_BEFORE_END:   s(i) <= f(j)
-    END_AT_START:       f(i) == s(j)
-    END_AT_END:         f(i) == f(j)
-    END_BEFORE_START:   f(i) <= s(j) [default]
-    END_BEFORE_END:     f(i) <= f(j)
+    START_AT_START:        s(i) == s(j)
+    START_AT_END:          s(i) == f(j)
+    START_BEFORE_START:    s(i) <= s(j)
+    START_BEFORE_END:      s(i) <= f(j)
+    END_AT_START:          f(i) == s(j)
+    END_AT_END:            f(i) == f(j)
+    END_BEFORE_START:      f(i) <= s(j)
+    END_BEFORE_END:        f(i) <= f(j)
     """
 
-    START_AT_START = 1
-    START_AT_END = 2
-    START_BEFORE_START = 3
-    START_BEFORE_END = 4
-    END_AT_START = 5
-    END_AT_END = 6
-    END_BEFORE_START = 7
-    END_BEFORE_END = 8
+    START_AT_START = "start_at_start"
+    START_AT_END = "start_at_end"
+    START_BEFORE_START = "start_before_start"
+    START_BEFORE_END = "start_before_end"
+    END_AT_START = "end_at_start"
+    END_AT_END = "end_at_end"
+    END_BEFORE_START = "end_before_start"
+    END_BEFORE_END = "end_before_end"
 
 
 @dataclass(frozen=True, eq=True)
