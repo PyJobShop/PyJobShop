@@ -7,7 +7,7 @@ from Model import Model
 
 class CpModel(docp.CpoModel):
     """
-    Light wrapper around docplex.cp.model.CpoModel.
+    Light wrapper around ``docplex.cp.model.CpoModel``.
     """
 
     def __init__(self):
@@ -21,8 +21,8 @@ class CpModel(docp.CpoModel):
 
     def add_interval_var(self, **kwargs):
         """
-        Wrapper around docplex.cp.model.CpoModel.interval_var. Adds the
-        variable to the internal dictionary.
+        Wrapper around ``docplex.cp.model.CpoModel.interval_var``. Adds the
+        variable to the internal variables dictionary.
         """
         var = self.interval_var(**kwargs)
         self._variables[var.name] = var
@@ -30,8 +30,8 @@ class CpModel(docp.CpoModel):
 
     def add_sequence_var(self, **kwargs):
         """
-        Wrapper around docplex.cp.model.CpoModel.sequence_var. Adds the
-        variable to the internal dictionary.
+        Wrapper around ``docplex.cp.model.CpoModel.sequence_var``. Adds the
+        variable to the internal variables dictionary.
         """
         var = self.sequence_var(**kwargs)
         self._variables[var.name] = var
@@ -39,6 +39,9 @@ class CpModel(docp.CpoModel):
 
 
 def create_cp_model(data: Model):
+    """
+    Creates a CP model for the given problem data.
+    """
     m = CpModel()
 
     for op in data.operations:
@@ -106,10 +109,10 @@ def create_cp_model(data: Model):
         edges = product(
             data.operations[i].machines, data.operations[j].machines
         )
-        for frm_mach, to_mach in edges:
+        for frm_mach, to_mach in edges:  # BUG this is not correct
             if (frm_mach.id, to_mach.id) in data.machine_graph.edges:
-                # An edge implies that the operation can move from `frm` to `to`,
-                # so if if `frm` is scheduled, `to` can be too.
+                # An edge implies that the operation can move `frm -> to`, so
+                # if `frm` is scheduled, `to` can be too.
                 frm_var = m.variables[f"A_{i}_{frm_mach.id}"]
                 to_var = m.variables[f"A_{j}_{to_mach.id}"]
                 m.add(m.presence_of(frm_var) >= m.presence_of(to_var))

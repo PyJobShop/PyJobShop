@@ -6,6 +6,65 @@ from typing import Iterable, Optional
 import networkx as nx
 
 
+@dataclass(frozen=True, eq=True)
+class Job:
+    id: int
+    name: Optional[str] = None
+
+    def __str__(self):
+        return self.name if self.name else f"Job {self.id}"
+
+
+@dataclass(frozen=True, eq=True)
+class Machine:
+    """
+    A machine is a resource that can process operations.
+
+    Parameters
+    ----------
+    id: int
+        Unique identifier of the machine.
+    name: Optional[str]
+        Name of the machine. If not provided, the name will be "Machine {id}".
+    """
+
+    id: int
+    name: Optional[str] = None
+
+    def __str__(self):
+        return self.name if self.name else f"Machine {self.id}"
+
+
+@dataclass(frozen=True, eq=True)
+class Operation:
+    """
+    An operation is a task that must be processed by a machine.
+
+    Parameters
+    ----------
+    id: int
+        Unique identifier of the operation.
+    job: Job
+        Job to which the operation belongs.
+    machines: list[Machine]
+        Machines that can process the operation.
+    durations: list[int]
+        Durations of the operation on each machine.
+    name: Optional[str]
+        Name of the operation. If not provided, the name will be
+        "Operation {id}".
+    """
+
+    id: int
+    job: Job
+    machines: list[Machine]
+    durations: list[int]
+    name: Optional[str] = None
+
+    def __str__(self):
+        return self.name if self.name else f"Operation {self.id}"
+
+
 class PrecedenceType(Enum):
     """
     Types of precendence constraints between two operations $i$ and $j$.
@@ -33,37 +92,11 @@ class PrecedenceType(Enum):
     END_BEFORE_END = "end_before_end"
 
 
-@dataclass(frozen=True, eq=True)
-class Job:
-    id: int
-    name: Optional[str] = None
-
-    def __str__(self):
-        return self.name if self.name else f"Job {self.id}"
-
-
-@dataclass(frozen=True, eq=True)
-class Machine:
-    id: int
-    name: Optional[str] = None
-
-    def __str__(self):
-        return self.name if self.name else f"Machine {self.id}"
-
-
-@dataclass(frozen=True, eq=True)
-class Operation:
-    id: int
-    job: Job
-    machines: list[Machine]
-    durations: list[int]
-    name: Optional[str] = None
-
-    def __str__(self):
-        return self.name if self.name else f"Operation {self.id}"
-
-
 class Model:
+    """
+    Model class to build a problem instance step-by-step.
+    """
+
     def __init__(self):
         self._jobs = []
         self._machines = []
@@ -102,11 +135,27 @@ class Model:
         return self._machine2ops
 
     def add_job(self, name: Optional[str] = None) -> Job:
+        """
+        Adds a job to the model.
+
+        Parameters
+        ----------
+        name: Optional[str]
+            Optional name of the job.
+        """
         job = Job(len(self.jobs), name)
         self._jobs.append(job)
         return job
 
     def add_machine(self, name: Optional[str] = None) -> Machine:
+        """
+        Adds a machine to the model.
+
+        Parameters
+        ----------
+        name: Optional[str]
+            Optional name of the machine.
+        """
         machine = Machine(len(self.machines), name)
 
         self._machines.append(machine)
@@ -121,6 +170,20 @@ class Model:
         durations: list[int],
         name: Optional[str] = None,
     ) -> Operation:
+        """
+        Adds an operation to the model.
+
+        Parameters
+        ----------
+        job: Job
+            Job to which the operation belongs.
+        machines: list[Machine]
+            Eligible machines that can process the operation.
+        durations: list[int]
+            Durations of the operation on each machine.
+        name: Optional[str]
+            Optional name of the operation.
+        """
         operation = Operation(
             len(self.operations), job, machines, durations, name
         )
