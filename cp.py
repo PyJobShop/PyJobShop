@@ -51,7 +51,7 @@ def create_cp_model(data: Model):
             var = m.add_interval_var(
                 optional=True, name=f"A_{op.id}_{machine.id}"
             )
-            # The duration of the operation on the machine is at latest the
+            # The duration of the operation on the machine is at least the
             # duration of the operation; it could be longer due to blocking.
             m.add(m.size_of(var) >= op.durations[idx])
 
