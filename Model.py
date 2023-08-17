@@ -1,6 +1,6 @@
 from collections import defaultdict
 from dataclasses import dataclass
-from enum import StrEnum
+from enum import Enum
 from typing import Iterable, Optional
 
 import networkx as nx
@@ -65,7 +65,7 @@ class Operation:
         return self.name if self.name else f"Operation {self.id}"
 
 
-class PrecedenceType(StrEnum):
+class PrecedenceType(str, Enum):
     """
     Types of precendence constraints between two operations $i$ and $j$.
     Let $s(i)$ and $f(i)$ be the start and finish times of operation $i$,
