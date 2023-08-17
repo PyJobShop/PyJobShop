@@ -1,6 +1,7 @@
 from itertools import product
 
 import docplex.cp.model as docp
+from docplex.cp.expression import CpoIntervalVar, CpoSequenceVar
 
 from Model import Model
 
@@ -19,7 +20,7 @@ class CpModel(docp.CpoModel):
     def variables(self):
         return self._variables
 
-    def add_interval_var(self, **kwargs):
+    def add_interval_var(self, **kwargs) -> CpoIntervalVar:
         """
         Wrapper around ``docplex.cp.model.CpoModel.interval_var``. Adds the
         variable to the internal variables dictionary.
@@ -28,12 +29,14 @@ class CpModel(docp.CpoModel):
         self._variables[var.name] = var
         return var
 
-    def add_sequence_var(self, **kwargs):
+    def add_sequence_var(
+        self, variables: list[CpoIntervalVar], **kwargs
+    ) -> CpoSequenceVar:
         """
         Wrapper around ``docplex.cp.model.CpoModel.sequence_var``. Adds the
         variable to the internal variables dictionary.
         """
-        var = self.sequence_var(**kwargs)
+        var = self.sequence_var(vars=variables, **kwargs)
         self._variables[var.name] = var
         return var
 
@@ -56,8 +59,8 @@ def create_cp_model(data: Model):
             m.add(m.size_of(var) >= op.durations[idx])
 
     for machine, ops in data.machine2ops.items():
-        vars = [m.variables[(f"A_{op.id}_{machine.id}")] for op in ops]
-        m.add_sequence_var(vars=vars, name=f"S_{machine.id}")
+        variables = [m.variables[(f"A_{op.id}_{machine.id}")] for op in ops]
+        m.add_sequence_var(variables, name=f"S_{machine.id}")
 
     # Objective: minimize the makespan
     completion_times = [
