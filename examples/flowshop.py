@@ -8,7 +8,7 @@ NUM_JOBS = 10
 NUM_MACHINES = 5
 
 
-def must():
+def main():
     random.seed(42)
 
     model = Model()
@@ -37,8 +37,8 @@ def must():
 
     cp_model = create_cp_model(model)
     result = cp_model.solve(TimeLimit=10)
-    plot(model, cp_model, result)
+    plot(model, result)
 
 
 if __name__ == "__main__":
-    must()
+    main()
