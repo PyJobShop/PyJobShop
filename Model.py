@@ -8,11 +8,11 @@ import networkx as nx
 
 @dataclass(frozen=True, eq=True)
 class Job:
-    id: int
+    idx: int
     name: Optional[str] = None
 
     def __str__(self):
-        return self.name if self.name else f"Job {self.id}"
+        return self.name if self.name else f"Job {self.idx}"
 
 
 @dataclass(frozen=True, eq=True)
@@ -22,17 +22,17 @@ class Machine:
 
     Parameters
     ----------
-    id: int
+    idx: int
         Unique identifier of the machine.
     name: Optional[str]
-        Name of the machine. If not provided, the name will be "Machine {id}".
+        Name of the machine. If not provided, the name will be "Machine {idx}".
     """
 
-    id: int
+    idx: int
     name: Optional[str] = None
 
     def __str__(self):
-        return self.name if self.name else f"Machine {self.id}"
+        return self.name if self.name else f"Machine {self.idx}"
 
 
 @dataclass(frozen=True, eq=True)
@@ -42,7 +42,7 @@ class Operation:
 
     Parameters
     ----------
-    id: int
+    idx: int
         Unique identifier of the operation.
     job: Job
         Job to which the operation belongs.
@@ -52,17 +52,17 @@ class Operation:
         Durations of the operation on each machine.
     name: Optional[str]
         Name of the operation. If not provided, the name will be
-        "Operation {id}".
+        "Operation {idx}".
     """
 
-    id: int
+    idx: int
     job: Job
     machines: list[Machine]
     durations: list[int]
     name: Optional[str] = None
 
     def __str__(self):
-        return self.name if self.name else f"Operation {self.id}"
+        return self.name if self.name else f"Operation {self.idx}"
 
 
 class PrecedenceType(str, Enum):
@@ -159,7 +159,7 @@ class Model:
         machine = Machine(len(self.machines), name)
 
         self._machines.append(machine)
-        self._machine_graph.add_node(machine.id)
+        self._machine_graph.add_node(machine.idx)
 
         return machine
 
@@ -189,7 +189,7 @@ class Model:
         )
 
         self._operations.append(operation)
-        self._operations_graph.add_node(operation.id)
+        self._operations_graph.add_node(operation.idx)
         self._job2ops[job].append(operation)
 
         for machine in machines:
@@ -207,8 +207,8 @@ class Model:
         edge_type: Optional[str] = None,
     ):
         self._operations_graph.add_edge(
-            operation1.id,
-            operation2.id,
+            operation1.idx,
+            operation2.idx,
             precedence_types=precedence_types,
             edge_type=edge_type,
         )
@@ -221,8 +221,8 @@ class Model:
         edge_type: Optional[str] = None,
     ):
         self._machine_graph.add_edge(
-            machine1.id,
-            machine2.id,
+            machine1.idx,
+            machine2.idx,
             same_sequence=same_sequence,
             edge_type=edge_type,
         )

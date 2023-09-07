@@ -28,12 +28,12 @@ def result2schedule(
         # Scheduled operations are inferred from variables start with an "A"
         # (assignment) and that are present in the solution.
         if name.startswith("A") and var.is_present():
-            op_id, mach_id = [int(num) for num in name.split("_")[1:]]
-            op = data.operations[op_id]
+            op_idx, mach_idx = [int(num) for num in name.split("_")[1:]]
+            op = data.operations[op_idx]
             start = var.start
             duration = var.size
 
-            schedule.append(ScheduledOperation(op, mach_id, start, duration))
+            schedule.append(ScheduledOperation(op, mach_idx, start, duration))
 
     return schedule
 
@@ -51,12 +51,16 @@ def plot(data: Model, result: CpoSolveResult):
 
     for op, machine, start, duration in schedule:
         # Plot each scheduled operation as a single horizontal bar (interval).
-        kwargs = {"color": colors[op.job.id], "linewidth": 1, "edgecolor": "k"}
+        kwargs = {
+            "color": colors[op.job.idx],
+            "linewidth": 1,
+            "edgecolor": "k",
+        }
         ax.barh(machine, duration, left=start, **kwargs)
 
         # Add the operation ID at the center of the interval.
         midpoint = start + duration / 2
-        ax.text(midpoint, machine, op.id, ha="center", va="center")
+        ax.text(midpoint, machine, op.idx, ha="center", va="center")
 
     ax.set_yticks(
         ticks=range(len(data.machines)),

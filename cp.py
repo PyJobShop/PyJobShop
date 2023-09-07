@@ -48,12 +48,12 @@ def create_cp_model(data: Model):
     m = CpModel()
 
     for op in data.operations:
-        m.add_interval_var(name=f"O_{op.id}")
+        m.add_interval_var(name=f"O_{op.idx}")
 
         for idx, machine in enumerate(op.machines):
             var = m.add_interval_var(
                 optional=True,
-                name=f"A_{op.id}_{machine.id}",
+                name=f"A_{op.idx}_{machine.idx}",
                 size=op.durations[idx],
             )
             # The duration of the operation on the machine is at least the
@@ -61,12 +61,12 @@ def create_cp_model(data: Model):
             m.add(m.size_of(var) >= op.durations[idx] * m.presence_of(var))
 
     for machine, ops in data.machine2ops.items():
-        variables = [m.variables[(f"A_{op.id}_{machine.id}")] for op in ops]
-        m.add_sequence_var(variables, name=f"S_{machine.id}")
+        variables = [m.variables[(f"A_{op.idx}_{machine.idx}")] for op in ops]
+        m.add_sequence_var(variables, name=f"S_{machine.idx}")
 
     # Objective: minimize the makespan
     completion_times = [
-        m.end_of(m.variables[f"O_{op.id}"]) for op in data.operations
+        m.end_of(m.variables[f"O_{op.idx}"]) for op in data.operations
     ]
     m.add(m.minimize(m.max(completion_times)))
 
@@ -97,15 +97,15 @@ def create_cp_model(data: Model):
 
     # An operation must be scheduled on exactly one machine.
     for op in data.operations:
-        must = m.variables[f"O_{op.id}"]
+        must = m.variables[f"O_{op.idx}"]
         optional = [
-            m.variables[f"A_{op.id}_{mach.id}"] for mach in op.machines
+            m.variables[f"A_{op.idx}_{mach.idx}"] for mach in op.machines
         ]
         m.add(m.alternative(must, optional))
 
     # Operations on a given machine cannot overlap.
     for machine in data.machines:
-        seq_var = m.variables[(f"S_{machine.id}")]
+        seq_var = m.variables[(f"S_{machine.idx}")]
         m.add(m.no_overlap(seq_var))
 
     # We can only schedule an operation on a given machine if it is
@@ -115,11 +115,11 @@ def create_cp_model(data: Model):
             data.operations[i].machines, data.operations[j].machines
         )
         for frm_mach, to_mach in edges:  # BUG this is not correct
-            if (frm_mach.id, to_mach.id) in data.machine_graph.edges:
+            if (frm_mach.idx, to_mach.idx) in data.machine_graph.edges:
                 # An edge implies that the operation can move `frm -> to`, so
                 # if `frm` is scheduled, `to` can be too.
-                frm_var = m.variables[f"A_{i}_{frm_mach.id}"]
-                to_var = m.variables[f"A_{j}_{to_mach.id}"]
+                frm_var = m.variables[f"A_{i}_{frm_mach.idx}"]
+                to_var = m.variables[f"A_{j}_{to_mach.idx}"]
                 m.add(m.presence_of(frm_var) >= m.presence_of(to_var))
 
     # Same sequence on machines that are related.
