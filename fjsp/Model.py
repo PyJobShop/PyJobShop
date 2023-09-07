@@ -2,7 +2,7 @@ from typing import Iterable, Optional
 
 import networkx as nx
 
-from ProblemData import Job, Machine, Operation, PrecedenceType, ProblemData
+from .ProblemData import Job, Machine, Operation, PrecedenceType, ProblemData
 
 
 class Model:

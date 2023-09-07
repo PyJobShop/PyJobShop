@@ -1,8 +1,6 @@
 import random
 
-from CpModel import create_cp_model
-from Model import Model, PrecedenceType
-from plot import plot
+from fjsp import Model, PrecedenceType, create_cp_model, plot
 
 NUM_JOBS = 10
 NUM_MACHINES = 5

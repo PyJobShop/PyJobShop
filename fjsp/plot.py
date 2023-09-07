@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from docplex.cp.solution import CpoSolveResult
 
-from Model import Model, Operation
+from .ProblemData import Operation, ProblemData
 
 
 class ScheduledOperation(NamedTuple):
@@ -15,7 +15,7 @@ class ScheduledOperation(NamedTuple):
 
 
 def result2schedule(
-    data: Model, result: CpoSolveResult
+    data: ProblemData, result: CpoSolveResult
 ) -> list[ScheduledOperation]:
     """
     Maps a ``CpoSolveResult`` object to a list of scheduled operations.
@@ -38,7 +38,7 @@ def result2schedule(
     return schedule
 
 
-def plot(data: Model, result: CpoSolveResult):
+def plot(data: ProblemData, result: CpoSolveResult):
     """
     Plots a Gantt chart of the solver result.
     """

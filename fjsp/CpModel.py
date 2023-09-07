@@ -3,7 +3,7 @@ from itertools import product
 import docplex.cp.model as docp
 from docplex.cp.expression import CpoIntervalVar, CpoSequenceVar
 
-from Model import ProblemData
+from .Model import ProblemData
 
 
 class CpModel(docp.CpoModel):
