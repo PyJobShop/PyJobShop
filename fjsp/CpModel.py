@@ -2,8 +2,10 @@ from itertools import product
 
 import docplex.cp.model as docp
 from docplex.cp.expression import CpoIntervalVar, CpoSequenceVar
+from docplex.cp.solution import CpoSolveResult
 
-from .Model import ProblemData
+from .ProblemData import ProblemData
+from .Solution import ScheduledOperation, Solution
 
 
 class CpModel(docp.CpoModel):
@@ -130,3 +132,25 @@ def create_cp_model(data: ProblemData) -> CpModel:
             m.add(m.same_sequence(seq_k, seq_l))
 
     return m
+
+
+def result2solution(data: ProblemData, result: CpoSolveResult) -> Solution:
+    """
+    Maps a ``CpoSolveResult`` object to a ``Solution`` object.
+    """
+    schedule = []
+
+    for var in result.get_all_var_solutions():
+        name = var.get_name()
+
+        # Scheduled operations are inferred from variables start with an "A"
+        # (assignment) and that are present in the solution.
+        if name.startswith("A") and var.is_present():
+            op_idx, mach_idx = [int(num) for num in name.split("_")[1:]]
+            op = data.operations[op_idx]
+            start = var.start
+            duration = var.size
+
+            schedule.append(ScheduledOperation(op, mach_idx, start, duration))
+
+    return Solution(data, schedule)
