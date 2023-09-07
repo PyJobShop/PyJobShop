@@ -9,8 +9,7 @@ from Model import Model, Operation
 
 class ScheduledOperation(NamedTuple):
     op: Operation
-    machine: int
-    job: int
+    assigned_machine: int
     start: int
     duration: int
 
@@ -31,13 +30,10 @@ def result2schedule(
         if name.startswith("A") and var.is_present():
             op_id, mach_id = [int(num) for num in name.split("_")[1:]]
             op = data.operations[op_id]
-            job_id = op.job.id
             start = var.start
             duration = var.size
 
-            schedule.append(
-                ScheduledOperation(op, mach_id, job_id, start, duration)
-            )
+            schedule.append(ScheduledOperation(op, mach_id, start, duration))
 
     return schedule
 
@@ -53,9 +49,9 @@ def plot(data: Model, result: CpoSolveResult):
     # Use a gradiant color map to assign a unique color to each job.
     colors = plt.cm.tab20c(np.linspace(0, 1, len(data.jobs)))
 
-    for op, machine, job, start, duration in schedule:
+    for op, machine, start, duration in schedule:
         # Plot each scheduled operation as a single horizontal bar (interval).
-        kwargs = {"color": colors[job], "linewidth": 1, "edgecolor": "k"}
+        kwargs = {"color": colors[op.job.id], "linewidth": 1, "edgecolor": "k"}
         ax.barh(machine, duration, left=start, **kwargs)
 
         # Add the operation ID at the center of the interval.
