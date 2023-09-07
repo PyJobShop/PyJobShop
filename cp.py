@@ -52,11 +52,13 @@ def create_cp_model(data: Model):
 
         for idx, machine in enumerate(op.machines):
             var = m.add_interval_var(
-                optional=True, name=f"A_{op.id}_{machine.id}"
+                optional=True,
+                name=f"A_{op.id}_{machine.id}",
+                size=op.durations[idx],
             )
             # The duration of the operation on the machine is at least the
             # duration of the operation; it could be longer due to blocking.
-            m.add(m.size_of(var) >= op.durations[idx])
+            m.add(m.size_of(var) >= op.durations[idx] * m.presence_of(var))
 
     for machine, ops in data.machine2ops.items():
         variables = [m.variables[(f"A_{op.id}_{machine.id}")] for op in ops]
@@ -73,25 +75,25 @@ def create_cp_model(data: Model):
         frm = m.variables[f"O_{frm}"]
         to = m.variables[f"O_{to}"]
 
-        for pt in attr["precedence_types"]:
-            if pt == "start_at_start":
+        for prec_type in attr["precedence_types"]:
+            if prec_type == "start_at_start":
                 m.add(m.start_at_start(frm, to))
-            elif pt == "start_at_end":
+            elif prec_type == "start_at_end":
                 m.add(m.start_at_end(frm, to))
-            elif pt == "start_before_start":
+            elif prec_type == "start_before_start":
                 m.add(m.start_before_start(frm, to))
-            elif pt == "start_before_end":
+            elif prec_type == "start_before_end":
                 m.add(m.start_before_end(frm, to))
-            elif pt == "end_at_start":
+            elif prec_type == "end_at_start":
                 m.add(m.end_at_start(frm, to))
-            elif pt == "end_at_end":
+            elif prec_type == "end_at_end":
                 m.add(m.end_at_end(frm, to))
-            elif pt == "end_before_start":
+            elif prec_type == "end_before_start":
                 m.add(m.end_before_start(frm, to))
-            elif pt == "end_before_end":
+            elif prec_type == "end_before_end":
                 m.add(m.end_before_end(frm, to))
             else:
-                raise ValueError(f"Unknown precedence type: {pt}")
+                raise ValueError(f"Unknown precedence type: {prec_type}")
 
     # An operation must be scheduled on exactly one machine.
     for op in data.operations:
