@@ -1,6 +1,6 @@
 import random
 
-from cp import create_cp_model
+from CpModel import create_cp_model
 from Model import Model, PrecedenceType
 from plot import plot
 
@@ -35,7 +35,7 @@ def main():
                 precedence_types=[PrecedenceType.END_AT_START],  # blocking
             )
 
-    cp_model = create_cp_model(model)
+    cp_model = create_cp_model(model.data())
     result = cp_model.solve(TimeLimit=10)
     plot(model, result)
 

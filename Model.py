@@ -1,95 +1,8 @@
-from collections import defaultdict
-from dataclasses import dataclass
-from enum import Enum
 from typing import Iterable, Optional
 
 import networkx as nx
 
-
-@dataclass(frozen=True, eq=True)
-class Job:
-    idx: int
-    name: Optional[str] = None
-
-    def __str__(self):
-        return self.name if self.name else f"Job {self.idx}"
-
-
-@dataclass(frozen=True, eq=True)
-class Machine:
-    """
-    A machine is a resource that can process operations.
-
-    Parameters
-    ----------
-    idx: int
-        Unique identifier of the machine.
-    name: Optional[str]
-        Name of the machine. If not provided, the name will be "Machine {idx}".
-    """
-
-    idx: int
-    name: Optional[str] = None
-
-    def __str__(self):
-        return self.name if self.name else f"Machine {self.idx}"
-
-
-@dataclass(frozen=True, eq=True)
-class Operation:
-    """
-    An operation is a task that must be processed by a machine.
-
-    Parameters
-    ----------
-    idx: int
-        Unique identifier of the operation.
-    job: Job
-        Job to which the operation belongs.
-    machines: list[Machine]
-        Machines that can process the operation.
-    durations: list[int]
-        Durations of the operation on each machine.
-    name: Optional[str]
-        Name of the operation. If not provided, the name will be
-        "Operation {idx}".
-    """
-
-    idx: int
-    job: Job
-    machines: list[Machine]
-    durations: list[int]
-    name: Optional[str] = None
-
-    def __str__(self):
-        return self.name if self.name else f"Operation {self.idx}"
-
-
-class PrecedenceType(str, Enum):
-    """
-    Types of precendence constraints between two operations $i$ and $j$.
-    Let $s(i)$ and $f(i)$ be the start and finish times of operation $i$,
-    and let $s(j)$ and $f(j)$ be defined similarly for operation $j$. The
-    following precedence constraints are supported (in CPLEX terminology):
-
-    - start_at_start:        $s(i) == s(j)$
-    - start_at_end:          $s(i) == f(j)$
-    - start_before_start:    $s(i) <= s(j)$
-    - start_before_end:      $s(i) <= f(j)$
-    - end_at_start:          $f(i) == s(j)$
-    - end_at_end:            $f(i) == f(j)$
-    - end_before_start:      $f(i) <= s(j)$
-    - end_before_end:        $f(i) <= f(j)$
-    """
-
-    START_AT_START = "start_at_start"
-    START_AT_END = "start_at_end"
-    START_BEFORE_START = "start_before_start"
-    START_BEFORE_END = "start_before_end"
-    END_AT_START = "end_at_start"
-    END_AT_END = "end_at_end"
-    END_BEFORE_START = "end_before_start"
-    END_BEFORE_END = "end_before_end"
+from ProblemData import Job, Machine, Operation, PrecedenceType, ProblemData
 
 
 class Model:
@@ -103,8 +16,6 @@ class Model:
         self._operations = []
         self._machine_graph = nx.DiGraph()
         self._operations_graph = nx.DiGraph()
-        self._job2ops = defaultdict(list)
-        self._machine2ops = defaultdict(list)
 
     @property
     def jobs(self) -> list[Job]:
@@ -126,13 +37,17 @@ class Model:
     def operations_graph(self):
         return self._operations_graph
 
-    @property
-    def job2ops(self) -> dict[Job, list[Operation]]:
-        return self._job2ops
-
-    @property
-    def machine2ops(self) -> dict[Machine, list[Operation]]:
-        return self._machine2ops
+    def data(self) -> ProblemData:
+        """
+        Returns a ProblemData object containing the problem instance.
+        """
+        return ProblemData(
+            self.jobs,
+            self.machines,
+            self.operations,
+            self.machine_graph,
+            self.operations_graph,
+        )
 
     def add_job(self, name: Optional[str] = None) -> Job:
         """
@@ -190,10 +105,6 @@ class Model:
 
         self._operations.append(operation)
         self._operations_graph.add_node(operation.idx)
-        self._job2ops[job].append(operation)
-
-        for machine in machines:
-            self._machine2ops[machine].append(operation)
 
         return operation
 
@@ -203,7 +114,7 @@ class Model:
         operation2: Operation,
         precedence_types: Iterable[PrecedenceType] = (
             PrecedenceType.END_BEFORE_START,
-        ),
+        ),  # TODO: can an edge have multiple precedence types?
         edge_type: Optional[str] = None,
     ):
         self._operations_graph.add_edge(

@@ -3,7 +3,7 @@ from itertools import product
 import docplex.cp.model as docp
 from docplex.cp.expression import CpoIntervalVar, CpoSequenceVar
 
-from Model import Model
+from Model import ProblemData
 
 
 class CpModel(docp.CpoModel):
@@ -41,7 +41,7 @@ class CpModel(docp.CpoModel):
         return var
 
 
-def create_cp_model(data: Model):
+def create_cp_model(data: ProblemData) -> CpModel:
     """
     Creates a CP model for the given problem data.
     """
