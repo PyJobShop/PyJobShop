@@ -5,6 +5,9 @@ description = "Flexible job-shop scheduling"
 authors = ["Leon Lan <l.lan@vu.nl>"]
 license = "MIT"
 readme = "README.md"
+packages = [
+    { include = "fjsp" }
+]
 
 
 [build-system]
