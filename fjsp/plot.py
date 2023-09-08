@@ -14,7 +14,14 @@ def plot(data: ProblemData, solution: Solution):
     # Use a gradiant color map to assign a unique color to each job.
     colors = plt.cm.tab20c(np.linspace(0, 1, len(data.jobs)))
 
-    for op, machine, start, duration in solution.schedule:
+    for scheduled_op in solution.schedule:
+        op, machine, start, duration = (
+            scheduled_op.op,
+            scheduled_op.assigned_machine,
+            scheduled_op.start,
+            scheduled_op.duration,
+        )
+
         # Plot each scheduled operation as a single horizontal bar (interval).
         kwargs = {
             "color": colors[op.job.idx],
