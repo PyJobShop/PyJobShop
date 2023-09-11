@@ -115,6 +115,8 @@ def create_cp_model(data: ProblemData) -> CpModel:
                     m.add(m.previous(seq_var, var1, var2))
                 elif prec_type == "before":
                     m.add(m.before(seq_var, var1, var2))
+                elif prec_type == "same_unit":
+                    m.add(m.presence_of(var1) == m.presence_of(var2))
 
     # An operation must be scheduled on exactly one machine.
     for op in data.operations:
