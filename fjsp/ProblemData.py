@@ -147,3 +147,15 @@ class ProblemData:
     @property
     def machine2ops(self) -> dict[Machine, list[Operation]]:
         return self._machine2ops
+
+    @property
+    def num_jobs(self) -> int:
+        return len(self._jobs)
+
+    @property
+    def num_machines(self) -> int:
+        return len(self._machines)
+
+    @property
+    def num_operations(self) -> int:
+        return len(self._operations)
