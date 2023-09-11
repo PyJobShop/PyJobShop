@@ -114,7 +114,7 @@ class Model:
         operation2: Operation,
         precedence_types: Iterable[PrecedenceType] = (
             PrecedenceType.END_BEFORE_START,
-        ),  # TODO: can an edge have multiple precedence types?
+        ),
         edge_type: Optional[str] = None,
     ):
         self._operations_graph.add_edge(
