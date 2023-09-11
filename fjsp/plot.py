@@ -5,9 +5,16 @@ from .ProblemData import ProblemData
 from .Solution import Solution
 
 
-def plot(data: ProblemData, solution: Solution):
+def plot(data: ProblemData, solution: Solution, plot_labels: bool = True):
     """
     Plots a Gantt chart of the solver result.
+
+    Parameters
+    ----------
+    data: ProblemData
+        The problem data instance.
+    solution: Solution
+        A solution to the problem.
     """
     fig, ax = plt.subplots(1, 1, figsize=(12, 8))
 
@@ -23,21 +30,19 @@ def plot(data: ProblemData, solution: Solution):
         )
 
         # Plot each scheduled operation as a single horizontal bar (interval).
-        kwargs = {
-            "color": colors[op.job.idx],
-            "linewidth": 1,
-            "edgecolor": "k",
-        }
+        color = colors[op.job.idx]
+        kwargs = {"color": color, "linewidth": 1, "edgecolor": "black"}
         ax.barh(machine, duration, left=start, **kwargs)
 
-        # Add the operation ID at the center of the interval.
-        midpoint = start + duration / 2
-        ax.text(midpoint, machine, op.idx, ha="center", va="center")
+        if plot_labels:
+            # Add the operation ID at the center of the interval.
+            center = start + duration / 2
+            ax.text(center, machine, op.idx, ha="center", va="center")
 
-    ax.set_yticks(
-        ticks=range(len(data.machines)),
-        labels=[str(machine) for machine in data.machines],
-    )
+    labels = [str(machine) for machine in data.machines]
+    ax.set_yticks(ticks=range(len(data.machines)), labels=labels)
+    ax.set_ylim(ax.get_ylim()[::-1])
+
     ax.set_xlabel("Time")
     ax.set_title("Solution")
 
