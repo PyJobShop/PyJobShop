@@ -1,6 +1,6 @@
 from collections import defaultdict
 from dataclasses import dataclass
-from enum import Enum
+from enum import Enum, EnumMeta
 from typing import Optional
 
 import networkx as nx
@@ -65,7 +65,12 @@ class Operation:
         return self.name if self.name else f"Operation {self.idx}"
 
 
-class PrecedenceType(str, Enum):
+class PrecedenceTypeMeta(EnumMeta):
+    def __contains__(cls, item):
+        return item in cls._value2member_map_ or item in cls.__members__
+
+
+class PrecedenceType(str, Enum, metaclass=PrecedenceTypeMeta):
     """
     Types of precendence constraints between two operations $i$ and $j$.
     Let $s(i)$ and $f(i)$ be the start and finish times of operation $i$,
