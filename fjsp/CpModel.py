@@ -1,10 +1,10 @@
-from itertools import product
+from itertools import combinations, product
 
 import docplex.cp.model as docp
 from docplex.cp.expression import CpoIntervalVar, CpoSequenceVar
 from docplex.cp.solution import CpoSolveResult
 
-from .ProblemData import ProblemData
+from .ProblemData import ProblemData, Silo
 from .Solution import ScheduledOperation, Solution
 
 
@@ -126,10 +126,36 @@ def create_cp_model(data: ProblemData) -> CpModel:
         ]
         m.add(m.alternative(must, optional))
 
-    # Operations on a given machine cannot overlap.
+    # Operations on a given processing machine cannot overlap.
     for machine in data.machines:
+        if isinstance(machine, Silo):  # Silos may have overlap.
+            continue
+
         seq_var = m.variables[(f"S_{machine.idx}")]
         m.add(m.no_overlap(seq_var))
+
+    # On silos, we allow overlap between operations of the same type,
+    # as long as their is enough capacity.
+    for silo in data.machines:
+        if not isinstance(silo, Silo):
+            continue
+
+        ops = data.machine2ops[silo]
+
+        # No overlap for operations of different product types.
+        for op1, op2 in combinations(ops, r=2):
+            if op1.product_type != op2.product_type:
+                var1 = m.variables[f"A_{op1.idx}_{silo.idx}"]
+                var2 = m.variables[f"A_{op2.idx}_{silo.idx}"]
+                m.add(m.overlap_length(var1, var2) == 0)
+
+        # Load of operations may not exceed the capacity of the silo.
+        expr = [
+            m.pulse(m.variables[f"A_{op.idx}_{silo.idx}"], op.load)
+            for op in ops
+        ]
+        assert silo.capacity is not None
+        m.add(sum(expr) <= silo.capacity)
 
     # We can only schedule an operation on a given machine if it is
     # connected to the previous operation on that machine.

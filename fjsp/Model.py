@@ -2,7 +2,14 @@ from typing import Iterable, Optional
 
 import networkx as nx
 
-from .ProblemData import Job, Machine, Operation, PrecedenceType, ProblemData
+from .ProblemData import (
+    Job,
+    Machine,
+    Operation,
+    PrecedenceType,
+    ProblemData,
+    Silo,
+)
 
 
 class Model:
@@ -78,11 +85,31 @@ class Model:
 
         return machine
 
+    def add_silo(self, capacity: int, name: Optional[str] = None) -> Silo:
+        """
+        Adds a silo to the model.
+
+        Parameters
+        ----------
+        capacity: int
+            Capacity of the silo.
+        name: Optional[str]
+            Optional name of the silo.
+        """
+        silo = Silo(len(self.machines), name, capacity=capacity)
+
+        self._machines.append(silo)
+        self._machine_graph.add_node(silo.idx)
+
+        return silo
+
     def add_operation(
         self,
         job: Job,
         machines: list[Machine],
         durations: list[int],
+        load: int = 0,
+        product_type: Optional[str] = None,
         name: Optional[str] = None,
     ) -> Operation:
         """
@@ -96,11 +123,23 @@ class Model:
             Eligible machines that can process the operation.
         durations: list[int]
             Durations of the operation on each machine.
+        product_type: Optional[str]
+            Optional product type of the operation.
+        load: int
+            Load of the operation.
+        product_type: Optional[str]
+            Optional product type of the operation.
         name: Optional[str]
             Optional name of the operation.
         """
         operation = Operation(
-            len(self.operations), job, machines, durations, name
+            len(self.operations),
+            job,
+            machines,
+            durations,
+            load=load,
+            product_type=product_type,
+            name=name,
         )
 
         self._operations.append(operation)

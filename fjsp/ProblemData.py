@@ -36,6 +36,24 @@ class Machine:
 
 
 @dataclass(frozen=True, eq=True)
+class Silo(Machine):
+    """
+    A silo is a resource that stores operations.
+
+    Parameters
+    ----------
+    capacity: int
+        Capacity of the silo.
+    """
+
+    # NOTE must assign default value due to inheritance of dataclass.
+    capacity: Optional[int] = None
+
+    def __str__(self):
+        return self.name if self.name else f"Silo {self.idx}"
+
+
+@dataclass(frozen=True, eq=True)
 class Operation:
     """
     An operation is a task that must be processed by a machine.
@@ -50,6 +68,10 @@ class Operation:
         Machines that can process the operation.
     durations: list[int]
         Durations of the operation on each machine.
+    load: Optional[int]
+        Load of the operation. Only used when stored in silos.
+    product_type: Optional[str]
+        Product type of the operation.
     name: Optional[str]
         Name of the operation. If not provided, the name will be
         "Operation {idx}".
@@ -59,6 +81,8 @@ class Operation:
     job: Job
     machines: list[Machine]
     durations: list[int]
+    product_type: Optional[str] = None
+    load: Optional[int] = None
     name: Optional[str] = None
 
     def __str__(self):
