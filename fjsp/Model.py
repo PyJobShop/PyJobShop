@@ -114,9 +114,13 @@ class Model:
         operation2: Operation,
         precedence_types: Iterable[PrecedenceType] = (
             PrecedenceType.END_BEFORE_START,
-        ),  # TODO: can an edge have multiple precedence types?
+        ),
         edge_type: Optional[str] = None,
     ):
+        if any(pt not in PrecedenceType for pt in precedence_types):
+            msg = "Precedence types must be of type PrecedenceType."
+            raise ValueError(msg)
+
         self._operations_graph.add_edge(
             operation1.idx,
             operation2.idx,

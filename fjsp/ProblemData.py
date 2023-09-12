@@ -1,6 +1,6 @@
 from collections import defaultdict
 from dataclasses import dataclass
-from enum import Enum
+from enum import Enum, EnumMeta
 from typing import Optional
 
 import networkx as nx
@@ -65,7 +65,12 @@ class Operation:
         return self.name if self.name else f"Operation {self.idx}"
 
 
-class PrecedenceType(str, Enum):
+class PrecedenceTypeMeta(EnumMeta):
+    def __contains__(cls, item):
+        return item in cls._value2member_map_ or item in cls.__members__
+
+
+class PrecedenceType(str, Enum, metaclass=PrecedenceTypeMeta):
     """
     Types of precendence constraints between two operations $i$ and $j$.
     Let $s(i)$ and $f(i)$ be the start and finish times of operation $i$,
@@ -80,6 +85,9 @@ class PrecedenceType(str, Enum):
     - end_at_end:            $f(i) == f(j)$
     - end_before_start:      $f(i) <= s(j)$
     - end_before_end:        $f(i) <= f(j)$
+    - before:                i comes before j in sequence variable.
+    - previous:              i is previous to j in sequence variable.
+    - same_unit:             i and j are processed on the same unit.
     """
 
     START_AT_START = "start_at_start"
@@ -90,6 +98,9 @@ class PrecedenceType(str, Enum):
     END_AT_END = "end_at_end"
     END_BEFORE_START = "end_before_start"
     END_BEFORE_END = "end_before_end"
+    PREVIOUS = "previous"
+    BEFORE = "before"
+    SAME_UNIT = "same_unit"
 
 
 class ProblemData:
@@ -143,3 +154,15 @@ class ProblemData:
     @property
     def machine2ops(self) -> dict[Machine, list[Operation]]:
         return self._machine2ops
+
+    @property
+    def num_jobs(self) -> int:
+        return len(self._jobs)
+
+    @property
+    def num_machines(self) -> int:
+        return len(self._machines)
+
+    @property
+    def num_operations(self) -> int:
+        return len(self._operations)

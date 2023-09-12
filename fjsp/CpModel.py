@@ -72,7 +72,7 @@ def create_cp_model(data: ProblemData) -> CpModel:
     ]
     m.add(m.minimize(m.max(completion_times)))
 
-    # Obey the operation precedence constraints.
+    # Obey the operation timing precedence constraints.
     for frm, to, attr in data.operations_graph.edges(data=True):
         frm = m.variables[f"O_{frm}"]
         to = m.variables[f"O_{to}"]
@@ -94,8 +94,29 @@ def create_cp_model(data: ProblemData) -> CpModel:
                 m.add(m.end_before_start(frm, to))
             elif prec_type == "end_before_end":
                 m.add(m.end_before_end(frm, to))
-            else:
-                raise ValueError(f"Unknown precedence type: {prec_type}")
+
+    # Obey the operation ordering precedence constraints.
+    for machine, ops in data.machine2ops.items():
+        seq_var = m.variables[f"S_{machine.idx}"]
+
+        for op1, op2 in product(ops, repeat=2):
+            if op1 == op2:
+                continue
+
+            if (op1.idx, op2.idx) not in data.operations_graph.edges:
+                continue
+
+            var1 = m.variables[f"A_{op1.idx}_{machine.idx}"]
+            var2 = m.variables[f"A_{op2.idx}_{machine.idx}"]
+            edge = data.operations_graph.edges[op1.idx, op2.idx]
+
+            for prec_type in edge["precedence_types"]:
+                if prec_type == "previous":
+                    m.add(m.previous(seq_var, var1, var2))
+                elif prec_type == "before":
+                    m.add(m.before(seq_var, var1, var2))
+                elif prec_type == "same_unit":
+                    m.add(m.presence_of(var1) == m.presence_of(var2))
 
     # An operation must be scheduled on exactly one machine.
     for op in data.operations:
