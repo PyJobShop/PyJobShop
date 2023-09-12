@@ -9,6 +9,8 @@ import networkx as nx
 @dataclass(frozen=True, eq=True)
 class Job:
     idx: int
+    release_date: int = 0
+    deadline: Optional[int] = None
     name: Optional[str] = None
 
     def __str__(self):

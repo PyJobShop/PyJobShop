@@ -49,16 +49,30 @@ class Model:
             self.operations_graph,
         )
 
-    def add_job(self, name: Optional[str] = None) -> Job:
+    def add_job(
+        self,
+        release_date: int = 0,
+        deadline: Optional[int] = None,
+        name: Optional[str] = None,
+    ) -> Job:
         """
         Adds a job to the model.
 
         Parameters
         ----------
+        release_date: int
+            Release date of the job. Defaults to 0.
+        deadline: Optional[int]
+            Optional deadline of the job.
         name: Optional[str]
             Optional name of the job.
         """
-        job = Job(len(self.jobs), name)
+        job = Job(
+            len(self.jobs),
+            release_date=release_date,
+            deadline=deadline,
+            name=name,
+        )
         self._jobs.append(job)
         return job
 
