@@ -43,6 +43,7 @@ def plot(data: ProblemData, solution: Solution, plot_labels: bool = True):
     ax.set_yticks(ticks=range(len(data.machines)), labels=labels)
     ax.set_ylim(ax.get_ylim()[::-1])
 
+    ax.set_xlim(0, ax.get_xlim()[1])  # start time at zero
     ax.set_xlabel("Time")
     ax.set_title("Solution")
 
