@@ -62,8 +62,8 @@ def create_cp_model(data: ProblemData) -> CpModel:
             # duration of the operation; it could be longer due to blocking.
             m.add(m.size_of(var) >= op.durations[idx] * m.presence_of(var))
 
-            # Operations may not start before the job's release date, if given.
-            m.add(m.start_of(var) >= op.job.release_date)
+            # Operation may not start before the job's release date if present.
+            m.add(m.start_of(var) >= op.job.release_date * m.presence_of(var))
 
     for machine, ops in data.machine2ops.items():
         variables = [m.variables[(f"A_{op.idx}_{machine.idx}")] for op in ops]
