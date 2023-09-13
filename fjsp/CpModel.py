@@ -54,9 +54,7 @@ def create_cp_model(data: ProblemData) -> CpModel:
 
         for idx, machine in enumerate(op.machines):
             var = m.add_interval_var(
-                optional=True,
-                name=f"A_{op.idx}_{machine.idx}",
-                size=op.durations[idx],
+                optional=True, name=f"A_{op.idx}_{machine.idx}"
             )
             # The duration of the operation on the machine is at least the
             # duration of the operation; it could be longer due to blocking.
