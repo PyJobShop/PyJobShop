@@ -1,4 +1,5 @@
-from itertools import combinations, product
+from collections import defaultdict
+from itertools import product
 
 import docplex.cp.model as docp
 from docplex.cp.expression import CpoIntervalVar, CpoSequenceVar
@@ -63,9 +64,41 @@ def create_cp_model(data: ProblemData) -> CpModel:
             # Operation may not start before the job's release date if present.
             m.add(m.start_of(var) >= op.job.release_date * m.presence_of(var))
 
+    product_types = defaultdict(set)
     for machine, ops in data.machine2ops.items():
-        variables = [m.variables[(f"A_{op.idx}_{machine.idx}")] for op in ops]
-        m.add_sequence_var(variables, name=f"S_{machine.idx}")
+        # Define a operation sequence variable for each machine.
+        if not isinstance(machine, Silo):
+            variables = [
+                m.variables[(f"A_{op.idx}_{machine.idx}")] for op in ops
+            ]
+            m.add_sequence_var(variables, name=f"S_{machine.idx}")
+
+        else:  # Define a product sequence variable for each silo.
+            # First determine the product types.
+            for op in ops:
+                product_types[machine.idx].add(op.product_type)
+
+            # Group the interval variables per product type
+            interval_vars = defaultdict(set)
+            for op in ops:
+                interval_vars[op.product_type].add(
+                    m.variables[f"A_{op.idx}_{machine.idx}"]
+                )
+
+            # Then create an optional interval variable for each product type.
+            variables = []
+            for product_type in product_types[machine.idx]:
+                var = m.add_interval_var(
+                    optional=True, name=f"P_{product_type}_{machine.idx}"
+                )
+                variables.append(var)
+
+                # This product sequence variable should span all operations
+                # of the same product type.
+                m.add(m.span(var, interval_vars[product_type]))
+
+            # Then create a sequence variable for the machine.
+            m.add_sequence_var(variables, name=f"S_{machine.idx}")
 
     # Objective: minimize the makespan
     completion_times = [
@@ -91,7 +124,7 @@ def create_cp_model(data: ProblemData) -> CpModel:
                 m.add(m.end_at_start(frm, to))
             elif prec_type == "end_at_end":
                 m.add(m.end_at_end(frm, to))
-            elif prec_type == "end_before_start":
+            elif prec_type == "jnd_before_start":
                 m.add(m.end_before_start(frm, to))
             elif prec_type == "end_before_end":
                 m.add(m.end_before_end(frm, to))
@@ -129,9 +162,6 @@ def create_cp_model(data: ProblemData) -> CpModel:
 
     # Operations on a given processing machine cannot overlap.
     for machine in data.machines:
-        if isinstance(machine, Silo):  # Silos may have overlap.
-            continue
-
         seq_var = m.variables[(f"S_{machine.idx}")]
         m.add(m.no_overlap(seq_var))
 
@@ -142,13 +172,6 @@ def create_cp_model(data: ProblemData) -> CpModel:
             continue
 
         ops = data.machine2ops[silo]
-
-        # No overlap for operations of different product types.
-        for op1, op2 in combinations(ops, r=2):
-            if op1.product_type != op2.product_type:
-                var1 = m.variables[f"A_{op1.idx}_{silo.idx}"]
-                var2 = m.variables[f"A_{op2.idx}_{silo.idx}"]
-                m.add(m.overlap_length(var1, var2) == 0)
 
         # Load of operations may not exceed the capacity of the silo.
         expr = [
@@ -179,6 +202,7 @@ def create_cp_model(data: ProblemData) -> CpModel:
             seq_l = m.variables[f"S_{l}"]
             m.add(m.same_sequence(seq_k, seq_l))
 
+    print(1)
     return m
 
 
