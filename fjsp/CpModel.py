@@ -1,10 +1,11 @@
 from itertools import product
+from typing import Union
 
 import docplex.cp.model as docp
 from docplex.cp.expression import CpoIntervalVar, CpoSequenceVar
 from docplex.cp.solution import CpoSolveResult
 
-from .ProblemData import ProblemData
+from .ProblemData import Machine, Operation, ProblemData
 from .Solution import ScheduledOperation, Solution
 
 
@@ -18,29 +19,72 @@ class CpModel(docp.CpoModel):
 
         self._variables = {}
 
-    @property
-    def variables(self):
-        return self._variables
-
-    def add_interval_var(self, **kwargs) -> CpoIntervalVar:
+    def add_interval_var(
+        self, letter: str, *args: Union[int, Operation, Machine], **kwargs
+    ) -> CpoIntervalVar:
         """
         Wrapper around ``docplex.cp.model.CpoModel.interval_var``. Adds the
         variable to the internal variables dictionary.
         """
-        var = self.interval_var(**kwargs)
-        self._variables[var.name] = var
+        name = self._name_var(letter, *args)
+        var = self.interval_var(name=name, **kwargs)
+        self._variables[name] = var
         return var
 
     def add_sequence_var(
-        self, variables: list[CpoIntervalVar], **kwargs
+        self, letter: str, *args: Union[int, Operation, Machine], **kwargs
     ) -> CpoSequenceVar:
         """
         Wrapper around ``docplex.cp.model.CpoModel.sequence_var``. Adds the
         variable to the internal variables dictionary.
         """
-        var = self.sequence_var(vars=variables, **kwargs)
+        name = self._name_var(letter, *args)
+        var = self.sequence_var(name=name, **kwargs)
         self._variables[var.name] = var
         return var
+
+    def get_var(self, letter: str, *args: Union[int, Operation, Machine]):
+        """
+        Returns the variable with the given letter and arguments.
+
+        Parameters
+        ----------
+        letter: str
+            The letter of the variable type.
+        args: list
+            List of data objects (operation, product types, machines, etc.).
+        """
+        return self._variables[self._name_var(letter, *args)]
+
+    def _name_var(self, letter: str, *args: Union[int, Operation, Machine]):
+        """
+        Returns the name of the variable with the given letter and arguments.
+
+        Parameters
+        ----------
+        letter: str
+            The letter of the variable type.
+        args: list
+            List of data objects (operation, product types, machines, etc.).
+        """
+        if letter == "A":
+            op, machine = args
+            assert isinstance(op, Operation)
+            assert isinstance(machine, Machine)
+
+            return f"A_{op.idx}_{machine.idx}"
+        elif letter == "O":
+            op = args[0]
+            assert isinstance(op, Operation)
+
+            return f"O_{op.idx}"
+        elif letter == "S":
+            machine = args[0]
+            assert isinstance(machine, Machine)
+
+            return f"S_{machine.idx}"
+        else:
+            raise ValueError(f"Unknown variable type: {letter}")
 
 
 def create_cp_model(data: ProblemData) -> CpModel:
@@ -50,14 +94,11 @@ def create_cp_model(data: ProblemData) -> CpModel:
     m = CpModel()
 
     for op in data.operations:
-        m.add_interval_var(name=f"O_{op.idx}")
+        m.add_interval_var("O", op)
 
         for idx, machine in enumerate(op.machines):
-            var = m.add_interval_var(
-                optional=True,
-                name=f"A_{op.idx}_{machine.idx}",
-                size=op.durations[idx],
-            )
+            var = m.add_interval_var("A", op, machine, optional=True)
+
             # The duration of the operation on the machine is at least the
             # duration of the operation; it could be longer due to blocking.
             m.add(m.size_of(var) >= op.durations[idx] * m.presence_of(var))
@@ -66,19 +107,17 @@ def create_cp_model(data: ProblemData) -> CpModel:
             m.add(m.start_of(var) >= op.job.release_date * m.presence_of(var))
 
     for machine, ops in data.machine2ops.items():
-        variables = [m.variables[(f"A_{op.idx}_{machine.idx}")] for op in ops]
-        m.add_sequence_var(variables, name=f"S_{machine.idx}")
+        intervals = [m.get_var("A", op, machine) for op in ops]
+        m.add_sequence_var("S", machine, vars=intervals)
 
     # Objective: minimize the makespan
-    completion_times = [
-        m.end_of(m.variables[f"O_{op.idx}"]) for op in data.operations
-    ]
+    completion_times = [m.end_of(m.get_var("O", op)) for op in data.operations]
     m.add(m.minimize(m.max(completion_times)))
 
     # Obey the operation timing precedence constraints.
     for frm, to, attr in data.operations_graph.edges(data=True):
-        frm = m.variables[f"O_{frm}"]
-        to = m.variables[f"O_{to}"]
+        frm = m.get_var("O", data.operations[frm])
+        to = m.get_var("O", data.operations[to])
 
         for prec_type in attr["precedence_types"]:
             if prec_type == "start_at_start":
@@ -100,7 +139,7 @@ def create_cp_model(data: ProblemData) -> CpModel:
 
     # Obey the operation ordering precedence constraints.
     for machine, ops in data.machine2ops.items():
-        seq_var = m.variables[f"S_{machine.idx}"]
+        seq_var = m.get_var("S", machine)
 
         for op1, op2 in product(ops, repeat=2):
             if op1 == op2:
@@ -109,8 +148,8 @@ def create_cp_model(data: ProblemData) -> CpModel:
             if (op1.idx, op2.idx) not in data.operations_graph.edges:
                 continue
 
-            var1 = m.variables[f"A_{op1.idx}_{machine.idx}"]
-            var2 = m.variables[f"A_{op2.idx}_{machine.idx}"]
+            var1 = m.get_var("A", op1, machine)
+            var2 = m.get_var("A", op2, machine)
             edge = data.operations_graph.edges[op1.idx, op2.idx]
 
             for prec_type in edge["precedence_types"]:
@@ -123,16 +162,13 @@ def create_cp_model(data: ProblemData) -> CpModel:
 
     # An operation must be scheduled on exactly one machine.
     for op in data.operations:
-        must = m.variables[f"O_{op.idx}"]
-        optional = [
-            m.variables[f"A_{op.idx}_{mach.idx}"] for mach in op.machines
-        ]
+        must = m.get_var("O", op)
+        optional = [m.get_var("A", op, mach) for mach in op.machines]
         m.add(m.alternative(must, optional))
 
     # Operations on a given machine cannot overlap.
     for machine in data.machines:
-        seq_var = m.variables[(f"S_{machine.idx}")]
-        m.add(m.no_overlap(seq_var))
+        m.add(m.no_overlap(m.get_var("S", machine)))
 
     # We can only schedule an operation on a given machine if it is
     # connected to the previous operation on that machine.
@@ -144,15 +180,15 @@ def create_cp_model(data: ProblemData) -> CpModel:
             if (frm_mach.idx, to_mach.idx) in data.machine_graph.edges:
                 # An edge implies that the operation can move `frm -> to`, so
                 # if `frm` is scheduled, `to` can be too.
-                frm_var = m.variables[f"A_{i}_{frm_mach.idx}"]
-                to_var = m.variables[f"A_{j}_{to_mach.idx}"]
-                m.add(m.presence_of(frm_var) >= m.presence_of(to_var))
+                frm = m.get_var("A", data.operations[i], frm_mach)
+                to = m.get_var("A", data.operations[j], to_mach)
+                m.add(m.presence_of(frm) >= m.presence_of(to))
 
     # Same sequence on machines that are related.
     for k, l, attr in data.machine_graph.edges(data=True):
         if attr["same_sequence"]:
-            seq_k = m.variables[f"S_{k}"]
-            seq_l = m.variables[f"S_{l}"]
+            seq_k = m.get_var("S", data.machines[k])
+            seq_l = m.get_var("S", data.machines[l])
             m.add(m.same_sequence(seq_k, seq_l))
 
     return m
