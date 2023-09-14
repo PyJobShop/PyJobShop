@@ -1,7 +1,7 @@
 from itertools import product
 from typing import Union
 
-import docplex.cp.model as docp
+from dcoplex.cp.model import CpoModel
 from docplex.cp.expression import CpoIntervalVar, CpoSequenceVar
 from docplex.cp.solution import CpoSolveResult
 
@@ -9,9 +9,10 @@ from .ProblemData import Machine, Operation, ProblemData
 from .Solution import ScheduledOperation, Solution
 
 
-class CpModel(docp.CpoModel):
+class CpModel(CpoModel):
     """
-    Light wrapper around ``docplex.cp.model.CpoModel``.
+    Wrapper around ``docplex.cp.model.CpoModel`` with opinionated naming of
+    interval and sequence variables.
     """
 
     def __init__(self):
@@ -23,8 +24,7 @@ class CpModel(docp.CpoModel):
         self, letter: str, *args: Union[int, Operation, Machine], **kwargs
     ) -> CpoIntervalVar:
         """
-        Wrapper around ``docplex.cp.model.CpoModel.interval_var``. Adds the
-        variable to the internal variables dictionary.
+        Adds and names an interval variable with the given letter and arguments.
         """
         name = self._name_var(letter, *args)
         var = self.interval_var(name=name, **kwargs)
@@ -35,8 +35,7 @@ class CpModel(docp.CpoModel):
         self, letter: str, *args: Union[int, Operation, Machine], **kwargs
     ) -> CpoSequenceVar:
         """
-        Wrapper around ``docplex.cp.model.CpoModel.sequence_var``. Adds the
-        variable to the internal variables dictionary.
+        Adds and names a sequence variable with the given letter and arguments.
         """
         name = self._name_var(letter, *args)
         var = self.sequence_var(name=name, **kwargs)
