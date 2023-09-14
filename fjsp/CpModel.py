@@ -57,9 +57,12 @@ def create_cp_model(data: ProblemData) -> CpModel:
             var = m.add_interval_var(
                 optional=True, name=f"A_{op.idx}_{machine.idx}"
             )
-            # The duration of the operation on the machine is at least the
-            # duration of the operation; it could be longer due to blocking.
-            m.add(m.size_of(var) >= op.durations[idx] * m.presence_of(var))
+
+            if op.durations[idx] > 0:
+                # If there is non-zero duration, then the duration is fixed.
+                # This assumes that there is no blocking on the machine.
+                # NOTE This considerably speeds up the model.
+                m.add(m.size_of(var) == op.durations[idx] * m.presence_of(var))
 
             # Operation may not start before the job's release date if present.
             m.add(m.start_of(var) >= op.job.release_date * m.presence_of(var))
@@ -202,7 +205,6 @@ def create_cp_model(data: ProblemData) -> CpModel:
             seq_l = m.variables[f"S_{l}"]
             m.add(m.same_sequence(seq_k, seq_l))
 
-    print(1)
     return m
 
 
