@@ -1,4 +1,3 @@
-from collections import defaultdict
 from itertools import product
 
 import docplex.cp.model as docp
@@ -67,41 +66,37 @@ def create_cp_model(data: ProblemData) -> CpModel:
             # Operation may not start before the job's release date if present.
             m.add(m.start_of(var) >= op.job.release_date * m.presence_of(var))
 
-    product_types = defaultdict(set)
     for machine, ops in data.machine2ops.items():
         # Define a operation sequence variable for each machine.
+        # For non-silos, this is defined on the operation interval variables.
+        # For silos, this is defined on the product interval variables.
         if not isinstance(machine, Silo):
-            variables = [
+            intervals = [
                 m.variables[(f"A_{op.idx}_{machine.idx}")] for op in ops
             ]
-            m.add_sequence_var(variables, name=f"S_{machine.idx}")
+            m.add_sequence_var(intervals, name=f"S_{machine.idx}")
+        else:
+            product_types = {op.product_type for op in ops}
+            product_vars = []
 
-        else:  # Define a product sequence variable for each silo.
-            # First determine the product types.
-            for op in ops:
-                product_types[machine.idx].add(op.product_type)
+            # Create an optional interval variable for each product type.
+            for product_type in product_types:
+                name = f"P_{product_type}_{machine.idx}"
+                var = m.add_interval_var(optional=True, name=name)
+                product_vars.append(var)
 
-            # Group the interval variables per product type
-            interval_vars = defaultdict(set)
-            for op in ops:
-                interval_vars[op.product_type].add(
+                # Each product optional interval variable spans the operations
+                # with the same product type.
+                op_intervals = [
                     m.variables[f"A_{op.idx}_{machine.idx}"]
-                )
+                    for op in ops
+                    if op.product_type == product_type
+                ]
+                m.add(m.span(var, op_intervals))
 
-            # Then create an optional interval variable for each product type.
-            variables = []
-            for product_type in product_types[machine.idx]:
-                var = m.add_interval_var(
-                    optional=True, name=f"P_{product_type}_{machine.idx}"
-                )
-                variables.append(var)
-
-                # This product sequence variable should span all operations
-                # of the same product type.
-                m.add(m.span(var, interval_vars[product_type]))
-
-            # Then create a sequence variable for the machine.
-            m.add_sequence_var(variables, name=f"S_{machine.idx}")
+            # Then create a sequence variable for the machine using the product
+            # interval variables.
+            m.add_sequence_var(product_vars, name=f"S_{machine.idx}")
 
     # Objective: minimize the makespan
     completion_times = [
