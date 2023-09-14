@@ -1,8 +1,8 @@
 from itertools import product
 from typing import Union
 
-from dcoplex.cp.model import CpoModel
 from docplex.cp.expression import CpoIntervalVar, CpoSequenceVar
+from docplex.cp.model import CpoModel
 from docplex.cp.solution import CpoSolveResult
 
 from .ProblemData import Machine, Operation, ProblemData
