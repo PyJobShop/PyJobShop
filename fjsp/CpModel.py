@@ -169,19 +169,19 @@ def create_cp_model(data: ProblemData) -> CpModel:
     for machine in data.machines:
         m.add(m.no_overlap(m.get_var("S", machine)))
 
-    # We can only schedule an operation on a given machine if it is
-    # connected to the previous operation on that machine.
+    # Impose machine accessibility restrictions on precedent operations.
+    # If an operation is scheduled on a machine, the next operation can only
+    # be scheduled on a machine that is accessible from the current machine.
     for i, j in data.operations_graph.edges:
-        edges = product(
-            data.operations[i].machines, data.operations[j].machines
-        )
-        for frm_mach, to_mach in edges:  # BUG this is not correct
-            if (frm_mach.idx, to_mach.idx) in data.machine_graph.edges:
-                # An edge implies that the operation can move `frm -> to`, so
-                # if `frm` is scheduled, `to` can be too.
-                frm = m.get_var("A", data.operations[i], frm_mach)
-                to = m.get_var("A", data.operations[j], to_mach)
-                m.add(m.presence_of(frm) >= m.presence_of(to))
+        op1, op2 = data.operations[i], data.operations[j]
+
+        for m1, m2 in product(op1.machines, op2.machines):
+            if (m1.idx, m2.idx) not in data.machine_graph.edges:
+                # If (m1 -> m2) is not an edge in the machine graph, then
+                # we cannot schedule operation 1 on m1 and operation 2 on m2.
+                frm_var = m.get_var("A", op1, m1)
+                to_var = m.get_var("A", op2, m2)
+                m.add(m.presence_of(frm_var) + m.presence_of(to_var) <= 1)
 
     # Same sequence on machines that are related.
     for k, l, attr in data.machine_graph.edges(data=True):
