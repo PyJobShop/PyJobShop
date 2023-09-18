@@ -199,6 +199,8 @@ def add_assignment_precedence_constraints(m, data):
                     m.add(m.previous(seq_var, var1, var2))
                 elif prec_type == "same_unit":
                     m.add(m.presence_of(var1) == m.presence_of(var2))
+                elif prec_type == "different_unit":
+                    m.add(m.presence_of(var1) != m.presence_of(var2))
 
 
 def add_alternative_constraints(m, data):
