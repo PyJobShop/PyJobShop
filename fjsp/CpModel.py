@@ -1,5 +1,5 @@
 from itertools import product
-from typing import Union
+from typing import Optional, Union
 
 from docplex.cp.expression import CpoIntervalVar, CpoSequenceVar
 from docplex.cp.model import CpoModel
@@ -21,7 +21,10 @@ class CpModel(CpoModel):
         self._variables = {}
 
     def add_interval_var(
-        self, letter: str, *args: Union[int, Operation, Machine], **kwargs
+        self,
+        letter: str,
+        *args: Union[int, Optional[str], Operation, Machine],
+        **kwargs,
     ) -> CpoIntervalVar:
         """
         Adds and names an interval variable with the given letter and arguments.
@@ -32,7 +35,10 @@ class CpModel(CpoModel):
         return var
 
     def add_sequence_var(
-        self, letter: str, *args: Union[int, Operation, Machine], **kwargs
+        self,
+        letter: str,
+        *args: Union[int, Optional[str], Operation, Machine],
+        **kwargs,
     ) -> CpoSequenceVar:
         """
         Adds and names a sequence variable with the given letter and arguments.
@@ -42,7 +48,9 @@ class CpModel(CpoModel):
         self._variables[var.name] = var
         return var
 
-    def get_var(self, letter: str, *args: Union[int, Operation, Machine]):
+    def get_var(
+        self, letter: str, *args: Union[int, Optional[str], Operation, Machine]
+    ):
         """
         Returns the variable with the given letter and arguments.
 
@@ -55,7 +63,9 @@ class CpModel(CpoModel):
         """
         return self._variables[self._name_var(letter, *args)]
 
-    def _name_var(self, letter: str, *args: Union[int, Operation, Machine]):
+    def _name_var(
+        self, letter: str, *args: Union[int, Optional[str], Operation, Machine]
+    ):
         """
         Returns the name of the variable with the given letter and arguments.
 
@@ -82,6 +92,11 @@ class CpModel(CpoModel):
             assert isinstance(machine, Machine)
 
             return f"S_{machine.idx}"
+        elif letter == "P":
+            product_type, machine = args
+            assert isinstance(machine, Silo)
+
+            return f"P_{product_type}_{machine.idx}"
         else:
             raise ValueError(f"Unknown variable type: {letter}")
 
@@ -120,14 +135,15 @@ def create_cp_model(data: ProblemData) -> CpModel:
 
             # Create an optional interval variable for each product type.
             for product_type in product_types:
-                name = f"P_{product_type}_{machine.idx}"
-                var = m.add_interval_var(optional=True, name=name)
+                var = m.add_interval_var(
+                    "P", product_type, machine, optional=True
+                )
                 product_vars.append(var)
 
                 # Each product optional interval variable spans the operations
                 # with the same product type.
                 op_intervals = [
-                    m.variables[f"A_{op.idx}_{machine.idx}"]
+                    m.get_var("A", op, machine)
                     for op in ops
                     if op.product_type == product_type
                 ]
@@ -135,7 +151,7 @@ def create_cp_model(data: ProblemData) -> CpModel:
 
             # Then create a sequence variable for the machine using the product
             # interval variables.
-            m.add_sequence_var(product_vars, name=f"S_{machine.idx}")
+            m.add_sequence_var("S", machine, vars=product_vars)
 
     # Objective: minimize the makespan
     completion_times = [m.end_of(m.get_var("O", op)) for op in data.operations]
@@ -206,10 +222,7 @@ def create_cp_model(data: ProblemData) -> CpModel:
         ops = data.machine2ops[silo]
 
         # Load of operations may not exceed the capacity of the silo.
-        expr = [
-            m.pulse(m.variables[f"A_{op.idx}_{silo.idx}"], op.load)
-            for op in ops
-        ]
+        expr = [m.pulse(m.get_var("A", op, silo), op.load) for op in ops]
         assert silo.capacity is not None
         m.add(sum(expr) <= silo.capacity)
 
@@ -220,12 +233,16 @@ def create_cp_model(data: ProblemData) -> CpModel:
         op1, op2 = data.operations[i], data.operations[j]
 
         for m1, m2 in product(op1.machines, op2.machines):
-            if (m1.idx, m2.idx) not in data.machine_graph.edges:
-                # If (m1 -> m2) is not an edge in the machine graph, then
-                # we cannot schedule operation 1 on m1 and operation 2 on m2.
-                frm_var = m.get_var("A", op1, m1)
-                to_var = m.get_var("A", op2, m2)
-                m.add(m.presence_of(frm_var) + m.presence_of(to_var) <= 1)
+            if m1 == m2:
+                continue
+
+            # # TODO this results in a lot of extra redundant constraints.
+            # if (m1.idx, m2.idx) not in data.machine_graph.edges:
+            #     # If (m1 -> m2) is not an edge in the machine graph, then
+            #     # we cannot schedule operation 1 on m1 and operation 2 on m2.
+            #     frm_var = m.get_var("A", op1, m1)
+            #     to_var = m.get_var("A", op2, m2)
+            #     m.add(m.presence_of(frm_var) + m.presence_of(to_var) <= 1)
 
     # Same sequence on machines that are related.
     for k, l, attr in data.machine_graph.edges(data=True):
