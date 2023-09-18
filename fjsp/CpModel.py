@@ -197,8 +197,6 @@ def add_assignment_precedence_constraints(m, data):
             for prec_type in edge["precedence_types"]:
                 if prec_type == "previous":
                     m.add(m.previous(seq_var, var1, var2))
-                elif prec_type == "before":
-                    m.add(m.before(seq_var, var1, var2))
                 elif prec_type == "same_unit":
                     m.add(m.presence_of(var1) == m.presence_of(var2))
 
