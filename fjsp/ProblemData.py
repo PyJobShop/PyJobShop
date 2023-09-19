@@ -111,9 +111,9 @@ class PrecedenceType(str, Enum, metaclass=PrecedenceTypeMeta):
     - end_at_end:            $f(i) == f(j)$
     - end_before_start:      $f(i) <= s(j)$
     - end_before_end:        $f(i) <= f(j)$
-    - before:                i comes before j in sequence variable.
     - previous:              i is previous to j in sequence variable.
     - same_unit:             i and j are processed on the same unit.
+    - different_unit:        i and j are processed on different units.
     """
 
     START_AT_START = "start_at_start"
@@ -125,8 +125,8 @@ class PrecedenceType(str, Enum, metaclass=PrecedenceTypeMeta):
     END_BEFORE_START = "end_before_start"
     END_BEFORE_END = "end_before_end"
     PREVIOUS = "previous"
-    BEFORE = "before"
     SAME_UNIT = "same_unit"
+    DIFFERENT_UNIT = "different_unit"
 
 
 class ProblemData:
