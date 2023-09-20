@@ -3,7 +3,7 @@ from typing import Optional, Union
 from docplex.cp.expression import CpoIntervalVar, CpoSequenceVar
 from docplex.cp.model import CpoModel
 
-from .ProblemData import Machine, Operation, Silo
+from fjsp.ProblemData import Machine, Operation, Silo
 
 
 class CpModel(CpoModel):
