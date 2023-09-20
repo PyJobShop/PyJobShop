@@ -5,4 +5,4 @@ The implementation is currently work in progress and V1 is planned to be finishe
 Feel free to open an issue if you have any questions.
 
 We use IBM ILOG CP Optimizer to implement the CP model.
-A Google OR-Tools alternative is work in progress, contributions to migrate the CP Optimizer model to OR-Tools are welcome.
+Contributions to migrate the CP Optimizer model to OR-Tools are welcome.
