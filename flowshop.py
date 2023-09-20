@@ -1,6 +1,6 @@
 import random
 
-from fjsp import Model, PrecedenceType, create_cp_model, plot, result2solution
+from fjsp import Model, PrecedenceType, default_model, plot, result2solution
 
 NUM_JOBS = 10
 NUM_MACHINES = 5
@@ -34,7 +34,7 @@ def main():
             )
 
     data = model.data()
-    cp_model = create_cp_model(data)
+    cp_model = default_model(data)
     result = cp_model.solve(TimeLimit=10)
     solution = result2solution(data, result)
 
