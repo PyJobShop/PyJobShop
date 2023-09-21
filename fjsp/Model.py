@@ -129,17 +129,13 @@ class Model:
         precedence_types: Iterable[PrecedenceType] = (
             PrecedenceType.END_BEFORE_START,
         ),
-        edge_type: Optional[str] = None,
     ):
         if any(pt not in PrecedenceType for pt in precedence_types):
             msg = "Precedence types must be of type PrecedenceType."
             raise ValueError(msg)
 
         self._operations_graph.add_edge(
-            operation1.idx,
-            operation2.idx,
-            precedence_types=precedence_types,
-            edge_type=edge_type,
+            operation1.idx, operation2.idx, precedence_types=precedence_types
         )
 
     def add_machines_edge(
@@ -147,11 +143,7 @@ class Model:
         machine1: Machine,
         machine2: Machine,
         same_sequence: bool = False,
-        edge_type: Optional[str] = None,
     ):
         self._machine_graph.add_edge(
-            machine1.idx,
-            machine2.idx,
-            same_sequence=same_sequence,
-            edge_type=edge_type,
+            machine1.idx, machine2.idx, same_sequence=same_sequence
         )
