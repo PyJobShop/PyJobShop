@@ -5,7 +5,6 @@ from .constraints import (
     assignment_precedence_constraints,
     machine_accessibility_constraints,
     no_overlap_constraints,
-    same_sequence_constraints,
     timing_precedence_constraints,
 )
 from .CpModel import CpModel
@@ -34,6 +33,5 @@ def default_model(data: ProblemData) -> CpModel:
     alternative_constraints(m, data)
     no_overlap_constraints(m, data)
     machine_accessibility_constraints(m, data)
-    same_sequence_constraints(m, data)
 
     return m

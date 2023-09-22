@@ -78,12 +78,3 @@ def machine_accessibility_constraints(m, data):
                 frm_var = m.get_var("A", op1, m1)
                 to_var = m.get_var("A", op2, m2)
                 m.add(m.presence_of(frm_var) + m.presence_of(to_var) <= 1)
-
-
-def same_sequence_constraints(m, data):
-    # Same sequence on machines that are related.
-    for k, l, attr in data.machine_graph.edges(data=True):
-        if attr["same_sequence"]:
-            seq_k = m.get_var("S", data.machines[k])
-            seq_l = m.get_var("S", data.machines[l])
-            m.add(m.same_sequence(seq_k, seq_l))

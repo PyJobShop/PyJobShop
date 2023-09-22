@@ -14,9 +14,7 @@ def main():
     machines = [model.add_machine() for _ in range(NUM_MACHINES)]
 
     for idx in range(NUM_MACHINES - 1):
-        model.add_machines_edge(
-            machines[idx], machines[idx + 1], same_sequence=True
-        )
+        model.add_machines_edge(machines[idx], machines[idx + 1])
 
     for job in jobs:
         # Create one operation per (job, machine) pair.

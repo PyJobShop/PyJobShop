@@ -138,12 +138,5 @@ class Model:
             operation1.idx, operation2.idx, precedence_types=precedence_types
         )
 
-    def add_machines_edge(
-        self,
-        machine1: Machine,
-        machine2: Machine,
-        same_sequence: bool = False,
-    ):
-        self._machine_graph.add_edge(
-            machine1.idx, machine2.idx, same_sequence=same_sequence
-        )
+    def add_machines_edge(self, machine1: Machine, machine2: Machine):
+        self._machine_graph.add_edge(machine1.idx, machine2.idx)
