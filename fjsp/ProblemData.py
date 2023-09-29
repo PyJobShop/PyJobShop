@@ -45,10 +45,10 @@ class Operation:
     ----------
     idx: int
         Unique identifier of the operation.
-    job: Job
-        Job to which the operation belongs.
-    machines: list[Machine]
-        Machines that can process the operation.
+    job: int
+        Index of the job to which the operation belongs.
+    machines: list[int]
+        Indices of machines that can process the operation.
     durations: list[int]
         Durations of the operation on each machine.
     name: Optional[str]
@@ -57,8 +57,8 @@ class Operation:
     """
 
     idx: int
-    job: Job
-    machines: list[Machine]
+    job: int
+    machines: list[int]
     durations: list[int]
     name: Optional[str] = None
 
@@ -125,10 +125,10 @@ class ProblemData:
         ]
 
         for op in operations:
-            self._job2ops[op.job.idx].append(op.idx)
+            self._job2ops[op.job].append(op.idx)
 
             for m in op.machines:
-                self._machine2ops[m.idx].append(op.idx)
+                self._machine2ops[m].append(op.idx)
 
     @property
     def jobs(self) -> list[Job]:

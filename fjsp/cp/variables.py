@@ -25,17 +25,18 @@ def assignment_variables(m: CpoModel, data: ProblemData) -> AssignVars:
         op_vars = {}
 
         for idx, machine in enumerate(op.machines):
-            var = m.interval_var(
-                name=f"A{op.idx}_{machine.idx}", optional=True
-            )
-            op_vars[machine.idx] = var
+            var = m.interval_var(name=f"A{op.idx}_{machine}", optional=True)
+            op_vars[machine] = var
 
             # The duration of the operation on the machine is at least the
             # duration of the operation; it could be longer due to blocking.
             m.add(m.size_of(var) >= op.durations[idx] * m.presence_of(var))
 
             # Operation may not start before the job's release date if present.
-            m.add(m.start_of(var) >= op.job.release_date * m.presence_of(var))
+            m.add(
+                m.start_of(var)
+                >= data.jobs[op.job].release_date * m.presence_of(var)
+            )
 
         variables[op.idx] = op_vars
 

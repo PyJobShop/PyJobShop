@@ -86,7 +86,7 @@ def alternative_constraints(
 
     for op in data.operations:
         op_var = ops[op.idx]
-        optional = [assign[op.idx][mach.idx] for mach in op.machines]
+        optional = [assign[op.idx][machine] for machine in op.machines]
         constraints.append(m.alternative(op_var, optional))
 
     return constraints
@@ -116,7 +116,7 @@ def machine_accessibility_constraints(
         op1, op2 = data.operations[i], data.operations[j]
 
         for m1, m2 in product(op1.machines, op2.machines):
-            if (m1.idx, m2.idx) not in data.machine_graph.edges:
+            if (m1, m2) not in data.machine_graph.edges:
                 # If (m1 -> m2) is not an edge in the machine graph, then
                 # we cannot schedule operation 1 on m1 and operation 2 on m2.
                 frm = assign[op1.idx][m1.idx]

@@ -113,8 +113,10 @@ class Model:
         name: Optional[str]
             Optional name of the operation.
         """
+        job_idx = self.jobs.index(job)
+        machine_idcs = [self.machines.index(m) for m in machines]
         operation = Operation(
-            len(self.operations), job, machines, durations, name
+            len(self.operations), job_idx, machine_idcs, durations, name
         )
 
         self._operations.append(operation)
