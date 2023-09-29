@@ -67,7 +67,7 @@ class Model:
         name: Optional[str]
             Optional name of the job.
         """
-        job = Job(release_date=release_date, deadline=deadline, name=name)
+        job = Job(release_date, deadline, name)
         self._jobs.append(job)
         return job
 
@@ -80,7 +80,7 @@ class Model:
         name: Optional[str]
             Optional name of the machine.
         """
-        machine = Machine(name=name)
+        machine = Machine(name)
 
         self._machines.append(machine)
         self._machine_graph.add_node(len(self.machines))

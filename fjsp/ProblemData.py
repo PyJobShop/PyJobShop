@@ -42,14 +42,11 @@ class Machine:
     """
 
     def __init__(self, name: Optional[str] = None):
-        self._name = name or "Machine"
+        self._name = name
 
     @property
-    def name(self) -> str:
+    def name(self) -> Optional[str]:
         return self._name
-
-    def __str__(self) -> str:
-        return self.name
 
 
 class Operation:
@@ -78,7 +75,7 @@ class Operation:
         self._job = job
         self._machines = machines
         self._durations = durations
-        self._name = name or "Operation"
+        self._name = name
 
     @property
     def job(self) -> int:
@@ -93,11 +90,8 @@ class Operation:
         return self._durations
 
     @property
-    def name(self) -> str:
+    def name(self) -> Optional[str]:
         return self._name
-
-    def __str__(self):
-        return self.name
 
 
 class PrecedenceTypeMeta(EnumMeta):
