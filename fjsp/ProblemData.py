@@ -124,10 +124,10 @@ class ProblemData:
         self._machine2ops = defaultdict(list)
 
         for op in operations:
-            self._job2ops[op.job].append(op)
+            self._job2ops[op.job].append(op.idx)
 
             for m in op.machines:
-                self._machine2ops[m].append(op)
+                self._machine2ops[m].append(op.idx)
 
     @property
     def jobs(self) -> list[Job]:
@@ -150,11 +150,11 @@ class ProblemData:
         return self._operations_graph
 
     @property
-    def job2ops(self) -> dict[Job, list[Operation]]:
+    def job2ops(self) -> dict[Job, list[int]]:
         return self._job2ops
 
     @property
-    def machine2ops(self) -> dict[Machine, list[Operation]]:
+    def machine2ops(self) -> dict[Machine, list[int]]:
         return self._machine2ops
 
     @property

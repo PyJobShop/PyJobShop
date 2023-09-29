@@ -51,8 +51,8 @@ def sequence_variables(
     """
     variables = []
 
-    for machine, ops in data.machine2ops.items():
-        intervals = [assign[op.idx][machine.idx] for op in ops]
+    for machine, operations in data.machine2ops.items():
+        intervals = [assign[op][machine.idx] for op in operations]
         variables.append(
             m.sequence_var(name=f"S{machine.idx}", vars=intervals)
         )

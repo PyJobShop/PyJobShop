@@ -53,15 +53,12 @@ def assignment_precedence_constraints(
         seq_var = sequence[machine.idx]
 
         for op1, op2 in product(ops, repeat=2):
-            if op1 == op2:
+            if op1 == op2 or (op1, op2) not in data.operations_graph.edges:
                 continue
 
-            if (op1.idx, op2.idx) not in data.operations_graph.edges:
-                continue
-
-            var1 = assign[op1.idx][machine.idx]
-            var2 = assign[op2.idx][machine.idx]
-            edge = data.operations_graph.edges[op1.idx, op2.idx]
+            var1 = assign[op1][machine.idx]
+            var2 = assign[op2][machine.idx]
+            edge = data.operations_graph.edges[op1, op2]
 
             for prec_type in edge["precedence_types"]:
                 if prec_type == "previous":
