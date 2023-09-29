@@ -24,14 +24,14 @@ def default_model(data: ProblemData) -> CpModel:
 
     ops = operation_variables(m, data)
     assign = assignment_variables(m, data)
-    sequence_variables(m, data, assign)
+    sequences = sequence_variables(m, data, assign)
 
     m.add(makespan(m, data, ops))
 
-    timing_precedence_constraints(m, data)
-    assignment_precedence_constraints(m, data)
-    alternative_constraints(m, data)
-    no_overlap_constraints(m, data)
-    machine_accessibility_constraints(m, data)
+    m.add(timing_precedence_constraints(m, data, ops))
+    m.add(assignment_precedence_constraints(m, data, assign, sequences))
+    m.add(alternative_constraints(m, data, ops, assign))
+    m.add(no_overlap_constraints(m, data, sequences))
+    m.add(machine_accessibility_constraints(m, data, assign))
 
     return m

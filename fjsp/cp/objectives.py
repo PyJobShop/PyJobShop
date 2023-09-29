@@ -8,6 +8,9 @@ from .CpModel import CpModel
 def makespan(
     m: CpModel, data: ProblemData, ops: list[CpoIntervalVar]
 ) -> CpoExpr:
+    """
+    Minimizes the makespan of the schedule.
+    """
     completion_times = [m.end_of(ops[op]) for op in range(data.num_operations)]
     return m.minimize(m.max(completion_times))
 
