@@ -99,7 +99,7 @@ def no_overlap_constraints(
     Creates the no-overlap constraints for machines, ensuring that no two
     intervals in a sequence variable are overlapping.
     """
-    return [m.no_overlap(sequences[machine.idx]) for machine in data.machines]
+    return [m.no_overlap(sequences[mach]) for mach in range(data.num_machines)]
 
 
 def machine_accessibility_constraints(

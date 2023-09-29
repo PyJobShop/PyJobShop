@@ -80,10 +80,10 @@ class Model:
         name: Optional[str]
             Optional name of the machine.
         """
-        machine = Machine(len(self.machines), name)
+        machine = Machine(name=name)
 
         self._machines.append(machine)
-        self._machine_graph.add_node(machine.idx)
+        self._machine_graph.add_node(len(self.machines))
 
         return machine
 
@@ -136,4 +136,6 @@ class Model:
         )
 
     def add_machines_edge(self, machine1: Machine, machine2: Machine):
-        self._machine_graph.add_edge(machine1.idx, machine2.idx)
+        idx1 = self.machines.index(machine1)
+        idx2 = self.machines.index(machine2)
+        self._machine_graph.add_edge(idx1, idx2)

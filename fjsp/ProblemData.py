@@ -12,32 +12,45 @@ class Job:
         deadline: Optional[int] = None,
         name: Optional[str] = None,
     ):
-        self.release_date = release_date
-        self.deadline = deadline
-        self.name = name
+        self._release_date = release_date
+        self._deadline = deadline
+        self._name = name or "Job"
 
-    def __str__(self):
-        return self.name if self.name else "Job"
+    @property
+    def release_date(self) -> int:
+        return self._release_date
+
+    @property
+    def deadline(self) -> Optional[int]:
+        return self._deadline
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    def __str__(self) -> str:
+        return self.name
 
 
-@dataclass(frozen=True, eq=True)
 class Machine:
     """
-    A machine is a resource that can process operations.
+    A machine represents a resource that can process operations.
 
     Parameters
     ----------
-    idx: int
-        Unique identifier of the machine.
     name: Optional[str]
-        Name of the machine. If not provided, the name will be "Machine {idx}".
+        Optional name of the machine.
     """
 
-    idx: int
-    name: Optional[str] = None
+    def __init__(self, name: Optional[str] = None):
+        self._name = name or "Machine"
 
-    def __str__(self):
-        return self.name if self.name else f"Machine {self.idx}"
+    @property
+    def name(self) -> str:
+        return self._name
+
+    def __str__(self) -> str:
+        return self.name
 
 
 @dataclass(frozen=True, eq=True)
