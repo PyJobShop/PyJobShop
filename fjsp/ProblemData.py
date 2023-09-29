@@ -1,4 +1,3 @@
-from dataclasses import dataclass
 from enum import Enum, EnumMeta
 from typing import Optional
 
@@ -53,15 +52,12 @@ class Machine:
         return self.name
 
 
-@dataclass(frozen=True, eq=True)
 class Operation:
     """
     An operation is a task that must be processed by a machine.
 
     Parameters
     ----------
-    idx: int
-        Unique identifier of the operation.
     job: int
         Index of the job to which the operation belongs.
     machines: list[int]
@@ -69,18 +65,39 @@ class Operation:
     durations: list[int]
         Durations of the operation on each machine.
     name: Optional[str]
-        Name of the operation. If not provided, the name will be
-        "Operation {idx}".
+        Name of the operation.
     """
 
-    idx: int
-    job: int
-    machines: list[int]
-    durations: list[int]
-    name: Optional[str] = None
+    def __init__(
+        self,
+        job: int,
+        machines: list[int],
+        durations: list[int],
+        name: Optional[str] = None,
+    ):
+        self._job = job
+        self._machines = machines
+        self._durations = durations
+        self._name = name or "Operation"
+
+    @property
+    def job(self) -> int:
+        return self._job
+
+    @property
+    def machines(self) -> list[int]:
+        return self._machines
+
+    @property
+    def durations(self) -> list[int]:
+        return self._durations
+
+    @property
+    def name(self) -> str:
+        return self._name
 
     def __str__(self):
-        return self.name if self.name else f"Operation {self.idx}"
+        return self.name
 
 
 class PrecedenceTypeMeta(EnumMeta):
@@ -141,11 +158,11 @@ class ProblemData:
             [] for _ in range(self.num_machines)
         ]
 
-        for op in operations:
-            self._job2ops[op.job].append(op.idx)
+        for op_idx, op in enumerate(operations):
+            self._job2ops[op.job].append(op_idx)
 
             for m in op.machines:
-                self._machine2ops[m].append(op.idx)
+                self._machine2ops[m].append(op_idx)
 
     @property
     def jobs(self) -> list[Job]:

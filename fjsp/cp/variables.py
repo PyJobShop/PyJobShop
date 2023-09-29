@@ -21,11 +21,12 @@ def assignment_variables(m: CpoModel, data: ProblemData) -> AssignVars:
     machine pair.
     """
     variables = {}
-    for op in data.operations:
+
+    for op_idx, op in enumerate(data.operations):
         op_vars = {}
 
         for idx, machine in enumerate(op.machines):
-            var = m.interval_var(name=f"A{op.idx}_{machine}", optional=True)
+            var = m.interval_var(name=f"A{op_idx}_{machine}", optional=True)
             op_vars[machine] = var
 
             # The duration of the operation on the machine is at least the
@@ -38,7 +39,7 @@ def assignment_variables(m: CpoModel, data: ProblemData) -> AssignVars:
                 >= data.jobs[op.job].release_date * m.presence_of(var)
             )
 
-        variables[op.idx] = op_vars
+        variables[op_idx] = op_vars
 
     return variables
 

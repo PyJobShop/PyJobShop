@@ -84,10 +84,9 @@ def alternative_constraints(
     """
     constraints = []
 
-    for op in data.operations:
-        op_var = ops[op.idx]
-        optional = [assign[op.idx][machine] for machine in op.machines]
-        constraints.append(m.alternative(op_var, optional))
+    for op in range(data.num_operations):
+        optional = [assign[op][mach] for mach in data.operations[op].machines]
+        constraints.append(m.alternative(ops[op], optional))
 
     return constraints
 
@@ -112,15 +111,16 @@ def machine_accessibility_constraints(
     """
     constraints = []
 
-    for i, j in data.operations_graph.edges:
-        op1, op2 = data.operations[i], data.operations[j]
+    for op1, op2 in data.operations_graph.edges:
+        machines1 = data.operations[op1].machines
+        machines2 = data.operations[op2].machines
 
-        for m1, m2 in product(op1.machines, op2.machines):
-            if (m1, m2) not in data.machine_graph.edges:
+        for mach1, mach2 in product(machines1, machines2):
+            if (mach1, mach2) not in data.machine_graph.edges:
                 # If (m1 -> m2) is not an edge in the machine graph, then
                 # we cannot schedule operation 1 on m1 and operation 2 on m2.
-                frm = assign[op1.idx][m1.idx]
-                to = assign[op2.idx][m2.idx]
+                frm = assign[op1][mach1]
+                to = assign[op2][mach2]
                 constraints.append(m.presence_of(frm) + m.presence_of(to) <= 1)
 
     return constraints

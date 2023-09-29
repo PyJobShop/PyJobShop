@@ -37,7 +37,7 @@ def plot(data: ProblemData, solution: Solution, plot_labels: bool = True):
         if plot_labels:
             # Add the operation ID at the center of the interval.
             center = start + duration / 2
-            ax.text(center, machine, op.idx, ha="center", va="center")
+            ax.text(center, machine, op.name, ha="center", va="center")
 
     labels = [str(machine) for machine in data.machines]
     ax.set_yticks(ticks=range(len(data.machines)), labels=labels)

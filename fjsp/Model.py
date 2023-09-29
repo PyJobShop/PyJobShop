@@ -110,12 +110,10 @@ class Model:
         """
         job_idx = self.jobs.index(job)
         machine_idcs = [self.machines.index(m) for m in machines]
-        operation = Operation(
-            len(self.operations), job_idx, machine_idcs, durations, name
-        )
+        operation = Operation(job_idx, machine_idcs, durations, name)
 
         self._operations.append(operation)
-        self._operations_graph.add_node(operation.idx)
+        self._operations_graph.add_node(len(self.operations))
 
         return operation
 
@@ -132,7 +130,9 @@ class Model:
             raise ValueError(msg)
 
         self._operations_graph.add_edge(
-            operation1.idx, operation2.idx, precedence_types=precedence_types
+            self.operations.index(operation1),
+            self.operations.index(operation2),
+            precedence_types=precedence_types,
         )
 
     def add_machines_edge(self, machine1: Machine, machine2: Machine):
