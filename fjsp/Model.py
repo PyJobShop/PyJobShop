@@ -67,12 +67,7 @@ class Model:
         name: Optional[str]
             Optional name of the job.
         """
-        job = Job(
-            len(self.jobs),
-            release_date=release_date,
-            deadline=deadline,
-            name=name,
-        )
+        job = Job(release_date=release_date, deadline=deadline, name=name)
         self._jobs.append(job)
         return job
 

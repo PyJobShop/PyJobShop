@@ -5,15 +5,19 @@ from typing import Optional
 import networkx as nx
 
 
-@dataclass(frozen=True, eq=True)
 class Job:
-    idx: int
-    release_date: int = 0
-    deadline: Optional[int] = None
-    name: Optional[str] = None
+    def __init__(
+        self,
+        release_date: int = 0,
+        deadline: Optional[int] = None,
+        name: Optional[str] = None,
+    ):
+        self.release_date = release_date
+        self.deadline = deadline
+        self.name = name
 
     def __str__(self):
-        return self.name if self.name else f"Job {self.idx}"
+        return self.name if self.name else "Job"
 
 
 @dataclass(frozen=True, eq=True)
