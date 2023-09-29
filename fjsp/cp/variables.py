@@ -12,7 +12,7 @@ def operation_variables(
     """
     Creates an interval variable for each operation in the problem.
     """
-    return [m.interval_var(name=f"O{op}") for op in data.operations]
+    return [m.interval_var(name=f"O{op}") for op in range(data.num_operations)]
 
 
 def assignment_variables(m: CpoModel, data: ProblemData) -> AssignVars:

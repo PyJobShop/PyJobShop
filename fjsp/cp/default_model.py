@@ -21,18 +21,20 @@ def default_model(data: ProblemData) -> CpoModel:
     """
     Creates a CP model for the given problem data.
     """
-    m = CpoModel()
+    model = CpoModel()
 
-    ops = operation_variables(m, data)
-    assign = assignment_variables(m, data)
-    sequences = sequence_variables(m, data, assign)
+    ops = operation_variables(model, data)
+    assign = assignment_variables(model, data)
+    sequences = sequence_variables(model, data, assign)
 
-    m.add(makespan(m, data, ops))
+    model.add(makespan(model, data, ops))
 
-    m.add(timing_precedence_constraints(m, data, ops))
-    m.add(assignment_precedence_constraints(m, data, assign, sequences))
-    m.add(alternative_constraints(m, data, ops, assign))
-    m.add(no_overlap_constraints(m, data, sequences))
-    m.add(machine_accessibility_constraints(m, data, assign))
+    model.add(timing_precedence_constraints(model, data, ops))
+    model.add(
+        assignment_precedence_constraints(model, data, assign, sequences)
+    )
+    model.add(alternative_constraints(model, data, ops, assign))
+    model.add(no_overlap_constraints(model, data, sequences))
+    model.add(machine_accessibility_constraints(model, data, assign))
 
-    return m
+    return model
