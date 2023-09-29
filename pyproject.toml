@@ -22,6 +22,7 @@ numpy = "^1.24.2"
 matplotlib = "^3.7.1"
 networkx = "^3.1"
 ortools = { version = "^9.7.2996", optional = true }
+pandas = "^2.1.1"
 
 
 [tool.poetry.extras]
