@@ -49,15 +49,15 @@ def assignment_precedence_constraints(
 ) -> list[CpoExpr]:
     constraints = []
 
-    for machine, ops in data.machine2ops.items():
-        seq_var = sequence[machine.idx]
+    for machine, ops in enumerate(data.machine2ops):
+        seq_var = sequence[machine]
 
         for op1, op2 in product(ops, repeat=2):
             if op1 == op2 or (op1, op2) not in data.operations_graph.edges:
                 continue
 
-            var1 = assign[op1][machine.idx]
-            var2 = assign[op2][machine.idx]
+            var1 = assign[op1][machine]
+            var2 = assign[op2][machine]
             edge = data.operations_graph.edges[op1, op2]
 
             for prec_type in edge["precedence_types"]:

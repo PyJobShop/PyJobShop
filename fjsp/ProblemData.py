@@ -1,4 +1,3 @@
-from collections import defaultdict
 from dataclasses import dataclass
 from enum import Enum, EnumMeta
 from typing import Optional
@@ -120,14 +119,16 @@ class ProblemData:
         self._machine_graph = machine_graph  # TODO can we replace digraph?
         self._operations_graph = operations_graph
 
-        self._job2ops = defaultdict(list)
-        self._machine2ops = defaultdict(list)
+        self._job2ops: list[list[int]] = [[] for _ in range(self.num_jobs)]
+        self._machine2ops: list[list[int]] = [
+            [] for _ in range(self.num_machines)
+        ]
 
         for op in operations:
-            self._job2ops[op.job].append(op.idx)
+            self._job2ops[op.job.idx].append(op.idx)
 
             for m in op.machines:
-                self._machine2ops[m].append(op.idx)
+                self._machine2ops[m.idx].append(op.idx)
 
     @property
     def jobs(self) -> list[Job]:
@@ -150,11 +151,11 @@ class ProblemData:
         return self._operations_graph
 
     @property
-    def job2ops(self) -> dict[Job, list[int]]:
+    def job2ops(self) -> list[list[int]]:
         return self._job2ops
 
     @property
-    def machine2ops(self) -> dict[Machine, list[int]]:
+    def machine2ops(self) -> list[list[int]]:
         return self._machine2ops
 
     @property

@@ -23,7 +23,7 @@ def total_completion_time(
     """
     completion_times = []
 
-    for _, operations in data.job2ops.items():
+    for operations in data.job2ops:
         expr = m.max([ops[op] for op in operations])
         completion_times.append(expr)
 
@@ -40,9 +40,9 @@ def total_tardiness(
     """
     total = []
 
-    for job, operations in data.job2ops.items():
+    for job, operations in enumerate(data.job2ops):
         expr = m.max([m.end_of(ops[op]) for op in operations])
-        tardiness = m.max(0, expr - data.jobs[job.idx].deadline)
+        tardiness = m.max(0, expr - data.jobs[job].deadline)
         total.append(tardiness)
 
     return m.minimize(m.sum(total))
