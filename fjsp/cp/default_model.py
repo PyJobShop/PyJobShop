@@ -1,3 +1,5 @@
+from docplex.cp.model import CpoModel
+
 from fjsp.ProblemData import ProblemData
 
 from .constraints import (
@@ -7,7 +9,6 @@ from .constraints import (
     no_overlap_constraints,
     timing_precedence_constraints,
 )
-from .CpModel import CpModel
 from .objectives import makespan
 from .variables import (
     assignment_variables,
@@ -16,22 +17,24 @@ from .variables import (
 )
 
 
-def default_model(data: ProblemData) -> CpModel:
+def default_model(data: ProblemData) -> CpoModel:
     """
     Creates a CP model for the given problem data.
     """
-    m = CpModel()
+    model = CpoModel()
 
-    operation_variables(m, data)
-    assignment_variables(m, data)
-    sequence_variables(m, data)
+    ops = operation_variables(model, data)
+    assign = assignment_variables(model, data)
+    sequences = sequence_variables(model, data, assign)
 
-    m.add(makespan(m, data))
+    model.add(makespan(model, data, ops))
 
-    timing_precedence_constraints(m, data)
-    assignment_precedence_constraints(m, data)
-    alternative_constraints(m, data)
-    no_overlap_constraints(m, data)
-    machine_accessibility_constraints(m, data)
+    model.add(timing_precedence_constraints(model, data, ops))
+    model.add(
+        assignment_precedence_constraints(model, data, assign, sequences)
+    )
+    model.add(alternative_constraints(model, data, ops, assign))
+    model.add(no_overlap_constraints(model, data, sequences))
+    model.add(machine_accessibility_constraints(model, data, assign))
 
-    return m
+    return model
