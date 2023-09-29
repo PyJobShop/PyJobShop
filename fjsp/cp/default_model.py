@@ -22,11 +22,11 @@ def default_model(data: ProblemData) -> CpModel:
     """
     m = CpModel()
 
-    operation_variables(m, data)
-    assignment_variables(m, data)
-    sequence_variables(m, data)
+    ops = operation_variables(m, data)
+    assign = assignment_variables(m, data)
+    sequence_variables(m, data, assign)
 
-    m.add(makespan(m, data))
+    m.add(makespan(m, data, ops))
 
     timing_precedence_constraints(m, data)
     assignment_precedence_constraints(m, data)
