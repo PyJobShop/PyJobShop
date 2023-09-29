@@ -1,10 +1,9 @@
 from itertools import product
 
 from docplex.cp.expression import CpoExpr, CpoIntervalVar, CpoSequenceVar
+from docplex.cp.model import CpoModel
 
 from fjsp.ProblemData import ProblemData
-
-from .CpModel import CpModel
 
 OpsVars = list[CpoIntervalVar]
 AssignVars = dict[int, dict[int, CpoIntervalVar]]
@@ -12,7 +11,7 @@ SeqVars = list[CpoSequenceVar]
 
 
 def timing_precedence_constraints(
-    m: CpModel, data: ProblemData, ops: OpsVars
+    m: CpoModel, data: ProblemData, ops: OpsVars
 ) -> list[CpoExpr]:
     constraints = []
 
@@ -46,7 +45,7 @@ def timing_precedence_constraints(
 
 
 def assignment_precedence_constraints(
-    m: CpModel, data: ProblemData, assign: AssignVars, sequence: SeqVars
+    m: CpoModel, data: ProblemData, assign: AssignVars, sequence: SeqVars
 ) -> list[CpoExpr]:
     constraints = []
 
@@ -80,7 +79,7 @@ def assignment_precedence_constraints(
 
 
 def alternative_constraints(
-    m: CpModel, data: ProblemData, ops: OpsVars, assign: AssignVars
+    m: CpoModel, data: ProblemData, ops: OpsVars, assign: AssignVars
 ) -> list[CpoExpr]:
     """
     Creates the alternative constraints for the operations, ensuring that each
@@ -97,7 +96,7 @@ def alternative_constraints(
 
 
 def no_overlap_constraints(
-    m: CpModel, data: ProblemData, sequences: SeqVars
+    m: CpoModel, data: ProblemData, sequences: SeqVars
 ) -> list[CpoExpr]:
     """
     Creates the no-overlap constraints for machines, ensuring that no two
@@ -107,7 +106,7 @@ def no_overlap_constraints(
 
 
 def machine_accessibility_constraints(
-    m: CpModel, data: ProblemData, assign: AssignVars
+    m: CpoModel, data: ProblemData, assign: AssignVars
 ) -> list[CpoExpr]:
     """
     Creates the machine accessibility constraints for the operations, ensuring

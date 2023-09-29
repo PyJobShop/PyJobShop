@@ -1,20 +1,21 @@
 from docplex.cp.expression import CpoIntervalVar, CpoSequenceVar
+from docplex.cp.model import CpoModel
 
 from fjsp.ProblemData import ProblemData
-
-from .CpModel import CpModel
 
 AssignVars = dict[int, dict[int, CpoIntervalVar]]
 
 
-def operation_variables(m: CpModel, data: ProblemData) -> list[CpoIntervalVar]:
+def operation_variables(
+    m: CpoModel, data: ProblemData
+) -> list[CpoIntervalVar]:
     """
     Creates an interval variable for each operation in the problem.
     """
     return [m.interval_var(name=f"O{op}") for op in data.operations]
 
 
-def assignment_variables(m: CpModel, data: ProblemData) -> AssignVars:
+def assignment_variables(m: CpoModel, data: ProblemData) -> AssignVars:
     """
     Creates an optional interval variable for each operation and eligible
     machine pair.
@@ -42,7 +43,7 @@ def assignment_variables(m: CpModel, data: ProblemData) -> AssignVars:
 
 
 def sequence_variables(
-    m: CpModel, data: ProblemData, assign: AssignVars
+    m: CpoModel, data: ProblemData, assign: AssignVars
 ) -> list[CpoSequenceVar]:
     """
     Creates a sequence variable for each machine, using the corresponding

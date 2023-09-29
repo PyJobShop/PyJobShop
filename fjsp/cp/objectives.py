@@ -1,12 +1,11 @@
 from docplex.cp.expression import CpoExpr, CpoIntervalVar
+from docplex.cp.model import CpoModel
 
 from fjsp.ProblemData import ProblemData
 
-from .CpModel import CpModel
-
 
 def makespan(
-    m: CpModel, data: ProblemData, ops: list[CpoIntervalVar]
+    m: CpoModel, data: ProblemData, ops: list[CpoIntervalVar]
 ) -> CpoExpr:
     """
     Minimizes the makespan of the schedule.
@@ -16,7 +15,7 @@ def makespan(
 
 
 def total_completion_time(
-    m: CpModel, data: ProblemData, ops: list[CpoIntervalVar]
+    m: CpoModel, data: ProblemData, ops: list[CpoIntervalVar]
 ) -> CpoExpr:
     """
     Minimizes the sum of the completion times of each job. A job's completion
@@ -32,7 +31,7 @@ def total_completion_time(
 
 
 def total_tardiness(
-    m: CpModel, data: ProblemData, ops: list[CpoIntervalVar]
+    m: CpoModel, data: ProblemData, ops: list[CpoIntervalVar]
 ) -> CpoExpr:
     """
     Minimizes the sum of the tardiness of each job. A job's tardiness is
