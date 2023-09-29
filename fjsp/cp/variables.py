@@ -11,7 +11,7 @@ def operation_variables(m: CpModel, data: ProblemData) -> list[CpoIntervalVar]:
     """
     Creates an interval variable for each operation in the problem.
     """
-    return [m.add_interval_var("O", op) for op in data.operations]
+    return [m.interval_var(name=f"O{op}") for op in data.operations]
 
 
 def assignment_variables(m: CpModel, data: ProblemData) -> AssignVars:
@@ -24,7 +24,9 @@ def assignment_variables(m: CpModel, data: ProblemData) -> AssignVars:
         op_vars = {}
 
         for idx, machine in enumerate(op.machines):
-            var = m.add_interval_var("A", op, machine, optional=True)
+            var = m.interval_var(
+                name=f"A{op.idx}_{machine.idx}", optional=True
+            )
             op_vars[machine.idx] = var
 
             # The duration of the operation on the machine is at least the
@@ -50,6 +52,8 @@ def sequence_variables(
 
     for machine, ops in data.machine2ops.items():
         intervals = [assign[op.idx][machine.idx] for op in ops]
-        variables.append(m.add_sequence_var("S", machine, vars=intervals))
+        variables.append(
+            m.sequence_var(name=f"S{machine.idx}", vars=intervals)
+        )
 
     return variables

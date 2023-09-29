@@ -16,7 +16,7 @@ def result2solution(data: ProblemData, result: CpoSolveResult) -> Solution:
         # Scheduled operations are inferred from variables start with an "A"
         # (assignment) and that are present in the solution.
         if name.startswith("A") and var.is_present():
-            op_idx, mach_idx = [int(num) for num in name.split("_")[1:]]
+            op_idx, mach_idx = [int(num) for num in name[1:].split("_")]
             op = data.operations[op_idx]
             start = var.start
             duration = var.size
