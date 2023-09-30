@@ -1,7 +1,6 @@
 from enum import Enum, EnumMeta
 from typing import Optional
 
-import networkx as nx
 import numpy as np
 
 
@@ -125,7 +124,7 @@ class ProblemData:
         jobs: list[Job],
         machines: list[Machine],
         operations: list[Operation],
-        machine_graph: nx.DiGraph,
+        accessibility: np.ndarray,
         precedences: dict[tuple[int, int], list[PrecedenceType]],
         processing_times: np.ndarray,
         setup_times: np.ndarray,
@@ -133,7 +132,7 @@ class ProblemData:
         self._jobs = jobs
         self._machines = machines
         self._operations = operations
-        self._machine_graph = machine_graph
+        self._accessibility = accessibility
         self._precedences = precedences
         self._processing_times = processing_times
         self._setup_times = setup_times
@@ -171,17 +170,13 @@ class ProblemData:
         return self._operations
 
     @property
-    def machine_graph(self) -> nx.DiGraph:
+    def accessibility(self) -> np.ndarray:
         """
-        Directed graph of machines accesibility constraints. An arc (i, j)
-        represents that machine i can be accessed from machine j.
-
-        Returns
-        -------
-        nx.DiGraph
-            Directed graph of machines accesibility constraints.
+        Returns the machine accessibility matrix of this problem instance.
+        A entry (i, j) is True if machine i can be accessed from machine j,
+        and False otherwise.
         """
-        return self._machine_graph
+        return self._accessibility
 
     @property
     def precedences(self) -> dict[tuple[int, int], list[PrecedenceType]]:

@@ -124,9 +124,9 @@ def machine_accessibility_constraints(
         machines2 = data.operations[op2].machines
 
         for mach1, mach2 in product(machines1, machines2):
-            if (mach1, mach2) not in data.machine_graph.edges:
-                # If (m1 -> m2) is not an edge in the machine graph, then
-                # we cannot schedule operation 1 on m1 and operation 2 on m2.
+            if not data.accessibility[mach1, mach2]:
+                # If m1 cannot access m2, then we cannot schedule operation 1
+                # on m1 and operation 2 on m2.
                 frm = assign[op1, mach1]
                 to = assign[op2, mach2]
                 constraints.append(m.presence_of(frm) + m.presence_of(to) <= 1)

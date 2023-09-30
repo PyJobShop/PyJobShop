@@ -1,6 +1,5 @@
 from typing import Optional
 
-import networkx as nx
 import numpy as np
 
 from .ProblemData import Job, Machine, Operation, PrecedenceType, ProblemData
@@ -17,7 +16,7 @@ class Model:
         self._jobs = []
         self._machines = []
         self._operations = []
-        self._machine_graph = nx.DiGraph()
+        self._accessibility: dict[tuple[int, int], bool] = {}
         self._precedences: dict[tuple[int, int], list[PrecedenceType]] = {}
         self._processing_times: dict[tuple[int, int], int] = {}
         self._setup_times: dict[tuple[int, int, int], int] = {}
@@ -39,19 +38,17 @@ class Model:
         return self._operations
 
     @property
-    def precedences(self) -> dict[tuple[int, int], list[PrecedenceType]]:
-        return self._precedences
-
-    @property
-    def machine_graph(self):
-        return self._machine_graph
-
     def data(self) -> ProblemData:
         """
         Returns a ProblemData object containing the problem instance.
         """
         num_ops = len(self.operations)
         num_machines = len(self.machines)
+
+        # Convert accessibility into a 2D array with True as default.
+        accessibility = np.full((num_machines, num_machines), True)
+        for (machine1, machine2), is_accessible in self._accessibility.items():
+            accessibility[machine1, machine2] = is_accessible
 
         # Convert processing times into a 2D array with large value as default.
         processing_times = np.full((num_ops, num_machines), MAX_VALUE)
@@ -67,8 +64,8 @@ class Model:
             self.jobs,
             self.machines,
             self.operations,
-            self.machine_graph,
-            self.precedences,
+            accessibility,
+            self._precedences,
             processing_times,
             setup_times,
         )
@@ -109,9 +106,7 @@ class Model:
         """
         machine = Machine(name)
 
-        idx = len(self.machines)
-        self._id2machine[id(machine)] = idx
-        self._machine_graph.add_node(idx)
+        self._id2machine[id(machine)] = len(self.machines)
         self._machines.append(machine)
 
         return machine
@@ -135,8 +130,7 @@ class Model:
         machine_idcs = [self._id2machine[id(m)] for m in machines]
         operation = Operation(job_idx, machine_idcs, name)
 
-        idx = len(self.operations)
-        self._id2op[id(operation)] = idx
+        self._id2op[id(operation)] = len(self.operations)
         self._operations.append(operation)
 
         return operation
@@ -155,17 +149,18 @@ class Model:
         op2 = self._id2op[id(operation2)]
         self._precedences[op1, op2] = precedence_types
 
-    def add_machines_edge(self, machine1: Machine, machine2: Machine):
-        idx1 = self.machines.index(machine1)
-        idx2 = self.machines.index(machine2)
-        self._machine_graph.add_edge(idx1, idx2)
+    def add_accessibility(
+        self, machine1: Machine, machine2: Machine, is_accessible: bool
+    ):
+        idx1 = self._id2machine[id(machine1)]
+        idx2 = self._id2machine[id(machine2)]
+        self._accessibility[idx1, idx2] = is_accessible
 
     def add_processing_time(
         self, operation: Operation, machine: Machine, duration: int
     ):
         op_idx = self._id2op[id(operation)]
         machine_idx = self._id2machine[id(machine)]
-
         self._processing_times[op_idx, machine_idx] = duration
 
     def add_setup_time(
