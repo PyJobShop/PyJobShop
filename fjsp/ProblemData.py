@@ -130,7 +130,7 @@ class ProblemData:
         operations: list[Operation],
         machine_graph: nx.DiGraph,
         operations_graph: nx.DiGraph,
-        processing_times: dict[tuple[int, int], int],
+        processing_times: np.ndarray,
         setup_times: np.ndarray,
     ):
         self._jobs = jobs
@@ -201,15 +201,15 @@ class ProblemData:
         return self._operations_graph
 
     @property
-    def processing_times(self) -> dict[tuple[int, int], int]:
+    def processing_times(self) -> np.ndarray:
         """
         Processing times of operations on machines.
 
         Returns
         -------
         dict[tuple[int, int], int]
-            Processing times of operations on machines. The dictionary is
-            indexed by tuples of the form (operation_idx, machine_idx).
+            Processing times of operations on machines indexed by operation
+            and machine indices.
         """
         return self._processing_times
 

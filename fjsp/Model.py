@@ -5,6 +5,8 @@ import numpy as np
 
 from .ProblemData import Job, Machine, Operation, PrecedenceType, ProblemData
 
+MAX_VALUE = 2**25
+
 
 class Model:
     """
@@ -44,25 +46,21 @@ class Model:
     def operations_graph(self):
         return self._operations_graph
 
-    @property
-    def processing_times(self) -> dict[tuple[int, int], int]:
-        return self._processing_times
-
-    @property
-    def setup_times(self) -> dict[tuple[int, int, int], int]:
-        return self._setup_times
-
     def data(self) -> ProblemData:
         """
         Returns a ProblemData object containing the problem instance.
         """
-
-        # Convert setup times dict into a 3D array with zero as default.
-        num_machines = len(self.machines)
         num_ops = len(self.operations)
-        setup_times = np.zeros((num_ops, num_ops, num_machines), dtype=int)
+        num_machines = len(self.machines)
 
-        for (op1, op2, machine), duration in self.setup_times.items():
+        # Convert processing times into a 2D array with large value as default.
+        processing_times = np.full((num_ops, num_machines), MAX_VALUE)
+        for (op, machine), duration in self._processing_times.items():
+            processing_times[op, machine] = duration
+
+        # Convert setup times into a 3D array with zero as default.
+        setup_times = np.zeros((num_ops, num_ops, num_machines), dtype=int)
+        for (op1, op2, machine), duration in self._setup_times.items():
             setup_times[op1, op2, machine] = duration
 
         return ProblemData(
@@ -71,7 +69,7 @@ class Model:
             self.operations,
             self.machine_graph,
             self.operations_graph,
-            self.processing_times,
+            processing_times,
             setup_times,
         )
 
