@@ -126,21 +126,31 @@ class ProblemData:
         operations: list[Operation],
         precedences: dict[tuple[int, int], list[PrecedenceType]],
         processing_times: np.ndarray,
-        accessibility: np.ndarray,
-        setup_times: np.ndarray,
+        accessibility: Optional[np.ndarray] = None,
+        setup_times: Optional[np.ndarray] = None,
     ):
         self._jobs = jobs
         self._machines = machines
         self._operations = operations
         self._precedences = precedences
         self._processing_times = processing_times
-        self._accessibility = accessibility
-        self._setup_times = setup_times
+
+        num_mach = self.num_machines
+        num_ops = self.num_operations
+
+        self._accessibility = (
+            accessibility
+            if accessibility is not None
+            else np.ones((num_mach, num_mach), dtype=bool)
+        )
+        self._setup_times = (
+            setup_times
+            if setup_times is not None
+            else np.zeros((num_ops, num_ops, num_mach), dtype=int)
+        )
 
         self._job2ops: list[list[int]] = [[] for _ in range(self.num_jobs)]
-        self._machine2ops: list[list[int]] = [
-            [] for _ in range(self.num_machines)
-        ]
+        self._machine2ops: list[list[int]] = [[] for _ in range(num_mach)]
 
         for op, op_data in enumerate(self.operations):
             self._job2ops[op_data.job].append(op)

@@ -95,3 +95,20 @@ def test_problem_data_attributes():
     assert_equal(data.num_jobs, 5)
     assert_equal(data.num_machines, 5)
     assert_equal(data.num_operations, 5)
+
+
+def test_problem_data_default_values():
+    """
+    Tests that the default values of the ProblemData class are set correctly.
+    """
+    jobs = [Job() for _ in range(1)]
+    machines = [Machine() for _ in range(1)]
+    operations = [Operation(idx, [idx]) for idx in range(1)]
+    precedences = {(0, 1): [PrecedenceType.END_BEFORE_START]}
+    processing_times = np.ones((1, 1), dtype=int)
+    data = ProblemData(
+        jobs, machines, operations, precedences, processing_times
+    )
+
+    assert_allclose(data.accessibility, np.full((1, 1), True))
+    assert_allclose(data.setup_times, np.zeros((1, 1, 1), dtype=int))
