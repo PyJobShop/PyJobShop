@@ -57,7 +57,7 @@ class Model:
         Returns a ProblemData object containing the problem instance.
         """
 
-        # Process setup times into a 3D array with zero default.
+        # Convert setup times dict into a 3D array with zero as default.
         num_machines = len(self.machines)
         num_ops = len(self.operations)
         setup_times = np.zeros((num_ops, num_ops, num_machines), dtype=int)

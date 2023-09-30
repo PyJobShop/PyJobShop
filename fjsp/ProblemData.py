@@ -131,7 +131,7 @@ class ProblemData:
         machine_graph: nx.DiGraph,
         operations_graph: nx.DiGraph,
         processing_times: dict[tuple[int, int], int],
-        setup_times: dict[tuple[int, int, int], int],
+        setup_times: np.ndarray,
     ):
         self._jobs = jobs
         self._machines = machines
