@@ -144,7 +144,7 @@ class ProblemData:
         self._jobs = jobs
         self._machines = machines
         self._operations = operations
-        self._machine_graph = machine_graph  # TODO can we replace digraph?
+        self._machine_graph = machine_graph
         self._operations_graph = operations_graph
 
         self._job2ops: list[list[int]] = [[] for _ in range(self.num_jobs)]
@@ -152,11 +152,11 @@ class ProblemData:
             [] for _ in range(self.num_machines)
         ]
 
-        for op_idx, op in enumerate(operations):
-            self._job2ops[op.job].append(op_idx)
+        for op, op_data in enumerate(self.operations):
+            self._job2ops[op_data.job].append(op)
 
-            for m in op.machines:
-                self._machine2ops[m].append(op_idx)
+            for m in op_data.machines:
+                self._machine2ops[m].append(op)
 
     @property
     def jobs(self) -> list[Job]:
