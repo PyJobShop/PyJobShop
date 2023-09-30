@@ -90,8 +90,8 @@ class Model:
         machine = Machine(name)
 
         idx = len(self.machines)
-        self._machine_graph.add_node(idx)
         self._id2machine[id(machine)] = idx
+        self._machine_graph.add_node(idx)
         self._machines.append(machine)
 
         return machine
@@ -122,8 +122,8 @@ class Model:
         operation = Operation(job_idx, machine_idcs, durations, name)
 
         idx = len(self.operations)
-        self._operations_graph.add_node(idx)
         self._id2op[id(operation)] = idx
+        self._operations_graph.add_node(idx)
         self._operations.append(operation)
 
         return operation

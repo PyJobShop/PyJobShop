@@ -171,11 +171,11 @@ class ProblemData:
         return self._operations
 
     @property
-    def machine_graph(self):
+    def machine_graph(self) -> nx.DiGraph:
         return self._machine_graph
 
     @property
-    def operations_graph(self):
+    def operations_graph(self) -> nx.DiGraph:
         return self._operations_graph
 
     @property
