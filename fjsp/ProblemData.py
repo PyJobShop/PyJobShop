@@ -130,6 +130,7 @@ class ProblemData:
         machine_graph: nx.DiGraph,
         operations_graph: nx.DiGraph,
         processing_times: dict[tuple[int, int], int],
+        setup_times: dict[tuple[int, int, int], int],
     ):
         self._jobs = jobs
         self._machines = machines
@@ -137,6 +138,7 @@ class ProblemData:
         self._machine_graph = machine_graph
         self._operations_graph = operations_graph
         self._processing_times = processing_times
+        self._setup_times = setup_times
 
         self._job2ops: list[list[int]] = [[] for _ in range(self.num_jobs)]
         self._machine2ops: list[list[int]] = [
@@ -209,6 +211,20 @@ class ProblemData:
             indexed by tuples of the form (operation_idx, machine_idx).
         """
         return self._processing_times
+
+    @property
+    def setup_times(self) -> dict[tuple[int, int, int], int]:
+        """
+        Sequence-dependent setup times between operations on a given machine.
+
+        Returns
+        -------
+        dict[tuple[int, int, int], int]
+            Sequence-dependent setup times between operations on a given
+            machine. The dictionary is indexed by tuples of the form
+            (operation_idx, operation_idx, machine_idx).
+        """
+        return self._setup_times
 
     @property
     def job2ops(self) -> list[list[int]]:

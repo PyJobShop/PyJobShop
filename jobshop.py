@@ -1,6 +1,8 @@
 # Example from https://developers.google.com/optimization/scheduling/job_shop
 # Partially modified.
 
+from itertools import product
+
 from fjsp import Model, PrecedenceType, default_model, plot, result2solution
 
 # A job consists of tasks, which is a tuple (machine_id, processing_time).
@@ -28,12 +30,17 @@ for job_idx, tasks in enumerate(jobs_data):
     for idx, (machine_idx, duration) in enumerate(tasks):
         model.add_processing_time(ops[idx], machines[machine_idx], duration)
 
-    # Impose linear routing precedence constraints.
     for op_idx in range(1, len(ops)):
+        # Impose linear routing precedence constraints.
         op1, op2 = ops[op_idx - 1], ops[op_idx]
         model.add_operations_edge(
             op1, op2, precedence_types=[PrecedenceType.END_BEFORE_START]
         )
+
+# 1 duration setup times between each pair of operations and machine.
+for op1, op2 in product(model.operations, model.operations):
+    for machine in machines:
+        model.add_setup_time(op1, op2, machine, 1)
 
 # All machines can access each other.
 for m1 in machines:

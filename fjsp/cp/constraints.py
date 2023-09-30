@@ -98,7 +98,25 @@ def no_overlap_constraints(
     Creates the no-overlap constraints for machines, ensuring that no two
     intervals in a sequence variable are overlapping.
     """
-    return [m.no_overlap(sequences[mach]) for mach in range(data.num_machines)]
+    constraints = []
+    for machine in range(data.num_machines):
+        sequence = sequences[machine]
+
+        # Get all operations in order of their position in the sequence.
+        ops = [
+            int(interval.get_name()[1:].split("_")[0])
+            for interval in sequence.get_interval_variables()
+        ]
+
+        # Create the distance matrix for the no-overlap constraint, with
+        # zero setup times of the data is not available.
+        distance_matrix = [
+            [data.setup_times.get((op1, op2, machine), 0) for op2 in ops]
+            for op1 in ops
+        ]
+        constraints.append(m.no_overlap(sequence, distance_matrix))
+
+    return constraints
 
 
 def machine_accessibility_constraints(

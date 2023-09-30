@@ -17,6 +17,7 @@ class Model:
         self._machine_graph = nx.DiGraph()
         self._operations_graph = nx.DiGraph()
         self._processing_times: dict[tuple[int, int], int] = {}
+        self._setup_times: dict[tuple[int, int, int], int] = {}
 
         self._id2job: dict[int, int] = {}
         self._id2machine: dict[int, int] = {}
@@ -42,6 +43,14 @@ class Model:
     def operations_graph(self):
         return self._operations_graph
 
+    @property
+    def processing_times(self) -> dict[tuple[int, int], int]:
+        return self._processing_times
+
+    @property
+    def setup_times(self) -> dict[tuple[int, int, int], int]:
+        return self._setup_times
+
     def data(self) -> ProblemData:
         """
         Returns a ProblemData object containing the problem instance.
@@ -52,7 +61,8 @@ class Model:
             self.operations,
             self.machine_graph,
             self.operations_graph,
-            self._processing_times,
+            self.processing_times,
+            self.setup_times,
         )
 
     def add_job(
@@ -154,3 +164,16 @@ class Model:
         machine_idx = self._id2machine[id(machine)]
 
         self._processing_times[op_idx, machine_idx] = duration
+
+    def add_setup_time(
+        self,
+        operation1: Operation,
+        opteration2: Operation,
+        machine: Machine,
+        duration: int,
+    ):
+        op_idx1 = self._id2op[id(operation1)]
+        op_idx2 = self._id2op[id(opteration2)]
+        machine_idx = self._id2machine[id(machine)]
+
+        self._setup_times[op_idx1, op_idx2, machine_idx] = duration
