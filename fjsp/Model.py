@@ -17,6 +17,10 @@ class Model:
         self._machine_graph = nx.DiGraph()
         self._operations_graph = nx.DiGraph()
 
+        self._id2job = {}
+        self._id2machine = {}
+        self._id2op = {}
+
     @property
     def jobs(self) -> list[Job]:
         return self._jobs
@@ -68,7 +72,10 @@ class Model:
             Optional name of the job.
         """
         job = Job(release_date, deadline, name)
+
+        self._id2job[id(job)] = len(self.jobs)
         self._jobs.append(job)
+
         return job
 
     def add_machine(self, name: Optional[str] = None) -> Machine:
@@ -82,8 +89,10 @@ class Model:
         """
         machine = Machine(name)
 
+        idx = len(self.machines)
+        self._machine_graph.add_node(idx)
+        self._id2machine[id(machine)] = idx
         self._machines.append(machine)
-        self._machine_graph.add_node(len(self.machines))
 
         return machine
 
@@ -108,12 +117,14 @@ class Model:
         name: Optional[str]
             Optional name of the operation.
         """
-        job_idx = self.jobs.index(job)
-        machine_idcs = [self.machines.index(m) for m in machines]
+        job_idx = self._id2job[id(job)]
+        machine_idcs = [self._id2machine[id(m)] for m in machines]
         operation = Operation(job_idx, machine_idcs, durations, name)
 
+        idx = len(self.operations)
+        self._operations_graph.add_node(idx)
+        self._id2op[id(operation)] = idx
         self._operations.append(operation)
-        self._operations_graph.add_node(len(self.operations))
 
         return operation
 
