@@ -151,44 +151,106 @@ class ProblemData:
 
     @property
     def jobs(self) -> list[Job]:
+        """
+        Returns the job data of this problem instance.
+        """
         return self._jobs
 
     @property
     def machines(self) -> list[Machine]:
+        """
+        Returns the machine data of this problem instance.
+        """
         return self._machines
 
     @property
     def operations(self) -> list[Operation]:
+        """
+        Returns the operation data of this problem instance.
+        """
         return self._operations
 
     @property
     def machine_graph(self) -> nx.DiGraph:
+        """
+        Directed graph of machines accesibility constraints. An arc (i, j)
+        represents that machine i can be accessed from machine j.
+
+        Returns
+        -------
+        nx.DiGraph
+            Directed graph of machines accesibility constraints.
+        """
         return self._machine_graph
 
     @property
     def operations_graph(self) -> nx.DiGraph:
+        """
+        Directed graph of operations precedence constraints. Each arc (i, j)
+        represents a set of precedence constraints between operations i and j,
+        which are stored in the attribute ``precendence_types`` of the arc.
+
+        Returns
+        -------
+        nx.DiGraph
+            Directed graph of operations precedence constraints.
+        """
         return self._operations_graph
 
     @property
     def processing_times(self) -> dict[tuple[int, int], int]:
+        """
+        Processing times of operations on machines.
+
+        Returns
+        -------
+        dict[tuple[int, int], int]
+            Processing times of operations on machines. The dictionary is
+            indexed by tuples of the form (operation_idx, machine_idx).
+        """
         return self._processing_times
 
     @property
     def job2ops(self) -> list[list[int]]:
+        """
+        List of operation indices for each job.
+
+        Returns
+        -------
+        list[list[int]]
+            List of operation indices for each job.
+        """
         return self._job2ops
 
     @property
     def machine2ops(self) -> list[list[int]]:
+        """
+        List of operation indices for each machine.
+
+        Returns
+        -------
+        list[list[int]]
+            List of operation indices for each machine.
+        """
         return self._machine2ops
 
     @property
     def num_jobs(self) -> int:
+        """
+        Returns the number of jobs in this instance.
+        """
         return len(self._jobs)
 
     @property
     def num_machines(self) -> int:
+        """
+        Returns the number of machines in this instance.
+        """
         return len(self._machines)
 
     @property
     def num_operations(self) -> int:
+        """
+        Returns the number of operations in this instance.
+        """
         return len(self._operations)
