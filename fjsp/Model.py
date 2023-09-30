@@ -1,6 +1,7 @@
 from typing import Iterable, Optional
 
 import networkx as nx
+import numpy as np
 
 from .ProblemData import Job, Machine, Operation, PrecedenceType, ProblemData
 
@@ -55,6 +56,15 @@ class Model:
         """
         Returns a ProblemData object containing the problem instance.
         """
+
+        # Process setup times into a 3D array with zero default.
+        num_machines = len(self.machines)
+        num_ops = len(self.operations)
+        setup_times = np.zeros((num_ops, num_ops, num_machines), dtype=int)
+
+        for (op1, op2, machine), duration in self.setup_times.items():
+            setup_times[op1, op2, machine] = duration
+
         return ProblemData(
             self.jobs,
             self.machines,
@@ -62,7 +72,7 @@ class Model:
             self.machine_graph,
             self.operations_graph,
             self.processing_times,
-            self.setup_times,
+            setup_times,
         )
 
     def add_job(

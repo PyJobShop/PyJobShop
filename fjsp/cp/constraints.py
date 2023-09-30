@@ -1,5 +1,6 @@
 from itertools import product
 
+import numpy as np
 from docplex.cp.expression import CpoExpr, CpoIntervalVar, CpoSequenceVar
 from docplex.cp.model import CpoModel
 
@@ -108,12 +109,8 @@ def no_overlap_constraints(
             for interval in sequence.get_interval_variables()
         ]
 
-        # Create the distance matrix for the no-overlap constraint, with
-        # zero setup times of the data is not available.
-        distance_matrix = [
-            [data.setup_times.get((op1, op2, machine), 0) for op2 in ops]
-            for op1 in ops
-        ]
+        # Get the setup times for the operations on the current machine.
+        distance_matrix = data.setup_times[:, :, machine][np.ix_(ops, ops)]
         constraints.append(m.no_overlap(sequence, distance_matrix))
 
     return constraints

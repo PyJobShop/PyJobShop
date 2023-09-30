@@ -2,6 +2,7 @@ from enum import Enum, EnumMeta
 from typing import Optional
 
 import networkx as nx
+import numpy as np
 
 
 class Job:
@@ -213,16 +214,16 @@ class ProblemData:
         return self._processing_times
 
     @property
-    def setup_times(self) -> dict[tuple[int, int, int], int]:
+    def setup_times(self) -> np.ndarray:
         """
         Sequence-dependent setup times between operations on a given machine.
 
         Returns
         -------
-        dict[tuple[int, int, int], int]
+        np.ndarray
             Sequence-dependent setup times between operations on a given
-            machine. The dictionary is indexed by tuples of the form
-            (operation_idx, operation_idx, machine_idx).
+            machine. The first two dimensions of the array are indexed by
+            operation indices, and the third dimension is indexed by machine.
         """
         return self._setup_times
 
