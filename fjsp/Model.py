@@ -16,10 +16,11 @@ class Model:
         self._operations = []
         self._machine_graph = nx.DiGraph()
         self._operations_graph = nx.DiGraph()
+        self._processing_times: dict[tuple[int, int], int] = {}
 
-        self._id2job = {}
-        self._id2machine = {}
-        self._id2op = {}
+        self._id2job: dict[int, int] = {}
+        self._id2machine: dict[int, int] = {}
+        self._id2op: dict[int, int] = {}
 
     @property
     def jobs(self) -> list[Job]:
@@ -51,6 +52,7 @@ class Model:
             self.operations,
             self.machine_graph,
             self.operations_graph,
+            self._processing_times,
         )
 
     def add_job(
@@ -97,11 +99,7 @@ class Model:
         return machine
 
     def add_operation(
-        self,
-        job: Job,
-        machines: list[Machine],
-        durations: list[int],
-        name: Optional[str] = None,
+        self, job: Job, machines: list[Machine], name: Optional[str] = None
     ) -> Operation:
         """
         Adds an operation to the model.
@@ -112,14 +110,12 @@ class Model:
             Job to which the operation belongs.
         machines: list[Machine]
             Eligible machines that can process the operation.
-        durations: list[int]
-            Durations of the operation on each machine.
         name: Optional[str]
             Optional name of the operation.
         """
         job_idx = self._id2job[id(job)]
         machine_idcs = [self._id2machine[id(m)] for m in machines]
-        operation = Operation(job_idx, machine_idcs, durations, name)
+        operation = Operation(job_idx, machine_idcs, name)
 
         idx = len(self.operations)
         self._id2op[id(operation)] = idx
@@ -150,3 +146,11 @@ class Model:
         idx1 = self.machines.index(machine1)
         idx2 = self.machines.index(machine2)
         self._machine_graph.add_edge(idx1, idx2)
+
+    def add_processing_time(
+        self, operation: Operation, machine: Machine, duration: int
+    ):
+        op_idx = self._id2op[id(operation)]
+        machine_idx = self._id2machine[id(machine)]
+
+        self._processing_times[op_idx, machine_idx] = duration

@@ -59,22 +59,15 @@ class Operation:
         Index of the job to which the operation belongs.
     machines: list[int]
         Indices of machines that can process the operation.
-    durations: list[int]
-        Durations of the operation on each machine.
     name: Optional[str]
         Name of the operation.
     """
 
     def __init__(
-        self,
-        job: int,
-        machines: list[int],
-        durations: list[int],
-        name: Optional[str] = None,
+        self, job: int, machines: list[int], name: Optional[str] = None
     ):
         self._job = job
         self._machines = machines
-        self._durations = durations
         self._name = name
 
     @property
@@ -84,10 +77,6 @@ class Operation:
     @property
     def machines(self) -> list[int]:
         return self._machines
-
-    @property
-    def durations(self) -> list[int]:
-        return self._durations
 
     @property
     def name(self) -> Optional[str]:
@@ -140,12 +129,14 @@ class ProblemData:
         operations: list[Operation],
         machine_graph: nx.DiGraph,
         operations_graph: nx.DiGraph,
+        processing_times: dict[tuple[int, int], int],
     ):
         self._jobs = jobs
         self._machines = machines
         self._operations = operations
         self._machine_graph = machine_graph
         self._operations_graph = operations_graph
+        self._processing_times = processing_times
 
         self._job2ops: list[list[int]] = [[] for _ in range(self.num_jobs)]
         self._machine2ops: list[list[int]] = [
@@ -177,6 +168,10 @@ class ProblemData:
     @property
     def operations_graph(self) -> nx.DiGraph:
         return self._operations_graph
+
+    @property
+    def processing_times(self) -> dict[tuple[int, int], int]:
+        return self._processing_times
 
     @property
     def job2ops(self) -> list[list[int]]:
