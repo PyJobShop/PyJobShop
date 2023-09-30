@@ -126,7 +126,7 @@ class ProblemData:
         machines: list[Machine],
         operations: list[Operation],
         machine_graph: nx.DiGraph,
-        operations_graph: nx.DiGraph,
+        precedences: dict[tuple[int, int], list[PrecedenceType]],
         processing_times: np.ndarray,
         setup_times: np.ndarray,
     ):
@@ -134,7 +134,7 @@ class ProblemData:
         self._machines = machines
         self._operations = operations
         self._machine_graph = machine_graph
-        self._operations_graph = operations_graph
+        self._precedences = precedences
         self._processing_times = processing_times
         self._setup_times = setup_times
 
@@ -184,18 +184,17 @@ class ProblemData:
         return self._machine_graph
 
     @property
-    def operations_graph(self) -> nx.DiGraph:
+    def precedences(self) -> dict[tuple[int, int], list[PrecedenceType]]:
         """
-        Directed graph of operations precedence constraints. Each arc (i, j)
-        represents a set of precedence constraints between operations i and j,
-        which are stored in the attribute ``precendence_types`` of the arc.
+        Precedence constraints between operations.
 
         Returns
         -------
-        nx.DiGraph
-            Directed graph of operations precedence constraints.
+        dict[tuple[int, int], list[PrecedenceType]]
+            Dict of precedence constraints between operations. Each precedence
+            constraint is a list of precedence types.
         """
-        return self._operations_graph
+        return self._precedences
 
     @property
     def processing_times(self) -> np.ndarray:

@@ -2,7 +2,7 @@ import networkx as nx
 import numpy as np
 from numpy.testing import assert_allclose, assert_equal
 
-from fjsp import Job, Machine, Operation, ProblemData
+from fjsp import Job, Machine, Operation, PrecedenceType, ProblemData
 
 
 def test_job_attributes():
@@ -69,9 +69,10 @@ def test_problem_data_attributes():
     machine_graph = nx.DiGraph()
     machine_graph.add_nodes_from(range(5))
 
-    operations_graph = nx.DiGraph()
-    operations_graph.add_nodes_from(range(5))
-
+    precedences = {
+        key: [PrecedenceType.END_BEFORE_START]
+        for key in ((0, 1), (2, 3), (4, 5))
+    }
     processing_times = np.ones((5, 5), dtype=int)
     setup_times = np.ones((5, 5, 5), dtype=int)
 
@@ -80,7 +81,7 @@ def test_problem_data_attributes():
         machines,
         operations,
         machine_graph,
-        operations_graph,
+        precedences,
         processing_times,
         setup_times,
     )
@@ -89,7 +90,7 @@ def test_problem_data_attributes():
     assert_equal(data.machines, machines)
     assert_equal(data.operations, operations)
     assert_equal(data.machine_graph, machine_graph)
-    assert_equal(data.operations_graph, operations_graph)
+    assert_equal(data.precedences, precedences)
     assert_allclose(data.processing_times, processing_times)
     assert_allclose(data.setup_times, setup_times)
 

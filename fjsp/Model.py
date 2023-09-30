@@ -1,4 +1,4 @@
-from typing import Iterable, Optional
+from typing import Optional
 
 import networkx as nx
 import numpy as np
@@ -18,7 +18,7 @@ class Model:
         self._machines = []
         self._operations = []
         self._machine_graph = nx.DiGraph()
-        self._operations_graph = nx.DiGraph()
+        self._precedences: dict[tuple[int, int], list[PrecedenceType]] = {}
         self._processing_times: dict[tuple[int, int], int] = {}
         self._setup_times: dict[tuple[int, int, int], int] = {}
 
@@ -39,12 +39,12 @@ class Model:
         return self._operations
 
     @property
-    def machine_graph(self):
-        return self._machine_graph
+    def precedences(self) -> dict[tuple[int, int], list[PrecedenceType]]:
+        return self._precedences
 
     @property
-    def operations_graph(self):
-        return self._operations_graph
+    def machine_graph(self):
+        return self._machine_graph
 
     def data(self) -> ProblemData:
         """
@@ -68,7 +68,7 @@ class Model:
             self.machines,
             self.operations,
             self.machine_graph,
-            self.operations_graph,
+            self.precedences,
             processing_times,
             setup_times,
         )
@@ -137,7 +137,6 @@ class Model:
 
         idx = len(self.operations)
         self._id2op[id(operation)] = idx
-        self._operations_graph.add_node(idx)
         self._operations.append(operation)
 
         return operation
@@ -146,19 +145,15 @@ class Model:
         self,
         operation1: Operation,
         operation2: Operation,
-        precedence_types: Iterable[PrecedenceType] = (
-            PrecedenceType.END_BEFORE_START,
-        ),
+        precedence_types: list[PrecedenceType],
     ):
         if any(pt not in PrecedenceType for pt in precedence_types):
             msg = "Precedence types must be of type PrecedenceType."
             raise ValueError(msg)
 
-        self._operations_graph.add_edge(
-            self.operations.index(operation1),
-            self.operations.index(operation2),
-            precedence_types=precedence_types,
-        )
+        op1 = self._id2op[id(operation1)]
+        op2 = self._id2op[id(operation2)]
+        self._precedences[op1, op2] = precedence_types
 
     def add_machines_edge(self, machine1: Machine, machine2: Machine):
         idx1 = self.machines.index(machine1)
