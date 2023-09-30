@@ -124,17 +124,17 @@ class ProblemData:
         jobs: list[Job],
         machines: list[Machine],
         operations: list[Operation],
-        accessibility: np.ndarray,
         precedences: dict[tuple[int, int], list[PrecedenceType]],
         processing_times: np.ndarray,
+        accessibility: np.ndarray,
         setup_times: np.ndarray,
     ):
         self._jobs = jobs
         self._machines = machines
         self._operations = operations
-        self._accessibility = accessibility
         self._precedences = precedences
         self._processing_times = processing_times
+        self._accessibility = accessibility
         self._setup_times = setup_times
 
         self._job2ops: list[list[int]] = [[] for _ in range(self.num_jobs)]
@@ -170,15 +170,6 @@ class ProblemData:
         return self._operations
 
     @property
-    def accessibility(self) -> np.ndarray:
-        """
-        Returns the machine accessibility matrix of this problem instance.
-        A entry (i, j) is True if machine i can be accessed from machine j,
-        and False otherwise.
-        """
-        return self._accessibility
-
-    @property
     def precedences(self) -> dict[tuple[int, int], list[PrecedenceType]]:
         """
         Precedence constraints between operations.
@@ -190,6 +181,15 @@ class ProblemData:
             constraint is a list of precedence types.
         """
         return self._precedences
+
+    @property
+    def accessibility(self) -> np.ndarray:
+        """
+        Returns the machine accessibility matrix of this problem instance.
+        A entry (i, j) is True if machine i can be accessed from machine j,
+        and False otherwise.
+        """
+        return self._accessibility
 
     @property
     def processing_times(self) -> np.ndarray:

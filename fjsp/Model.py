@@ -16,8 +16,8 @@ class Model:
         self._jobs = []
         self._machines = []
         self._operations = []
-        self._accessibility: dict[tuple[int, int], bool] = {}
         self._precedences: dict[tuple[int, int], list[PrecedenceType]] = {}
+        self._accessibility: dict[tuple[int, int], bool] = {}
         self._processing_times: dict[tuple[int, int], int] = {}
         self._setup_times: dict[tuple[int, int, int], int] = {}
 
@@ -37,7 +37,6 @@ class Model:
     def operations(self) -> list[Operation]:
         return self._operations
 
-    @property
     def data(self) -> ProblemData:
         """
         Returns a ProblemData object containing the problem instance.
@@ -45,15 +44,15 @@ class Model:
         num_ops = len(self.operations)
         num_machines = len(self.machines)
 
-        # Convert accessibility into a 2D array with True as default.
-        accessibility = np.full((num_machines, num_machines), True)
-        for (machine1, machine2), is_accessible in self._accessibility.items():
-            accessibility[machine1, machine2] = is_accessible
-
         # Convert processing times into a 2D array with large value as default.
         processing_times = np.full((num_ops, num_machines), MAX_VALUE)
         for (op, machine), duration in self._processing_times.items():
             processing_times[op, machine] = duration
+
+        # Convert accessibility into a 2D array with True as default.
+        accessibility = np.full((num_machines, num_machines), True)
+        for (machine1, machine2), is_accessible in self._accessibility.items():
+            accessibility[machine1, machine2] = is_accessible
 
         # Convert setup times into a 3D array with zero as default.
         setup_times = np.zeros((num_ops, num_ops, num_machines), dtype=int)
@@ -64,9 +63,9 @@ class Model:
             self.jobs,
             self.machines,
             self.operations,
-            accessibility,
             self._precedences,
             processing_times,
+            accessibility,
             setup_times,
         )
 
@@ -149,19 +148,19 @@ class Model:
         op2 = self._id2op[id(operation2)]
         self._precedences[op1, op2] = precedence_types
 
-    def add_accessibility(
-        self, machine1: Machine, machine2: Machine, is_accessible: bool
-    ):
-        idx1 = self._id2machine[id(machine1)]
-        idx2 = self._id2machine[id(machine2)]
-        self._accessibility[idx1, idx2] = is_accessible
-
     def add_processing_time(
         self, operation: Operation, machine: Machine, duration: int
     ):
         op_idx = self._id2op[id(operation)]
         machine_idx = self._id2machine[id(machine)]
         self._processing_times[op_idx, machine_idx] = duration
+
+    def add_accessibility(
+        self, machine1: Machine, machine2: Machine, is_accessible: bool
+    ):
+        idx1 = self._id2machine[id(machine1)]
+        idx2 = self._id2machine[id(machine2)]
+        self._accessibility[idx1, idx2] = is_accessible
 
     def add_setup_time(
         self,

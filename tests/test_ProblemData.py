@@ -64,30 +64,30 @@ def test_problem_data_attributes():
     jobs = [Job() for _ in range(5)]
     machines = [Machine() for _ in range(5)]
     operations = [Operation(idx, [idx]) for idx in range(5)]
-    accessibility = np.full((5, 5), True)
     precedences = {
         key: [PrecedenceType.END_BEFORE_START]
         for key in ((0, 1), (2, 3), (4, 5))
     }
     processing_times = np.ones((5, 5), dtype=int)
+    accessibility = np.full((5, 5), True)
     setup_times = np.ones((5, 5, 5), dtype=int)
 
     data = ProblemData(
         jobs,
         machines,
         operations,
-        accessibility,
         precedences,
         processing_times,
+        accessibility,
         setup_times,
     )
 
     assert_equal(data.jobs, jobs)
     assert_equal(data.machines, machines)
     assert_equal(data.operations, operations)
-    assert_equal(data.accessibility, accessibility)
     assert_equal(data.precedences, precedences)
     assert_allclose(data.processing_times, processing_times)
+    assert_equal(data.accessibility, accessibility)
     assert_allclose(data.setup_times, setup_times)
 
     assert_equal(data.job2ops, [[0], [1], [2], [3], [4]])
