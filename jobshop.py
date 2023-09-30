@@ -35,7 +35,7 @@ for job_idx, tasks in enumerate(jobs_data):
     # Impose linear routing precedence constraints.
     for op_idx in range(1, len(ops)):
         op1, op2 = ops[op_idx - 1], ops[op_idx]
-        model.add_operations_edge(
+        model.add_precedence(
             op1, op2, precedence_types=[PrecedenceType.END_BEFORE_START]
         )
 
@@ -43,11 +43,6 @@ for job_idx, tasks in enumerate(jobs_data):
 for op1, op2 in product(model.operations, model.operations):
     for machine in machines:
         model.add_setup_time(op1, op2, machine, 1)
-
-# All machines can access each other.
-for m1 in machines:
-    for m2 in machines:
-        model.add_machines_edge(m1, m2)
 
 # Convert model to problem data and solve.
 data = model.data()

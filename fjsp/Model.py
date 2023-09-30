@@ -141,7 +141,7 @@ class Model:
 
         return operation
 
-    def add_operations_edge(
+    def add_precedence(
         self,
         operation1: Operation,
         operation2: Operation,
