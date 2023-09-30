@@ -6,7 +6,7 @@ from docplex.cp.model import CpoModel
 from fjsp.ProblemData import ProblemData
 
 OpsVars = list[CpoIntervalVar]
-AssignVars = dict[int, dict[int, CpoIntervalVar]]
+AssignVars = dict[tuple[int, int], CpoIntervalVar]
 SeqVars = list[CpoSequenceVar]
 
 
@@ -56,8 +56,8 @@ def assignment_precedence_constraints(
             if op1 == op2 or (op1, op2) not in data.operations_graph.edges:
                 continue
 
-            var1 = assign[op1][machine]
-            var2 = assign[op2][machine]
+            var1 = assign[op1, machine]
+            var2 = assign[op2, machine]
             edge = data.operations_graph.edges[op1, op2]
 
             for prec_type in edge["precedence_types"]:
@@ -85,7 +85,7 @@ def alternative_constraints(
     constraints = []
 
     for op in range(data.num_operations):
-        optional = [assign[op][mach] for mach in data.operations[op].machines]
+        optional = [assign[op, mach] for mach in data.operations[op].machines]
         constraints.append(m.alternative(ops[op], optional))
 
     return constraints
@@ -119,8 +119,8 @@ def machine_accessibility_constraints(
             if (mach1, mach2) not in data.machine_graph.edges:
                 # If (m1 -> m2) is not an edge in the machine graph, then
                 # we cannot schedule operation 1 on m1 and operation 2 on m2.
-                frm = assign[op1][mach1]
-                to = assign[op2][mach2]
+                frm = assign[op1, mach1]
+                to = assign[op2, mach2]
                 constraints.append(m.presence_of(frm) + m.presence_of(to) <= 1)
 
     return constraints

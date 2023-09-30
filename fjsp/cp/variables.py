@@ -3,7 +3,7 @@ from docplex.cp.model import CpoModel
 
 from fjsp.ProblemData import ProblemData
 
-AssignVars = dict[int, dict[int, CpoIntervalVar]]
+AssignVars = dict[tuple[int, int], CpoIntervalVar]
 
 
 def operation_variables(
@@ -23,11 +23,9 @@ def assignment_variables(m: CpoModel, data: ProblemData) -> AssignVars:
     variables = {}
 
     for op, op_data in enumerate(data.operations):
-        op_vars = {}
-
         for idx, machine in enumerate(op_data.machines):
             var = m.interval_var(name=f"A{op}_{machine}", optional=True)
-            op_vars[machine] = var
+            variables[op, machine] = var
 
             # The duration of the operation on the machine is at least the
             # duration of the operation; it could be longer due to blocking.
@@ -40,8 +38,6 @@ def assignment_variables(m: CpoModel, data: ProblemData) -> AssignVars:
                 m.start_of(var)
                 >= data.jobs[op_data.job].release_date * m.presence_of(var)
             )
-
-        variables[op] = op_vars
 
     return variables
 
@@ -56,7 +52,7 @@ def sequence_variables(
     variables = []
 
     for machine, operations in enumerate(data.machine2ops):
-        intervals = [assign[op][machine] for op in operations]
+        intervals = [assign[op, machine] for op in operations]
         variables.append(m.sequence_var(name=f"S{machine}", vars=intervals))
 
     return variables
