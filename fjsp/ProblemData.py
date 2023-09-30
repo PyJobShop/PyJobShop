@@ -1,70 +1,86 @@
-from collections import defaultdict
-from dataclasses import dataclass
 from enum import Enum, EnumMeta
 from typing import Optional
 
 import networkx as nx
 
 
-@dataclass(frozen=True, eq=True)
 class Job:
-    idx: int
-    release_date: int = 0
-    deadline: Optional[int] = None
-    name: Optional[str] = None
+    def __init__(
+        self,
+        release_date: int = 0,
+        deadline: Optional[int] = None,
+        name: Optional[str] = None,
+    ):
+        self._release_date = release_date
+        self._deadline = deadline
+        self._name = name or "Job"
 
-    def __str__(self):
-        return self.name if self.name else f"Job {self.idx}"
+    @property
+    def release_date(self) -> int:
+        return self._release_date
+
+    @property
+    def deadline(self) -> Optional[int]:
+        return self._deadline
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    def __str__(self) -> str:
+        return self.name
 
 
-@dataclass(frozen=True, eq=True)
 class Machine:
     """
-    A machine is a resource that can process operations.
+    A machine represents a resource that can process operations.
 
     Parameters
     ----------
-    idx: int
-        Unique identifier of the machine.
     name: Optional[str]
-        Name of the machine. If not provided, the name will be "Machine {idx}".
+        Optional name of the machine.
     """
 
-    idx: int
-    name: Optional[str] = None
+    def __init__(self, name: Optional[str] = None):
+        self._name = name
 
-    def __str__(self):
-        return self.name if self.name else f"Machine {self.idx}"
+    @property
+    def name(self) -> Optional[str]:
+        return self._name
 
 
-@dataclass(frozen=True, eq=True)
 class Operation:
     """
     An operation is a task that must be processed by a machine.
 
     Parameters
     ----------
-    idx: int
-        Unique identifier of the operation.
-    job: Job
-        Job to which the operation belongs.
-    machines: list[Machine]
-        Machines that can process the operation.
-    durations: list[int]
-        Durations of the operation on each machine.
+    job: int
+        Index of the job to which the operation belongs.
+    machines: list[int]
+        Indices of machines that can process the operation.
     name: Optional[str]
-        Name of the operation. If not provided, the name will be
-        "Operation {idx}".
+        Name of the operation.
     """
 
-    idx: int
-    job: Job
-    machines: list[Machine]
-    durations: list[int]
-    name: Optional[str] = None
+    def __init__(
+        self, job: int, machines: list[int], name: Optional[str] = None
+    ):
+        self._job = job
+        self._machines = machines
+        self._name = name
 
-    def __str__(self):
-        return self.name if self.name else f"Operation {self.idx}"
+    @property
+    def job(self) -> int:
+        return self._job
+
+    @property
+    def machines(self) -> list[int]:
+        return self._machines
+
+    @property
+    def name(self) -> Optional[str]:
+        return self._name
 
 
 class PrecedenceTypeMeta(EnumMeta):
@@ -113,58 +129,128 @@ class ProblemData:
         operations: list[Operation],
         machine_graph: nx.DiGraph,
         operations_graph: nx.DiGraph,
+        processing_times: dict[tuple[int, int], int],
     ):
         self._jobs = jobs
         self._machines = machines
         self._operations = operations
-        self._machine_graph = machine_graph  # TODO can we replace digraph?
+        self._machine_graph = machine_graph
         self._operations_graph = operations_graph
+        self._processing_times = processing_times
 
-        self._job2ops = defaultdict(list)
-        self._machine2ops = defaultdict(list)
+        self._job2ops: list[list[int]] = [[] for _ in range(self.num_jobs)]
+        self._machine2ops: list[list[int]] = [
+            [] for _ in range(self.num_machines)
+        ]
 
-        for op in operations:
-            self._job2ops[op.job].append(op)
+        for op, op_data in enumerate(self.operations):
+            self._job2ops[op_data.job].append(op)
 
-            for m in op.machines:
+            for m in op_data.machines:
                 self._machine2ops[m].append(op)
 
     @property
     def jobs(self) -> list[Job]:
+        """
+        Returns the job data of this problem instance.
+        """
         return self._jobs
 
     @property
     def machines(self) -> list[Machine]:
+        """
+        Returns the machine data of this problem instance.
+        """
         return self._machines
 
     @property
     def operations(self) -> list[Operation]:
+        """
+        Returns the operation data of this problem instance.
+        """
         return self._operations
 
     @property
-    def machine_graph(self):
+    def machine_graph(self) -> nx.DiGraph:
+        """
+        Directed graph of machines accesibility constraints. An arc (i, j)
+        represents that machine i can be accessed from machine j.
+
+        Returns
+        -------
+        nx.DiGraph
+            Directed graph of machines accesibility constraints.
+        """
         return self._machine_graph
 
     @property
-    def operations_graph(self):
+    def operations_graph(self) -> nx.DiGraph:
+        """
+        Directed graph of operations precedence constraints. Each arc (i, j)
+        represents a set of precedence constraints between operations i and j,
+        which are stored in the attribute ``precendence_types`` of the arc.
+
+        Returns
+        -------
+        nx.DiGraph
+            Directed graph of operations precedence constraints.
+        """
         return self._operations_graph
 
     @property
-    def job2ops(self) -> dict[Job, list[Operation]]:
+    def processing_times(self) -> dict[tuple[int, int], int]:
+        """
+        Processing times of operations on machines.
+
+        Returns
+        -------
+        dict[tuple[int, int], int]
+            Processing times of operations on machines. The dictionary is
+            indexed by tuples of the form (operation_idx, machine_idx).
+        """
+        return self._processing_times
+
+    @property
+    def job2ops(self) -> list[list[int]]:
+        """
+        List of operation indices for each job.
+
+        Returns
+        -------
+        list[list[int]]
+            List of operation indices for each job.
+        """
         return self._job2ops
 
     @property
-    def machine2ops(self) -> dict[Machine, list[Operation]]:
+    def machine2ops(self) -> list[list[int]]:
+        """
+        List of operation indices for each machine.
+
+        Returns
+        -------
+        list[list[int]]
+            List of operation indices for each machine.
+        """
         return self._machine2ops
 
     @property
     def num_jobs(self) -> int:
+        """
+        Returns the number of jobs in this instance.
+        """
         return len(self._jobs)
 
     @property
     def num_machines(self) -> int:
+        """
+        Returns the number of machines in this instance.
+        """
         return len(self._machines)
 
     @property
     def num_operations(self) -> int:
+        """
+        Returns the number of operations in this instance.
+        """
         return len(self._operations)

@@ -16,6 +16,11 @@ class Model:
         self._operations = []
         self._machine_graph = nx.DiGraph()
         self._operations_graph = nx.DiGraph()
+        self._processing_times: dict[tuple[int, int], int] = {}
+
+        self._id2job: dict[int, int] = {}
+        self._id2machine: dict[int, int] = {}
+        self._id2op: dict[int, int] = {}
 
     @property
     def jobs(self) -> list[Job]:
@@ -47,6 +52,7 @@ class Model:
             self.operations,
             self.machine_graph,
             self.operations_graph,
+            self._processing_times,
         )
 
     def add_job(
@@ -67,13 +73,11 @@ class Model:
         name: Optional[str]
             Optional name of the job.
         """
-        job = Job(
-            len(self.jobs),
-            release_date=release_date,
-            deadline=deadline,
-            name=name,
-        )
+        job = Job(release_date, deadline, name)
+
+        self._id2job[id(job)] = len(self.jobs)
         self._jobs.append(job)
+
         return job
 
     def add_machine(self, name: Optional[str] = None) -> Machine:
@@ -85,19 +89,17 @@ class Model:
         name: Optional[str]
             Optional name of the machine.
         """
-        machine = Machine(len(self.machines), name)
+        machine = Machine(name)
 
+        idx = len(self.machines)
+        self._id2machine[id(machine)] = idx
+        self._machine_graph.add_node(idx)
         self._machines.append(machine)
-        self._machine_graph.add_node(machine.idx)
 
         return machine
 
     def add_operation(
-        self,
-        job: Job,
-        machines: list[Machine],
-        durations: list[int],
-        name: Optional[str] = None,
+        self, job: Job, machines: list[Machine], name: Optional[str] = None
     ) -> Operation:
         """
         Adds an operation to the model.
@@ -108,17 +110,17 @@ class Model:
             Job to which the operation belongs.
         machines: list[Machine]
             Eligible machines that can process the operation.
-        durations: list[int]
-            Durations of the operation on each machine.
         name: Optional[str]
             Optional name of the operation.
         """
-        operation = Operation(
-            len(self.operations), job, machines, durations, name
-        )
+        job_idx = self._id2job[id(job)]
+        machine_idcs = [self._id2machine[id(m)] for m in machines]
+        operation = Operation(job_idx, machine_idcs, name)
 
+        idx = len(self.operations)
+        self._id2op[id(operation)] = idx
+        self._operations_graph.add_node(idx)
         self._operations.append(operation)
-        self._operations_graph.add_node(operation.idx)
 
         return operation
 
@@ -135,8 +137,20 @@ class Model:
             raise ValueError(msg)
 
         self._operations_graph.add_edge(
-            operation1.idx, operation2.idx, precedence_types=precedence_types
+            self.operations.index(operation1),
+            self.operations.index(operation2),
+            precedence_types=precedence_types,
         )
 
     def add_machines_edge(self, machine1: Machine, machine2: Machine):
-        self._machine_graph.add_edge(machine1.idx, machine2.idx)
+        idx1 = self.machines.index(machine1)
+        idx2 = self.machines.index(machine2)
+        self._machine_graph.add_edge(idx1, idx2)
+
+    def add_processing_time(
+        self, operation: Operation, machine: Machine, duration: int
+    ):
+        op_idx = self._id2op[id(operation)]
+        machine_idx = self._id2machine[id(machine)]
+
+        self._processing_times[op_idx, machine_idx] = duration

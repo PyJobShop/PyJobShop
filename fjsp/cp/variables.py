@@ -3,7 +3,7 @@ from docplex.cp.model import CpoModel
 
 from fjsp.ProblemData import ProblemData
 
-AssignVars = dict[int, dict[int, CpoIntervalVar]]
+AssignVars = dict[tuple[int, int], CpoIntervalVar]
 
 
 def operation_variables(
@@ -21,23 +21,24 @@ def assignment_variables(m: CpoModel, data: ProblemData) -> AssignVars:
     machine pair.
     """
     variables = {}
-    for op in data.operations:
-        op_vars = {}
 
-        for idx, machine in enumerate(op.machines):
-            var = m.interval_var(
-                name=f"A{op.idx}_{machine.idx}", optional=True
-            )
-            op_vars[machine.idx] = var
+    for op, op_data in enumerate(data.operations):
+        for machine in op_data.machines:
+            var = m.interval_var(name=f"A{op}_{machine}", optional=True)
+            variables[op, machine] = var
 
             # The duration of the operation on the machine is at least the
             # duration of the operation; it could be longer due to blocking.
-            m.add(m.size_of(var) >= op.durations[idx] * m.presence_of(var))
+            m.add(
+                m.size_of(var)
+                >= data.processing_times[op, machine] * m.presence_of(var)
+            )
 
             # Operation may not start before the job's release date if present.
-            m.add(m.start_of(var) >= op.job.release_date * m.presence_of(var))
-
-        variables[op.idx] = op_vars
+            m.add(
+                m.start_of(var)
+                >= data.jobs[op_data.job].release_date * m.presence_of(var)
+            )
 
     return variables
 
@@ -51,10 +52,8 @@ def sequence_variables(
     """
     variables = []
 
-    for machine, ops in data.machine2ops.items():
-        intervals = [assign[op.idx][machine.idx] for op in ops]
-        variables.append(
-            m.sequence_var(name=f"S{machine.idx}", vars=intervals)
-        )
+    for machine, operations in enumerate(data.machine2ops):
+        intervals = [assign[op, machine] for op in operations]
+        variables.append(m.sequence_var(name=f"S{machine}", vars=intervals))
 
     return variables
