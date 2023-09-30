@@ -14,7 +14,7 @@ class Job:
     ):
         self._release_date = release_date
         self._deadline = deadline
-        self._name = name or "Job"
+        self._name = name
 
     @property
     def release_date(self) -> int:
@@ -25,11 +25,8 @@ class Job:
         return self._deadline
 
     @property
-    def name(self) -> str:
+    def name(self) -> Optional[str]:
         return self._name
-
-    def __str__(self) -> str:
-        return self.name
 
 
 class Machine:
