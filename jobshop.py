@@ -23,15 +23,17 @@ machines = [model.add_machine() for _ in range(3)]
 for job_idx, tasks in enumerate(jobs_data):
     ops = []
 
+    # Create operations.
     for machine_idx, _ in tasks:
         op = model.add_operation(jobs[job_idx], [machines[machine_idx]])
         ops.append(op)
 
+    # Add processing times.
     for idx, (machine_idx, duration) in enumerate(tasks):
         model.add_processing_time(ops[idx], machines[machine_idx], duration)
 
+    # Impose linear routing precedence constraints.
     for op_idx in range(1, len(ops)):
-        # Impose linear routing precedence constraints.
         op1, op2 = ops[op_idx - 1], ops[op_idx]
         model.add_operations_edge(
             op1, op2, precedence_types=[PrecedenceType.END_BEFORE_START]
@@ -47,9 +49,11 @@ for m1 in machines:
     for m2 in machines:
         model.add_machines_edge(m1, m2)
 
+# Convert model to problem data and solve.
 data = model.data()
 cp_model = default_model(data)
 result = cp_model.solve(TimeLimit=10)
-solution = result2solution(data, result)
 
+# Plot solution.
+solution = result2solution(data, result)
 plot(data, solution)
