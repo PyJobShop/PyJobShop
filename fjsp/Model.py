@@ -1,6 +1,7 @@
 from typing import Iterable, Optional
 
 import networkx as nx
+import numpy as np
 
 from .ProblemData import Job, Machine, Operation, PrecedenceType, ProblemData
 
@@ -17,6 +18,7 @@ class Model:
         self._machine_graph = nx.DiGraph()
         self._operations_graph = nx.DiGraph()
         self._processing_times: dict[tuple[int, int], int] = {}
+        self._setup_times: dict[tuple[int, int, int], int] = {}
 
         self._id2job: dict[int, int] = {}
         self._id2machine: dict[int, int] = {}
@@ -42,17 +44,35 @@ class Model:
     def operations_graph(self):
         return self._operations_graph
 
+    @property
+    def processing_times(self) -> dict[tuple[int, int], int]:
+        return self._processing_times
+
+    @property
+    def setup_times(self) -> dict[tuple[int, int, int], int]:
+        return self._setup_times
+
     def data(self) -> ProblemData:
         """
         Returns a ProblemData object containing the problem instance.
         """
+
+        # Convert setup times dict into a 3D array with zero as default.
+        num_machines = len(self.machines)
+        num_ops = len(self.operations)
+        setup_times = np.zeros((num_ops, num_ops, num_machines), dtype=int)
+
+        for (op1, op2, machine), duration in self.setup_times.items():
+            setup_times[op1, op2, machine] = duration
+
         return ProblemData(
             self.jobs,
             self.machines,
             self.operations,
             self.machine_graph,
             self.operations_graph,
-            self._processing_times,
+            self.processing_times,
+            setup_times,
         )
 
     def add_job(
@@ -154,3 +174,16 @@ class Model:
         machine_idx = self._id2machine[id(machine)]
 
         self._processing_times[op_idx, machine_idx] = duration
+
+    def add_setup_time(
+        self,
+        operation1: Operation,
+        opteration2: Operation,
+        machine: Machine,
+        duration: int,
+    ):
+        op_idx1 = self._id2op[id(operation1)]
+        op_idx2 = self._id2op[id(opteration2)]
+        machine_idx = self._id2machine[id(machine)]
+
+        self._setup_times[op_idx1, op_idx2, machine_idx] = duration

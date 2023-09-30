@@ -1,5 +1,6 @@
 from itertools import product
 
+import numpy as np
 from docplex.cp.expression import CpoExpr, CpoIntervalVar, CpoSequenceVar
 from docplex.cp.model import CpoModel
 
@@ -98,7 +99,21 @@ def no_overlap_constraints(
     Creates the no-overlap constraints for machines, ensuring that no two
     intervals in a sequence variable are overlapping.
     """
-    return [m.no_overlap(sequences[mach]) for mach in range(data.num_machines)]
+    constraints = []
+    for machine in range(data.num_machines):
+        sequence = sequences[machine]
+
+        # Get all operations in order of their position in the sequence.
+        ops = [
+            int(interval.get_name()[1:].split("_")[0])
+            for interval in sequence.get_interval_variables()
+        ]
+
+        # Get the setup times for the operations on the current machine.
+        distance_matrix = data.setup_times[:, :, machine][np.ix_(ops, ops)]
+        constraints.append(m.no_overlap(sequence, distance_matrix))
+
+    return constraints
 
 
 def machine_accessibility_constraints(
