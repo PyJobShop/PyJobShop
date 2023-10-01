@@ -53,6 +53,7 @@ def assignment_precedence_constraints(
 
             for prec_type in data.precedences[op1, op2]:
                 if prec_type == "previous":
+                    # TODO probably similar to setup times
                     raise NotImplementedError
                 elif prec_type == "same_unit":
                     expr = var1.is_present == var2.is_present
