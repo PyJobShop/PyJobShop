@@ -14,7 +14,7 @@ def main():
     machines = [model.add_machine() for _ in range(NUM_MACHINES)]
 
     for idx in range(NUM_MACHINES - 1):
-        model.add_machines_edge(machines[idx], machines[idx + 1])
+        model.add_access_constraint(machines[idx], machines[idx + 1])
 
     for job in jobs:
         # Create one operation per (job, machine) pair.
@@ -25,7 +25,7 @@ def main():
 
         # Create precedence constraints between operations.
         for idx in range(len(ops) - 1):
-            model.add_operations_edge(
+            model.add_precedence(
                 ops[idx],
                 ops[idx + 1],
                 precedence_types=[PrecedenceType.END_AT_START],  # blocking

@@ -25,10 +25,9 @@ class ScheduledOperation:
         self._start = start
         self._duration = duration
 
-        if assigned_machine not in [machine.idx for machine in op.machines]:
-            raise ValueError(
-                f"Operation {op} cannot be assigned to machine {assigned_machine}."
-            )
+        if assigned_machine not in list(op.machines):
+            msg = f"Operation {op} not allowed on machine {assigned_machine}."
+            raise ValueError(msg)
 
     @property
     def op(self) -> Operation:
