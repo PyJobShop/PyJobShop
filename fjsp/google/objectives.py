@@ -14,7 +14,7 @@ def makespan(
     """
     Minimizes the makespan of the schedule.
     """
-    makespan = model.NewIntVar(0, 2**25, "makespan")
+    makespan = model.NewIntVar(0, data.horizon, "makespan")
     completion_times = [ops[op].end for op in range(data.num_operations)]
 
     model.AddMaxEquality(makespan, completion_times)
