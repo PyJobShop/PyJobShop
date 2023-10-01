@@ -101,10 +101,46 @@ def no_overlap_constraints(
     """
     sequences = defaultdict(list)
     for (_, machine), var in assign.items():
-        sequences[machine].append(var.interval)
+        sequences[machine].append(var)
 
     for machine in range(data.num_machines):
-        m.AddNoOverlap(sequences[machine])
+        m.AddNoOverlap([var.interval for var in sequences[machine]])
+
+    # Sequence-dependent setup times.
+    for machine in range(data.num_machines):
+        arcs = []
+        for idx1, intv1 in enumerate(sequences[machine]):
+            arcs.append((0, idx1 + 1, m.NewBoolVar("Source")))
+            arcs.append((idx1 + 1, 0, m.NewBoolVar("Sink")))
+
+            for idx2, intv2 in enumerate(sequences[machine]):
+                if idx1 == idx2:
+                    continue
+
+                lit = m.NewBoolVar(f"{idx1} setup {idx2} on {machine}")
+                arcs.append((idx1 + 1, idx2 + 1, lit))
+
+                is_present1 = intv1.is_present
+                is_present2 = intv2.is_present
+
+                # Link the literal: it is true iff both intervals are present
+                # and idx => idx2 is true.
+                follows = m.NewBoolVar(f"{idx1} => {idx2} on {machine}")
+                literals = [follows, is_present1, is_present2]
+                m.AddBoolAnd(literals).OnlyEnforceIf(lit)
+
+                negated = [follows.Not(), is_present1.Not(), is_present2.Not()]
+                m.AddBoolOr(negated).OnlyEnforceIf(lit.Not())
+
+                op1 = int(intv1.interval.Name()[1:].split("_")[0])
+                op2 = int(intv2.interval.Name()[1:].split("_")[0])
+                setup = data.setup_times[op1, op2, machine]
+
+                expr = intv1.start >= intv2.end + setup
+                m.Add(expr).OnlyEnforceIf(lit)
+
+        m.AddCircuit(arcs)
+    pass
 
 
 def machine_accessibility_constraints(
