@@ -100,6 +100,22 @@ def no_overlap_constraints(
     """
     constraints = []
     for machine in range(data.num_machines):
+        constraints.append(m.no_overlap(sequences[machine]))
+
+    return constraints
+
+
+def setup_time_constraints(
+    m: CpoModel, data: ProblemData, sequences: SeqVars
+) -> list[CpoExpr]:
+    """
+    Setup time constraints for the operations, ensuring that the setup time
+    between two operations is respected.
+
+    # TODO Can we make this less duplicated?
+    """
+    constraints = []
+    for machine in range(data.num_machines):
         # Assumption is that the interval variables in the sequence variable
         # are ordered in the same way as the operations in machine2ops.
         ops = data.machine2ops[machine]

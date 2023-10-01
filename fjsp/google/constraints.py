@@ -107,7 +107,14 @@ def no_overlap_constraints(
     for machine in range(data.num_machines):
         m.AddNoOverlap([var.interval for var in sequences[machine]])
 
-    # Sequence-dependent setup times.
+
+def setup_times_constraints(
+    m: CpModel, data: ProblemData, assign: dict[tuple[int, int], AssignmentVar]
+):
+    sequences = defaultdict(list)
+    for (_, machine), var in assign.items():
+        sequences[machine].append(var)
+
     for machine in range(data.num_machines):
         arcs = []
         for idx1, intv1 in enumerate(sequences[machine]):
