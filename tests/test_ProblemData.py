@@ -69,7 +69,7 @@ def test_problem_data_attributes():
         for key in ((0, 1), (2, 3), (4, 5))
     }
     processing_times = np.ones((5, 5), dtype=int)
-    accessibility = np.full((5, 5), True)
+    access_matrix = np.full((5, 5), True)
     setup_times = np.ones((5, 5, 5), dtype=int)
 
     data = ProblemData(
@@ -78,7 +78,7 @@ def test_problem_data_attributes():
         operations,
         precedences,
         processing_times,
-        accessibility,
+        access_matrix,
         setup_times,
     )
 
@@ -87,7 +87,7 @@ def test_problem_data_attributes():
     assert_equal(data.operations, operations)
     assert_equal(data.precedences, precedences)
     assert_allclose(data.processing_times, processing_times)
-    assert_equal(data.accessibility, accessibility)
+    assert_equal(data.access_matrix, access_matrix)
     assert_allclose(data.setup_times, setup_times)
 
     assert_equal(data.job2ops, [[0], [1], [2], [3], [4]])
@@ -110,5 +110,5 @@ def test_problem_data_default_values():
         jobs, machines, operations, precedences, processing_times
     )
 
-    assert_allclose(data.accessibility, np.full((1, 1), True))
+    assert_allclose(data.access_matrix, np.full((1, 1), True))
     assert_allclose(data.setup_times, np.zeros((1, 1, 1), dtype=int))

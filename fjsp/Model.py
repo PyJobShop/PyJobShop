@@ -17,7 +17,7 @@ class Model:
         self._machines = []
         self._operations = []
         self._precedences: dict[tuple[int, int], list[PrecedenceType]] = {}
-        self._accessibility: dict[tuple[int, int], bool] = {}
+        self._access_matrix: dict[tuple[int, int], bool] = {}
         self._processing_times: dict[tuple[int, int], int] = {}
         self._setup_times: dict[tuple[int, int, int], int] = {}
 
@@ -49,10 +49,10 @@ class Model:
         for (op, machine), duration in self._processing_times.items():
             processing_times[op, machine] = duration
 
-        # Convert accessibility into a 2D array with True as default.
-        accessibility = np.full((num_machines, num_machines), True)
-        for (machine1, machine2), is_accessible in self._accessibility.items():
-            accessibility[machine1, machine2] = is_accessible
+        # Convert access matrix into a 2D array with True as default.
+        access_matrix = np.full((num_machines, num_machines), True)
+        for (machine1, machine2), is_accessible in self._access_matrix.items():
+            access_matrix[machine1, machine2] = is_accessible
 
         # Convert setup times into a 3D array with zero as default.
         setup_times = np.zeros((num_ops, num_ops, num_machines), dtype=int)
@@ -65,7 +65,7 @@ class Model:
             self.operations,
             self._precedences,
             processing_times,
-            accessibility,
+            access_matrix,
             setup_times,
         )
 
@@ -155,12 +155,12 @@ class Model:
         machine_idx = self._id2machine[id(machine)]
         self._processing_times[op_idx, machine_idx] = duration
 
-    def add_accessibility(
+    def add_access_constraint(
         self, machine1: Machine, machine2: Machine, is_accessible: bool
     ):
         idx1 = self._id2machine[id(machine1)]
         idx2 = self._id2machine[id(machine2)]
-        self._accessibility[idx1, idx2] = is_accessible
+        self._access_matrix[idx1, idx2] = is_accessible
 
     def add_setup_time(
         self,

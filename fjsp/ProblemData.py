@@ -126,7 +126,7 @@ class ProblemData:
         operations: list[Operation],
         precedences: dict[tuple[int, int], list[PrecedenceType]],
         processing_times: np.ndarray,
-        accessibility: Optional[np.ndarray] = None,
+        access_matrix: Optional[np.ndarray] = None,
         setup_times: Optional[np.ndarray] = None,
     ):
         self._jobs = jobs
@@ -138,9 +138,9 @@ class ProblemData:
         num_mach = self.num_machines
         num_ops = self.num_operations
 
-        self._accessibility = (
-            accessibility
-            if accessibility is not None
+        self._access_matrix = (
+            access_matrix
+            if access_matrix is not None
             else np.ones((num_mach, num_mach), dtype=bool)
         )
         self._setup_times = (
@@ -193,13 +193,13 @@ class ProblemData:
         return self._precedences
 
     @property
-    def accessibility(self) -> np.ndarray:
+    def access_matrix(self) -> np.ndarray:
         """
         Returns the machine accessibility matrix of this problem instance.
         A entry (i, j) is True if machine i can be accessed from machine j,
         and False otherwise.
         """
-        return self._accessibility
+        return self._access_matrix
 
     @property
     def processing_times(self) -> np.ndarray:
