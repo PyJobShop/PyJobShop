@@ -1,7 +1,6 @@
 from enum import Enum, EnumMeta
 from typing import Optional
 
-import networkx as nx
 import numpy as np
 
 
@@ -14,7 +13,7 @@ class Job:
     ):
         self._release_date = release_date
         self._deadline = deadline
-        self._name = name or "Job"
+        self._name = name
 
     @property
     def release_date(self) -> int:
@@ -25,11 +24,8 @@ class Job:
         return self._deadline
 
     @property
-    def name(self) -> str:
+    def name(self) -> Optional[str]:
         return self._name
-
-    def __str__(self) -> str:
-        return self.name
 
 
 class Machine:
@@ -67,6 +63,9 @@ class Operation:
     def __init__(
         self, job: int, machines: list[int], name: Optional[str] = None
     ):
+        if not machines:
+            raise ValueError("Machines must not be empty.")
+
         self._job = job
         self._machines = machines
         self._name = name
@@ -128,29 +127,63 @@ class ProblemData:
         jobs: list[Job],
         machines: list[Machine],
         operations: list[Operation],
-        machine_graph: nx.DiGraph,
-        operations_graph: nx.DiGraph,
         processing_times: np.ndarray,
-        setup_times: np.ndarray,
+        precedences: dict[tuple[int, int], list[PrecedenceType]],
+        access_matrix: Optional[np.ndarray] = None,
+        setup_times: Optional[np.ndarray] = None,
     ):
         self._jobs = jobs
         self._machines = machines
         self._operations = operations
-        self._machine_graph = machine_graph
-        self._operations_graph = operations_graph
         self._processing_times = processing_times
-        self._setup_times = setup_times
+        self._precedences = precedences
+
+        num_mach = self.num_machines
+        num_ops = self.num_operations
+
+        self._access_matrix = (
+            access_matrix
+            if access_matrix is not None
+            else np.ones((num_mach, num_mach), dtype=bool)
+        )
+        self._setup_times = (
+            setup_times
+            if setup_times is not None
+            else np.zeros((num_ops, num_ops, num_mach), dtype=int)
+        )
+
+        self._validate_parameters()
 
         self._job2ops: list[list[int]] = [[] for _ in range(self.num_jobs)]
-        self._machine2ops: list[list[int]] = [
-            [] for _ in range(self.num_machines)
-        ]
+        self._machine2ops: list[list[int]] = [[] for _ in range(num_mach)]
 
         for op, op_data in enumerate(self.operations):
             self._job2ops[op_data.job].append(op)
 
             for m in op_data.machines:
                 self._machine2ops[m].append(op)
+
+    def _validate_parameters(self):
+        num_mach = self.num_machines
+        num_ops = self.num_operations
+
+        if np.any(self.processing_times < 0):
+            raise ValueError("Processing times must be non-negative.")
+
+        if self.processing_times.shape != (num_ops, num_mach):
+            msg = "Processing times shape must be (num_ops, num_machines)."
+            raise ValueError(msg)
+
+        if np.any(self.setup_times < 0):
+            raise ValueError("Setup times must be non-negative.")
+
+        if self.setup_times.shape != (num_ops, num_ops, num_mach):
+            msg = "Setup times shape must be (num_ops, num_ops, num_machines)."
+            raise ValueError(msg)
+
+        if self.access_matrix.shape != (num_mach, num_mach):
+            msg = "Access matrix shape must be (num_machines, num_machines)."
+            raise ValueError(msg)
 
     @property
     def jobs(self) -> list[Job]:
@@ -174,44 +207,43 @@ class ProblemData:
         return self._operations
 
     @property
-    def machine_graph(self) -> nx.DiGraph:
-        """
-        Directed graph of machines accesibility constraints. An arc (i, j)
-        represents that machine i can be accessed from machine j.
-
-        Returns
-        -------
-        nx.DiGraph
-            Directed graph of machines accesibility constraints.
-        """
-        return self._machine_graph
-
-    @property
-    def operations_graph(self) -> nx.DiGraph:
-        """
-        Directed graph of operations precedence constraints. Each arc (i, j)
-        represents a set of precedence constraints between operations i and j,
-        which are stored in the attribute ``precendence_types`` of the arc.
-
-        Returns
-        -------
-        nx.DiGraph
-            Directed graph of operations precedence constraints.
-        """
-        return self._operations_graph
-
-    @property
     def processing_times(self) -> np.ndarray:
         """
         Processing times of operations on machines.
 
         Returns
         -------
-        dict[tuple[int, int], int]
+        np.ndarray
             Processing times of operations on machines indexed by operation
             and machine indices.
         """
         return self._processing_times
+
+    @property
+    def precedences(self) -> dict[tuple[int, int], list[PrecedenceType]]:
+        """
+        Precedence constraints between operations.
+
+        Returns
+        -------
+        dict[tuple[int, int], list[PrecedenceType]]
+            Dict of precedence constraints between operations. Each precedence
+            constraint is a list of precedence types.
+        """
+        return self._precedences
+
+    @property
+    def access_matrix(self) -> np.ndarray:
+        """
+        Returns the machine accessibility matrix of this problem instance.
+
+        Returns
+        -------
+        np.ndarray
+            Accessibility matrix. The (i, j)-th entry of the matrix is True if
+            machine i can be used to process operations of job j.
+        """
+        return self._access_matrix
 
     @property
     def setup_times(self) -> np.ndarray:
