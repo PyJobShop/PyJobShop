@@ -3,6 +3,8 @@ from typing import Optional
 
 import numpy as np
 
+from fjsp.constants import MAX_VALUE
+
 
 class Job:
     def __init__(
@@ -129,6 +131,7 @@ class ProblemData:
         operations: list[Operation],
         processing_times: np.ndarray,
         precedences: dict[tuple[int, int], list[PrecedenceType]],
+        horizon: int = MAX_VALUE,
         access_matrix: Optional[np.ndarray] = None,
         setup_times: Optional[np.ndarray] = None,
     ):
@@ -137,6 +140,7 @@ class ProblemData:
         self._operations = operations
         self._processing_times = processing_times
         self._precedences = precedences
+        self._horizon = horizon
 
         num_mach = self.num_machines
         num_ops = self.num_operations
@@ -174,15 +178,18 @@ class ProblemData:
             msg = "Processing times shape must be (num_ops, num_machines)."
             raise ValueError(msg)
 
+        if self.horizon < 0:
+            raise ValueError("Horizon must be non-negative.")
+
+        if self.access_matrix.shape != (num_mach, num_mach):
+            msg = "Access matrix shape must be (num_machines, num_machines)."
+            raise ValueError(msg)
+
         if np.any(self.setup_times < 0):
             raise ValueError("Setup times must be non-negative.")
 
         if self.setup_times.shape != (num_ops, num_ops, num_mach):
             msg = "Setup times shape must be (num_ops, num_ops, num_machines)."
-            raise ValueError(msg)
-
-        if self.access_matrix.shape != (num_mach, num_mach):
-            msg = "Access matrix shape must be (num_machines, num_machines)."
             raise ValueError(msg)
 
     @property
@@ -231,6 +238,13 @@ class ProblemData:
             constraint is a list of precedence types.
         """
         return self._precedences
+
+    @property
+    def horizon(self) -> int:
+        """
+        Returns the planning horizon of this problem instance.
+        """
+        return self._horizon
 
     @property
     def access_matrix(self) -> np.ndarray:

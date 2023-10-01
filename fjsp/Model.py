@@ -3,6 +3,7 @@ from typing import Optional
 import numpy as np
 from ortools.sat.python.cp_model import CpSolver
 
+from fjsp.constants import MAX_VALUE
 from fjsp.cp import default_model as cplex_default_model
 from fjsp.cp import result2solution
 from fjsp.google import default_model as ortools_default_model
@@ -14,8 +15,6 @@ from fjsp.ProblemData import (
     PrecedenceType,
     ProblemData,
 )
-
-MAX_VALUE = 2**25
 
 
 class Model:
@@ -29,6 +28,7 @@ class Model:
         self._operations = []
         self._processing_times: dict[tuple[int, int], int] = {}
         self._precedences: dict[tuple[int, int], list[PrecedenceType]] = {}
+        self._horizon = MAX_VALUE
         self._access_matrix: dict[tuple[int, int], bool] = {}
         self._setup_times: dict[tuple[int, int, int], int] = {}
 
@@ -76,6 +76,7 @@ class Model:
             self.operations,
             processing_times,
             self._precedences,
+            self._horizon,
             access_matrix,
             setup_times,
         )
@@ -230,6 +231,20 @@ class Model:
         op1 = self._id2op[id(operation1)]
         op2 = self._id2op[id(operation2)]
         self._precedences[op1, op2] = precedence_types
+
+    def set_horizon(self, horizon: int):
+        """
+        Sets the planning horizon time of the problem.
+
+        Parameters
+        ----------
+        horizon: int
+            Horizon time of the problem.
+        """
+        if horizon < 0:
+            raise ValueError("Horizon must be non-negative.")
+
+        self._horizon = horizon
 
     def add_access_constraint(
         self, machine1: Machine, machine2: Machine, is_accessible: bool = False
