@@ -43,3 +43,8 @@ jobs:
         run: poetry run pre-commit run --all-files
       - name: Run tests
         run: poetry run pytest
+      - name: Solve flowshop example with OR-Tools
+        run: poetry run python flowshop.py --solver ortools
+      - name: Solve jobshop example with OR-Tools
+        run: poetry run python jobshop.py --solver ortools
+        # TODO Solve with CPLEX

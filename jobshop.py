@@ -1,49 +1,69 @@
 # Example from https://developers.google.com/optimization/scheduling/job_shop
 # Partially modified.
 
+import argparse
 from itertools import product
+from typing import Optional
 
-from fjsp import Model, PrecedenceType, plot
+from fjsp import Model, PrecedenceType, plot_solution
 
-# A job consists of tasks, which is a tuple (machine_id, processing_time).
-jobs_data = [
-    [(0, 3), (1, 2), (2, 2)],  # Job0
-    [(0, 2), (2, 1), (1, 4)],  # Job1
-    [(1, 4), (2, 3)],  # Job2
-    [(2, 3), (1, 4), (0, 8)],  # Job3
-    [(1, 3), (0, 4), (2, 2)],  # Job4
-    [(1, 3)],  # Job5
-]
-num_jobs = len(jobs_data)
 
-model = Model()
-jobs = [model.add_job() for _ in range(num_jobs)]
-machines = [model.add_machine() for _ in range(3)]
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--solver", default="ortools", type=str)
+    parser.add_argument("--time_limit", default=10, type=int)
+    parser.add_argument("--plot", action="store_true")
+    return parser.parse_args()
 
-for job_idx, tasks in enumerate(jobs_data):
-    ops = []
 
-    # Create operations.
-    for machine_idx, _ in tasks:
-        op = model.add_operation(jobs[job_idx], [machines[machine_idx]])
-        ops.append(op)
+def main(solver: str, time_limit: int, plot: Optional[bool]):
+    # A job consists of tasks, which is a tuple (machine_id, processing_time).
+    jobs_data = [
+        [(0, 3), (1, 2), (2, 2)],  # Job0
+        [(0, 2), (2, 1), (1, 4)],  # Job1
+        [(1, 4), (2, 3)],  # Job2
+        [(2, 3), (1, 4), (0, 8)],  # Job3
+        [(1, 3), (0, 4), (2, 2)],  # Job4
+        [(1, 3)],  # Job5
+    ]
+    num_jobs = len(jobs_data)
 
-    # Add processing times.
-    for idx, (machine_idx, duration) in enumerate(tasks):
-        model.add_processing_time(ops[idx], machines[machine_idx], duration)
+    model = Model()
+    jobs = [model.add_job() for _ in range(num_jobs)]
+    machines = [model.add_machine() for _ in range(3)]
 
-    # Impose linear routing precedence constraints.
-    for op_idx in range(1, len(ops)):
-        op1, op2 = ops[op_idx - 1], ops[op_idx]
-        model.add_precedence(
-            op1, op2, precedence_types=[PrecedenceType.END_BEFORE_START]
-        )
+    for job_idx, tasks in enumerate(jobs_data):
+        ops = []
 
-# 1 duration setup times between each pair of operations and machine.
-for op1, op2 in product(model.operations, model.operations):
-    for machine in machines:
-        model.add_setup_time(op1, op2, machine, 1)
+        # Create operations.
+        for machine_idx, _ in tasks:
+            op = model.add_operation(jobs[job_idx], [machines[machine_idx]])
+            ops.append(op)
 
-data = model.data()
-solution = model.solve("ortools", 10)
-plot(data, solution)
+        # Add processing times.
+        for idx, (machine_idx, duration) in enumerate(tasks):
+            model.add_processing_time(
+                ops[idx], machines[machine_idx], duration
+            )
+
+        # Impose linear routing precedence constraints.
+        for op_idx in range(1, len(ops)):
+            op1, op2 = ops[op_idx - 1], ops[op_idx]
+            model.add_precedence(
+                op1, op2, precedence_types=[PrecedenceType.END_BEFORE_START]
+            )
+
+    # 1 duration setup times between each pair of operations and machine.
+    for op1, op2 in product(model.operations, model.operations):
+        for machine in machines:
+            model.add_setup_time(op1, op2, machine, 1)
+
+    data = model.data()
+    solution = model.solve(solver, time_limit)
+
+    if plot:
+        plot_solution(data, solution)
+
+
+if __name__ == "__main__":
+    main(**vars(parse_args()))

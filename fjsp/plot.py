@@ -5,9 +5,11 @@ from .ProblemData import ProblemData
 from .Solution import Solution
 
 
-def plot(data: ProblemData, solution: Solution, plot_labels: bool = False):
+def plot_solution(
+    data: ProblemData, solution: Solution, plot_labels: bool = False
+):
     """
-    Plots a Gantt chart of the solver result.
+    Plots a Gantt chart of the given solution.
 
     Parameters
     ----------
