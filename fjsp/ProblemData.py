@@ -63,6 +63,9 @@ class Operation:
     def __init__(
         self, job: int, machines: list[int], name: Optional[str] = None
     ):
+        if not machines:
+            raise ValueError("Machines must not be empty.")
+
         self._job = job
         self._machines = machines
         self._name = name
@@ -149,6 +152,8 @@ class ProblemData:
             else np.zeros((num_ops, num_ops, num_mach), dtype=int)
         )
 
+        self._validate_parameters()
+
         self._job2ops: list[list[int]] = [[] for _ in range(self.num_jobs)]
         self._machine2ops: list[list[int]] = [[] for _ in range(num_mach)]
 
@@ -157,6 +162,28 @@ class ProblemData:
 
             for m in op_data.machines:
                 self._machine2ops[m].append(op)
+
+    def _validate_parameters(self):
+        num_mach = self.num_machines
+        num_ops = self.num_operations
+
+        if np.any(self.processing_times < 0):
+            raise ValueError("Processing times must be non-negative.")
+
+        if self.processing_times.shape != (num_ops, num_mach):
+            msg = "Processing times shape must be (num_ops, num_machines)."
+            raise ValueError(msg)
+
+        if np.any(self.setup_times < 0):
+            raise ValueError("Setup times must be non-negative.")
+
+        if self.setup_times.shape != (num_ops, num_ops, num_mach):
+            msg = "Setup times shape must be (num_ops, num_ops, num_machines)."
+            raise ValueError(msg)
+
+        if self.access_matrix.shape != (num_mach, num_mach):
+            msg = "Access matrix shape must be (num_machines, num_machines)."
+            raise ValueError(msg)
 
     @property
     def jobs(self) -> list[Job]:

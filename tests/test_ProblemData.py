@@ -1,5 +1,6 @@
 import numpy as np
-from numpy.testing import assert_allclose, assert_equal
+import pytest
+from numpy.testing import assert_allclose, assert_equal, assert_raises
 
 from fjsp import Job, Machine, Operation, PrecedenceType, ProblemData
 
@@ -54,6 +55,16 @@ def test_operation_attributes():
     assert_equal(operation.name, None)
 
 
+def test_operation_raises_when_invalid_arguments():
+    """
+    Tests that the Operation class raises an error when invalid arguments are
+    passed.
+    """
+    with assert_raises(ValueError):
+        # Empty list of machines.
+        Operation(1, [])
+
+
 # TODO test PrecedenceType
 
 
@@ -76,8 +87,8 @@ def test_problem_data_attributes():
         jobs,
         machines,
         operations,
-        precedences,
         processing_times,
+        precedences,
         access_matrix,
         setup_times,
     )
@@ -107,8 +118,44 @@ def test_problem_data_default_values():
     precedences = {(0, 1): [PrecedenceType.END_BEFORE_START]}
     processing_times = np.ones((1, 1), dtype=int)
     data = ProblemData(
-        jobs, machines, operations, precedences, processing_times
+        jobs, machines, operations, processing_times, precedences
     )
 
     assert_allclose(data.access_matrix, np.full((1, 1), True))
     assert_allclose(data.setup_times, np.zeros((1, 1, 1), dtype=int))
+
+
+@pytest.mark.parametrize(
+    "processing_times, access_matrix, setup_times",
+    [
+        # Negative processing times.
+        (np.ones((1, 1)) * -1, np.full((1, 1), True), np.ones((1, 1, 1))),
+        # Invalid processing times shape.
+        (np.ones((2, 2)), np.full((1, 1), True), np.ones((1, 1, 1))),
+        # Negative setup times.
+        (np.ones((1, 1)), np.full((1, 1), True), np.ones((1, 1, 1)) * -1),
+        # Invalid setup times shape.
+        (np.ones((1, 1)), np.full((1, 1), True), np.ones((2, 2, 2))),
+        # Invalid access matrix shape.
+        (np.ones((1, 1)), np.full((2, 2), True), np.ones((1, 1, 1))),
+    ],
+)
+def test_problem_data_raises_when_invalid_arguments(
+    processing_times: np.ndarray,
+    access_matrix: np.ndarray,
+    setup_times: np.ndarray,
+):
+    """
+    Tests that the ProblemData class raises an error when invalid arguments are
+    passed.
+    """
+    with assert_raises(ValueError):  # negative processing times
+        ProblemData(
+            [Job()],
+            [Machine()],
+            [Operation(0, [0])],
+            processing_times.astype(int),
+            {},
+            access_matrix.astype(int),
+            setup_times.astype(int),
+        )
