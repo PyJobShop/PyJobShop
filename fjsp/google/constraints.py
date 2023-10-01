@@ -140,7 +140,6 @@ def no_overlap_constraints(
                 m.Add(expr).OnlyEnforceIf(lit)
 
         m.AddCircuit(arcs)
-    pass
 
 
 def machine_accessibility_constraints(
