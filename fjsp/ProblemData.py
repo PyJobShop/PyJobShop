@@ -124,16 +124,16 @@ class ProblemData:
         jobs: list[Job],
         machines: list[Machine],
         operations: list[Operation],
-        precedences: dict[tuple[int, int], list[PrecedenceType]],
         processing_times: np.ndarray,
+        precedences: dict[tuple[int, int], list[PrecedenceType]],
         access_matrix: Optional[np.ndarray] = None,
         setup_times: Optional[np.ndarray] = None,
     ):
         self._jobs = jobs
         self._machines = machines
         self._operations = operations
-        self._precedences = precedences
         self._processing_times = processing_times
+        self._precedences = precedences
 
         num_mach = self.num_machines
         num_ops = self.num_operations
@@ -180,6 +180,19 @@ class ProblemData:
         return self._operations
 
     @property
+    def processing_times(self) -> np.ndarray:
+        """
+        Processing times of operations on machines.
+
+        Returns
+        -------
+        np.ndarray
+            Processing times of operations on machines indexed by operation
+            and machine indices.
+        """
+        return self._processing_times
+
+    @property
     def precedences(self) -> dict[tuple[int, int], list[PrecedenceType]]:
         """
         Precedence constraints between operations.
@@ -196,23 +209,14 @@ class ProblemData:
     def access_matrix(self) -> np.ndarray:
         """
         Returns the machine accessibility matrix of this problem instance.
-        A entry (i, j) is True if machine i can be accessed from machine j,
-        and False otherwise.
-        """
-        return self._access_matrix
-
-    @property
-    def processing_times(self) -> np.ndarray:
-        """
-        Processing times of operations on machines.
 
         Returns
         -------
-        dict[tuple[int, int], int]
-            Processing times of operations on machines indexed by operation
-            and machine indices.
+        np.ndarray
+            Accessibility matrix. The (i, j)-th entry of the matrix is True if
+            machine i can be used to process operations of job j.
         """
-        return self._processing_times
+        return self._access_matrix
 
     @property
     def setup_times(self) -> np.ndarray:

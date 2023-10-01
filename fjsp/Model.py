@@ -16,9 +16,9 @@ class Model:
         self._jobs = []
         self._machines = []
         self._operations = []
+        self._processing_times: dict[tuple[int, int], int] = {}
         self._precedences: dict[tuple[int, int], list[PrecedenceType]] = {}
         self._access_matrix: dict[tuple[int, int], bool] = {}
-        self._processing_times: dict[tuple[int, int], int] = {}
         self._setup_times: dict[tuple[int, int, int], int] = {}
 
         self._id2job: dict[int, int] = {}
@@ -63,8 +63,8 @@ class Model:
             self.jobs,
             self.machines,
             self.operations,
-            self._precedences,
             processing_times,
+            self._precedences,
             access_matrix,
             setup_times,
         )
@@ -134,6 +134,13 @@ class Model:
 
         return operation
 
+    def add_processing_time(
+        self, operation: Operation, machine: Machine, duration: int
+    ):
+        op_idx = self._id2op[id(operation)]
+        machine_idx = self._id2machine[id(machine)]
+        self._processing_times[op_idx, machine_idx] = duration
+
     def add_precedence(
         self,
         operation1: Operation,
@@ -147,13 +154,6 @@ class Model:
         op1 = self._id2op[id(operation1)]
         op2 = self._id2op[id(operation2)]
         self._precedences[op1, op2] = precedence_types
-
-    def add_processing_time(
-        self, operation: Operation, machine: Machine, duration: int
-    ):
-        op_idx = self._id2op[id(operation)]
-        machine_idx = self._id2machine[id(machine)]
-        self._processing_times[op_idx, machine_idx] = duration
 
     def add_access_constraint(
         self, machine1: Machine, machine2: Machine, is_accessible: bool
