@@ -94,7 +94,9 @@ class Model:
             cp_model, _, assign = ortools_default_model(data)
             cp_solver = CpSolver()
             cp_solver.parameters.max_time_in_seconds = time_limit
-            cp_solver.Solve(cp_model)
+            status = cp_solver.Solve(cp_model)
+            print("Solve status: %s" % cp_solver.StatusName(status))
+            print("Optimal objective value: %i" % cp_solver.ObjectiveValue())
             return ortools_result2solution(data, cp_solver, assign)
 
         else:

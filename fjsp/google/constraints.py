@@ -7,6 +7,44 @@ from fjsp.ProblemData import ProblemData
 from .variables import AssignmentVar, OperationVar
 
 
+def timing_precedence_constraints(
+    m: CpModel,
+    data: ProblemData,
+    ops: list[OperationVar],
+) -> list[Constraint]:
+    constraints = []
+
+    for (idx1, idx2), precedence_types in data.precedences.items():
+        op1 = ops[idx1]
+        op2 = ops[idx2]
+
+        for prec_type in precedence_types:
+            if prec_type == "start_at_start":
+                expr = op1.start == op2.start
+            elif prec_type == "start_at_end":
+                expr = op1.start == op2.end
+            elif prec_type == "start_before_start":
+                expr = op1.start <= op2.start
+            elif prec_type == "start_before_end":
+                expr = op1.start <= op2.end
+            elif prec_type == "end_at_start":
+                expr = op1.end == op2.start
+            elif prec_type == "end_at_end":
+                expr = op1.end == op2.end
+            elif prec_type == "end_before_start":
+                expr = op1.end <= op2.start
+            elif prec_type == "end_before_end":
+                expr = op1.end <= op2.end
+            else:
+                continue
+
+            constraints.append(m.Add(expr))
+
+    return constraints
+
+    pass
+
+
 def alternative_constraints(
     m: CpModel,
     data: ProblemData,
@@ -51,7 +89,7 @@ def no_overlap_constraints(
         sequences[machine].append(var.interval)
 
     constraints = []
-    for machine in sequences:
+    for machine in range(data.num_machines):
         constraints.append(m.AddNoOverlap(sequences[machine]))
 
     return constraints
