@@ -123,3 +123,29 @@ def no_overlap_constraints(
         constraints.append(m.AddNoOverlap(sequences[machine]))
 
     return constraints
+
+
+def machine_accessibility_constraints(
+    m: CpModel, data: ProblemData, assign: dict[tuple[int, int], AssignmentVar]
+) -> list[Constraint]:
+    """
+    Creates the machine accessibility constraints for the operations, ensuring
+    that an operation can only be scheduled on a machine that is accessible
+    from the machine on which the previous operation is scheduled.
+    """
+    constraints = []
+
+    for op1, op2 in data.precedences:
+        machines1 = data.operations[op1].machines
+        machines2 = data.operations[op2].machines
+
+        for mach1, mach2 in product(machines1, machines2):
+            if not data.access_matrix[mach1, mach2]:
+                # If m1 cannot access m2, then we cannot schedule operation 1
+                # on m1 and operation 2 on m2.
+                frm = assign[op1, mach1]
+                to = assign[op2, mach2]
+                expr = frm.is_present + to.is_present <= 1
+                constraints.append(m.Add(expr))
+
+    return constraints

@@ -5,7 +5,7 @@ from fjsp.ProblemData import ProblemData
 from .constraints import (
     alternative_constraints,
     assignment_precedence_constraints,
-    #     machine_accessibility_constraints,
+    machine_accessibility_constraints,
     no_overlap_constraints,
     timing_precedence_constraints,
 )
@@ -22,8 +22,9 @@ def default_model(data: ProblemData) -> CpModel:
     makespan(model, data, ops)
 
     timing_precedence_constraints(model, data, ops)
-    assignment_precedence_constraints(model, data, ops, assign)
+    assignment_precedence_constraints(model, data, assign)
     alternative_constraints(model, data, ops, assign)
     no_overlap_constraints(model, data, assign)
+    machine_accessibility_constraints(model, data, assign)
 
     return model, ops, assign
