@@ -1,8 +1,19 @@
 from typing import Optional
 
 import numpy as np
+from ortools.sat.python.cp_model import CpSolver
 
-from .ProblemData import Job, Machine, Operation, PrecedenceType, ProblemData
+from fjsp.cp import default_model as cplex_default_model
+from fjsp.cp import result2solution
+from fjsp.google import default_model as ortools_default_model
+from fjsp.google import result2solution as ortools_result2solution
+from fjsp.ProblemData import (
+    Job,
+    Machine,
+    Operation,
+    PrecedenceType,
+    ProblemData,
+)
 
 MAX_VALUE = 2**25
 
@@ -68,6 +79,26 @@ class Model:
             access_matrix,
             setup_times,
         )
+
+    def solve(self, solver: str = "ortools", time_limit=10):
+        """
+        Solves the problem instance.
+        """
+        data = self.data()
+
+        if solver == "cplex":
+            cp_model = cplex_default_model(data)
+            result = cp_model.solve(TimeLimit=time_limit)
+            return result2solution(data, result)
+        elif solver == "ortools":
+            cp_model, _, assign = ortools_default_model(data)
+            cp_solver = CpSolver()
+            cp_solver.parameters.max_time_in_seconds = time_limit
+            cp_solver.Solve(cp_model)
+            return ortools_result2solution(data, cp_solver, assign)
+
+        else:
+            raise ValueError(f"Unknown solver '{solver}'.")
 
     def add_job(
         self,

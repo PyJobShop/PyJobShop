@@ -3,7 +3,7 @@
 
 from itertools import product
 
-from fjsp import Model, PrecedenceType, default_model, plot, result2solution
+from fjsp import Model, PrecedenceType, plot
 
 # A job consists of tasks, which is a tuple (machine_id, processing_time).
 jobs_data = [
@@ -44,11 +44,6 @@ for op1, op2 in product(model.operations, model.operations):
     for machine in machines:
         model.add_setup_time(op1, op2, machine, 1)
 
-# Convert model to problem data and solve.
 data = model.data()
-cp_model = default_model(data)
-result = cp_model.solve(TimeLimit=10)
-
-# Plot solution.
-solution = result2solution(data, result)
+solution = model.solve("ortools", 10)
 plot(data, solution)
