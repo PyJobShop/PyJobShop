@@ -1,7 +1,7 @@
 from collections import defaultdict
 from itertools import product
 
-from ortools.sat.python.cp_model import Constraint, CpModel
+from ortools.sat.python.cp_model import CpModel
 
 from fjsp.ProblemData import ProblemData
 
@@ -12,9 +12,7 @@ def timing_precedence_constraints(
     m: CpModel,
     data: ProblemData,
     ops: list[OperationVar],
-) -> list[Constraint]:
-    constraints = []
-
+):
     for (idx1, idx2), precedence_types in data.precedences.items():
         op1 = ops[idx1]
         op2 = ops[idx2]
@@ -39,19 +37,12 @@ def timing_precedence_constraints(
             else:
                 continue
 
-            constraints.append(m.Add(expr))
-
-    return constraints
+            m.Add(expr)
 
 
 def assignment_precedence_constraints(
     m: CpModel, data: ProblemData, assign: dict[tuple[int, int], AssignmentVar]
-) -> list[Constraint]:
-    sequences = defaultdict(list)
-    for (_, machine), var in assign.items():
-        sequences[machine].append(var.interval)
-
-    constraints = []
+):
     for machine, ops in enumerate(data.machine2ops):
         for op1, op2 in product(ops, repeat=2):
             if op1 == op2 or (op1, op2) not in data.precedences:
@@ -70,9 +61,7 @@ def assignment_precedence_constraints(
                 else:
                     continue
 
-                constraints.append(m.Add(expr))
-
-    return constraints
+                m.Add(expr)
 
 
 def alternative_constraints(
@@ -80,13 +69,11 @@ def alternative_constraints(
     data: ProblemData,
     ops: list[OperationVar],
     assign: dict[tuple[int, int], AssignmentVar],
-) -> list[Constraint]:
+):
     """
     Creates the alternative constraints for the operations, ensuring that each
     operation is scheduled on exactly one machine.
     """
-    constraints = []
-
     for op in range(data.num_operations):
         presences = []
 
@@ -102,14 +89,12 @@ def alternative_constraints(
             m.Add(main.end == optional.end).OnlyEnforceIf()
 
         # Select exactly one machine for the operation.
-        constraints.append(m.AddExactlyOne(presences))
-
-    return constraints
+        m.AddExactlyOne(presences)
 
 
 def no_overlap_constraints(
     m: CpModel, data: ProblemData, assign: dict[tuple[int, int], AssignmentVar]
-) -> list[Constraint]:
+):
     """
     Creates the no-overlap constraints for machines, ensuring that no two
     intervals in a sequence variable are overlapping.
@@ -118,23 +103,18 @@ def no_overlap_constraints(
     for (_, machine), var in assign.items():
         sequences[machine].append(var.interval)
 
-    constraints = []
     for machine in range(data.num_machines):
-        constraints.append(m.AddNoOverlap(sequences[machine]))
-
-    return constraints
+        m.AddNoOverlap(sequences[machine])
 
 
 def machine_accessibility_constraints(
     m: CpModel, data: ProblemData, assign: dict[tuple[int, int], AssignmentVar]
-) -> list[Constraint]:
+):
     """
     Creates the machine accessibility constraints for the operations, ensuring
     that an operation can only be scheduled on a machine that is accessible
     from the machine on which the previous operation is scheduled.
     """
-    constraints = []
-
     for op1, op2 in data.precedences:
         machines1 = data.operations[op1].machines
         machines2 = data.operations[op2].machines
@@ -143,9 +123,6 @@ def machine_accessibility_constraints(
             if not data.access_matrix[mach1, mach2]:
                 # If m1 cannot access m2, then we cannot schedule operation 1
                 # on m1 and operation 2 on m2.
-                frm = assign[op1, mach1]
-                to = assign[op2, mach2]
-                expr = frm.is_present + to.is_present <= 1
-                constraints.append(m.Add(expr))
-
-    return constraints
+                var1 = assign[op1, mach1]
+                var2 = assign[op2, mach2]
+                m.Add(var1.is_present + var2.is_present <= 1)
