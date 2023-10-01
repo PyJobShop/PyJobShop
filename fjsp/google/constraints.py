@@ -1,4 +1,5 @@
 from collections import defaultdict
+from itertools import product
 
 from ortools.sat.python.cp_model import Constraint, CpModel
 
@@ -42,7 +43,36 @@ def timing_precedence_constraints(
 
     return constraints
 
-    pass
+
+def assignment_precedence_constraints(
+    m: CpModel, data: ProblemData, assign: dict[tuple[int, int], AssignmentVar]
+) -> list[Constraint]:
+    sequences = defaultdict(list)
+    for (_, machine), var in assign.items():
+        sequences[machine].append(var.interval)
+
+    constraints = []
+    for machine, ops in enumerate(data.machine2ops):
+        for op1, op2 in product(ops, repeat=2):
+            if op1 == op2 or (op1, op2) not in data.precedences:
+                continue
+
+            var1 = assign[op1, machine]
+            var2 = assign[op2, machine]
+
+            for prec_type in data.precedences[op1, op2]:
+                if prec_type == "previous":
+                    raise NotImplementedError
+                elif prec_type == "same_unit":
+                    expr = var1.is_present == var2.is_present
+                elif prec_type == "different_unit":
+                    expr = var1.is_present != var2.is_present
+                else:
+                    continue
+
+                constraints.append(m.Add(expr))
+
+    return constraints
 
 
 def alternative_constraints(
