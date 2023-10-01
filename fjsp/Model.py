@@ -86,6 +86,11 @@ class Model:
             Optional deadline of the job.
         name: Optional[str]
             Optional name of the job.
+
+        Returns
+        -------
+        Job
+            The created job.
         """
         job = Job(release_date, deadline, name)
 
@@ -102,6 +107,11 @@ class Model:
         ----------
         name: Optional[str]
             Optional name of the machine.
+
+        Returns
+        -------
+        Machine
+            The created machine.
         """
         machine = Machine(name)
 
@@ -124,6 +134,11 @@ class Model:
             Eligible machines that can process the operation.
         name: Optional[str]
             Optional name of the operation.
+
+        Returns
+        -------
+        Operation
+            The created operation.
         """
         job_idx = self._id2job[id(job)]
         machine_idcs = [self._id2machine[id(m)] for m in machines]
@@ -137,6 +152,21 @@ class Model:
     def add_processing_time(
         self, operation: Operation, machine: Machine, duration: int
     ):
+        """
+        Adds a processing time for an operation on a machine.
+
+        Parameters
+        ----------
+        operation: Operation
+            An operation.
+        machine: Machine
+            The machine on which the operation is processed.
+        duration: int
+            Processing time of the operation on the machine.
+        """
+        if duration < 0:
+            raise ValueError("Processing time must be non-negative.")
+
         op_idx = self._id2op[id(operation)]
         machine_idx = self._id2machine[id(machine)]
         self._processing_times[op_idx, machine_idx] = duration
@@ -147,6 +177,19 @@ class Model:
         operation2: Operation,
         precedence_types: list[PrecedenceType],
     ):
+        """
+        Adds a precedence constraints between two operations.
+
+        Parameters
+        ----------
+        operation1: Operation
+            First operation.
+        operation2: Operation
+            Second operation.
+        precedence_types: list[PrecedenceType]
+            List of precedence types between the first and the second
+            operation.
+        """
         if any(pt not in PrecedenceType for pt in precedence_types):
             msg = "Precedence types must be of type PrecedenceType."
             raise ValueError(msg)
@@ -156,8 +199,21 @@ class Model:
         self._precedences[op1, op2] = precedence_types
 
     def add_access_constraint(
-        self, machine1: Machine, machine2: Machine, is_accessible: bool
+        self, machine1: Machine, machine2: Machine, is_accessible: bool = False
     ):
+        """
+        Adds an access constraint between two machines.
+
+        Parameters
+        ----------
+        machine1: Machine
+            First machine.
+        machine2: Machine
+            Second machine.
+        is_accessible: bool
+            Whether the second machine is accessible from the first machine.
+            Defaults to False.
+        """
         idx1 = self._id2machine[id(machine1)]
         idx2 = self._id2machine[id(machine2)]
         self._access_matrix[idx1, idx2] = is_accessible
@@ -169,6 +225,21 @@ class Model:
         machine: Machine,
         duration: int,
     ):
+        """
+        Adds a setup time between two operations on a machine.
+
+        Parameters
+        ----------
+        operation1: Operation
+            First operation.
+        operation2: Operation
+            Second operation.
+        machine: Machine
+            Machine on which the setup time occurs.
+        duration: int
+            Duration of the setup time when switching from the first operation
+            to the second operation on the machine.
+        """
         op_idx1 = self._id2op[id(operation1)]
         op_idx2 = self._id2op[id(opteration2)]
         machine_idx = self._id2machine[id(machine)]
