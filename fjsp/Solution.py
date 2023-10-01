@@ -1,4 +1,4 @@
-from .ProblemData import Operation, ProblemData
+from .ProblemData import ProblemData
 
 
 class ScheduledOperation:
@@ -7,8 +7,8 @@ class ScheduledOperation:
 
     Parameters
     ----------
-    op: Operation
-        The scheduled operation.
+    op: int
+        The scheduled operation index.
     assigned_machine: int
         The machine to which the operation is assigned.
     start: int
@@ -18,19 +18,15 @@ class ScheduledOperation:
     """
 
     def __init__(
-        self, op: Operation, assigned_machine: int, start: int, duration: int
+        self, op: int, assigned_machine: int, start: int, duration: int
     ):
         self._op = op
         self._assigned_machine = assigned_machine
         self._start = start
         self._duration = duration
 
-        if assigned_machine not in list(op.machines):
-            msg = f"Operation {op} not allowed on machine {assigned_machine}."
-            raise ValueError(msg)
-
     @property
-    def op(self) -> Operation:
+    def op(self) -> int:
         return self._op
 
     @property
@@ -59,8 +55,17 @@ class Solution:
     """
 
     def __init__(self, data: ProblemData, schedule: list[ScheduledOperation]):
-        self.data = data
         self.schedule = schedule
+        self._validate(data)
 
-    # TODO Add checks.
+    def _validate(self, data: ProblemData):
+        for scheduled_op in self.schedule:
+            op = scheduled_op.op
+            op_data = data.operations[op]
+            assigned = scheduled_op.assigned_machine
+
+            if assigned not in op_data.machines:
+                msg = f"Operation {op} not allowed on machine {assigned}."
+                raise ValueError(msg)
+
     # TODO Add classmethod based on machine sequences (see #8).
