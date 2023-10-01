@@ -4,8 +4,6 @@ from ortools.sat.python.cp_model import CpModel, IntervalVar, IntVar
 
 from fjsp.ProblemData import ProblemData
 
-_INT_MAX = 2_147_483_647
-
 
 @dataclass
 class OperationVar:
@@ -32,9 +30,9 @@ def operation_variables(m: CpModel, data: ProblemData) -> list[OperationVar]:
 
     for op in data.operations:
         name = f"O{op}"
-        start_var = m.NewIntVar(0, _INT_MAX, f"{name}_start")
-        duration_var = m.NewIntVar(0, _INT_MAX, f"{name}_duration")
-        end_var = m.NewIntVar(0, _INT_MAX, f"{name}_end")
+        start_var = m.NewIntVar(0, data.horizon, f"{name}_start")
+        duration_var = m.NewIntVar(0, data.horizon, f"{name}_duration")
+        end_var = m.NewIntVar(0, data.horizon, f"{name}_end")
         interval_var = m.NewIntervalVar(
             start_var, duration_var, end_var, f"interval_{op}"
         )
@@ -54,9 +52,9 @@ def assignment_variables(
     for op, op_data in enumerate(data.operations):
         for machine in op_data.machines:
             name = f"A{op}_{machine}"
-            start_var = m.NewIntVar(0, _INT_MAX, f"{name}_start")
-            duration_var = m.NewIntVar(0, _INT_MAX, f"{name}_duration")
-            end_var = m.NewIntVar(0, _INT_MAX, f"{name}_start")
+            start_var = m.NewIntVar(0, data.horizon, f"{name}_start")
+            duration_var = m.NewIntVar(0, data.horizon, f"{name}_duration")
+            end_var = m.NewIntVar(0, data.horizon, f"{name}_start")
             is_present_var = m.NewBoolVar(f"{name}_is_present")
             interval_var = m.NewOptionalIntervalVar(
                 start_var,
