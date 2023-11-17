@@ -221,7 +221,7 @@ class Model:
     def add_setup_time(
         self,
         operation1: Operation,
-        opteration2: Operation,
+        operation2: Operation,
         machine: Machine,
         duration: int,
     ):
@@ -241,7 +241,7 @@ class Model:
             to the second operation on the machine.
         """
         op_idx1 = self._id2op[id(operation1)]
-        op_idx2 = self._id2op[id(opteration2)]
+        op_idx2 = self._id2op[id(operation2)]
         machine_idx = self._id2machine[id(machine)]
 
         self._setup_times[op_idx1, op_idx2, machine_idx] = duration
