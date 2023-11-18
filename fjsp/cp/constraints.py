@@ -102,7 +102,9 @@ def no_overlap_constraints(
     for machine in range(data.num_machines):
         # Assumption is that the interval variables in the sequence variable
         # are ordered in the same way as the operations in machine2ops.
-        ops = data.machine2ops[machine]
+        if not (ops := data.machine2ops[machine]):
+            continue  # There no operations for this machine.
+
         distance_matrix = data.setup_times[:, :, machine][np.ix_(ops, ops)]
         constraints.append(m.no_overlap(sequences[machine], distance_matrix))
 
