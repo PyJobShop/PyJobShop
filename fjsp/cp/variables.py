@@ -22,8 +22,8 @@ def assignment_variables(m: CpoModel, data: ProblemData) -> AssignVars:
     """
     variables = {}
 
-    for op, op_data in enumerate(data.operations):
-        for machine in op_data.machines:
+    for op in range(data.num_operations):
+        for machine in data.op2machines[op]:
             var = m.interval_var(name=f"A{op}_{machine}", optional=True)
             variables[op, machine] = var
 
@@ -35,9 +35,10 @@ def assignment_variables(m: CpoModel, data: ProblemData) -> AssignVars:
             )
 
             # Operation may not start before the job's release date if present.
+            job = data.op2job[op]
             m.add(
                 m.start_of(var)
-                >= data.jobs[op_data.job].release_date * m.presence_of(var)
+                >= data.jobs[job].release_date * m.presence_of(var)
             )
 
     return variables

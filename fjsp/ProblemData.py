@@ -52,31 +52,12 @@ class Operation:
 
     Parameters
     ----------
-    job: int
-        Index of the job to which the operation belongs.
-    machines: list[int]
-        Indices of machines that can process the operation.
     name: Optional[str]
         Name of the operation.
     """
 
-    def __init__(
-        self, job: int, machines: list[int], name: Optional[str] = None
-    ):
-        if not machines:
-            raise ValueError("Machines must not be empty.")
-
-        self._job = job
-        self._machines = machines
+    def __init__(self, name: Optional[str] = None):
         self._name = name
-
-    @property
-    def job(self) -> int:
-        return self._job
-
-    @property
-    def machines(self) -> list[int]:
-        return self._machines
 
     @property
     def name(self) -> Optional[str]:
@@ -127,6 +108,8 @@ class ProblemData:
         jobs: list[Job],
         machines: list[Machine],
         operations: list[Operation],
+        job2ops: list[list[int]],
+        machine2ops: list[list[int]],
         processing_times: np.ndarray,
         precedences: dict[tuple[int, int], list[PrecedenceType]],
         access_matrix: Optional[np.ndarray] = None,
@@ -135,6 +118,21 @@ class ProblemData:
         self._jobs = jobs
         self._machines = machines
         self._operations = operations
+        self._job2ops = job2ops
+        self._machine2ops = machine2ops
+
+        self._op2machines: list[list[int]] = [
+            [] for _ in range(self.num_operations)
+        ]
+        for machine, ops in enumerate(self._machine2ops):
+            for operation in ops:
+                self._op2machines[operation].append(machine)
+
+        self._op2job: list[int] = [[] for _ in range(self.num_operations)]
+        for job, ops in enumerate(self._job2ops):
+            for operation in ops:
+                self._op2job[operation] = job
+
         self._processing_times = processing_times
         self._precedences = precedences
 
@@ -153,15 +151,6 @@ class ProblemData:
         )
 
         self._validate_parameters()
-
-        self._job2ops: list[list[int]] = [[] for _ in range(self.num_jobs)]
-        self._machine2ops: list[list[int]] = [[] for _ in range(num_mach)]
-
-        for op, op_data in enumerate(self.operations):
-            self._job2ops[op_data.job].append(op)
-
-            for m in op_data.machines:
-                self._machine2ops[m].append(op)
 
     def _validate_parameters(self):
         num_mach = self.num_machines
@@ -205,6 +194,54 @@ class ProblemData:
         Returns the operation data of this problem instance.
         """
         return self._operations
+
+    @property
+    def job2ops(self) -> list[list[int]]:
+        """
+        List of operation indices for each job.
+
+        Returns
+        -------
+        list[list[int]]
+            List of operation indices for each job.
+        """
+        return self._job2ops
+
+    @property
+    def machine2ops(self) -> list[list[int]]:
+        """
+        List of operation indices for each machine.
+
+        Returns
+        -------
+        list[list[int]]
+            List of operation indices for each machine.
+        """
+        return self._machine2ops
+
+    @property
+    def op2machines(self) -> list[list[int]]:
+        """
+        List of eligible machine indices for each operation.
+
+        Returns
+        -------
+        list[list[int]]
+            List of eligible machine indices for each operation.
+        """
+        return self._op2machines
+
+    @property
+    def op2job(self) -> list[int]:
+        """
+        Job index corresponding to each operation.
+
+        Returns
+        -------
+        list[int]
+            Job index corresponding to each operation.
+        """
+        return self._op2job
 
     @property
     def processing_times(self) -> np.ndarray:
@@ -258,30 +295,6 @@ class ProblemData:
             operation indices, and the third dimension is indexed by machine.
         """
         return self._setup_times
-
-    @property
-    def job2ops(self) -> list[list[int]]:
-        """
-        List of operation indices for each job.
-
-        Returns
-        -------
-        list[list[int]]
-            List of operation indices for each job.
-        """
-        return self._job2ops
-
-    @property
-    def machine2ops(self) -> list[list[int]]:
-        """
-        List of operation indices for each machine.
-
-        Returns
-        -------
-        list[list[int]]
-            List of operation indices for each machine.
-        """
-        return self._machine2ops
 
     @property
     def num_jobs(self) -> int:

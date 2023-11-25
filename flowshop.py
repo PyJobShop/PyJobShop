@@ -17,17 +17,18 @@ def main():
         model.add_access_constraint(machines[idx], machines[idx + 1])
 
     for job in jobs:
-        # Create one operation per (job, machine) pair.
-        ops = [
-            model.add_operation(job, [machine], [random.randint(1, 10)])
-            for machine in machines
-        ]
+        operations = [model.add_operation() for _ in range(NUM_MACHINES)]
+        model.assign_job_operations(job, operations)
+
+        for idx, op in enumerate(operations):
+            model.assign_machine_operations(machines[idx], [op])
+            model.add_processing_time(op, machines[idx], random.randint(1, 10))
 
         # Create precedence constraints between operations.
-        for idx in range(len(ops) - 1):
+        for idx in range(len(operations) - 1):
             model.add_precedence(
-                ops[idx],
-                ops[idx + 1],
+                operations[idx],
+                operations[idx + 1],
                 precedence_types=[PrecedenceType.END_AT_START],  # blocking
             )
 

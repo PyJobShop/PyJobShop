@@ -61,10 +61,9 @@ class Solution:
     def _validate(self, data: ProblemData):
         for scheduled_op in self.schedule:
             op = scheduled_op.op
-            op_data = data.operations[op]
             assigned = scheduled_op.assigned_machine
 
-            if assigned not in op_data.machines:
+            if assigned not in data.op2machines[op]:
                 msg = f"Operation {op} not allowed on machine {assigned}."
                 raise ValueError(msg)
 

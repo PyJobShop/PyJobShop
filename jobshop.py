@@ -25,7 +25,9 @@ for job_idx, tasks in enumerate(jobs_data):
 
     # Create operations.
     for machine_idx, _ in tasks:
-        op = model.add_operation(jobs[job_idx], [machines[machine_idx]])
+        op = model.add_operation()
+        model.assign_job_operations(jobs[job_idx], [op])
+        model.assign_machine_operations(machines[machine_idx], [op])
         ops.append(op)
 
     # Add processing times.
