@@ -43,26 +43,14 @@ def test_operation_attributes():
     """
     Tests that the attributes of the Operation class are set correctly.
     """
-    operation = Operation(1, [0, 1], "TestOperation")
+    operation = Operation("TestOperation")
 
-    assert_equal(operation.job, 1)
-    assert_equal(operation.machines, [0, 1])
     assert_equal(operation.name, "TestOperation")
 
     # Also test that default values are set correctly.
-    operation = Operation(1, [1])
+    operation = Operation()
 
     assert_equal(operation.name, None)
-
-
-def test_operation_raises_when_invalid_arguments():
-    """
-    Tests that the Operation class raises an error when invalid arguments are
-    passed.
-    """
-    with assert_raises(ValueError):
-        # Empty list of machines.
-        Operation(1, [])
 
 
 # TODO test PrecedenceType
@@ -74,12 +62,14 @@ def test_problem_data_attributes():
     """
     jobs = [Job() for _ in range(5)]
     machines = [Machine() for _ in range(5)]
-    operations = [Operation(idx, [idx]) for idx in range(5)]
+    operations = [Operation() for _ in range(5)]
+    job2ops = [[0], [1], [2], [3], [4]]
+    machine2ops = [[0], [1], [2], [3], [4]]
+    processing_times = np.ones((5, 5), dtype=int)
     precedences = {
         key: [PrecedenceType.END_BEFORE_START]
         for key in ((0, 1), (2, 3), (4, 5))
     }
-    processing_times = np.ones((5, 5), dtype=int)
     access_matrix = np.full((5, 5), True)
     setup_times = np.ones((5, 5, 5), dtype=int)
 
@@ -87,6 +77,8 @@ def test_problem_data_attributes():
         jobs,
         machines,
         operations,
+        job2ops,  # TODO test invalid job2ops
+        machine2ops,  # TODO test invalid machine2ops
         processing_times,
         precedences,
         access_matrix,
@@ -96,13 +88,13 @@ def test_problem_data_attributes():
     assert_equal(data.jobs, jobs)
     assert_equal(data.machines, machines)
     assert_equal(data.operations, operations)
-    assert_equal(data.precedences, precedences)
+    assert_equal(data.job2ops, job2ops)
+    assert_equal(data.machine2ops, machine2ops)
     assert_allclose(data.processing_times, processing_times)
+    assert_equal(data.precedences, precedences)
     assert_equal(data.access_matrix, access_matrix)
     assert_allclose(data.setup_times, setup_times)
 
-    assert_equal(data.job2ops, [[0], [1], [2], [3], [4]])
-    assert_equal(data.machine2ops, [[0], [1], [2], [3], [4]])
     assert_equal(data.num_jobs, 5)
     assert_equal(data.num_machines, 5)
     assert_equal(data.num_operations, 5)
@@ -114,11 +106,19 @@ def test_problem_data_default_values():
     """
     jobs = [Job() for _ in range(1)]
     machines = [Machine() for _ in range(1)]
-    operations = [Operation(idx, [idx]) for idx in range(1)]
+    operations = [Operation() for _ in range(1)]
+    job2ops = [[0]]
+    machine2ops = [[0]]
     precedences = {(0, 1): [PrecedenceType.END_BEFORE_START]}
     processing_times = np.ones((1, 1), dtype=int)
     data = ProblemData(
-        jobs, machines, operations, processing_times, precedences
+        jobs,
+        machines,
+        operations,
+        job2ops,
+        machine2ops,
+        processing_times,
+        precedences,
     )
 
     assert_allclose(data.access_matrix, np.full((1, 1), True))
@@ -149,11 +149,13 @@ def test_problem_data_raises_when_invalid_arguments(
     Tests that the ProblemData class raises an error when invalid arguments are
     passed.
     """
-    with assert_raises(ValueError):  # negative processing times
+    with assert_raises(ValueError):
         ProblemData(
             [Job()],
             [Machine()],
-            [Operation(0, [0])],
+            [Operation()],
+            [[0]],
+            [[0]],
             processing_times.astype(int),
             {},
             access_matrix.astype(int),
