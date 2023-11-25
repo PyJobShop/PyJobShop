@@ -30,7 +30,8 @@ def plot(data: ProblemData, solution: Solution, plot_labels: bool = False):
         )
 
         # Plot each scheduled operation as a single horizontal bar (interval).
-        color = colors[data.op2job[op]]
+        job = [job for job, ops in enumerate(data.job2ops) if op in ops][0]
+        color = colors[job]
         kwargs = {"color": color, "linewidth": 1, "edgecolor": "black"}
         ax.barh(machine, duration, left=start, **kwargs)
 
