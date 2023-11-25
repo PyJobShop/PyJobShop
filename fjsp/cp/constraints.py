@@ -85,7 +85,7 @@ def alternative_constraints(
     constraints = []
 
     for op in range(data.num_operations):
-        optional = [assign[op, mach] for mach in data.op2machines[op]]
+        optional = [assign[op, machine] for machine in data.op2machines[op]]
         constraints.append(m.alternative(ops[op], optional))
 
     return constraints

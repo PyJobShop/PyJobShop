@@ -121,17 +121,16 @@ class ProblemData:
         self._job2ops = job2ops
         self._machine2ops = machine2ops
 
-        # TODO make this smarter
         self._op2machines: list[list[int]] = [
             [] for _ in range(self.num_operations)
         ]
-        for machine, ops in enumerate(self._machine2ops):
+        for machine, ops in enumerate(self.machine2ops):
             for operation in ops:
                 self._op2machines[operation].append(machine)
 
-        # TODO make this smarter
-        self._op2job: list[int] = [-1 for _ in range(self.num_operations)]
-        for job, ops in enumerate(self._job2ops):
+        # TODO Remove op2job with https://github.com/leonlan/PyJobShop/issues/44
+        self._op2job: list[int] = [0 for _ in range(self.num_operations)]
+        for job, ops in enumerate(self.job2ops):
             for operation in ops:
                 self._op2job[operation] = job
 
