@@ -85,7 +85,7 @@ def alternative_constraints(
     constraints = []
 
     for op in range(data.num_operations):
-        optional = [assign[op, mach] for mach in data.operations[op].machines]
+        optional = [assign[op, machine] for machine in data.op2machines[op]]
         constraints.append(m.alternative(ops[op], optional))
 
     return constraints
@@ -122,8 +122,8 @@ def machine_accessibility_constraints(
     constraints = []
 
     for op1, op2 in data.precedences:
-        machines1 = data.operations[op1].machines
-        machines2 = data.operations[op2].machines
+        machines1 = data.op2machines[op1]
+        machines2 = data.op2machines[op2]
 
         for mach1, mach2 in product(machines1, machines2):
             if not data.access_matrix[mach1, mach2]:

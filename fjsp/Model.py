@@ -1,3 +1,4 @@
+from collections import defaultdict
 from typing import Optional
 
 import numpy as np
@@ -16,6 +17,8 @@ class Model:
         self._jobs = []
         self._machines = []
         self._operations = []
+        self._job2ops: dict[int, list[int]] = defaultdict(list)
+        self._machine2ops: dict[int, list[int]] = defaultdict(list)
         self._processing_times: dict[tuple[int, int], int] = {}
         self._precedences: dict[tuple[int, int], list[PrecedenceType]] = {}
         self._access_matrix: dict[tuple[int, int], bool] = {}
@@ -41,8 +44,12 @@ class Model:
         """
         Returns a ProblemData object containing the problem instance.
         """
+        num_jobs = len(self.jobs)
         num_ops = len(self.operations)
         num_machines = len(self.machines)
+
+        job2ops = [self._job2ops[idx] for idx in range(num_jobs)]
+        machine2ops = [self._machine2ops[idx] for idx in range(num_machines)]
 
         # Convert processing times into a 2D array with large value as default.
         processing_times = np.full((num_ops, num_machines), MAX_VALUE)
@@ -63,6 +70,8 @@ class Model:
             self.jobs,
             self.machines,
             self.operations,
+            job2ops,
+            machine2ops,
             processing_times,
             self._precedences,
             access_matrix,
@@ -120,18 +129,12 @@ class Model:
 
         return machine
 
-    def add_operation(
-        self, job: Job, machines: list[Machine], name: Optional[str] = None
-    ) -> Operation:
+    def add_operation(self, name: Optional[str] = None) -> Operation:
         """
         Adds an operation to the model.
 
         Parameters
         ----------
-        job: Job
-            Job to which the operation belongs.
-        machines: list[Machine]
-            Eligible machines that can process the operation.
         name: Optional[str]
             Optional name of the operation.
 
@@ -140,14 +143,46 @@ class Model:
         Operation
             The created operation.
         """
-        job_idx = self._id2job[id(job)]
-        machine_idcs = [self._id2machine[id(m)] for m in machines]
-        operation = Operation(job_idx, machine_idcs, name)
+        operation = Operation(name)
 
         self._id2op[id(operation)] = len(self.operations)
         self._operations.append(operation)
 
         return operation
+
+    def assign_job_operations(self, job: Job, operations: list[Operation]):
+        """
+        Assigns operations to a job.
+
+        Parameters
+        ----------
+        job: Job
+            The job to which the operations are added.
+        operations: list[Operation]
+            The operations to add to the job.
+        """
+        job_idx = self._id2job[id(job)]
+        op_idcs = [self._id2op[id(op)] for op in operations]
+
+        self._job2ops[job_idx].extend(op_idcs)
+
+    def assign_machine_operations(
+        self, machine: Machine, operations: list[Operation]
+    ):
+        """
+        Assigns operations to a machine.
+
+        Parameters
+        ----------
+        machine: Machine
+            The machine to which the operations are added.
+        operations: list[Operation]
+            The operations to add to the machine.
+        """
+        machine_idx = self._id2machine[id(machine)]
+        op_idcs = [self._id2op[id(op)] for op in operations]
+
+        self._machine2ops[machine_idx].extend(op_idcs)
 
     def add_processing_time(
         self, operation: Operation, machine: Machine, duration: int

@@ -42,4 +42,6 @@ jobs:
       - name: Run pre-commit
         run: poetry run pre-commit run --all-files
       - name: Run tests
-        run: poetry run pytest
+        # TODO Ignoring (solving) examples because CP Optimizer is not
+        # installed in the CI environment.
+        run: poetry run pytest -k "not examples"

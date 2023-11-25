@@ -28,17 +28,22 @@ def plot(data: ProblemData, solution: Solution, plot_labels: bool = False):
             scheduled_op.start,
             scheduled_op.duration,
         )
-        op_data = data.operations[op]
 
         # Plot each scheduled operation as a single horizontal bar (interval).
-        color = colors[op_data.job]
+        color = colors[data.op2job[op]]
         kwargs = {"color": color, "linewidth": 1, "edgecolor": "black"}
         ax.barh(machine, duration, left=start, **kwargs)
 
         if plot_labels:
             # Plot the operation name as label in the center of the interval.
             center = start + duration / 2
-            ax.text(center, machine, op_data.name, ha="center", va="center")
+            ax.text(
+                center,
+                machine,
+                data.operations[op].name,
+                ha="center",
+                va="center",
+            )
 
     labels = [
         machine.name or f"Machine {idx}"
