@@ -44,4 +44,4 @@ jobs:
       - name: Run tests
         # TODO Ignoring (solving) examples because CP Optimizer is not
         # installed in the CI environment.
-        run: poetry run pytest "not examples"
+        run: poetry run pytest -k "not examples"
