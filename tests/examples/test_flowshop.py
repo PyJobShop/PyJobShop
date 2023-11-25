@@ -1,12 +1,14 @@
 import random
 
-from fjsp import Model, PrecedenceType, default_model, plot, result2solution
+from numpy.testing import assert_equal
+
+from fjsp import Model, PrecedenceType, default_model
 
 NUM_JOBS = 5
 NUM_MACHINES = 5
 
 
-def main():
+def test_flowshop():
     random.seed(42)
 
     model = Model()
@@ -36,10 +38,6 @@ def main():
     data = model.data()
     cp_model = default_model(data)
     result = cp_model.solve(TimeLimit=10)
-    solution = result2solution(data, result)
 
-    plot(data, solution)
-
-
-if __name__ == "__main__":
-    main()
+    assert_equal(result.get_solve_status(), "Optimal")
+    assert_equal(result.get_objective_value(), 51)
