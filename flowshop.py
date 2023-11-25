@@ -2,7 +2,7 @@ import random
 
 from fjsp import Model, PrecedenceType, default_model, plot, result2solution
 
-NUM_JOBS = 10
+NUM_JOBS = 5
 NUM_MACHINES = 5
 
 
@@ -14,15 +14,16 @@ def main():
     machines = [model.add_machine() for _ in range(NUM_MACHINES)]
 
     for idx in range(NUM_MACHINES - 1):
-        model.add_access_constraint(machines[idx], machines[idx + 1])
+        model.add_access_constraint(machines[idx], machines[idx + 1], True)
 
     for job in jobs:
+        # One operation per job and machine pair.
         operations = [model.add_operation() for _ in range(NUM_MACHINES)]
         model.assign_job_operations(job, operations)
 
-        for idx, op in enumerate(operations):
-            model.assign_machine_operations(machines[idx], [op])
-            model.add_processing_time(op, machines[idx], random.randint(1, 10))
+        for machine, op in zip(machines, operations):
+            model.assign_machine_operations(machine, [op])
+            model.add_processing_time(op, machine, random.randint(1, 10))
 
         # Create precedence constraints between operations.
         for idx in range(len(operations) - 1):
