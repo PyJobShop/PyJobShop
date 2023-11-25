@@ -18,7 +18,7 @@ def plot(data: ProblemData, solution: Solution, plot_labels: bool = False):
     """
     fig, ax = plt.subplots(1, 1, figsize=(12, 8))
 
-    # Use a gradiant color map to assign a unique color to each job.
+    # Operations belonging to the same job get the same unique color.
     colors = plt.cm.tab20c(np.linspace(0, 1, len(data.jobs)))
 
     for scheduled_op in solution.schedule:
@@ -29,17 +29,13 @@ def plot(data: ProblemData, solution: Solution, plot_labels: bool = False):
             scheduled_op.duration,
         )
 
-        # Plot each scheduled operation as a single horizontal bar (interval).
         job = [job for job, ops in enumerate(data.job2ops) if op in ops][0]
-        color = colors[job]
-        kwargs = {"color": color, "linewidth": 1, "edgecolor": "black"}
+        kwargs = {"color": colors[job], "linewidth": 1, "edgecolor": "black"}
         ax.barh(machine, duration, left=start, **kwargs)
 
         if plot_labels:
-            # Plot the operation name as label in the center of the interval.
-            center = start + duration / 2
             ax.text(
-                center,
+                start + duration / 2,
                 machine,
                 data.operations[op].name,
                 ha="center",
