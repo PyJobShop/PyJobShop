@@ -5,6 +5,7 @@ from fjsp.ProblemData import ProblemData
 from .constraints import (
     alternative_constraints,
     assignment_precedence_constraints,
+    job_operation_constraints,
     machine_accessibility_constraints,
     no_overlap_constraints,
     timing_precedence_constraints,
@@ -12,6 +13,7 @@ from .constraints import (
 from .objectives import makespan
 from .variables import (
     assignment_variables,
+    job_variables,
     operation_variables,
     sequence_variables,
 )
@@ -23,12 +25,14 @@ def default_model(data: ProblemData) -> CpoModel:
     """
     model = CpoModel()
 
+    jobs = job_variables(model, data)
     ops = operation_variables(model, data)
     assign = assignment_variables(model, data)
     sequences = sequence_variables(model, data, assign)
 
     model.add(makespan(model, data, ops))
 
+    model.add(job_operation_constraints(model, data, jobs, ops))
     model.add(timing_precedence_constraints(model, data, ops))
     model.add(
         assignment_precedence_constraints(model, data, assign, sequences)

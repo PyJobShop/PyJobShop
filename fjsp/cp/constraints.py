@@ -6,13 +6,39 @@ from docplex.cp.model import CpoModel
 
 from fjsp.ProblemData import ProblemData
 
-OpsVars = list[CpoIntervalVar]
+JobVars = list[CpoIntervalVar]
+OpVars = list[CpoIntervalVar]
 AssignVars = dict[tuple[int, int], CpoIntervalVar]
 SeqVars = list[CpoSequenceVar]
 
 
+def job_operation_constraints(
+    m: CpoModel, data: ProblemData, job_vars: JobVars, ops: OpVars
+) -> list[CpoExpr]:
+    """
+    Creates the constraints that ensure that the job variables govern the
+    related operation variables.
+    """
+    constraints = []
+
+    for job in range(data.num_jobs):
+        job_var = job_vars[job]
+        related_op_vars = [ops[op] for op in data.job2ops[job]]
+
+        constraints.append(m.span(job_var, related_op_vars))
+
+        for op_var in related_op_vars:
+            # Operation may not start before the job's release date if present.
+            constraints.append(
+                m.start_of(op_var)
+                >= data.jobs[job].release_date * m.presence_of(op_var)
+            )
+
+    return constraints
+
+
 def timing_precedence_constraints(
-    m: CpoModel, data: ProblemData, ops: OpsVars
+    m: CpoModel, data: ProblemData, ops: OpVars
 ) -> list[CpoExpr]:
     constraints = []
 
@@ -76,7 +102,7 @@ def assignment_precedence_constraints(
 
 
 def alternative_constraints(
-    m: CpoModel, data: ProblemData, ops: OpsVars, assign: AssignVars
+    m: CpoModel, data: ProblemData, ops: OpVars, assign: AssignVars
 ) -> list[CpoExpr]:
     """
     Creates the alternative constraints for the operations, ensuring that each
