@@ -45,3 +45,7 @@ jobs:
         # TODO Ignoring (solving) examples because CP Optimizer is not
         # installed in the CI environment.
         run: poetry run pytest -k "not examples"
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v3
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
