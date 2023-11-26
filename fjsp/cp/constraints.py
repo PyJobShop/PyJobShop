@@ -37,6 +37,38 @@ def job_operation_constraints(
     return constraints
 
 
+def operation_constraints(
+    m: CpoModel, data: ProblemData, op_vars: OpVars
+) -> list[CpoExpr]:
+    """
+    Creates constraints on the operation variables.
+    """
+    constraints = []
+
+    for op_data, op_var in zip(data.operations, op_vars):
+        start_var = m.start_of(op_var)
+        end_var = m.end_of(op_var)
+        presence_var = m.presence_of(op_var)
+
+        if op_data.earliest_start is not None:
+            constraints.append(
+                start_var >= op_data.earliest_start * presence_var
+            )
+
+        if op_data.latest_start is not None:
+            constraints.append(
+                start_var <= op_data.latest_start * presence_var
+            )
+
+        if op_data.earliest_end is not None:
+            constraints.append(end_var >= op_data.earliest_end * presence_var)
+
+        if op_data.latest_end is not None:
+            constraints.append(end_var <= op_data.latest_end * presence_var)
+
+    return constraints
+
+
 def timing_precedence_constraints(
     m: CpoModel, data: ProblemData, op_vars: OpVars
 ) -> list[CpoExpr]:
