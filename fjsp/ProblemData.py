@@ -1,7 +1,7 @@
-from enum import Enum, EnumMeta
 from typing import Optional
 
 import numpy as np
+from strenum import StrEnum
 
 
 class Job:
@@ -113,12 +113,7 @@ class Operation:
         return self._name
 
 
-class PrecedenceTypeMeta(EnumMeta):
-    def __contains__(cls, item):
-        return item in cls._value2member_map_ or item in cls.__members__
-
-
-class PrecedenceType(str, Enum, metaclass=PrecedenceTypeMeta):
+class PrecedenceType(StrEnum):
     """
     Types of precendence constraints between two operations $i$ and $j$.
     Let $s(i)$ and $f(i)$ be the start and finish times of operation $i$,

@@ -244,10 +244,6 @@ class Model:
             List of precedence types between the first and the second
             operation.
         """
-        if any(pt not in PrecedenceType for pt in precedence_types):
-            msg = "Precedence types must be of type PrecedenceType."
-            raise ValueError(msg)
-
         op1 = self._id2op[id(operation1)]
         op2 = self._id2op[id(operation2)]
         self._precedences[op1, op2] = precedence_types
