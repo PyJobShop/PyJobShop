@@ -112,13 +112,13 @@ def assignment_precedence_constraints(
         seq_var = seq_vars[machine]
 
         for op1, op2 in product(ops, repeat=2):
-            if op1 == op2 or (op1, op2) not in data.precedences:
+            if op1 == op2 or (op1, op2) not in data.assignment_precedences:
                 continue
 
             var1 = assign_vars[op1, machine]
             var2 = assign_vars[op2, machine]
 
-            for prec_type in data.precedences[op1, op2]:
+            for prec_type in data.assignment_precedences[op1, op2]:
                 if prec_type == "previous":
                     expr = m.previous(seq_var, var1, var2)
                 elif prec_type == "same_unit":

@@ -128,9 +128,6 @@ class TimingPrecedence(StrEnum):
     - end_at_end:            $f(i) == f(j)$
     - end_before_start:      $f(i) <= s(j)$
     - end_before_end:        $f(i) <= f(j)$
-    - previous:              i is previous to j in sequence variable.
-    - same_unit:             i and j are processed on the same unit.
-    - different_unit:        i and j are processed on different units.
     """
 
     START_AT_START = "start_at_start"
@@ -141,6 +138,18 @@ class TimingPrecedence(StrEnum):
     END_AT_END = "end_at_end"
     END_BEFORE_START = "end_before_start"
     END_BEFORE_END = "end_before_end"
+
+
+class AssignmentPrecedence(StrEnum):
+    """
+    Types of assignment precedence constraints between two operations $i$ and
+    $j$.
+
+    - previous:              i is previous to j in sequence variable.
+    - same_unit:             i and j are processed on the same unit.
+    - different_unit:        i and j are processed on different units.
+    """
+
     PREVIOUS = "previous"
     SAME_UNIT = "same_unit"
     DIFFERENT_UNIT = "different_unit"
@@ -156,6 +165,9 @@ class ProblemData:
         machine2ops: list[list[int]],
         processing_times: np.ndarray,
         precedences: dict[tuple[int, int], list[TimingPrecedence]],
+        assignment_precedences: Optional[
+            dict[tuple[int, int], list[AssignmentPrecedence]]
+        ] = None,
         access_matrix: Optional[np.ndarray] = None,
         setup_times: Optional[np.ndarray] = None,
     ):
@@ -166,6 +178,7 @@ class ProblemData:
         self._machine2ops = machine2ops
         self._processing_times = processing_times
         self._precedences = precedences
+        self._assignment_precedences = assignment_precedences or {}
 
         num_mach = self.num_machines
         num_ops = self.num_operations
@@ -281,10 +294,23 @@ class ProblemData:
         Returns
         -------
         dict[tuple[int, int], list[TimingPrecedence]]
-            Dict of precedence constraints between operations. Each precedence
-            constraint is a list of precedence types.
+            Dict of precedence constraints between operations.
         """
         return self._precedences
+
+    @property
+    def assignment_precedences(
+        self,
+    ) -> dict[tuple[int, int], list[AssignmentPrecedence]]:
+        """
+        Assignment precedence constraints between operations.
+
+        Returns
+        -------
+        dict[tuple[int, int], list[AssignmentPrecedence]]
+            Dict of assignment precedence constraints between operations.
+        """
+        return self._assignment_precedences
 
     @property
     def access_matrix(self) -> np.ndarray:
