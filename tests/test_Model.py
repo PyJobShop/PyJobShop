@@ -2,6 +2,45 @@ from numpy.testing import assert_equal
 
 from fjsp import Model
 
+MAX_VALUE = 2**25
+
+
+def test_model_data():
+    """
+    Tests that calling ``Model.data()`` returns a correct ProblemData instance.
+    """
+    model = Model()
+
+    job = model.add_job()
+    machines = [model.add_machine() for _ in range(2)]
+    operations = [model.add_operation() for _ in range(2)]
+
+    model.assign_job_operations(job, operations)
+    model.assign_machine_operations(machines[0], operations)
+    model.assign_machine_operations(machines[1], operations)
+
+    model.add_processing_time(operations[0], machines[0], 1)
+    model.add_processing_time(operations[1], machines[1], 2)
+
+    model.add_precedence(operations[0], operations[1], ["end_before_start"])
+
+    model.add_access_constraint(machines[0], machines[1], False)
+
+    model.add_setup_time(operations[0], operations[1], machines[0], 3)
+    model.add_setup_time(operations[0], operations[1], machines[1], 4)
+
+    data = model.data()
+
+    assert_equal(data.jobs, [job])
+    assert_equal(data.machines, machines)
+    assert_equal(data.operations, operations)
+    assert_equal(data.job2ops, [[0, 1]])
+    assert_equal(data.machine2ops, [[0, 1], [0, 1]])
+    assert_equal(data.processing_times, [[1, MAX_VALUE], [MAX_VALUE, 2]])
+    assert_equal(data.precedences, {(0, 1): ["end_before_start"]})
+    assert_equal(data.access_matrix, [[True, False], [True, True]])
+    assert_equal(data.setup_times, [[[0, 0], [3, 4]], [[0, 0], [0, 0]]])
+
 
 def test_add_job_attributes():
     """
@@ -40,3 +79,18 @@ def test_add_operation_attributes():
     assert_equal(operation.earliest_end, 3)
     assert_equal(operation.latest_end, 4)
     assert_equal(operation.name, "operation")
+
+
+def test_model_attributes():
+    """
+    Tests that the model attributes are correctly set when adding data objects.
+    """
+    model = Model()
+
+    jobs = [model.add_job() for _ in range(10)]
+    machine = [model.add_machine() for _ in range(20)]
+    operation = [model.add_operation() for _ in range(30)]
+
+    assert_equal(model.jobs, jobs)
+    assert_equal(model.machines, machine)
+    assert_equal(model.operations, operation)
