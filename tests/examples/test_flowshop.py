@@ -2,7 +2,7 @@ import random
 
 from numpy.testing import assert_equal
 
-from fjsp import Model, PrecedenceType
+from fjsp import Model, TimingPrecedence
 
 NUM_JOBS = 5
 NUM_MACHINES = 5
@@ -32,7 +32,7 @@ def test_flowshop():
             model.add_precedence(
                 operations[idx],
                 operations[idx + 1],
-                precedence_types=[PrecedenceType.END_AT_START],  # blocking
+                [TimingPrecedence.END_AT_START],  # blocking
             )
 
     result = model.solve()

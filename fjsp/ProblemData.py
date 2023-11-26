@@ -113,9 +113,9 @@ class Operation:
         return self._name
 
 
-class PrecedenceType(StrEnum):
+class TimingPrecedence(StrEnum):
     """
-    Types of precendence constraints between two operations $i$ and $j$.
+    Types of precedence constraints between two operations $i$ and $j$.
     Let $s(i)$ and $f(i)$ be the start and finish times of operation $i$,
     and let $s(j)$ and $f(j)$ be defined similarly for operation $j$. The
     following precedence constraints are supported (in CPLEX terminology):
@@ -155,7 +155,7 @@ class ProblemData:
         job2ops: list[list[int]],
         machine2ops: list[list[int]],
         processing_times: np.ndarray,
-        precedences: dict[tuple[int, int], list[PrecedenceType]],
+        precedences: dict[tuple[int, int], list[TimingPrecedence]],
         access_matrix: Optional[np.ndarray] = None,
         setup_times: Optional[np.ndarray] = None,
     ):
@@ -274,13 +274,13 @@ class ProblemData:
         return self._processing_times
 
     @property
-    def precedences(self) -> dict[tuple[int, int], list[PrecedenceType]]:
+    def precedences(self) -> dict[tuple[int, int], list[TimingPrecedence]]:
         """
         Precedence constraints between operations.
 
         Returns
         -------
-        dict[tuple[int, int], list[PrecedenceType]]
+        dict[tuple[int, int], list[TimingPrecedence]]
             Dict of precedence constraints between operations. Each precedence
             constraint is a list of precedence types.
         """

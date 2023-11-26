@@ -1,6 +1,6 @@
 from numpy.testing import assert_equal
 
-from fjsp import Model, PrecedenceType
+from fjsp import Model, TimingPrecedence
 
 
 def test_jobshop():
@@ -44,9 +44,7 @@ def test_jobshop():
         # Impose linear routing precedence constraints.
         for op_idx in range(1, len(ops)):
             op1, op2 = ops[op_idx - 1], ops[op_idx]
-            model.add_precedence(
-                op1, op2, precedence_types=[PrecedenceType.END_BEFORE_START]
-            )
+            model.add_precedence(op1, op2, [TimingPrecedence.END_BEFORE_START])
 
     result = model.solve()
 

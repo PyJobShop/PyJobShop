@@ -5,7 +5,7 @@ import numpy as np
 from docplex.cp.solution import CpoSolveResult
 
 from .cp import default_model
-from .ProblemData import Job, Machine, Operation, PrecedenceType, ProblemData
+from .ProblemData import Job, Machine, Operation, ProblemData, TimingPrecedence
 
 MAX_VALUE = 2**25
 
@@ -22,7 +22,7 @@ class Model:
         self._job2ops: dict[int, list[int]] = defaultdict(list)
         self._machine2ops: dict[int, list[int]] = defaultdict(list)
         self._processing_times: dict[tuple[int, int], int] = {}
-        self._precedences: dict[tuple[int, int], list[PrecedenceType]] = {}
+        self._precedences: dict[tuple[int, int], list[TimingPrecedence]] = {}
         self._access_matrix: dict[tuple[int, int], bool] = {}
         self._setup_times: dict[tuple[int, int, int], int] = {}
 
@@ -229,7 +229,7 @@ class Model:
         self,
         operation1: Operation,
         operation2: Operation,
-        precedence_types: list[PrecedenceType],
+        timing_precedences: list[TimingPrecedence],
     ):
         """
         Adds a precedence constraints between two operations.
@@ -240,13 +240,13 @@ class Model:
             First operation.
         operation2: Operation
             Second operation.
-        precedence_types: list[PrecedenceType]
+        timing_precedences: list[TimingPrecedence]
             List of precedence types between the first and the second
             operation.
         """
         op1 = self._id2op[id(operation1)]
         op2 = self._id2op[id(operation2)]
-        self._precedences[op1, op2] = precedence_types
+        self._precedences[op1, op2] = timing_precedences
 
     def add_access_constraint(
         self, machine1: Machine, machine2: Machine, is_accessible: bool = False

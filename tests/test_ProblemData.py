@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 from numpy.testing import assert_allclose, assert_equal, assert_raises
 
-from fjsp import Job, Machine, Operation, PrecedenceType, ProblemData
+from fjsp import Job, Machine, Operation, ProblemData, TimingPrecedence
 
 
 def test_job_attributes():
@@ -87,7 +87,7 @@ def test_operation_attributes_raises_invalid_parameters(
         )
 
 
-# TODO test PrecedenceType
+# TODO test TimingPrecedence
 
 
 def test_problem_data_attributes():
@@ -101,7 +101,7 @@ def test_problem_data_attributes():
     machine2ops = [[0], [1], [2], [3], [4]]
     processing_times = np.ones((5, 5), dtype=int)
     precedences = {
-        key: [PrecedenceType.END_BEFORE_START]
+        key: [TimingPrecedence.END_BEFORE_START]
         for key in ((0, 1), (2, 3), (4, 5))
     }
     access_matrix = np.full((5, 5), True)
@@ -143,7 +143,7 @@ def test_problem_data_default_values():
     operations = [Operation() for _ in range(1)]
     job2ops = [[0]]
     machine2ops = [[0]]
-    precedences = {(0, 1): [PrecedenceType.END_BEFORE_START]}
+    precedences = {(0, 1): [TimingPrecedence.END_BEFORE_START]}
     processing_times = np.ones((1, 1), dtype=int)
     data = ProblemData(
         jobs,

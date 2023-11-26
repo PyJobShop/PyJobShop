@@ -74,11 +74,11 @@ def timing_precedence_constraints(
 ) -> list[CpoExpr]:
     constraints = []
 
-    for (idx1, idx2), precedence_types in data.precedences.items():
+    for (idx1, idx2), timing_precedences in data.precedences.items():
         op1 = op_vars[idx1]
         op2 = op_vars[idx2]
 
-        for prec_type in precedence_types:
+        for prec_type in timing_precedences:
             if prec_type == "start_at_start":
                 expr = m.start_at_start(op1, op2)
             elif prec_type == "start_at_end":
