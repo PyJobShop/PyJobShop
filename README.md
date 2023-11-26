@@ -1,3 +1,8 @@
+[![CI](https://github.com/leonlan/PyJobShop/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/leonlan/PyJobShop/actions/workflows/CI.yml/badge.svg)
+[![codecov](https://codecov.io/gh/leonlan/PyJobShop/graph/badge.svg?token=5WZK5HW1FI)](https://codecov.io/gh/leonlan/PyJobShop)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+
 # Flexible Job Shop Problem
 This repository implements a constraint programming (CP) model for the flexible job shop problem (FJSP).
 We consider a rich variant of the FJSP with many different constraints, such as arbitrary operations precedence relations, sequence-dependent setup times, and many more.
