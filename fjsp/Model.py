@@ -2,7 +2,9 @@ from collections import defaultdict
 from typing import Optional
 
 import numpy as np
+from docplex.cp.solution import CpoSolveResult
 
+from .cp import default_model
 from .ProblemData import Job, Machine, Operation, PrecedenceType, ProblemData
 
 MAX_VALUE = 2**25
@@ -297,3 +299,22 @@ class Model:
         machine_idx = self._id2machine[id(machine)]
 
         self._setup_times[op_idx1, op_idx2, machine_idx] = duration
+
+    def solve(self, time_limit: Optional[int] = None) -> CpoSolveResult:
+        """
+        Solves the problem data instance created by the model.
+
+        Parameters
+        ----------
+        time_limit: Optional[int]
+            Time limit in seconds for the solver, defaults to None. If set to
+            None, the solver will run until an optimal solution is found.
+
+        Returns
+        -------
+        Result
+            A results object containing solver result.
+        """
+        data = self.data()
+        cp_model = default_model(data)
+        return cp_model.solve(TimeLimit=time_limit)

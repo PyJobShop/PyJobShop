@@ -1,6 +1,6 @@
 from numpy.testing import assert_equal
 
-from fjsp import Model, PrecedenceType, default_model
+from fjsp import Model, PrecedenceType
 
 
 def test_jobshop():
@@ -48,9 +48,7 @@ def test_jobshop():
                 op1, op2, precedence_types=[PrecedenceType.END_BEFORE_START]
             )
 
-    data = model.data()
-    cp_model = default_model(data)
-    result = cp_model.solve(TimeLimit=10)
+    result = model.solve()
 
     assert_equal(result.get_solve_status(), "Optimal")
     assert_equal(result.get_objective_value(), 20)

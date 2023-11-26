@@ -19,9 +19,7 @@ def test_earliest_start():
     model.assign_machine_operations(machine, [operation])
     model.add_processing_time(operation, machine, duration=1)
 
-    data = model.data()
-    cp_model = default_model(data)
-    result = cp_model.solve(TimeLimit=10)
+    result = model.solve()
 
     # Operation starts at time 1 and takes 1 time unit, so the makespan is 2.
     assert_equal(result.get_solve_status(), "Optimal")
@@ -49,9 +47,7 @@ def test_latest_start():
 
     model.add_setup_time(operations[1], operations[0], machine, 10)
 
-    data = model.data()
-    cp_model = default_model(data)
-    result = cp_model.solve(TimeLimit=10)
+    result = model.solve()
 
     # Operation 1 (processing time of 2) cannot start before operation 2,
     # otherwise operation 2 cannot start before time 1. So operation 2 is
@@ -76,9 +72,7 @@ def test_fixed_start():
     model.assign_machine_operations(machine, [operation])
     model.add_processing_time(operation, machine, duration=1)
 
-    data = model.data()
-    cp_model = default_model(data)
-    result = cp_model.solve(TimeLimit=10)
+    result = model.solve()
 
     # Operation starts at time 42 and takes 1 time unit, so the makespan is 43.
     assert_equal(result.get_solve_status(), "Optimal")
@@ -130,9 +124,7 @@ def test_latest_end():
 
     model.add_setup_time(operations[1], operations[0], machine, 10)
 
-    data = model.data()
-    cp_model = default_model(data)
-    result = cp_model.solve(TimeLimit=10)
+    result = model.solve()
 
     # Operation 1 (processing time of 2) cannot start before operation 2,
     # otherwise operation 2 cannot end before time 2. So operation 2 is
@@ -157,9 +149,7 @@ def test_fixed_end():
     model.assign_machine_operations(machine, [operation])
     model.add_processing_time(operation, machine, duration=1)
 
-    data = model.data()
-    cp_model = default_model(data)
-    result = cp_model.solve(TimeLimit=10)
+    result = model.solve()
 
     # Operation ends at 42, so the makespan is 42.
     assert_equal(result.get_solve_status(), "Optimal")

@@ -2,7 +2,7 @@ import random
 
 from numpy.testing import assert_equal
 
-from fjsp import Model, PrecedenceType, default_model
+from fjsp import Model, PrecedenceType
 
 NUM_JOBS = 5
 NUM_MACHINES = 5
@@ -35,9 +35,7 @@ def test_flowshop():
                 precedence_types=[PrecedenceType.END_AT_START],  # blocking
             )
 
-    data = model.data()
-    cp_model = default_model(data)
-    result = cp_model.solve(TimeLimit=10)
+    result = model.solve()
 
     assert_equal(result.get_solve_status(), "Optimal")
     assert_equal(result.get_objective_value(), 51)
