@@ -25,6 +25,8 @@ matplotlib = "^3.7.1"
 [tool.poetry.group.dev.dependencies]
 pre-commit = "^3.2.2"
 pytest = "^7.4.2"
+pytest-cov = "^4.1.0"
+codecov = "^2.1.13"
 
 
 [tool.black]
