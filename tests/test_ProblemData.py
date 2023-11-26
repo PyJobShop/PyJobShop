@@ -45,10 +45,10 @@ def test_operation_attributes():
     """
     operation = Operation(1, 2, 3, 4, name="TestOperation")
 
-    assert_equal(operation.earliest_start, 0)
-    assert_equal(operation.latest_start, 1)
-    assert_equal(operation.earliest_end, 2)
-    assert_equal(operation.latest_end, 3)
+    assert_equal(operation.earliest_start, 1)
+    assert_equal(operation.latest_start, 2)
+    assert_equal(operation.earliest_end, 3)
+    assert_equal(operation.latest_end, 4)
     assert_equal(operation.name, "TestOperation")
 
     # Also test that default values are set correctly.
