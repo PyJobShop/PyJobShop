@@ -43,14 +43,12 @@ def test_operation_attributes():
     """
     Tests that the attributes of the Operation class are set correctly.
     """
-    operation = Operation(0, 1, 2, 3, 4, 5, name="TestOperation")
+    operation = Operation(1, 2, 3, 4, name="TestOperation")
 
     assert_equal(operation.earliest_start, 0)
     assert_equal(operation.latest_start, 1)
-    assert_equal(operation.fixed_start, 2)
-    assert_equal(operation.earliest_end, 3)
-    assert_equal(operation.latest_end, 4)
-    assert_equal(operation.fixed_end, 5)
+    assert_equal(operation.earliest_end, 2)
+    assert_equal(operation.latest_end, 3)
     assert_equal(operation.name, "TestOperation")
 
     # Also test that default values are set correctly.
@@ -58,29 +56,23 @@ def test_operation_attributes():
 
     assert_equal(operation.earliest_start, None)
     assert_equal(operation.latest_start, None)
-    assert_equal(operation.fixed_start, None)
     assert_equal(operation.earliest_end, None)
     assert_equal(operation.latest_end, None)
-    assert_equal(operation.fixed_end, None)
     assert_equal(operation.name, None)
 
 
 @pytest.mark.parametrize(
-    "earliest_start, latest_start, fixed_start, earliest_end, latest_end, fixed_end",
+    "earliest_start, latest_start, earliest_end, latest_end",
     [
-        # earliest_start > latest_start
-        (1, 0, None, None, None, None),
-        # earliest_end > latest_end
-        (None, None, None, 1, 0, None),
+        (1, 0, None, None),  # earliest_start > latest_start
+        (None, None, 1, 0),  # earliest_end > latest_end
     ],
 )
 def test_operation_attributes_raises_invalid_parameters(
     earliest_start,
     latest_start,
-    fixed_start,
     earliest_end,
     latest_end,
-    fixed_end,
 ):
     """
     Tests that an error is raised when invalid parameters are passed to the
@@ -90,10 +82,8 @@ def test_operation_attributes_raises_invalid_parameters(
         Operation(
             earliest_start,
             latest_start,
-            fixed_start,
             earliest_end,
             latest_end,
-            fixed_end,
         )
 
 

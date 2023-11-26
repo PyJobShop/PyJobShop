@@ -56,14 +56,10 @@ class Operation:
         Earliest start time of the operation.
     latest_start: Optional[int]
         Latest start time of the operation.
-    fixed_start: Optional[int]
-        Fixed start time of the operation.
     earliest_end: Optional[int]
         Earliest end time of the operation.
     latest_end: Optional[int]
         Latest end time of the operation.
-    fixed_end: Optional[int]
-        Fixed end time of the operation.
     name: Optional[str]
         Name of the operation.
     """
@@ -72,10 +68,8 @@ class Operation:
         self,
         earliest_start: Optional[int] = None,
         latest_start: Optional[int] = None,
-        fixed_start: Optional[int] = None,
         earliest_end: Optional[int] = None,
         latest_end: Optional[int] = None,
-        fixed_end: Optional[int] = None,
         name: Optional[str] = None,
     ):
         if (
@@ -94,10 +88,8 @@ class Operation:
 
         self._earliest_start = earliest_start
         self._latest_start = latest_start
-        self._fixed_start = fixed_start
         self._earliest_end = earliest_end
         self._latest_end = latest_end
-        self._fixed_end = fixed_end
         self._name = name
 
     @property
@@ -109,20 +101,12 @@ class Operation:
         return self._latest_start
 
     @property
-    def fixed_start(self) -> Optional[int]:
-        return self._fixed_start
-
-    @property
     def earliest_end(self) -> Optional[int]:
         return self._earliest_end
 
     @property
     def latest_end(self) -> Optional[int]:
         return self._latest_end
-
-    @property
-    def fixed_end(self) -> Optional[int]:
-        return self._fixed_end
 
     @property
     def name(self) -> Optional[str]:

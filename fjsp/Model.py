@@ -133,10 +133,8 @@ class Model:
         self,
         earliest_start: Optional[int] = None,
         latest_start: Optional[int] = None,
-        fixed_start: Optional[int] = None,
         earliest_end: Optional[int] = None,
         latest_end: Optional[int] = None,
-        fixed_end: Optional[int] = None,
         name: Optional[str] = None,
     ) -> Operation:
         """
@@ -148,14 +146,10 @@ class Model:
             Earliest start time of the operation.
         latest_start: Optional[int]
             Latest start time of the operation.
-        fixed_start: Optional[int]
-            Fixed start time of the operation.
         earliest_end: Optional[int]
             Earliest end time of the operation.
         latest_end: Optional[int]
             Latest end time of the operation.
-        fixed_end: Optional[int]
-            Fixed end time of the operation.
         name: Optional[str]
             Name of the operation.
 
@@ -165,13 +159,7 @@ class Model:
             The created operation.
         """
         operation = Operation(
-            earliest_start,
-            latest_start,
-            fixed_start,
-            earliest_end,
-            latest_end,
-            fixed_end,
-            name,
+            earliest_start, latest_start, earliest_end, latest_end, name
         )
 
         self._id2op[id(operation)] = len(self.operations)
