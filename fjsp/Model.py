@@ -129,21 +129,38 @@ class Model:
 
         return machine
 
-    def add_operation(self, name: Optional[str] = None) -> Operation:
+    def add_operation(
+        self,
+        earliest_start: Optional[int] = None,
+        latest_start: Optional[int] = None,
+        earliest_end: Optional[int] = None,
+        latest_end: Optional[int] = None,
+        name: Optional[str] = None,
+    ) -> Operation:
         """
         Adds an operation to the model.
 
         Parameters
         ----------
+        earliest_start: Optional[int]
+            Earliest start time of the operation.
+        latest_start: Optional[int]
+            Latest start time of the operation.
+        earliest_end: Optional[int]
+            Earliest end time of the operation.
+        latest_end: Optional[int]
+            Latest end time of the operation.
         name: Optional[str]
-            Optional name of the operation.
+            Name of the operation.
 
         Returns
         -------
         Operation
             The created operation.
         """
-        operation = Operation(name)
+        operation = Operation(
+            earliest_start, latest_start, earliest_end, latest_end, name
+        )
 
         self._id2op[id(operation)] = len(self.operations)
         self._operations.append(operation)

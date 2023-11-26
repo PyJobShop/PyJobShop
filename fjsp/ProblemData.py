@@ -52,12 +52,61 @@ class Operation:
 
     Parameters
     ----------
+    earliest_start: Optional[int]
+        Earliest start time of the operation.
+    latest_start: Optional[int]
+        Latest start time of the operation.
+    earliest_end: Optional[int]
+        Earliest end time of the operation.
+    latest_end: Optional[int]
+        Latest end time of the operation.
     name: Optional[str]
         Name of the operation.
     """
 
-    def __init__(self, name: Optional[str] = None):
+    def __init__(
+        self,
+        earliest_start: Optional[int] = None,
+        latest_start: Optional[int] = None,
+        earliest_end: Optional[int] = None,
+        latest_end: Optional[int] = None,
+        name: Optional[str] = None,
+    ):
+        if (
+            earliest_start is not None
+            and latest_start is not None
+            and earliest_start > latest_start
+        ):
+            raise ValueError("earliest_start must be <= latest_start.")
+
+        if (
+            earliest_end is not None
+            and latest_end is not None
+            and earliest_end > latest_end
+        ):
+            raise ValueError("earliest_end must be <= latest_end.")
+
+        self._earliest_start = earliest_start
+        self._latest_start = latest_start
+        self._earliest_end = earliest_end
+        self._latest_end = latest_end
         self._name = name
+
+    @property
+    def earliest_start(self) -> Optional[int]:
+        return self._earliest_start
+
+    @property
+    def latest_start(self) -> Optional[int]:
+        return self._latest_start
+
+    @property
+    def earliest_end(self) -> Optional[int]:
+        return self._earliest_end
+
+    @property
+    def latest_end(self) -> Optional[int]:
+        return self._latest_end
 
     @property
     def name(self) -> Optional[str]:
