@@ -78,6 +78,20 @@ class Operation:
         fixed_end: Optional[int] = None,
         name: Optional[str] = None,
     ):
+        if (
+            earliest_start is not None
+            and latest_start is not None
+            and earliest_start > latest_start
+        ):
+            raise ValueError("earliest_start > latest_start not understood.")
+
+        if (
+            earliest_end is not None
+            and latest_end is not None
+            and earliest_end > latest_end
+        ):
+            raise ValueError("earliest_end > latest_end not understood.")
+
         self._earliest_start = earliest_start
         self._latest_start = latest_start
         self._fixed_start = fixed_start

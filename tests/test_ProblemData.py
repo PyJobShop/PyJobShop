@@ -65,6 +65,38 @@ def test_operation_attributes():
     assert_equal(operation.name, None)
 
 
+@pytest.mark.parametrize(
+    "earliest_start, latest_start, fixed_start, earliest_end, latest_end, fixed_end",
+    [
+        # earliest_start > latest_start
+        (1, 0, None, None, None, None),
+        # earliest_end > latest_end
+        (None, None, None, 1, 0, None),
+    ],
+)
+def test_operation_attributes_raises_invalid_parameters(
+    earliest_start,
+    latest_start,
+    fixed_start,
+    earliest_end,
+    latest_end,
+    fixed_end,
+):
+    """
+    Tests that an error is raised when invalid parameters are passed to the
+    Operation class.
+    """
+    with assert_raises(ValueError):
+        Operation(
+            earliest_start,
+            latest_start,
+            fixed_start,
+            earliest_end,
+            latest_end,
+            fixed_end,
+        )
+
+
 # TODO test PrecedenceType
 
 
