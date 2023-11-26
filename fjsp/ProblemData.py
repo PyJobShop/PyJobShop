@@ -169,14 +169,6 @@ class ProblemData:
         self._operations = operations
         self._job2ops = job2ops
         self._machine2ops = machine2ops
-
-        self._op2machines: list[list[int]] = [
-            [] for _ in range(self.num_operations)
-        ]
-        for machine, ops in enumerate(self.machine2ops):
-            for operation in ops:
-                self._op2machines[operation].append(machine)
-
         self._processing_times = processing_times
         self._precedences = precedences
 
@@ -194,9 +186,19 @@ class ProblemData:
             else np.zeros((num_ops, num_ops, num_mach), dtype=int)
         )
 
+        self._op2machines: list[list[int]] = [
+            [] for _ in range(self.num_operations)
+        ]
+        for machine, ops in enumerate(self.machine2ops):
+            for operation in ops:
+                self._op2machines[operation].append(machine)
+
         self._validate_parameters()
 
     def _validate_parameters(self):
+        """
+        Validates the problem data parameters.
+        """
         num_mach = self.num_machines
         num_ops = self.num_operations
 
@@ -264,18 +266,6 @@ class ProblemData:
         return self._machine2ops
 
     @property
-    def op2machines(self) -> list[list[int]]:
-        """
-        List of eligible machine indices for each operation.
-
-        Returns
-        -------
-        list[list[int]]
-            List of eligible machine indices for each operation.
-        """
-        return self._op2machines
-
-    @property
     def processing_times(self) -> np.ndarray:
         """
         Processing times of operations on machines.
@@ -327,6 +317,18 @@ class ProblemData:
             operation indices, and the third dimension is indexed by machine.
         """
         return self._setup_times
+
+    @property
+    def op2machines(self) -> list[list[int]]:
+        """
+        List of eligible machine indices for each operation.
+
+        Returns
+        -------
+        list[list[int]]
+            List of eligible machine indices for each operation.
+        """
+        return self._op2machines
 
     @property
     def num_jobs(self) -> int:
