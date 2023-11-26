@@ -72,19 +72,11 @@ class Operation:
         latest_end: Optional[int] = None,
         name: Optional[str] = None,
     ):
-        if (
-            earliest_start is not None
-            and latest_start is not None
-            and earliest_start > latest_start
-        ):
-            raise ValueError("earliest_start > latest_start not understood.")
+        if earliest_start and latest_start and earliest_start > latest_start:
+            raise ValueError("earliest_start must be <= latest_start.")
 
-        if (
-            earliest_end is not None
-            and latest_end is not None
-            and earliest_end > latest_end
-        ):
-            raise ValueError("earliest_end > latest_end not understood.")
+        if earliest_end and latest_end and earliest_end > latest_end:
+            raise ValueError("earliest_end must be <= latest_end.")
 
         self._earliest_start = earliest_start
         self._latest_start = latest_start
