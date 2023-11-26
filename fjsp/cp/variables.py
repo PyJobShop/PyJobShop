@@ -6,6 +6,13 @@ from fjsp.ProblemData import ProblemData
 AssignVars = dict[tuple[int, int], CpoIntervalVar]
 
 
+def job_variables(m: CpoModel, data: ProblemData) -> list[CpoIntervalVar]:
+    """
+    Creates an interval variable for each job in the problem.
+    """
+    return [m.interval_var(name=f"J{job}") for job in range(data.num_jobs)]
+
+
 def operation_variables(
     m: CpoModel, data: ProblemData
 ) -> list[CpoIntervalVar]:
@@ -32,13 +39,6 @@ def assignment_variables(m: CpoModel, data: ProblemData) -> AssignVars:
             m.add(
                 m.size_of(var)
                 >= data.processing_times[op, machine] * m.presence_of(var)
-            )
-
-            # Operation may not start before the job's release date if present.
-            job = data.op2job[op]
-            m.add(
-                m.start_of(var)
-                >= data.jobs[job].release_date * m.presence_of(var)
             )
 
     return variables

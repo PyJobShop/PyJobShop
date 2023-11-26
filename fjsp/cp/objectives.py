@@ -5,44 +5,33 @@ from fjsp.ProblemData import ProblemData
 
 
 def makespan(
-    m: CpoModel, data: ProblemData, ops: list[CpoIntervalVar]
+    m: CpoModel, data: ProblemData, job_vars: list[CpoIntervalVar]
 ) -> CpoExpr:
     """
     Minimizes the makespan of the schedule.
     """
-    completion_times = [m.end_of(ops[op]) for op in range(data.num_operations)]
-    return m.minimize(m.max(completion_times))
+    return m.minimize(m.max(m.end_of(var) for var in job_vars))
 
 
 def total_completion_time(
-    m: CpoModel, data: ProblemData, ops: list[CpoIntervalVar]
+    m: CpoModel, data: ProblemData, job_vars: list[CpoIntervalVar]
 ) -> CpoExpr:
     """
-    Minimizes the sum of the completion times of each job. A job's completion
-    time is defined as the completion time of its last completed operation.
+    Minimizes the sum of the completion times of each job.
     """
-    completion_times = []
-
-    for operations in data.job2ops:
-        expr = m.max([ops[op] for op in operations])
-        completion_times.append(expr)
-
-    return m.minimize(m.sum(completion_times))
+    return m.minimize(m.sum(m.end_of(var) for var in job_vars))
 
 
 def total_tardiness(
-    m: CpoModel, data: ProblemData, ops: list[CpoIntervalVar]
+    m: CpoModel, data: ProblemData, job_vars: list[CpoIntervalVar]
 ) -> CpoExpr:
     """
     Minimizes the sum of the tardiness of each job. A job's tardiness is
-    defined as the maximum of 0 and the completion time of its last completed
-    operation minus the job's deadline.
+    defined as the maximum of 0 and its completion time minus the job's
+    deadline.
     """
-    total = []
-
-    for job, operations in enumerate(data.job2ops):
-        expr = m.max([m.end_of(ops[op]) for op in operations])
-        tardiness = m.max(0, expr - data.jobs[job].deadline)
-        total.append(tardiness)
-
-    return m.minimize(m.sum(total))
+    expr = m.sum(
+        m.max(0, m.end_of(var) - job_data.deadline)
+        for job_data, var in zip(data.jobs, job_vars)
+    )
+    return m.minimize(expr)

@@ -128,12 +128,6 @@ class ProblemData:
             for operation in ops:
                 self._op2machines[operation].append(machine)
 
-        # TODO Remove op2job with https://github.com/leonlan/PyJobShop/issues/44
-        self._op2job: list[int] = [0 for _ in range(self.num_operations)]
-        for job, ops in enumerate(self.job2ops):
-            for operation in ops:
-                self._op2job[operation] = job
-
         self._processing_times = processing_times
         self._precedences = precedences
 
@@ -231,18 +225,6 @@ class ProblemData:
             List of eligible machine indices for each operation.
         """
         return self._op2machines
-
-    @property
-    def op2job(self) -> list[int]:
-        """
-        Job index corresponding to each operation.
-
-        Returns
-        -------
-        list[int]
-            Job index corresponding to each operation.
-        """
-        return self._op2job
 
     @property
     def processing_times(self) -> np.ndarray:
