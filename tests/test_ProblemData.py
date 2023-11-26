@@ -43,13 +43,25 @@ def test_operation_attributes():
     """
     Tests that the attributes of the Operation class are set correctly.
     """
-    operation = Operation("TestOperation")
+    operation = Operation(0, 1, 2, 3, 4, 5, name="TestOperation")
 
+    assert_equal(operation.earliest_start, 0)
+    assert_equal(operation.latest_start, 1)
+    assert_equal(operation.fixed_start, 2)
+    assert_equal(operation.earliest_end, 3)
+    assert_equal(operation.latest_end, 4)
+    assert_equal(operation.fixed_end, 5)
     assert_equal(operation.name, "TestOperation")
 
     # Also test that default values are set correctly.
     operation = Operation()
 
+    assert_equal(operation.earliest_start, None)
+    assert_equal(operation.latest_start, None)
+    assert_equal(operation.fixed_start, None)
+    assert_equal(operation.earliest_end, None)
+    assert_equal(operation.latest_end, None)
+    assert_equal(operation.fixed_end, None)
     assert_equal(operation.name, None)
 
 
