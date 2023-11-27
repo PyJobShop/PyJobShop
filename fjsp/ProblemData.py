@@ -128,6 +128,10 @@ class TimingPrecedence(StrEnum):
     - end_at_end:            $f(i) == f(j)$
     - end_before_start:      $f(i) <= s(j)$
     - end_before_end:        $f(i) <= f(j)$
+
+    Timing precedence constraints are combined with delays: a delay of $d$
+    is added to the left-hand side of the constraint. For example, the
+    constraint `start_at_start` with delay $d$ is then $s(i) + d == s(j)$.
     """
 
     START_AT_START = "start_at_start"
