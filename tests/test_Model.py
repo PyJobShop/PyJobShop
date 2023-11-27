@@ -33,6 +33,9 @@ def test_model_data():
     model.add_assignment_precedence(
         operations[1], operations[0], AssignmentPrecedence.SAME_UNIT
     )
+    model.add_assignment_precedence(
+        operations[1], operations[0], AssignmentPrecedence.PREVIOUS
+    )
 
     model.add_access_constraint(machines[0], machines[1], False)
 
@@ -57,7 +60,13 @@ def test_model_data():
         },
     )
     assert_equal(
-        data.assignment_precedences, {(1, 0): [AssignmentPrecedence.SAME_UNIT]}
+        data.assignment_precedences,
+        {
+            (1, 0): [
+                AssignmentPrecedence.SAME_UNIT,
+                AssignmentPrecedence.PREVIOUS,
+            ]
+        },
     )
     assert_equal(data.access_matrix, [[True, False], [True, True]])
     assert_equal(data.setup_times, [[[0, 0], [3, 4]], [[0, 0], [0, 0]]])
