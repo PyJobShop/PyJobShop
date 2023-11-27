@@ -60,3 +60,9 @@ ignore = [
 
 [tool.pytest.ini_options]
 addopts = "--cov=. --cov-report=xml"
+
+
+[tool.coverage.run]
+omit = [
+    "tests/examples/*",
+]
