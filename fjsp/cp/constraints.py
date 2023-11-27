@@ -74,27 +74,27 @@ def timing_precedence_constraints(
 ) -> list[CpoExpr]:
     constraints = []
 
-    for (idx1, idx2), timing_precedences in data.precedences.items():
+    for (idx1, idx2), precedences in data.precedences.items():
         op1 = op_vars[idx1]
         op2 = op_vars[idx2]
 
-        for prec_type in timing_precedences:
+        for prec_type, delay in precedences:
             if prec_type == "start_at_start":
-                expr = m.start_at_start(op1, op2)
+                expr = m.start_at_start(op1, op2, delay)
             elif prec_type == "start_at_end":
-                expr = m.start_at_end(op1, op2)
+                expr = m.start_at_end(op1, op2, delay)
             elif prec_type == "start_before_start":
-                expr = m.start_before_start(op1, op2)
+                expr = m.start_before_start(op1, op2, delay)
             elif prec_type == "start_before_end":
-                expr = m.start_before_end(op1, op2)
+                expr = m.start_before_end(op1, op2, delay)
             elif prec_type == "end_at_start":
-                expr = m.end_at_start(op1, op2)
+                expr = m.end_at_start(op1, op2, delay)
             elif prec_type == "end_at_end":
-                expr = m.end_at_end(op1, op2)
+                expr = m.end_at_end(op1, op2, delay)
             elif prec_type == "end_before_start":
-                expr = m.end_before_start(op1, op2)
+                expr = m.end_before_start(op1, op2, delay)
             elif prec_type == "end_before_end":
-                expr = m.end_before_end(op1, op2)
+                expr = m.end_before_end(op1, op2, delay)
             else:
                 continue
 

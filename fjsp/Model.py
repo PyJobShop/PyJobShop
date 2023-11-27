@@ -30,8 +30,8 @@ class Model:
         self._machine2ops: dict[int, list[int]] = defaultdict(list)
         self._processing_times: dict[tuple[int, int], int] = {}
         self._precedences: dict[
-            tuple[int, int], list[TimingPrecedence]
-        ] = defaultdict()
+            tuple[int, int], list[tuple[TimingPrecedence, int]]
+        ] = defaultdict(list)
         self._assignment_precedences: dict[
             tuple[int, int], list[AssignmentPrecedence]
         ] = defaultdict(list)
@@ -242,7 +242,8 @@ class Model:
         self,
         operation1: Operation,
         operation2: Operation,
-        timing_precedences: list[TimingPrecedence],
+        timing_precedence: TimingPrecedence,
+        delay: int = 0,
     ):
         """
         Adds a precedence constraints between two operations.
@@ -253,19 +254,21 @@ class Model:
             First operation.
         operation2: Operation
             Second operation.
-        timing_precedences: list[TimingPrecedence]
-            List of precedence types between the first and the second
+        timing_precedence: TimingPrecedence
+            Timing precedence relation between the first and the second
             operation.
+        delay: int
+            Delay between the first and the second operation.
         """
         op1 = self._id2op[id(operation1)]
         op2 = self._id2op[id(operation2)]
-        self._precedences[op1, op2] = timing_precedences
+        self._precedences[op1, op2].append((timing_precedence, delay))
 
     def add_assignment_precedence(
         self,
         operation1: Operation,
         operation2: Operation,
-        assignment_precedences: AssignmentPrecedence,
+        assignment_precedence: AssignmentPrecedence,
     ):
         """
         Adds an assignment precedence constraints between two operations.
@@ -277,13 +280,13 @@ class Model:
         operation2: Operation
             Second operation.
         assignment_precedences: AssignmentPrecedence
-            Assignment precedence between the first and the second
+            Assignment precedence relation between the first and the second
             operation.
 
         """
         op1 = self._id2op[id(operation1)]
         op2 = self._id2op[id(operation2)]
-        self._assignment_precedences[op1, op2] = assignment_precedences
+        self._assignment_precedences[op1, op2].append(assignment_precedence)
 
     def add_access_constraint(
         self, machine1: Machine, machine2: Machine, is_accessible: bool = False

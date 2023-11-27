@@ -154,3 +154,18 @@ def test_fixed_end():
     # Operation ends at 42, so the makespan is 42.
     assert_equal(result.get_solve_status(), "Optimal")
     assert_equal(result.get_objective_value(), 42)
+
+
+def test_timing_precedence():
+    # TODO
+    pass
+
+
+def test_timing_precedence_with_delay():
+    # TODO
+    pass
+
+
+def test_assignment_precedence():
+    # TODO
+    pass

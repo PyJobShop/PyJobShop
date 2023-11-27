@@ -164,7 +164,7 @@ class ProblemData:
         job2ops: list[list[int]],
         machine2ops: list[list[int]],
         processing_times: np.ndarray,
-        precedences: dict[tuple[int, int], list[TimingPrecedence]],
+        precedences: dict[tuple[int, int], list[tuple[TimingPrecedence, int]]],
         assignment_precedences: Optional[
             dict[tuple[int, int], list[AssignmentPrecedence]]
         ] = None,
@@ -178,7 +178,11 @@ class ProblemData:
         self._machine2ops = machine2ops
         self._processing_times = processing_times
         self._precedences = precedences
-        self._assignment_precedences = assignment_precedences or {}
+        self._assignment_precedences = (
+            assignment_precedences
+            if assignment_precedences is not None
+            else {}
+        )
 
         num_mach = self.num_machines
         num_ops = self.num_operations
@@ -287,14 +291,17 @@ class ProblemData:
         return self._processing_times
 
     @property
-    def precedences(self) -> dict[tuple[int, int], list[TimingPrecedence]]:
+    def precedences(
+        self,
+    ) -> dict[tuple[int, int], list[tuple[TimingPrecedence, int]]]:
         """
         Precedence constraints between operations.
 
         Returns
         -------
-        dict[tuple[int, int], list[TimingPrecedence]]
-            Dict of precedence constraints between operations.
+        dict[tuple[int, int], list[tuple[TimingPrecedence, int]]]
+            Dict indexed by operation pairs with list of precedence constraints
+            and delays.
         """
         return self._precedences
 
@@ -308,7 +315,8 @@ class ProblemData:
         Returns
         -------
         dict[tuple[int, int], list[AssignmentPrecedence]]
-            Dict of assignment precedence constraints between operations.
+            Dict indexed by operation pairs with list of assignment precedence
+            constraints.
         """
         return self._assignment_precedences
 

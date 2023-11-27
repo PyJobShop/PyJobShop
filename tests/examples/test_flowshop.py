@@ -9,6 +9,9 @@ NUM_MACHINES = 5
 
 
 def test_flowshop():
+    """
+    Blocking flowshop example.
+    """
     random.seed(42)
 
     model = Model()
@@ -32,7 +35,7 @@ def test_flowshop():
             model.add_precedence(
                 operations[idx],
                 operations[idx + 1],
-                [TimingPrecedence.END_AT_START],  # blocking
+                TimingPrecedence.END_AT_START,
             )
 
     result = model.solve()

@@ -1,6 +1,7 @@
 from numpy.testing import assert_equal
 
-from fjsp import Model
+from fjsp.Model import Model
+from fjsp.ProblemData import AssignmentPrecedence, TimingPrecedence
 
 MAX_VALUE = 2**25
 
@@ -22,7 +23,16 @@ def test_model_data():
     model.add_processing_time(operations[0], machines[0], 1)
     model.add_processing_time(operations[1], machines[1], 2)
 
-    model.add_precedence(operations[0], operations[1], ["end_before_start"])
+    model.add_precedence(
+        operations[0], operations[1], TimingPrecedence.END_BEFORE_START, 10
+    )
+    model.add_precedence(
+        operations[0], operations[1], TimingPrecedence.START_BEFORE_END, 10
+    )
+
+    model.add_assignment_precedence(
+        operations[1], operations[0], AssignmentPrecedence.SAME_UNIT
+    )
 
     model.add_access_constraint(machines[0], machines[1], False)
 
@@ -37,7 +47,18 @@ def test_model_data():
     assert_equal(data.job2ops, [[0, 1]])
     assert_equal(data.machine2ops, [[0, 1], [0, 1]])
     assert_equal(data.processing_times, [[1, MAX_VALUE], [MAX_VALUE, 2]])
-    assert_equal(data.precedences, {(0, 1): ["end_before_start"]})
+    assert_equal(
+        data.precedences,
+        {
+            (0, 1): [
+                (TimingPrecedence.END_BEFORE_START, 10),
+                (TimingPrecedence.START_BEFORE_END, 10),
+            ]
+        },
+    )
+    assert_equal(
+        data.assignment_precedences, {(1, 0): [AssignmentPrecedence.SAME_UNIT]}
+    )
     assert_equal(data.access_matrix, [[True, False], [True, True]])
     assert_equal(data.setup_times, [[[0, 0], [3, 4]], [[0, 0], [0, 0]]])
 
