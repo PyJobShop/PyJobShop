@@ -1,8 +1,10 @@
+from typing import Optional
+
 import numpy as np
 import pytest
 from numpy.testing import assert_allclose, assert_equal, assert_raises
 
-from fjsp import (
+from fjsp.ProblemData import (
     AssignmentPrecedence,
     Job,
     Machine,
@@ -76,10 +78,10 @@ def test_operation_attributes():
     ],
 )
 def test_operation_attributes_raises_invalid_parameters(
-    earliest_start,
-    latest_start,
-    earliest_end,
-    latest_end,
+    earliest_start: Optional[int],
+    latest_start: Optional[int],
+    earliest_end: Optional[int],
+    latest_end: Optional[int],
 ):
     """
     Tests that an error is raised when invalid parameters are passed to the
@@ -94,9 +96,6 @@ def test_operation_attributes_raises_invalid_parameters(
         )
 
 
-# TODO test TimingPrecedence
-
-
 def test_problem_data_attributes():
     """
     Tests that the attributes of the ProblemData class are set correctly.
@@ -107,7 +106,7 @@ def test_problem_data_attributes():
     job2ops = [[0], [1], [2], [3], [4]]
     machine2ops = [[0], [1], [2], [3], [4]]
     processing_times = np.ones((5, 5), dtype=int)
-    precedences = {
+    timing_precedences = {
         key: [TimingPrecedence.END_BEFORE_START]
         for key in ((0, 1), (2, 3), (4, 5))
     }
@@ -122,7 +121,7 @@ def test_problem_data_attributes():
         job2ops,  # TODO test invalid job2ops
         machine2ops,  # TODO test invalid machine2ops
         processing_times,
-        precedences,
+        timing_precedences,
         assignment_precedences,
         access_matrix,
         setup_times,
@@ -134,7 +133,7 @@ def test_problem_data_attributes():
     assert_equal(data.job2ops, job2ops)
     assert_equal(data.machine2ops, machine2ops)
     assert_allclose(data.processing_times, processing_times)
-    assert_equal(data.timing_precedences, precedences)
+    assert_equal(data.timing_precedences, timing_precedences)
     assert_equal(data.assignment_precedences, assignment_precedences)
     assert_equal(data.access_matrix, access_matrix)
     assert_allclose(data.setup_times, setup_times)
@@ -153,7 +152,7 @@ def test_problem_data_default_values():
     operations = [Operation() for _ in range(1)]
     job2ops = [[0]]
     machine2ops = [[0]]
-    precedences = {(0, 1): [TimingPrecedence.END_BEFORE_START]}
+    timing_precedences = {(0, 1): [TimingPrecedence.END_BEFORE_START]}
     processing_times = np.ones((1, 1), dtype=int)
     data = ProblemData(
         jobs,
@@ -162,7 +161,7 @@ def test_problem_data_default_values():
         job2ops,
         machine2ops,
         processing_times,
-        precedences,
+        timing_precedences,
     )
 
     assert_equal(data.assignment_precedences, {})
