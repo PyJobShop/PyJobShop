@@ -1,7 +1,7 @@
-from enum import Enum, EnumMeta
 from typing import Optional
 
 import numpy as np
+from strenum import StrEnum
 
 
 class Job:
@@ -113,14 +113,9 @@ class Operation:
         return self._name
 
 
-class PrecedenceTypeMeta(EnumMeta):
-    def __contains__(cls, item):
-        return item in cls._value2member_map_ or item in cls.__members__
-
-
-class PrecedenceType(str, Enum, metaclass=PrecedenceTypeMeta):
+class TimingPrecedence(StrEnum):
     """
-    Types of precendence constraints between two operations $i$ and $j$.
+    Types of precedence constraints between two operations $i$ and $j$.
     Let $s(i)$ and $f(i)$ be the start and finish times of operation $i$,
     and let $s(j)$ and $f(j)$ be defined similarly for operation $j$. The
     following precedence constraints are supported (in CPLEX terminology):
@@ -133,9 +128,10 @@ class PrecedenceType(str, Enum, metaclass=PrecedenceTypeMeta):
     - end_at_end:            $f(i) == f(j)$
     - end_before_start:      $f(i) <= s(j)$
     - end_before_end:        $f(i) <= f(j)$
-    - previous:              i is previous to j in sequence variable.
-    - same_unit:             i and j are processed on the same unit.
-    - different_unit:        i and j are processed on different units.
+
+    Timing precedence constraints are combined with delays: a delay of $d$
+    is added to the left-hand side of the constraint. For example, the
+    constraint `start_at_start` with delay $d$ is then $s(i) + d == s(j)$.
     """
 
     START_AT_START = "start_at_start"
@@ -146,6 +142,18 @@ class PrecedenceType(str, Enum, metaclass=PrecedenceTypeMeta):
     END_AT_END = "end_at_end"
     END_BEFORE_START = "end_before_start"
     END_BEFORE_END = "end_before_end"
+
+
+class AssignmentPrecedence(StrEnum):
+    """
+    Types of assignment precedence constraints between two operations $i$ and
+    $j$.
+
+    - previous:              i is previous to j in sequence variable.
+    - same_unit:             i and j are processed on the same unit.
+    - different_unit:        i and j are processed on different units.
+    """
+
     PREVIOUS = "previous"
     SAME_UNIT = "same_unit"
     DIFFERENT_UNIT = "different_unit"
@@ -160,7 +168,12 @@ class ProblemData:
         job2ops: list[list[int]],
         machine2ops: list[list[int]],
         processing_times: np.ndarray,
-        precedences: dict[tuple[int, int], list[PrecedenceType]],
+        timing_precedences: dict[
+            tuple[int, int], list[tuple[TimingPrecedence, int]]
+        ],
+        assignment_precedences: Optional[
+            dict[tuple[int, int], list[AssignmentPrecedence]]
+        ] = None,
         access_matrix: Optional[np.ndarray] = None,
         setup_times: Optional[np.ndarray] = None,
     ):
@@ -169,16 +182,13 @@ class ProblemData:
         self._operations = operations
         self._job2ops = job2ops
         self._machine2ops = machine2ops
-
-        self._op2machines: list[list[int]] = [
-            [] for _ in range(self.num_operations)
-        ]
-        for machine, ops in enumerate(self.machine2ops):
-            for operation in ops:
-                self._op2machines[operation].append(machine)
-
         self._processing_times = processing_times
-        self._precedences = precedences
+        self._timing_precedences = timing_precedences
+        self._assignment_precedences = (
+            assignment_precedences
+            if assignment_precedences is not None
+            else {}
+        )
 
         num_mach = self.num_machines
         num_ops = self.num_operations
@@ -194,9 +204,19 @@ class ProblemData:
             else np.zeros((num_ops, num_ops, num_mach), dtype=int)
         )
 
+        self._op2machines: list[list[int]] = [
+            [] for _ in range(self.num_operations)
+        ]
+        for machine, ops in enumerate(self.machine2ops):
+            for operation in ops:
+                self._op2machines[operation].append(machine)
+
         self._validate_parameters()
 
     def _validate_parameters(self):
+        """
+        Validates the problem data parameters.
+        """
         num_mach = self.num_machines
         num_ops = self.num_operations
 
@@ -264,18 +284,6 @@ class ProblemData:
         return self._machine2ops
 
     @property
-    def op2machines(self) -> list[list[int]]:
-        """
-        List of eligible machine indices for each operation.
-
-        Returns
-        -------
-        list[list[int]]
-            List of eligible machine indices for each operation.
-        """
-        return self._op2machines
-
-    @property
     def processing_times(self) -> np.ndarray:
         """
         Processing times of operations on machines.
@@ -289,17 +297,34 @@ class ProblemData:
         return self._processing_times
 
     @property
-    def precedences(self) -> dict[tuple[int, int], list[PrecedenceType]]:
+    def timing_precedences(
+        self,
+    ) -> dict[tuple[int, int], list[tuple[TimingPrecedence, int]]]:
         """
-        Precedence constraints between operations.
+        Timing precedence constraints between operations.
 
         Returns
         -------
-        dict[tuple[int, int], list[PrecedenceType]]
-            Dict of precedence constraints between operations. Each precedence
-            constraint is a list of precedence types.
+        dict[tuple[int, int], list[tuple[TimingPrecedence, int]]]
+            Dict indexed by operation pairs with list of timing precedence
+            constraints and delays.
         """
-        return self._precedences
+        return self._timing_precedences
+
+    @property
+    def assignment_precedences(
+        self,
+    ) -> dict[tuple[int, int], list[AssignmentPrecedence]]:
+        """
+        Assignment precedence constraints between operations.
+
+        Returns
+        -------
+        dict[tuple[int, int], list[AssignmentPrecedence]]
+            Dict indexed by operation pairs with list of assignment precedence
+            constraints.
+        """
+        return self._assignment_precedences
 
     @property
     def access_matrix(self) -> np.ndarray:
@@ -327,6 +352,18 @@ class ProblemData:
             operation indices, and the third dimension is indexed by machine.
         """
         return self._setup_times
+
+    @property
+    def op2machines(self) -> list[list[int]]:
+        """
+        List of eligible machine indices for each operation.
+
+        Returns
+        -------
+        list[list[int]]
+            List of eligible machine indices for each operation.
+        """
+        return self._op2machines
 
     @property
     def num_jobs(self) -> int:

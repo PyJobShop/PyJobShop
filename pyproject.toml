@@ -20,6 +20,7 @@ python = ">=3.9, <3.11"
 docplex = "^2.25.236"
 numpy = "^1.24.2"
 matplotlib = "^3.7.1"
+strenum = "^0.4.15"
 
 
 [tool.poetry.group.dev.dependencies]
@@ -59,3 +60,10 @@ ignore = [
 
 [tool.pytest.ini_options]
 addopts = "--cov=. --cov-report=xml"
+
+
+[tool.coverage.run]
+omit = [
+    "tests/examples/*",
+    "fjsp/cp/*",
+]

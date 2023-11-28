@@ -74,29 +74,29 @@ def timing_precedence_constraints(
 ) -> list[CpoExpr]:
     constraints = []
 
-    for (idx1, idx2), precedence_types in data.precedences.items():
+    for (idx1, idx2), precedences in data.timing_precedences.items():
         op1 = op_vars[idx1]
         op2 = op_vars[idx2]
 
-        for prec_type in precedence_types:
+        for prec_type, delay in precedences:
             if prec_type == "start_at_start":
-                expr = m.start_at_start(op1, op2)
+                expr = m.start_at_start(op1, op2, delay)
             elif prec_type == "start_at_end":
-                expr = m.start_at_end(op1, op2)
+                expr = m.start_at_end(op1, op2, delay)
             elif prec_type == "start_before_start":
-                expr = m.start_before_start(op1, op2)
+                expr = m.start_before_start(op1, op2, delay)
             elif prec_type == "start_before_end":
-                expr = m.start_before_end(op1, op2)
+                expr = m.start_before_end(op1, op2, delay)
             elif prec_type == "end_at_start":
-                expr = m.end_at_start(op1, op2)
+                expr = m.end_at_start(op1, op2, delay)
             elif prec_type == "end_at_end":
-                expr = m.end_at_end(op1, op2)
+                expr = m.end_at_end(op1, op2, delay)
             elif prec_type == "end_before_start":
-                expr = m.end_before_start(op1, op2)
+                expr = m.end_before_start(op1, op2, delay)
             elif prec_type == "end_before_end":
-                expr = m.end_before_end(op1, op2)
+                expr = m.end_before_end(op1, op2, delay)
             else:
-                continue
+                raise ValueError(f"Unknown precedence type: {prec_type}")
 
             constraints.append(expr)
 
@@ -112,13 +112,13 @@ def assignment_precedence_constraints(
         seq_var = seq_vars[machine]
 
         for op1, op2 in product(ops, repeat=2):
-            if op1 == op2 or (op1, op2) not in data.precedences:
+            if op1 == op2 or (op1, op2) not in data.assignment_precedences:
                 continue
 
             var1 = assign_vars[op1, machine]
             var2 = assign_vars[op2, machine]
 
-            for prec_type in data.precedences[op1, op2]:
+            for prec_type in data.assignment_precedences[op1, op2]:
                 if prec_type == "previous":
                     expr = m.previous(seq_var, var1, var2)
                 elif prec_type == "same_unit":
@@ -126,7 +126,7 @@ def assignment_precedence_constraints(
                 elif prec_type == "different_unit":
                     expr = m.presence_of(var1) != m.presence_of(var2)
                 else:
-                    continue
+                    raise ValueError(f"Unknown precedence type: {prec_type}")
 
                 constraints.append(expr)
 
@@ -181,7 +181,7 @@ def machine_accessibility_constraints(
     """
     constraints = []
 
-    for op1, op2 in data.precedences:
+    for op1, op2 in data.timing_precedences:
         machines1 = data.op2machines[op1]
         machines2 = data.op2machines[op2]
 

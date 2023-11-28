@@ -1,6 +1,8 @@
+import pytest
 from numpy.testing import assert_equal
 
-from fjsp import Model, default_model
+from fjsp.Model import Model
+from fjsp.ProblemData import AssignmentPrecedence, TimingPrecedence
 
 # TODO refactor with Solution
 
@@ -93,9 +95,7 @@ def test_earliest_end():
     model.assign_machine_operations(machine, [operation])
     model.add_processing_time(operation, machine, duration=1)
 
-    data = model.data()
-    cp_model = default_model(data)
-    result = cp_model.solve(TimeLimit=10)
+    result = model.solve()
 
     # Operation cannot end before time 2, so it starts at time 1 with
     # duration 1, thus the makespan is 2.
@@ -154,3 +154,139 @@ def test_fixed_end():
     # Operation ends at 42, so the makespan is 42.
     assert_equal(result.get_solve_status(), "Optimal")
     assert_equal(result.get_objective_value(), 42)
+
+
+@pytest.mark.parametrize(
+    "prec_type,expected_makespan",
+    [
+        # start 0 == start 0
+        (TimingPrecedence.START_AT_START, 2),
+        # start 2 == end 2
+        (TimingPrecedence.START_AT_END, 4),
+        # start 0 <= start 0
+        (TimingPrecedence.START_BEFORE_START, 2),
+        # start 0 <= end 2
+        (TimingPrecedence.START_BEFORE_END, 2),
+        # end 2 == start 2
+        (TimingPrecedence.END_AT_START, 4),
+        # end 2 == end 2
+        (TimingPrecedence.END_AT_END, 2),
+        # end 2 <= start 2
+        (TimingPrecedence.END_BEFORE_START, 4),
+        # end 2 <= end 2
+        (TimingPrecedence.END_BEFORE_END, 2),
+    ],
+)
+def test_timing_precedence(
+    prec_type: TimingPrecedence, expected_makespan: int
+):
+    """
+    Tests that timing precedence constraints are respected. This example
+    uses two operations and two machines with processing times of 2.
+    """
+    model = Model()
+
+    job = model.add_job()
+    machines = [model.add_machine(), model.add_machine()]
+    operations = [model.add_operation(), model.add_operation()]
+
+    model.assign_job_operations(job, operations)
+
+    for machine in machines:
+        model.assign_machine_operations(machine, operations)
+
+        for operation in operations:
+            model.add_processing_time(operation, machine, duration=2)
+
+    model.add_timing_precedence(operations[0], operations[1], prec_type)
+
+    result = model.solve()
+
+    assert_equal(result.get_objective_value(), expected_makespan)
+
+
+@pytest.mark.parametrize(
+    "prec_type,expected_makespan",
+    [
+        # start 0 + delay 1 == start 1
+        (TimingPrecedence.START_AT_START, 3),
+        # start 1 + delay 1 == end 3
+        (TimingPrecedence.START_AT_END, 3),
+        # start 0 + delay 1 <= start 1
+        (TimingPrecedence.START_BEFORE_START, 3),
+        # start 0 + delay 1 <= end 2
+        (TimingPrecedence.START_BEFORE_END, 2),
+        # end 2 + delay 1 == start 0
+        (TimingPrecedence.END_AT_START, 5),
+        # end 2 + delay 1 == end 2
+        (TimingPrecedence.END_AT_END, 3),
+        # end 2 + delay 1 <= start 3
+        (TimingPrecedence.END_BEFORE_START, 5),
+        # end 2 + delay 1 <= end 3
+        (TimingPrecedence.END_BEFORE_END, 3),
+    ],
+)
+def test_timing_precedence_with_one_delay(
+    prec_type: TimingPrecedence, expected_makespan: int
+):
+    """
+    Tests that timing precedence constraints with delays are respected. This
+    example is similar to `test_timing_precedence`, but with a delay of 1.
+    """
+    model = Model()
+
+    job = model.add_job()
+    machines = [model.add_machine(), model.add_machine()]
+    operations = [model.add_operation(), model.add_operation()]
+
+    model.assign_job_operations(job, operations)
+
+    for machine in machines:
+        model.assign_machine_operations(machine, operations)
+
+        for operation in operations:
+            model.add_processing_time(operation, machine, duration=2)
+
+    model.add_timing_precedence(
+        operations[0], operations[1], prec_type, delay=1
+    )
+
+    result = model.solve()
+
+    assert_equal(result.get_objective_value(), expected_makespan)
+
+
+@pytest.mark.parametrize(
+    "prec_type,expected_makespan",
+    [
+        (AssignmentPrecedence.PREVIOUS, 2),  # TODO needs better test
+        (AssignmentPrecedence.SAME_UNIT, 4),
+        (AssignmentPrecedence.DIFFERENT_UNIT, 2),
+    ],
+)
+def test_assignment_precedence(
+    prec_type: AssignmentPrecedence, expected_makespan: int
+):
+    """
+    Tests that assignment precedence constraints are respected. This example
+    uses two operations and two machines with processing times of 2.
+    """
+    model = Model()
+
+    job = model.add_job()
+    machines = [model.add_machine(), model.add_machine()]
+    operations = [model.add_operation(), model.add_operation()]
+
+    model.assign_job_operations(job, operations)
+
+    for machine in machines:
+        model.assign_machine_operations(machine, operations)
+
+        for operation in operations:
+            model.add_processing_time(operation, machine, duration=2)
+
+    model.add_assignment_precedence(operations[0], operations[1], prec_type)
+
+    result = model.solve()
+
+    assert_equal(result.get_objective_value(), expected_makespan)

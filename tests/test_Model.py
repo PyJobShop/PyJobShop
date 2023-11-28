@@ -1,6 +1,7 @@
 from numpy.testing import assert_equal
 
-from fjsp import Model
+from fjsp.Model import Model
+from fjsp.ProblemData import AssignmentPrecedence, TimingPrecedence
 
 MAX_VALUE = 2**25
 
@@ -15,19 +16,30 @@ def test_model_data():
     machines = [model.add_machine() for _ in range(2)]
     operations = [model.add_operation() for _ in range(2)]
 
+    mach1, mach2 = machines
+    op1, op2 = operations
+
     model.assign_job_operations(job, operations)
-    model.assign_machine_operations(machines[0], operations)
-    model.assign_machine_operations(machines[1], operations)
+    model.assign_machine_operations(mach1, operations)
+    model.assign_machine_operations(mach2, operations)
 
-    model.add_processing_time(operations[0], machines[0], 1)
-    model.add_processing_time(operations[1], machines[1], 2)
+    model.add_processing_time(op1, mach1, 1)
+    model.add_processing_time(operations[1], mach2, 2)
 
-    model.add_precedence(operations[0], operations[1], ["end_before_start"])
+    model.add_timing_precedence(
+        op1, op2, TimingPrecedence.END_BEFORE_START, 10
+    )
+    model.add_timing_precedence(
+        op1, op2, TimingPrecedence.START_BEFORE_END, 10
+    )
 
-    model.add_access_constraint(machines[0], machines[1], False)
+    model.add_assignment_precedence(op2, op1, AssignmentPrecedence.SAME_UNIT)
+    model.add_assignment_precedence(op2, op1, AssignmentPrecedence.PREVIOUS)
 
-    model.add_setup_time(operations[0], operations[1], machines[0], 3)
-    model.add_setup_time(operations[0], operations[1], machines[1], 4)
+    model.add_access_constraint(mach1, mach2, False)
+
+    model.add_setup_time(op1, op2, mach1, 3)
+    model.add_setup_time(op1, op2, mach2, 4)
 
     data = model.data()
 
@@ -37,7 +49,24 @@ def test_model_data():
     assert_equal(data.job2ops, [[0, 1]])
     assert_equal(data.machine2ops, [[0, 1], [0, 1]])
     assert_equal(data.processing_times, [[1, MAX_VALUE], [MAX_VALUE, 2]])
-    assert_equal(data.precedences, {(0, 1): ["end_before_start"]})
+    assert_equal(
+        data.timing_precedences,
+        {
+            (0, 1): [
+                (TimingPrecedence.END_BEFORE_START, 10),
+                (TimingPrecedence.START_BEFORE_END, 10),
+            ]
+        },
+    )
+    assert_equal(
+        data.assignment_precedences,
+        {
+            (1, 0): [
+                AssignmentPrecedence.SAME_UNIT,
+                AssignmentPrecedence.PREVIOUS,
+            ]
+        },
+    )
     assert_equal(data.access_matrix, [[True, False], [True, True]])
     assert_equal(data.setup_times, [[[0, 0], [3, 4]], [[0, 0], [0, 0]]])
 
