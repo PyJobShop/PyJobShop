@@ -32,7 +32,7 @@ def test_flowshop():
 
         # Create precedence constraints between operations.
         for idx in range(len(operations) - 1):
-            model.add_precedence(
+            model.add_timing_precedence(
                 operations[idx],
                 operations[idx + 1],
                 TimingPrecedence.END_AT_START,

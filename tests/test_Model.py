@@ -26,8 +26,12 @@ def test_model_data():
     model.add_processing_time(op1, mach1, 1)
     model.add_processing_time(operations[1], mach2, 2)
 
-    model.add_precedence(op1, op2, TimingPrecedence.END_BEFORE_START, 10)
-    model.add_precedence(op1, op2, TimingPrecedence.START_BEFORE_END, 10)
+    model.add_timing_precedence(
+        op1, op2, TimingPrecedence.END_BEFORE_START, 10
+    )
+    model.add_timing_precedence(
+        op1, op2, TimingPrecedence.START_BEFORE_END, 10
+    )
 
     model.add_assignment_precedence(op2, op1, AssignmentPrecedence.SAME_UNIT)
     model.add_assignment_precedence(op2, op1, AssignmentPrecedence.PREVIOUS)

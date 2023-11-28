@@ -238,7 +238,7 @@ class Model:
         machine_idx = self._id2machine[id(machine)]
         self._processing_times[op_idx, machine_idx] = duration
 
-    def add_precedence(
+    def add_timing_precedence(
         self,
         operation1: Operation,
         operation2: Operation,
@@ -246,7 +246,7 @@ class Model:
         delay: int = 0,
     ):
         """
-        Adds a precedence constraints between two operations.
+        Adds a timing precedence constraint between two operations.
 
         Parameters
         ----------
@@ -255,10 +255,11 @@ class Model:
         operation2: Operation
             Second operation.
         timing_precedence: TimingPrecedence
-            Timing precedence relation between the first and the second
+            Timing precedence constraint between the first and the second
             operation.
         delay: int
-            Delay between the first and the second operation.
+            Delay between the first and the second operation. Defaults to
+            zero (no delay).
         """
         op1 = self._id2op[id(operation1)]
         op2 = self._id2op[id(operation2)]

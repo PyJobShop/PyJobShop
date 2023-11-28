@@ -198,7 +198,7 @@ def test_timing_precedence(
         for operation in operations:
             model.add_processing_time(operation, machine, duration=2)
 
-    model.add_precedence(operations[0], operations[1], prec_type)
+    model.add_timing_precedence(operations[0], operations[1], prec_type)
 
     result = model.solve()
 
@@ -247,7 +247,9 @@ def test_timing_precedence_with_one_delay(
         for operation in operations:
             model.add_processing_time(operation, machine, duration=2)
 
-    model.add_precedence(operations[0], operations[1], prec_type, delay=1)
+    model.add_timing_precedence(
+        operations[0], operations[1], prec_type, delay=1
+    )
 
     result = model.solve()
 

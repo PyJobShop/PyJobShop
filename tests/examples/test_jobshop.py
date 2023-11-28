@@ -44,7 +44,9 @@ def test_jobshop():
         # Impose linear routing precedence constraints.
         for op_idx in range(1, len(ops)):
             op1, op2 = ops[op_idx - 1], ops[op_idx]
-            model.add_precedence(op1, op2, TimingPrecedence.END_BEFORE_START)
+            model.add_timing_precedence(
+                op1, op2, TimingPrecedence.END_BEFORE_START
+            )
 
     result = model.solve()
 
