@@ -29,7 +29,7 @@ class Model:
         self._job2ops: dict[int, list[int]] = defaultdict(list)
         self._machine2ops: dict[int, list[int]] = defaultdict(list)
         self._processing_times: dict[tuple[int, int], int] = {}
-        self._precedences: dict[
+        self._timing_precedences: dict[
             tuple[int, int], list[tuple[TimingPrecedence, int]]
         ] = defaultdict(list)
         self._assignment_precedences: dict[
@@ -87,7 +87,7 @@ class Model:
             job2ops,
             machine2ops,
             processing_times,
-            self._precedences,
+            self._timing_precedences,
             self._assignment_precedences,
             access_matrix,
             setup_times,
@@ -262,7 +262,7 @@ class Model:
         """
         op1 = self._id2op[id(operation1)]
         op2 = self._id2op[id(operation2)]
-        self._precedences[op1, op2].append((timing_precedence, delay))
+        self._timing_precedences[op1, op2].append((timing_precedence, delay))
 
     def add_assignment_precedence(
         self,
@@ -279,7 +279,7 @@ class Model:
             First operation.
         operation2: Operation
             Second operation.
-        assignment_precedences: AssignmentPrecedence
+        assignment_precedence: AssignmentPrecedence
             Assignment precedence relation between the first and the second
             operation.
 

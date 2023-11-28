@@ -134,7 +134,7 @@ def test_problem_data_attributes():
     assert_equal(data.job2ops, job2ops)
     assert_equal(data.machine2ops, machine2ops)
     assert_allclose(data.processing_times, processing_times)
-    assert_equal(data.precedences, precedences)
+    assert_equal(data.timing_precedences, precedences)
     assert_equal(data.assignment_precedences, assignment_precedences)
     assert_equal(data.access_matrix, access_matrix)
     assert_allclose(data.setup_times, setup_times)

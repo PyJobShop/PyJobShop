@@ -74,7 +74,7 @@ def timing_precedence_constraints(
 ) -> list[CpoExpr]:
     constraints = []
 
-    for (idx1, idx2), precedences in data.precedences.items():
+    for (idx1, idx2), precedences in data.timing_precedences.items():
         op1 = op_vars[idx1]
         op2 = op_vars[idx2]
 
@@ -181,7 +181,7 @@ def machine_accessibility_constraints(
     """
     constraints = []
 
-    for op1, op2 in data.precedences:
+    for op1, op2 in data.timing_precedences:
         machines1 = data.op2machines[op1]
         machines2 = data.op2machines[op2]
 

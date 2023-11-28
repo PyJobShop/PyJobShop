@@ -51,7 +51,7 @@ def test_model_data():
     assert_equal(data.machine2ops, [[0, 1], [0, 1]])
     assert_equal(data.processing_times, [[1, MAX_VALUE], [MAX_VALUE, 2]])
     assert_equal(
-        data.precedences,
+        data.timing_precedences,
         {
             (0, 1): [
                 (TimingPrecedence.END_BEFORE_START, 10),
