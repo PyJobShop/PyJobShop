@@ -96,7 +96,7 @@ def timing_precedence_constraints(
             elif prec_type == "end_before_end":
                 expr = m.end_before_end(op1, op2, delay)
             else:
-                continue
+                raise ValueError(f"Unknown precedence type: {prec_type}")
 
             constraints.append(expr)
 
@@ -126,7 +126,7 @@ def assignment_precedence_constraints(
                 elif prec_type == "different_unit":
                     expr = m.presence_of(var1) != m.presence_of(var2)
                 else:
-                    continue
+                    raise ValueError(f"Unknown precedence type: {prec_type}")
 
                 constraints.append(expr)
 
