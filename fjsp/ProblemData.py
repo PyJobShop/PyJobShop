@@ -306,8 +306,8 @@ class ProblemData:
         Returns
         -------
         dict[tuple[int, int], list[tuple[TimingPrecedence, int]]]
-            Dict indexed by operation pairs with list of precedence constraints
-            and delays.
+            Dict indexed by operation pairs with list of timing precedence
+            constraints and delays.
         """
         return self._timing_precedences
 

@@ -231,7 +231,7 @@ def test_timing_precedence_with_one_delay(
 ):
     """
     Tests that timing precedence constraints with delays are respected. This
-    example similar to `test_timing_precedence`, but with a delay of 1.
+    example is similar to `test_timing_precedence`, but with a delay of 1.
     """
     model = Model()
 
