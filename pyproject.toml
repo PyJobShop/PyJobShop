@@ -30,12 +30,15 @@ pytest-cov = "^4.1.0"
 codecov = "^2.1.13"
 
 
+[tool.black]
+line-length = 79
+
+
 [tool.mypy]
 ignore_missing_imports = true
 
 
 [tool.ruff]
-line-length = 79
 select = [
     "E",  # pycodestyle errors
     "W",  # pycodestyle warnings
@@ -43,9 +46,9 @@ select = [
     "I",  # isort
     "C",  # flake8-comprehensions
     "B",  # flake8-bugbear
-    "UP", # pyupgrade
 ]
 ignore = [
+    "E501",  # line too long, handled by black
     "E741",  # ambiguous variable name, needed for indexing
     "C901",  # too complex
 ]
