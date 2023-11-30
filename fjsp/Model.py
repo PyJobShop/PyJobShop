@@ -76,9 +76,9 @@ class Model:
             access_matrix[machine1, machine2] = is_accessible
 
         # Convert setup times into a 3D array with zero as default.
-        setup_times = np.zeros((num_ops, num_ops, num_machines), dtype=int)
-        for (op1, op2, machine), duration in self._setup_times.items():
-            setup_times[op1, op2, machine] = duration
+        setup_times = np.zeros((num_machines, num_ops, num_ops), dtype=int)
+        for (machine, op1, op2), duration in self._setup_times.items():
+            setup_times[machine, op1, op2] = duration
 
         return ProblemData(
             self.jobs,
@@ -311,9 +311,9 @@ class Model:
 
     def add_setup_time(
         self,
+        machine: Machine,
         operation1: Operation,
         operation2: Operation,
-        machine: Machine,
         duration: int,
     ):
         """
@@ -321,21 +321,21 @@ class Model:
 
         Parameters
         ----------
+        machine: Machine
+            Machine on which the setup time occurs.
         operation1: Operation
             First operation.
         operation2: Operation
             Second operation.
-        machine: Machine
-            Machine on which the setup time occurs.
         duration: int
             Duration of the setup time when switching from the first operation
             to the second operation on the machine.
         """
+        machine_idx = self._id2machine[id(machine)]
         op_idx1 = self._id2op[id(operation1)]
         op_idx2 = self._id2op[id(operation2)]
-        machine_idx = self._id2machine[id(machine)]
 
-        self._setup_times[op_idx1, op_idx2, machine_idx] = duration
+        self._setup_times[machine_idx, op_idx1, op_idx2] = duration
 
     def solve(self, time_limit: Optional[int] = None) -> CpoSolveResult:
         """

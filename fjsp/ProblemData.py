@@ -201,7 +201,7 @@ class ProblemData:
         self._setup_times = (
             setup_times
             if setup_times is not None
-            else np.zeros((num_ops, num_ops, num_mach), dtype=int)
+            else np.zeros((num_mach, num_ops, num_ops), dtype=int)
         )
 
         self._op2machines: list[list[int]] = [
@@ -230,8 +230,8 @@ class ProblemData:
         if np.any(self.setup_times < 0):
             raise ValueError("Setup times must be non-negative.")
 
-        if self.setup_times.shape != (num_ops, num_ops, num_mach):
-            msg = "Setup times shape must be (num_ops, num_ops, num_machines)."
+        if self.setup_times.shape != (num_mach, num_ops, num_ops):
+            msg = "Setup times shape must be (num_machines, num_ops, num_ops)."
             raise ValueError(msg)
 
         if self.access_matrix.shape != (num_mach, num_mach):
@@ -348,8 +348,9 @@ class ProblemData:
         -------
         np.ndarray
             Sequence-dependent setup times between operations on a given
-            machine. The first two dimensions of the array are indexed by
-            operation indices, and the third dimension is indexed by machine.
+            machine. The first dimension of the array is indexed by the machine
+            index. The last two dimensions of the array are indexed by
+            operation indices.
         """
         return self._setup_times
 

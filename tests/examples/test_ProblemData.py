@@ -47,7 +47,7 @@ def test_latest_start():
     model.assign_job_operations(job, operations)
     model.assign_machine_operations(machine, operations)
 
-    model.add_setup_time(operations[1], operations[0], machine, 10)
+    model.add_setup_time(machine, operations[1], operations[0], 10)
 
     result = model.solve()
 
@@ -122,7 +122,7 @@ def test_latest_end():
     model.assign_job_operations(job, operations)
     model.assign_machine_operations(machine, operations)
 
-    model.add_setup_time(operations[1], operations[0], machine, 10)
+    model.add_setup_time(machine, operations[1], operations[0], 10)
 
     result = model.solve()
 

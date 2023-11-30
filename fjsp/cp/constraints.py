@@ -165,7 +165,7 @@ def no_overlap_constraints(
         if not (ops := data.machine2ops[machine]):
             continue  # There no operations for this machine.
 
-        distance_matrix = data.setup_times[:, :, machine][np.ix_(ops, ops)]
+        distance_matrix = data.setup_times[machine, :, :][np.ix_(ops, ops)]
         constraints.append(m.no_overlap(seq_vars[machine], distance_matrix))
 
     return constraints
