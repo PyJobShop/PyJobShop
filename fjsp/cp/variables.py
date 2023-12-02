@@ -30,16 +30,18 @@ def assignment_variables(m: CpoModel, data: ProblemData) -> AssignVars:
     variables = {}
 
     for op in range(data.num_operations):
-        for machine in data.op2machines[op]:
-            var = m.interval_var(name=f"A{op}_{machine}", optional=True)
+        eligible_machines = data.op2machines[op]
+        is_optional = len(eligible_machines) > 1
+
+        for machine in eligible_machines:
+            var = m.interval_var(name=f"A{op}_{machine}", optional=is_optional)
             variables[op, machine] = var
 
             # The duration of the operation on the machine is at least the
-            # duration of the operation; it could be longer due to blocking.
-            m.add(
-                m.size_of(var)
-                >= data.processing_times[op, machine] * m.presence_of(var)
-            )
+            # processing time; it could be longer due to blocking.
+            duration = data.processing_times[op, machine]
+            expr = duration * m.presence_of(var) if is_optional else duration
+            m.add(m.size_of(var) >= expr)
 
     return variables
 

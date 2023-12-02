@@ -28,10 +28,8 @@ def job_operation_constraints(
         constraints.append(m.span(job_var, related_op_vars))
 
         for op_var in related_op_vars:
-            # Operation may not start before the job's release date if present.
             constraints.append(
-                m.start_of(op_var)
-                >= data.jobs[job].release_date * m.presence_of(op_var)
+                m.start_of(op_var) >= data.jobs[job].release_date
             )
 
     return constraints
@@ -48,23 +46,18 @@ def operation_constraints(
     for op_data, op_var in zip(data.operations, op_vars):
         start_var = m.start_of(op_var)
         end_var = m.end_of(op_var)
-        presence_var = m.presence_of(op_var)
 
         if op_data.earliest_start is not None:
-            constraints.append(
-                start_var >= op_data.earliest_start * presence_var
-            )
+            constraints.append(start_var >= op_data.earliest_start)
 
         if op_data.latest_start is not None:
-            constraints.append(
-                start_var <= op_data.latest_start * presence_var
-            )
+            constraints.append(start_var <= op_data.latest_start)
 
         if op_data.earliest_end is not None:
-            constraints.append(end_var >= op_data.earliest_end * presence_var)
+            constraints.append(end_var >= op_data.earliest_end)
 
         if op_data.latest_end is not None:
-            constraints.append(end_var <= op_data.latest_end * presence_var)
+            constraints.append(end_var <= op_data.latest_end)
 
     return constraints
 
