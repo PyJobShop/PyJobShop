@@ -167,7 +167,7 @@ class ProblemData:
         operations: list[Operation],
         job2ops: list[list[int]],
         machine2ops: list[list[int]],
-        processing_times: np.ndarray,
+        processing_times: dict[tuple[int, int], int],
         timing_precedences: dict[
             tuple[int, int], list[tuple[TimingPrecedence, int]]
         ],
@@ -220,12 +220,8 @@ class ProblemData:
         num_mach = self.num_machines
         num_ops = self.num_operations
 
-        if np.any(self.processing_times < 0):
+        if any(duration < 0 for duration in self.processing_times.values()):
             raise ValueError("Processing times must be non-negative.")
-
-        if self.processing_times.shape != (num_ops, num_mach):
-            msg = "Processing times shape must be (num_ops, num_machines)."
-            raise ValueError(msg)
 
         if np.any(self.setup_times < 0):
             raise ValueError("Setup times must be non-negative.")
@@ -284,15 +280,15 @@ class ProblemData:
         return self._machine2ops
 
     @property
-    def processing_times(self) -> np.ndarray:
+    def processing_times(self) -> dict[tuple[int, int], int]:
         """
         Processing times of operations on machines.
 
         Returns
         -------
-        np.ndarray
-            Processing times of operations on machines indexed by operation
-            and machine indices.
+        dict[tuple[int, int], int]
+            Processing times of operations on machines. First index is
+            operation index, second index is machine index.
         """
         return self._processing_times
 

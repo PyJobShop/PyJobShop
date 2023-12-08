@@ -105,7 +105,7 @@ def test_problem_data_attributes():
     operations = [Operation() for _ in range(5)]
     job2ops = [[0], [1], [2], [3], [4]]
     machine2ops = [[0], [1], [2], [3], [4]]
-    processing_times = np.ones((5, 5), dtype=int)
+    processing_times = {(i, j): 1 for i in range(5) for j in range(5)}
     timing_precedences = {
         key: [TimingPrecedence.END_BEFORE_START]
         for key in ((0, 1), (2, 3), (4, 5))
@@ -132,7 +132,7 @@ def test_problem_data_attributes():
     assert_equal(data.operations, operations)
     assert_equal(data.job2ops, job2ops)
     assert_equal(data.machine2ops, machine2ops)
-    assert_allclose(data.processing_times, processing_times)
+    assert_equal(data.processing_times, processing_times)
     assert_equal(data.timing_precedences, timing_precedences)
     assert_equal(data.assignment_precedences, assignment_precedences)
     assert_equal(data.access_matrix, access_matrix)
@@ -153,7 +153,7 @@ def test_problem_data_default_values():
     job2ops = [[0]]
     machine2ops = [[0]]
     timing_precedences = {(0, 1): [TimingPrecedence.END_BEFORE_START]}
-    processing_times = np.ones((1, 1), dtype=int)
+    processing_times = {(0, 0): 1}
     data = ProblemData(
         jobs,
         machines,
@@ -173,19 +173,17 @@ def test_problem_data_default_values():
     "processing_times, access_matrix, setup_times",
     [
         # Negative processing times.
-        (np.ones((1, 1)) * -1, np.full((1, 1), True), np.ones((1, 1, 1))),
-        # Invalid processing times shape.
-        (np.ones((2, 2)), np.full((1, 1), True), np.ones((1, 1, 1))),
+        ({(0, 0): -1}, np.full((1, 1), True), np.ones((1, 1, 1))),
         # Negative setup times.
-        (np.ones((1, 1)), np.full((1, 1), True), np.ones((1, 1, 1)) * -1),
+        ({(0, 0): 1}, np.full((1, 1), True), np.ones((1, 1, 1)) * -1),
         # Invalid setup times shape.
-        (np.ones((1, 1)), np.full((1, 1), True), np.ones((2, 2, 2))),
+        ({(0, 0): 1}, np.full((1, 1), True), np.ones((2, 2, 2))),
         # Invalid access matrix shape.
-        (np.ones((1, 1)), np.full((2, 2), True), np.ones((1, 1, 1))),
+        ({(0, 0): 1}, np.full((2, 2), True), np.ones((1, 1, 1))),
     ],
 )
 def test_problem_data_raises_when_invalid_arguments(
-    processing_times: np.ndarray,
+    processing_times: dict[tuple[int, int], int],
     access_matrix: np.ndarray,
     setup_times: np.ndarray,
 ):
@@ -200,7 +198,7 @@ def test_problem_data_raises_when_invalid_arguments(
             [Operation()],
             [[0]],
             [[0]],
-            processing_times.astype(int),
+            processing_times,
             {},
             {},
             access_matrix.astype(int),

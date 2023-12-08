@@ -65,11 +65,6 @@ class Model:
         job2ops = [self._job2ops[idx] for idx in range(num_jobs)]
         machine2ops = [self._machine2ops[idx] for idx in range(num_machines)]
 
-        # Convert processing times into a 2D array with large value as default.
-        processing_times = np.full((num_ops, num_machines), MAX_VALUE)
-        for (op, machine), duration in self._processing_times.items():
-            processing_times[op, machine] = duration
-
         # Convert access matrix into a 2D array with True as default.
         access_matrix = np.full((num_machines, num_machines), True)
         for (machine1, machine2), is_accessible in self._access_matrix.items():
@@ -86,7 +81,7 @@ class Model:
             self.operations,
             job2ops,
             machine2ops,
-            processing_times,
+            self._processing_times,
             self._timing_precedences,
             self._assignment_precedences,
             access_matrix,
