@@ -27,7 +27,6 @@ class Model:
         self._machines = []
         self._operations = []
         self._job2ops: dict[int, list[int]] = defaultdict(list)
-        self._machine2ops: dict[int, list[int]] = defaultdict(list)
         self._processing_times: dict[tuple[int, int], int] = {}
         self._timing_precedences: dict[
             tuple[int, int], list[tuple[TimingPrecedence, int]]
@@ -63,12 +62,6 @@ class Model:
         num_machines = len(self.machines)
 
         job2ops = [self._job2ops[idx] for idx in range(num_jobs)]
-        machine2ops = [self._machine2ops[idx] for idx in range(num_machines)]
-
-        # Convert processing times into a 2D array with large value as default.
-        processing_times = np.full((num_ops, num_machines), MAX_VALUE)
-        for (op, machine), duration in self._processing_times.items():
-            processing_times[op, machine] = duration
 
         # Convert access matrix into a 2D array with True as default.
         access_matrix = np.full((num_machines, num_machines), True)
@@ -85,8 +78,7 @@ class Model:
             self.machines,
             self.operations,
             job2ops,
-            machine2ops,
-            processing_times,
+            self._processing_times,
             self._timing_precedences,
             self._assignment_precedences,
             access_matrix,
@@ -198,45 +190,27 @@ class Model:
 
         self._job2ops[job_idx].extend(op_idcs)
 
-    def assign_machine_operations(
-        self, machine: Machine, operations: list[Operation]
-    ):
-        """
-        Assigns operations to a machine.
-
-        Parameters
-        ----------
-        machine: Machine
-            The machine to which the operations are added.
-        operations: list[Operation]
-            The operations to add to the machine.
-        """
-        machine_idx = self._id2machine[id(machine)]
-        op_idcs = [self._id2op[id(op)] for op in operations]
-
-        self._machine2ops[machine_idx].extend(op_idcs)
-
     def add_processing_time(
-        self, operation: Operation, machine: Machine, duration: int
+        self, machine: Machine, operation: Operation, duration: int
     ):
         """
-        Adds a processing time for an operation on a machine.
+        Adds a processing time for a machine and operation combination.
 
         Parameters
         ----------
-        operation: Operation
-            An operation.
         machine: Machine
             The machine on which the operation is processed.
+        operation: Operation
+            An operation.
         duration: int
             Processing time of the operation on the machine.
         """
         if duration < 0:
             raise ValueError("Processing time must be non-negative.")
 
-        op_idx = self._id2op[id(operation)]
         machine_idx = self._id2machine[id(machine)]
-        self._processing_times[op_idx, machine_idx] = duration
+        op_idx = self._id2op[id(operation)]
+        self._processing_times[machine_idx, op_idx] = duration
 
     def add_timing_precedence(
         self,
