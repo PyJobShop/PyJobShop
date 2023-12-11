@@ -1,11 +1,11 @@
-# Flexible Job Shop Problem
-This repository implements a constraint programming (CP) model for the flexible job shop problem (FJSP).
-We consider a rich variant of the FJSP with many different constraints, such as arbitrary operations precedence relations, sequence-dependent setup times, and many more.
-The implementation is currently work in progress and V1 is planned to be finished in 2024 Q2.
-Feel free to open an issue if you have any questions.
+# PyJobShop
+[![pyjobshop](https://github.com/leonlan/pyjobshop/actions/workflows/CI.yml/badge.svg)](https://github.com/leonlan/pyjobshop/actions/workflows/CI.yml)
+[![codecov](https://codecov.io/gh/leonlan/PyJobShop/graph/badge.svg?token=5WZK5HW1FI)](https://codecov.io/gh/leonlan/PyJobShop)
 
-We use IBM ILOG CP Optimizer to implement the CP model.
-Contributions to migrate the CP Optimizer model to OR-Tools are welcome.
+PyJobShop is a package for implementing scheduling models in Python.
+It supports the classically known *flexible job shop problem* (FJSP) and many of its extensions such as arbitrary precedence relations, sequence-dependent setup times, and many more!
+The implementation is currently work in progress and V1 is planned to be finished in by April 2024.
+Feel free to open an issue if you have any questions.
 
 
 ## Installation
@@ -17,11 +17,6 @@ poetry install
 ```
 
 This will set-up a virtual environment and install all necessary dependencies. 
-Running the following script should work now:
-
-``` shell
-poetry run python flowshop.py
-```
 
 ### Installing CPLEX
 Running the CP model and solving it requires the optimization engine from IBM CPLEX. 
