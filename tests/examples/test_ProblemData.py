@@ -1,8 +1,8 @@
 import pytest
 from numpy.testing import assert_equal
 
-from fjsp.Model import Model
-from fjsp.ProblemData import AssignmentPrecedence, TimingPrecedence
+from pyjobshop.Model import Model
+from pyjobshop.ProblemData import AssignmentPrecedence, TimingPrecedence
 
 # TODO refactor with Solution
 

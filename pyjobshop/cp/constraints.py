@@ -4,7 +4,7 @@ import numpy as np
 from docplex.cp.expression import CpoExpr, CpoIntervalVar, CpoSequenceVar
 from docplex.cp.model import CpoModel
 
-from fjsp.ProblemData import ProblemData
+from pyjobshop.ProblemData import ProblemData
 
 JobVars = list[CpoIntervalVar]
 OpVars = list[CpoIntervalVar]

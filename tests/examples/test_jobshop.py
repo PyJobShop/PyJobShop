@@ -1,6 +1,6 @@
 from numpy.testing import assert_equal
 
-from fjsp import Model, TimingPrecedence
+from pyjobshop import Model, TimingPrecedence
 
 
 def test_jobshop():

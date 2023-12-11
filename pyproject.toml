@@ -1,12 +1,12 @@
 [tool.poetry]
-name = "fjsp"
+name = "pyjobshop"
 version = "0.1.0"
-description = "Flexible job-shop scheduling"
+description = "Job shop scheduling library in Python."
 authors = ["Leon Lan <l.lan@vu.nl>"]
 license = "MIT"
 readme = "README.md"
 packages = [
-    { include = "fjsp" }
+    { include = "pyjobshop" }
 ]
 
 
@@ -65,5 +65,5 @@ addopts = "--cov=. --cov-report=xml"
 [tool.coverage.run]
 omit = [
     "tests/examples/*",
-    "fjsp/cp/*",
+    "pyjobshop/cp/*",
 ]

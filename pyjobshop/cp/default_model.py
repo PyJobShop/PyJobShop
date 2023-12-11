@@ -1,6 +1,6 @@
 from docplex.cp.model import CpoModel
 
-from fjsp.ProblemData import ProblemData
+from pyjobshop.ProblemData import ProblemData
 
 from .constraints import (
     alternative_constraints,

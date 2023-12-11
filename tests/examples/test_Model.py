@@ -1,6 +1,6 @@
 from numpy.testing import assert_equal
 
-from fjsp import Model
+from pyjobshop import Model
 
 
 def test_solve():

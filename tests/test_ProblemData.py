@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 from numpy.testing import assert_allclose, assert_equal, assert_raises
 
-from fjsp.ProblemData import (
+from pyjobshop.ProblemData import (
     AssignmentPrecedence,
     Job,
     Machine,

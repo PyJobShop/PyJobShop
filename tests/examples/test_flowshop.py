@@ -2,7 +2,7 @@ import random
 
 from numpy.testing import assert_equal
 
-from fjsp import Model, TimingPrecedence
+from pyjobshop import Model, TimingPrecedence
 
 NUM_JOBS = 5
 NUM_MACHINES = 5

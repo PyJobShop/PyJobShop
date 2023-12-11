@@ -1,7 +1,7 @@
 from docplex.cp.expression import CpoIntervalVar, CpoSequenceVar
 from docplex.cp.model import CpoModel
 
-from fjsp.ProblemData import ProblemData
+from pyjobshop.ProblemData import ProblemData
 
 AssignVars = dict[tuple[int, int], CpoIntervalVar]
 

@@ -1,7 +1,7 @@
 from docplex.cp.expression import CpoExpr, CpoIntervalVar
 from docplex.cp.model import CpoModel
 
-from fjsp.ProblemData import ProblemData
+from pyjobshop.ProblemData import ProblemData
 
 
 def makespan(

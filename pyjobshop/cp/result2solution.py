@@ -1,7 +1,7 @@
 from docplex.cp.solution import CpoSolveResult
 
-from fjsp.ProblemData import ProblemData
-from fjsp.Solution import ScheduledOperation, Solution
+from pyjobshop.ProblemData import ProblemData
+from pyjobshop.Solution import ScheduledOperation, Solution
 
 
 def result2solution(data: ProblemData, result: CpoSolveResult) -> Solution:
