@@ -27,7 +27,6 @@ def test_flowshop():
         model.assign_job_operations(job, operations)
 
         for machine, op in zip(machines, operations):
-            model.assign_machine_operations(machine, [op])
             model.add_processing_time(op, machine, random.randint(1, 10))
 
         # Create precedence constraints between operations.

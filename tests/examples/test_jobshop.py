@@ -26,24 +26,18 @@ def test_jobshop():
     machines = [model.add_machine() for _ in range(3)]
 
     for job_idx, tasks in enumerate(jobs_data):
-        ops = []
-
-        # Create operations.
-        for machine_idx, _ in tasks:
-            op = model.add_operation()
-            model.assign_job_operations(jobs[job_idx], [op])
-            model.assign_machine_operations(machines[machine_idx], [op])
-            ops.append(op)
+        operations = [model.add_operation() for _ in tasks]
+        model.assign_job_operations(jobs[job_idx], operations)
 
         # Add processing times.
         for idx, (machine_idx, duration) in enumerate(tasks):
             model.add_processing_time(
-                ops[idx], machines[machine_idx], duration
+                operations[idx], machines[machine_idx], duration
             )
 
         # Impose linear routing precedence constraints.
-        for op_idx in range(1, len(ops)):
-            op1, op2 = ops[op_idx - 1], ops[op_idx]
+        for op_idx in range(1, len(operations)):
+            op1, op2 = operations[op_idx - 1], operations[op_idx]
             model.add_timing_precedence(
                 op1, op2, TimingPrecedence.END_BEFORE_START
             )

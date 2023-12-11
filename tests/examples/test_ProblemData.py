@@ -18,7 +18,6 @@ def test_earliest_start():
     operation = model.add_operation(earliest_start=1)
 
     model.assign_job_operations(job, [operation])
-    model.assign_machine_operations(machine, [operation])
     model.add_processing_time(operation, machine, duration=1)
 
     result = model.solve()
@@ -45,7 +44,6 @@ def test_latest_start():
         model.add_processing_time(operation, machine, duration=2)
 
     model.assign_job_operations(job, operations)
-    model.assign_machine_operations(machine, operations)
 
     model.add_setup_time(machine, operations[1], operations[0], 10)
 
@@ -71,7 +69,6 @@ def test_fixed_start():
     operation = model.add_operation(earliest_start=42, latest_start=42)
 
     model.assign_job_operations(job, [operation])
-    model.assign_machine_operations(machine, [operation])
     model.add_processing_time(operation, machine, duration=1)
 
     result = model.solve()
@@ -92,7 +89,6 @@ def test_earliest_end():
     operation = model.add_operation(earliest_end=2)
 
     model.assign_job_operations(job, [operation])
-    model.assign_machine_operations(machine, [operation])
     model.add_processing_time(operation, machine, duration=1)
 
     result = model.solve()
@@ -120,7 +116,6 @@ def test_latest_end():
         model.add_processing_time(operation, machine, duration=2)
 
     model.assign_job_operations(job, operations)
-    model.assign_machine_operations(machine, operations)
 
     model.add_setup_time(machine, operations[1], operations[0], 10)
 
@@ -146,7 +141,6 @@ def test_fixed_end():
     operation = model.add_operation(earliest_end=42, latest_end=42)
 
     model.assign_job_operations(job, [operation])
-    model.assign_machine_operations(machine, [operation])
     model.add_processing_time(operation, machine, duration=1)
 
     result = model.solve()
@@ -193,8 +187,6 @@ def test_timing_precedence(
     model.assign_job_operations(job, operations)
 
     for machine in machines:
-        model.assign_machine_operations(machine, operations)
-
         for operation in operations:
             model.add_processing_time(operation, machine, duration=2)
 
@@ -242,8 +234,6 @@ def test_timing_precedence_with_one_delay(
     model.assign_job_operations(job, operations)
 
     for machine in machines:
-        model.assign_machine_operations(machine, operations)
-
         for operation in operations:
             model.add_processing_time(operation, machine, duration=2)
 
@@ -280,8 +270,6 @@ def test_assignment_precedence(
     model.assign_job_operations(job, operations)
 
     for machine in machines:
-        model.assign_machine_operations(machine, operations)
-
         for operation in operations:
             model.add_processing_time(operation, machine, duration=2)
 

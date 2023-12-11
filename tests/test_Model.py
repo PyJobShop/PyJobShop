@@ -20,8 +20,6 @@ def test_model_data():
     op1, op2 = operations
 
     model.assign_job_operations(job, operations)
-    model.assign_machine_operations(mach1, operations)
-    model.assign_machine_operations(mach2, operations)
 
     model.add_processing_time(op1, mach1, 1)
     model.add_processing_time(op2, mach2, 2)
@@ -47,7 +45,7 @@ def test_model_data():
     assert_equal(data.machines, machines)
     assert_equal(data.operations, operations)
     assert_equal(data.job2ops, [[0, 1]])
-    assert_equal(data.machine2ops, [[0, 1], [0, 1]])
+    assert_equal(data.machine2ops, [[0], [1]])
     assert_equal(
         data.processing_times,
         {(0, 0): 1, (1, 1): 2},

@@ -193,24 +193,6 @@ class Model:
 
         self._job2ops[job_idx].extend(op_idcs)
 
-    def assign_machine_operations(
-        self, machine: Machine, operations: list[Operation]
-    ):
-        """
-        Assigns operations to a machine.
-
-        Parameters
-        ----------
-        machine: Machine
-            The machine to which the operations are added.
-        operations: list[Operation]
-            The operations to add to the machine.
-        """
-        machine_idx = self._id2machine[id(machine)]
-        op_idcs = [self._id2op[id(op)] for op in operations]
-
-        self._machine2ops[machine_idx].extend(op_idcs)
-
     def add_processing_time(
         self, operation: Operation, machine: Machine, duration: int
     ):
@@ -232,6 +214,7 @@ class Model:
         op_idx = self._id2op[id(operation)]
         machine_idx = self._id2machine[id(machine)]
         self._processing_times[op_idx, machine_idx] = duration
+        self._machine2ops[machine_idx].append(op_idx)
 
     def add_timing_precedence(
         self,
