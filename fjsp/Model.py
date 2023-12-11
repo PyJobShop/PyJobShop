@@ -27,7 +27,6 @@ class Model:
         self._machines = []
         self._operations = []
         self._job2ops: dict[int, list[int]] = defaultdict(list)
-        self._machine2ops: dict[int, list[int]] = defaultdict(list)
         self._processing_times: dict[tuple[int, int], int] = {}
         self._timing_precedences: dict[
             tuple[int, int], list[tuple[TimingPrecedence, int]]
@@ -63,7 +62,6 @@ class Model:
         num_machines = len(self.machines)
 
         job2ops = [self._job2ops[idx] for idx in range(num_jobs)]
-        machine2ops = [self._machine2ops[idx] for idx in range(num_machines)]
 
         # Convert access matrix into a 2D array with True as default.
         access_matrix = np.full((num_machines, num_machines), True)
@@ -80,7 +78,6 @@ class Model:
             self.machines,
             self.operations,
             job2ops,
-            machine2ops,
             self._processing_times,
             self._timing_precedences,
             self._assignment_precedences,
@@ -214,7 +211,6 @@ class Model:
         machine_idx = self._id2machine[id(machine)]
         op_idx = self._id2op[id(operation)]
         self._processing_times[machine_idx, op_idx] = duration
-        self._machine2ops[machine_idx].append(op_idx)
 
     def add_timing_precedence(
         self,

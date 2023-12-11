@@ -1,3 +1,4 @@
+import bisect
 from typing import Optional
 
 import numpy as np
@@ -166,7 +167,6 @@ class ProblemData:
         machines: list[Machine],
         operations: list[Operation],
         job2ops: list[list[int]],
-        machine2ops: list[list[int]],
         processing_times: dict[tuple[int, int], int],
         timing_precedences: dict[
             tuple[int, int], list[tuple[TimingPrecedence, int]]
@@ -181,7 +181,6 @@ class ProblemData:
         self._machines = machines
         self._operations = operations
         self._job2ops = job2ops
-        self._machine2ops = machine2ops
         self._processing_times = processing_times
         self._timing_precedences = timing_precedences
         self._assignment_precedences = (
@@ -204,12 +203,12 @@ class ProblemData:
             else np.zeros((num_mach, num_ops, num_ops), dtype=int)
         )
 
-        self._op2machines: list[list[int]] = [
-            [] for _ in range(self.num_operations)
-        ]
-        for machine, ops in enumerate(self.machine2ops):
-            for operation in ops:
-                self._op2machines[operation].append(machine)
+        self._machine2ops: list[list[int]] = [[] for _ in range(num_mach)]
+        self._op2machines: list[list[int]] = [[] for _ in range(num_ops)]
+
+        for machine, operation in self.processing_times.keys():
+            bisect.insort(self._machine2ops[machine], operation)
+            bisect.insort(self._op2machines[operation], machine)
 
         self._validate_parameters()
 
@@ -266,18 +265,6 @@ class ProblemData:
             List of operation indices for each job.
         """
         return self._job2ops
-
-    @property
-    def machine2ops(self) -> list[list[int]]:
-        """
-        List of operation indices for each machine.
-
-        Returns
-        -------
-        list[list[int]]
-            List of operation indices for each machine.
-        """
-        return self._machine2ops
 
     @property
     def processing_times(self) -> dict[tuple[int, int], int]:
@@ -351,9 +338,23 @@ class ProblemData:
         return self._setup_times
 
     @property
+    def machine2ops(self) -> list[list[int]]:
+        """
+        List of operation indices for each machine. These are inferred from
+        the (machine, operation) pairs in the processing times dict.
+
+        Returns
+        -------
+        list[list[int]]
+            List of operation indices for each machine.
+        """
+        return self._machine2ops
+
+    @property
     def op2machines(self) -> list[list[int]]:
         """
-        List of eligible machine indices for each operation.
+        List of eligible machine indices for each operation. These are inferred
+        from the (machine, operation) pairs in the processing times dict.
 
         Returns
         -------

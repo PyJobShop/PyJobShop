@@ -45,11 +45,7 @@ def test_model_data():
     assert_equal(data.machines, machines)
     assert_equal(data.operations, operations)
     assert_equal(data.job2ops, [[0, 1]])
-    assert_equal(data.machine2ops, [[0], [1]])
-    assert_equal(
-        data.processing_times,
-        {(0, 0): 1, (1, 1): 2},
-    )
+    assert_equal(data.processing_times, {(0, 0): 1, (1, 1): 2})
     assert_equal(
         data.timing_precedences,
         {

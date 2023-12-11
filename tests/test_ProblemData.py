@@ -96,15 +96,15 @@ def test_operation_attributes_raises_invalid_parameters(
         )
 
 
-def test_problem_data_attributes():
+def test_problem_data_input_parameter_attributes():
     """
-    Tests that the attributes of the ProblemData class are set correctly.
+    Tests that the input parameters of the ProblemData class are set correctly
+    as attributes.
     """
     jobs = [Job() for _ in range(5)]
     machines = [Machine() for _ in range(5)]
     operations = [Operation() for _ in range(5)]
     job2ops = [[0], [1], [2], [3], [4]]
-    machine2ops = [[0], [1], [2], [3], [4]]
     processing_times = {(i, j): 1 for i in range(5) for j in range(5)}
     timing_precedences = {
         key: [TimingPrecedence.END_BEFORE_START]
@@ -118,8 +118,7 @@ def test_problem_data_attributes():
         jobs,
         machines,
         operations,
-        job2ops,  # TODO test invalid job2ops
-        machine2ops,  # TODO test invalid machine2ops
+        job2ops,
         processing_times,
         timing_precedences,
         assignment_precedences,
@@ -131,16 +130,37 @@ def test_problem_data_attributes():
     assert_equal(data.machines, machines)
     assert_equal(data.operations, operations)
     assert_equal(data.job2ops, job2ops)
-    assert_equal(data.machine2ops, machine2ops)
     assert_equal(data.processing_times, processing_times)
     assert_equal(data.timing_precedences, timing_precedences)
     assert_equal(data.assignment_precedences, assignment_precedences)
     assert_equal(data.access_matrix, access_matrix)
     assert_allclose(data.setup_times, setup_times)
 
-    assert_equal(data.num_jobs, 5)
-    assert_equal(data.num_machines, 5)
-    assert_equal(data.num_operations, 5)
+
+def test_problem_data_non_input_parameter_attributes():
+    """
+    Tests that attributes that are not input parameters of the ProblemData
+    class are set correctly.
+    """
+    jobs = [Job() for _ in range(1)]
+    machines = [Machine() for _ in range(3)]
+    operations = [Operation() for _ in range(3)]
+    job2ops = [[0, 1, 2]]
+    processing_times = {(1, 2): 1, (2, 1): 1, (0, 1): 1, (2, 0): 1}
+
+    data = ProblemData(
+        jobs, machines, operations, job2ops, processing_times, {}
+    )
+
+    # The lists in machine2ops and op2machines are sorted.
+    machine2ops = [[1], [2], [0, 1]]
+    op2machines = [[2], [0, 2], [1]]
+    assert_equal(data.machine2ops, machine2ops)
+    assert_equal(data.op2machines, op2machines)
+
+    assert_equal(data.num_jobs, 1)
+    assert_equal(data.num_machines, 3)
+    assert_equal(data.num_operations, 3)
 
 
 def test_problem_data_default_values():
@@ -151,7 +171,6 @@ def test_problem_data_default_values():
     machines = [Machine() for _ in range(1)]
     operations = [Operation() for _ in range(1)]
     job2ops = [[0]]
-    machine2ops = [[0]]
     timing_precedences = {(0, 1): [TimingPrecedence.END_BEFORE_START]}
     processing_times = {(0, 0): 1}
     data = ProblemData(
@@ -159,7 +178,6 @@ def test_problem_data_default_values():
         machines,
         operations,
         job2ops,
-        machine2ops,
         processing_times,
         timing_precedences,
     )
@@ -196,7 +214,6 @@ def test_problem_data_raises_when_invalid_arguments(
             [Job()],
             [Machine()],
             [Operation()],
-            [[0]],
             [[0]],
             processing_times,
             {},
