@@ -16,7 +16,7 @@ def test_solve():
     model.assign_job_operations(job, operations)
 
     for operation, duration in zip(operations, [1, 2, 3]):
-        model.add_processing_time(operation, machine, duration)
+        model.add_processing_time(machine, operation, duration)
 
     result = model.solve()
 

@@ -39,7 +39,7 @@ def assignment_variables(m: CpoModel, data: ProblemData) -> AssignVars:
 
             # The duration of the operation on the machine is at least the
             # processing time; it could be longer due to blocking.
-            duration = data.processing_times[op, machine]
+            duration = data.processing_times[machine, op]
             expr = duration * m.presence_of(var) if is_optional else duration
             m.add(m.size_of(var) >= expr)
 

@@ -194,26 +194,26 @@ class Model:
         self._job2ops[job_idx].extend(op_idcs)
 
     def add_processing_time(
-        self, operation: Operation, machine: Machine, duration: int
+        self, machine: Machine, operation: Operation, duration: int
     ):
         """
-        Adds a processing time for an operation on a machine.
+        Adds a processing time for a machine and operation combination.
 
         Parameters
         ----------
-        operation: Operation
-            An operation.
         machine: Machine
             The machine on which the operation is processed.
+        operation: Operation
+            An operation.
         duration: int
             Processing time of the operation on the machine.
         """
         if duration < 0:
             raise ValueError("Processing time must be non-negative.")
 
-        op_idx = self._id2op[id(operation)]
         machine_idx = self._id2machine[id(machine)]
-        self._processing_times[op_idx, machine_idx] = duration
+        op_idx = self._id2op[id(operation)]
+        self._processing_times[machine_idx, op_idx] = duration
         self._machine2ops[machine_idx].append(op_idx)
 
     def add_timing_precedence(

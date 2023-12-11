@@ -32,7 +32,7 @@ def test_jobshop():
         # Add processing times.
         for idx, (machine_idx, duration) in enumerate(tasks):
             model.add_processing_time(
-                operations[idx], machines[machine_idx], duration
+                machines[machine_idx], operations[idx], duration
             )
 
         # Impose linear routing precedence constraints.

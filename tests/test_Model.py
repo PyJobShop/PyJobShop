@@ -21,8 +21,8 @@ def test_model_data():
 
     model.assign_job_operations(job, operations)
 
-    model.add_processing_time(op1, mach1, 1)
-    model.add_processing_time(op2, mach2, 2)
+    model.add_processing_time(mach1, op1, 1)
+    model.add_processing_time(mach2, op2, 2)
 
     model.add_timing_precedence(
         op1, op2, TimingPrecedence.END_BEFORE_START, 10

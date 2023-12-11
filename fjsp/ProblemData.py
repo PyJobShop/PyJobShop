@@ -288,7 +288,7 @@ class ProblemData:
         -------
         dict[tuple[int, int], int]
             Processing times of operations on machines. First index is
-            operation index, second index is machine index.
+            the machine index, second index is the operation index.
         """
         return self._processing_times
 
