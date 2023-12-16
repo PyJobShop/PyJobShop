@@ -150,6 +150,28 @@ def test_fixed_end():
     assert_equal(result.get_objective_value(), 42)
 
 
+def test_required_operations():
+    """
+    Tests that optional operations are not scheduled.
+    """
+    model = Model()
+
+    job = model.add_job()
+    machine = model.add_machine()
+    operations = [model.add_operation(), model.add_operation(required=False)]
+
+    model.assign_job_operations(job, operations)
+    model.add_processing_time(machine, operations[0], duration=10)
+    model.add_processing_time(machine, operations[1], duration=15)
+
+    result = model.solve()
+
+    # Operation 2 is not scheduled, so the makespan is 10, just the duration
+    # of operation 1.
+    assert_equal(result.get_solve_status(), "Optimal")
+    assert_equal(result.get_objective_value(), 10)
+
+
 @pytest.mark.parametrize(
     "prec_type,expected_makespan",
     [
