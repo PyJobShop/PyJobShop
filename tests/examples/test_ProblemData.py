@@ -300,3 +300,28 @@ def test_assignment_precedence(
     result = model.solve()
 
     assert_equal(result.get_objective_value(), expected_makespan)
+
+
+def test_optional_groups():
+    """
+    Tests that setting optional groups works correctly.
+    """
+    model = Model()
+
+    job = model.add_job()
+    machine = model.add_machine()
+    operations = [model.add_operation(required=False) for _ in range(4)]
+
+    model.assign_job_operations(job, operations)
+
+    for operation, duration in zip(operations, [1, 2, 3, 4]):
+        model.add_processing_time(machine, operation, duration)
+
+    group1 = [operations[0], operations[1]]
+    group2 = [operations[2], operations[3]]
+    model.set_optional_groups(group1, group2)
+
+    result = model.solve()
+
+    # Schedule group 1, so the makespan is 1 + 2 = 3.
+    assert_equal(result.get_objective_value(), 3)

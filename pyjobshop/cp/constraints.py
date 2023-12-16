@@ -187,3 +187,25 @@ def machine_accessibility_constraints(
                 constraints.append(m.presence_of(frm) + m.presence_of(to) <= 1)
 
     return constraints
+
+
+def optional_operation_selection_constraints(
+    m: CpoModel, data: ProblemData, op_vars: OpVars
+) -> list[CpoExpr]:
+    """
+    Creates the optional operation selection constraints. These constraints
+    ensure that for each group of operation lists, exactly one operation list
+    is selected and all operations in that list must be present.
+    """
+    constraints = []
+
+    for groups in data.optional_groups:
+        constraints.append(
+            m.sum(
+                m.logical_and([m.presence_of(op_vars[op]) for op in group])
+                for group in groups
+            )
+            == 1
+        )
+
+    return constraints

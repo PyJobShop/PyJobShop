@@ -185,6 +185,7 @@ class ProblemData:
         ] = None,
         access_matrix: Optional[np.ndarray] = None,
         setup_times: Optional[np.ndarray] = None,
+        optional_groups: Optional[list[list[list[int]]]] = None,
     ):
         self._jobs = jobs
         self._machines = machines
@@ -211,6 +212,7 @@ class ProblemData:
             if setup_times is not None
             else np.zeros((num_mach, num_ops, num_ops), dtype=int)
         )
+        self._optional_groups = optional_groups if optional_groups else []
 
         self._machine2ops: list[list[int]] = [[] for _ in range(num_mach)]
         self._op2machines: list[list[int]] = [[] for _ in range(num_ops)]
@@ -345,6 +347,20 @@ class ProblemData:
             operation indices.
         """
         return self._setup_times
+
+    @property
+    def optional_groups(self) -> list[list[list[int]]]:
+        """
+        List of optional operation groups. Each group is a list containing
+        lists of operation indices. Exactly one group must be selected,
+        meaning that all operation from the selected group must be processed.
+
+        Returns
+        -------
+        list[list[list[int]]]
+            List of optional operation groups.
+        """
+        return self._optional_groups
 
     @property
     def machine2ops(self) -> list[list[int]]:
