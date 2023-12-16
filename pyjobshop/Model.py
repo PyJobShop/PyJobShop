@@ -142,6 +142,7 @@ class Model:
         latest_start: Optional[int] = None,
         earliest_end: Optional[int] = None,
         latest_end: Optional[int] = None,
+        required: bool = True,
         name: Optional[str] = None,
     ) -> Operation:
         """
@@ -157,6 +158,9 @@ class Model:
             Earliest end time of the operation.
         latest_end: Optional[int]
             Latest end time of the operation.
+        required: bool
+            Whether this operation must be part of a feasible solution.
+            Defaults to True.
         name: Optional[str]
             Name of the operation.
 
@@ -166,7 +170,12 @@ class Model:
             The created operation.
         """
         operation = Operation(
-            earliest_start, latest_start, earliest_end, latest_end, name
+            earliest_start,
+            latest_start,
+            earliest_end,
+            latest_end,
+            required,
+            name,
         )
 
         self._id2op[id(operation)] = len(self.operations)

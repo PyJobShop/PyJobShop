@@ -98,12 +98,13 @@ def test_add_operation_attributes():
     """
     model = Model()
 
-    operation = model.add_operation(1, 2, 3, 4, name="operation")
+    operation = model.add_operation(1, 2, 3, 4, False, name="operation")
 
     assert_equal(operation.earliest_start, 1)
     assert_equal(operation.latest_start, 2)
     assert_equal(operation.earliest_end, 3)
     assert_equal(operation.latest_end, 4)
+    assert_equal(operation.required, False)
     assert_equal(operation.name, "operation")
 
 

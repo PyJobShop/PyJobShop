@@ -61,6 +61,9 @@ class Operation:
         Earliest end time of the operation.
     latest_end: Optional[int]
         Latest end time of the operation.
+    required: bool
+        Whether this operation must be part of a feasible solution. Defaults to
+        True.
     name: Optional[str]
         Name of the operation.
     """
@@ -71,6 +74,7 @@ class Operation:
         latest_start: Optional[int] = None,
         earliest_end: Optional[int] = None,
         latest_end: Optional[int] = None,
+        required: bool = True,
         name: Optional[str] = None,
     ):
         if (
@@ -91,6 +95,7 @@ class Operation:
         self._latest_start = latest_start
         self._earliest_end = earliest_end
         self._latest_end = latest_end
+        self._required = required
         self._name = name
 
     @property
@@ -108,6 +113,10 @@ class Operation:
     @property
     def latest_end(self) -> Optional[int]:
         return self._latest_end
+
+    @property
+    def required(self) -> bool:
+        return self._required
 
     @property
     def name(self) -> Optional[str]:
