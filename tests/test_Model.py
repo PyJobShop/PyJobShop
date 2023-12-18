@@ -104,7 +104,7 @@ def test_add_operation_attributes():
     assert_equal(operation.latest_start, 2)
     assert_equal(operation.earliest_end, 3)
     assert_equal(operation.latest_end, 4)
-    assert_equal(operation.required, False)
+    assert_equal(operation.optional, False)
     assert_equal(operation.name, "operation")
 
 

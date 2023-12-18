@@ -144,7 +144,7 @@ class Model:
         latest_start: Optional[int] = None,
         earliest_end: Optional[int] = None,
         latest_end: Optional[int] = None,
-        required: bool = True,
+        optional: bool = False,
         name: Optional[str] = None,
     ) -> Operation:
         """
@@ -160,9 +160,8 @@ class Model:
             Earliest end time of the operation.
         latest_end: Optional[int]
             Latest end time of the operation.
-        required: bool
-            Whether this operation must be part of a feasible solution.
-            Defaults to True.
+        optional: bool
+            Whether processing this operation is optional. Defaults to False.
         name: Optional[str]
             Name of the operation.
 
@@ -176,7 +175,7 @@ class Model:
             latest_start,
             earliest_end,
             latest_end,
-            required,
+            optional,
             name,
         )
 

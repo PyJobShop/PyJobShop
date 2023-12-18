@@ -150,7 +150,7 @@ def test_fixed_end():
     assert_equal(result.get_objective_value(), 42)
 
 
-def test_required_operations():
+def test_optional_operations():
     """
     Tests that optional operations are not scheduled.
     """
@@ -158,7 +158,7 @@ def test_required_operations():
 
     job = model.add_job()
     machine = model.add_machine()
-    operations = [model.add_operation(), model.add_operation(required=False)]
+    operations = [model.add_operation(), model.add_operation(optional=True)]
 
     model.assign_job_operations(job, operations)
     model.add_processing_time(machine, operations[0], duration=10)
@@ -310,7 +310,7 @@ def test_process_plans():
 
     job = model.add_job()
     machine = model.add_machine()
-    operations = [model.add_operation(required=False) for _ in range(4)]
+    operations = [model.add_operation(optional=True) for _ in range(4)]
 
     model.assign_job_operations(job, operations)
 
