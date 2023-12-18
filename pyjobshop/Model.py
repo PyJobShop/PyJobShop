@@ -36,7 +36,7 @@ class Model:
         ] = defaultdict(list)
         self._access_matrix: dict[tuple[int, int], bool] = {}
         self._setup_times: dict[tuple[int, int, int], int] = {}
-        self._optional_groups: list[list[list[int]]] = []
+        self._process_plans: list[list[list[int]]] = []
 
         self._id2job: dict[int, int] = {}
         self._id2machine: dict[int, int] = {}
@@ -84,7 +84,7 @@ class Model:
             self._assignment_precedences,
             access_matrix,
             setup_times,
-            self._optional_groups,
+            self._process_plans,
         )
 
     def add_job(
@@ -322,19 +322,18 @@ class Model:
 
         self._setup_times[machine_idx, op_idx1, op_idx2] = duration
 
-    def set_optional_groups(self, groups: list[list[Operation]]):
+    def add_process_plan(self, plans: list[list[Operation]]):
         """
-        Adds a list of optional operations groups.
+        Adds a process plan. Exactly one process plan is selected, meaning
+        that all operations in the selected are required to be processed.
 
         Parameters
         ----------
-        groups: list[list[Operation]]
-            List of optional operation groups.
+        plans: list[list[Operation]]
+            List of lists, each representing an optional process plan.
         """
-        groups2ids = [
-            [self._id2op[id(op)] for op in group] for group in groups
-        ]
-        self._optional_groups.append(groups2ids)
+        ids = [[self._id2op[id(op)] for op in group] for group in plans]
+        self._process_plans.append(ids)
 
     def solve(self, time_limit: Optional[int] = None) -> CpoSolveResult:
         """

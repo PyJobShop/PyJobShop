@@ -302,9 +302,9 @@ def test_assignment_precedence(
     assert_equal(result.get_objective_value(), expected_makespan)
 
 
-def test_optional_groups():
+def test_process_plans():
     """
-    Tests that setting optional groups works correctly.
+    Tests that setting optional plans works correctly.
     """
     model = Model()
 
@@ -317,11 +317,11 @@ def test_optional_groups():
     for operation, duration in zip(operations, [1, 2, 3, 4]):
         model.add_processing_time(machine, operation, duration)
 
-    group1 = [operations[0], operations[1]]
-    group2 = [operations[2], operations[3]]
-    model.set_optional_groups(group1, group2)
+    plan1 = [operations[0], operations[1]]
+    plan2 = [operations[2], operations[3]]
+    model.add_process_plan([plan1, plan2])
 
     result = model.solve()
 
-    # Schedule group 1, so the makespan is 1 + 2 = 3.
+    # Schedule plan 1, so the makespan is 1 + 2 = 3.
     assert_equal(result.get_objective_value(), 3)
