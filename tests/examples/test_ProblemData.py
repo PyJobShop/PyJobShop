@@ -150,6 +150,28 @@ def test_fixed_end():
     assert_equal(result.get_objective_value(), 42)
 
 
+def test_optional_operations():
+    """
+    Tests that optional operations are not scheduled.
+    """
+    model = Model()
+
+    job = model.add_job()
+    machine = model.add_machine()
+    operations = [model.add_operation(), model.add_operation(optional=True)]
+
+    model.assign_job_operations(job, operations)
+    model.add_processing_time(machine, operations[0], duration=10)
+    model.add_processing_time(machine, operations[1], duration=15)
+
+    result = model.solve()
+
+    # Operation 2 is not scheduled, so the makespan is 10, just the duration
+    # of operation 1.
+    assert_equal(result.get_solve_status(), "Optimal")
+    assert_equal(result.get_objective_value(), 10)
+
+
 @pytest.mark.parametrize(
     "prec_type,expected_makespan",
     [
@@ -278,3 +300,28 @@ def test_assignment_precedence(
     result = model.solve()
 
     assert_equal(result.get_objective_value(), expected_makespan)
+
+
+def test_process_plans():
+    """
+    Tests that setting optional plans works correctly.
+    """
+    model = Model()
+
+    job = model.add_job()
+    machine = model.add_machine()
+    operations = [model.add_operation(optional=True) for _ in range(4)]
+
+    model.assign_job_operations(job, operations)
+
+    for operation, duration in zip(operations, [1, 2, 3, 4]):
+        model.add_processing_time(machine, operation, duration)
+
+    plan1 = [operations[0], operations[1]]
+    plan2 = [operations[2], operations[3]]
+    model.add_process_plan(plan1, plan2)
+
+    result = model.solve()
+
+    # Schedule plan 1, so the makespan is 1 + 2 = 3.
+    assert_equal(result.get_objective_value(), 3)

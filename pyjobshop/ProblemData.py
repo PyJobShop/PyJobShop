@@ -61,6 +61,8 @@ class Operation:
         Earliest end time of the operation.
     latest_end: Optional[int]
         Latest end time of the operation.
+    optional: bool
+        Whether processing this operation is optional. Defaults to False.
     name: Optional[str]
         Name of the operation.
     """
@@ -71,6 +73,7 @@ class Operation:
         latest_start: Optional[int] = None,
         earliest_end: Optional[int] = None,
         latest_end: Optional[int] = None,
+        optional: bool = False,
         name: Optional[str] = None,
     ):
         if (
@@ -91,6 +94,7 @@ class Operation:
         self._latest_start = latest_start
         self._earliest_end = earliest_end
         self._latest_end = latest_end
+        self._optional = optional
         self._name = name
 
     @property
@@ -108,6 +112,10 @@ class Operation:
     @property
     def latest_end(self) -> Optional[int]:
         return self._latest_end
+
+    @property
+    def optional(self) -> bool:
+        return self._optional
 
     @property
     def name(self) -> Optional[str]:
@@ -176,6 +184,7 @@ class ProblemData:
         ] = None,
         access_matrix: Optional[np.ndarray] = None,
         setup_times: Optional[np.ndarray] = None,
+        process_plans: Optional[list[list[list[int]]]] = None,
     ):
         self._jobs = jobs
         self._machines = machines
@@ -201,6 +210,9 @@ class ProblemData:
             setup_times
             if setup_times is not None
             else np.zeros((num_mach, num_ops, num_ops), dtype=int)
+        )
+        self._process_plans = (
+            process_plans if process_plans is not None else []
         )
 
         self._machine2ops: list[list[int]] = [[] for _ in range(num_mach)]
@@ -336,6 +348,21 @@ class ProblemData:
             operation indices.
         """
         return self._setup_times
+
+    @property
+    def process_plans(self) -> list[list[list[int]]]:
+        """
+        List of process plans. Each process plan represents a list containing
+        lists of operation indices, one of which is selected to be scheduled.
+        All operations from the selected list are then scheduled, while
+        operations from unselected lists will not be scheduled.
+
+        Returns
+        -------
+        list[list[list[int]]]
+            List of processing plans.
+        """
+        return self._process_plans
 
     @property
     def machine2ops(self) -> list[list[int]]:

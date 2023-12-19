@@ -36,6 +36,7 @@ class Model:
         ] = defaultdict(list)
         self._access_matrix: dict[tuple[int, int], bool] = {}
         self._setup_times: dict[tuple[int, int, int], int] = {}
+        self._process_plans: list[list[list[int]]] = []
 
         self._id2job: dict[int, int] = {}
         self._id2machine: dict[int, int] = {}
@@ -83,6 +84,7 @@ class Model:
             self._assignment_precedences,
             access_matrix,
             setup_times,
+            self._process_plans,
         )
 
     def add_job(
@@ -142,6 +144,7 @@ class Model:
         latest_start: Optional[int] = None,
         earliest_end: Optional[int] = None,
         latest_end: Optional[int] = None,
+        optional: bool = False,
         name: Optional[str] = None,
     ) -> Operation:
         """
@@ -157,6 +160,8 @@ class Model:
             Earliest end time of the operation.
         latest_end: Optional[int]
             Latest end time of the operation.
+        optional: bool
+            Whether processing this operation is optional. Defaults to False.
         name: Optional[str]
             Name of the operation.
 
@@ -166,7 +171,12 @@ class Model:
             The created operation.
         """
         operation = Operation(
-            earliest_start, latest_start, earliest_end, latest_end, name
+            earliest_start,
+            latest_start,
+            earliest_end,
+            latest_end,
+            optional,
+            name,
         )
 
         self._id2op[id(operation)] = len(self.operations)
@@ -310,6 +320,21 @@ class Model:
         op_idx2 = self._id2op[id(operation2)]
 
         self._setup_times[machine_idx, op_idx1, op_idx2] = duration
+
+    def add_process_plan(self, *plans: list[Operation]):
+        """
+        Adds one or multiple process plans. Each plan is a list of operations.
+        Exactly one process plan is selected, meaning that all operations in the
+        selected plan are required to be processed.
+
+        Parameters
+        ----------
+        *plans: list[Operation]
+            The plans to be added. Each plan is a list of operations. Multiple
+            plans can be passed as separate arguments.
+        """
+        ids = [[self._id2op[id(op)] for op in plan] for plan in plans]
+        self._process_plans.append(ids)
 
     def solve(self, time_limit: Optional[int] = None) -> CpoSolveResult:
         """

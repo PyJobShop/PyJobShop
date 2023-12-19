@@ -39,6 +39,8 @@ def test_model_data():
     model.add_setup_time(mach1, op1, op2, 3)
     model.add_setup_time(mach2, op1, op2, 4)
 
+    model.add_process_plan([op1], [op2])
+
     data = model.data()
 
     assert_equal(data.jobs, [job])
@@ -66,6 +68,7 @@ def test_model_data():
     )
     assert_equal(data.access_matrix, [[True, False], [True, True]])
     assert_equal(data.setup_times, [[[0, 3], [0, 0]], [[0, 4], [0, 0]]])
+    assert_equal(data.process_plans, [[[0], [1]]])
 
 
 def test_add_job_attributes():
@@ -98,12 +101,13 @@ def test_add_operation_attributes():
     """
     model = Model()
 
-    operation = model.add_operation(1, 2, 3, 4, name="operation")
+    operation = model.add_operation(1, 2, 3, 4, False, name="operation")
 
     assert_equal(operation.earliest_start, 1)
     assert_equal(operation.latest_start, 2)
     assert_equal(operation.earliest_end, 3)
     assert_equal(operation.latest_end, 4)
+    assert_equal(operation.optional, False)
     assert_equal(operation.name, "operation")
 
 

@@ -9,6 +9,7 @@ from .constraints import (
     machine_accessibility_constraints,
     no_overlap_constraints,
     operation_constraints,
+    optional_operation_selection_constraints,
     timing_precedence_constraints,
 )
 from .objectives import makespan
@@ -42,5 +43,6 @@ def default_model(data: ProblemData) -> CpoModel:
     model.add(alternative_constraints(model, data, op_vars, assign_vars))
     model.add(no_overlap_constraints(model, data, seq_vars))
     model.add(machine_accessibility_constraints(model, data, assign_vars))
+    model.add(optional_operation_selection_constraints(model, data, op_vars))
 
     return model

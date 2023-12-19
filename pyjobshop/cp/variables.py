@@ -19,7 +19,10 @@ def operation_variables(
     """
     Creates an interval variable for each operation in the problem.
     """
-    return [m.interval_var(name=f"O{op}") for op in range(data.num_operations)]
+    return [
+        m.interval_var(name=f"O{idx}", optional=operation.optional)
+        for idx, operation in enumerate(data.operations)
+    ]
 
 
 def assignment_variables(m: CpoModel, data: ProblemData) -> AssignVars:
@@ -30,10 +33,10 @@ def assignment_variables(m: CpoModel, data: ProblemData) -> AssignVars:
     variables = {}
 
     for op in range(data.num_operations):
-        eligible_machines = data.op2machines[op]
-        is_optional = len(eligible_machines) > 1
+        machines = data.op2machines[op]
+        is_optional = len(machines) > 1 or data.operations[op].optional
 
-        for machine in eligible_machines:
+        for machine in machines:
             var = m.interval_var(name=f"A{op}_{machine}", optional=is_optional)
             variables[op, machine] = var
 

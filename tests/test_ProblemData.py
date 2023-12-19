@@ -52,12 +52,13 @@ def test_operation_attributes():
     """
     Tests that the attributes of the Operation class are set correctly.
     """
-    operation = Operation(1, 2, 3, 4, name="TestOperation")
+    operation = Operation(1, 2, 3, 4, True, name="TestOperation")
 
     assert_equal(operation.earliest_start, 1)
     assert_equal(operation.latest_start, 2)
     assert_equal(operation.earliest_end, 3)
     assert_equal(operation.latest_end, 4)
+    assert_equal(operation.optional, True)
     assert_equal(operation.name, "TestOperation")
 
     # Also test that default values are set correctly.
@@ -67,6 +68,7 @@ def test_operation_attributes():
     assert_equal(operation.latest_start, None)
     assert_equal(operation.earliest_end, None)
     assert_equal(operation.latest_end, None)
+    assert_equal(operation.optional, False)
     assert_equal(operation.name, None)
 
 
@@ -88,12 +90,7 @@ def test_operation_attributes_raises_invalid_parameters(
     Operation class.
     """
     with assert_raises(ValueError):
-        Operation(
-            earliest_start,
-            latest_start,
-            earliest_end,
-            latest_end,
-        )
+        Operation(earliest_start, latest_start, earliest_end, latest_end)
 
 
 def test_problem_data_input_parameter_attributes():
@@ -113,6 +110,7 @@ def test_problem_data_input_parameter_attributes():
     assignment_precedences = {(0, 1): [AssignmentPrecedence.PREVIOUS]}
     access_matrix = np.full((5, 5), True)
     setup_times = np.ones((5, 5, 5), dtype=int)
+    process_plans = [[[0, 1, 2, 3, 4]]]
 
     data = ProblemData(
         jobs,
@@ -124,6 +122,7 @@ def test_problem_data_input_parameter_attributes():
         assignment_precedences,
         access_matrix,
         setup_times,
+        process_plans,
     )
 
     assert_equal(data.jobs, jobs)
@@ -135,6 +134,7 @@ def test_problem_data_input_parameter_attributes():
     assert_equal(data.assignment_precedences, assignment_precedences)
     assert_equal(data.access_matrix, access_matrix)
     assert_allclose(data.setup_times, setup_times)
+    assert_equal(data.process_plans, process_plans)
 
 
 def test_problem_data_non_input_parameter_attributes():
@@ -185,6 +185,7 @@ def test_problem_data_default_values():
     assert_equal(data.assignment_precedences, {})
     assert_allclose(data.access_matrix, np.full((1, 1), True))
     assert_allclose(data.setup_times, np.zeros((1, 1, 1), dtype=int))
+    assert_equal(data.process_plans, [])
 
 
 @pytest.mark.parametrize(
