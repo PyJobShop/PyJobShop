@@ -1,4 +1,4 @@
-Welcome to Lumache's documentation!
+Welcome to PyJobShop's documentation!
 ===================================
 
 **PyJobShop** is a Python library for modeling and solving scheduling problems.
