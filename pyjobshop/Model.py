@@ -323,13 +323,15 @@ class Model:
 
     def add_process_plan(self, *plans: list[Operation]):
         """
-        Adds a process plan. Exactly one process plan is selected, meaning
-        that all operations in the selected are required to be processed.
+        Adds one or multiple process plans. Each plan is a list of operations.
+        Exactly one process plan is selected, meaning that all operations in the
+        selected plan are required to be processed.
 
         Parameters
         ----------
-        plans: list[list[Operation]]
-            List of lists, each representing an optional process plan.
+        *plans: list[Operation]
+            The plans to be added. Each plan is a list of operations. Multiple
+            plans can be passed as separate arguments.
         """
         ids = [[self._id2op[id(op)] for op in plan] for plan in plans]
         self._process_plans.append(ids)
