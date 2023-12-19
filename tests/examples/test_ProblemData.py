@@ -319,7 +319,7 @@ def test_process_plans():
 
     plan1 = [operations[0], operations[1]]
     plan2 = [operations[2], operations[3]]
-    model.add_process_plan([plan1, plan2])
+    model.add_process_plan(plan1, plan2)
 
     result = model.solve()
 
