@@ -185,6 +185,7 @@ class ProblemData:
         access_matrix: Optional[np.ndarray] = None,
         setup_times: Optional[np.ndarray] = None,
         process_plans: Optional[list[list[list[int]]]] = None,
+        objective: str = "makespan",
     ):
         self._jobs = jobs
         self._machines = machines
@@ -214,6 +215,7 @@ class ProblemData:
         self._process_plans = (
             process_plans if process_plans is not None else []
         )
+        self._objective = objective
 
         self._machine2ops: list[list[int]] = [[] for _ in range(num_mach)]
         self._op2machines: list[list[int]] = [[] for _ in range(num_ops)]
@@ -363,6 +365,13 @@ class ProblemData:
             List of processing plans.
         """
         return self._process_plans
+
+    @property
+    def objective(self) -> str:
+        """
+        Returns the objective function of this problem instance.
+        """
+        return self._objective
 
     @property
     def machine2ops(self) -> list[list[int]]:

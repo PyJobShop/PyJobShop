@@ -37,6 +37,7 @@ class Model:
         self._access_matrix: dict[tuple[int, int], bool] = {}
         self._setup_times: dict[tuple[int, int, int], int] = {}
         self._process_plans: list[list[list[int]]] = []
+        self._objective = "makespan"
 
         self._id2job: dict[int, int] = {}
         self._id2machine: dict[int, int] = {}
@@ -85,6 +86,7 @@ class Model:
             access_matrix,
             setup_times,
             self._process_plans,
+            self._objective,
         )
 
     def add_job(
@@ -336,6 +338,17 @@ class Model:
         ids = [[self._id2op[id(op)] for op in plan] for plan in plans]
         self._process_plans.append(ids)
 
+    def add_objective(self, objective: str = "makespan"):
+        """
+        Adds an objective to the problem.
+
+        Parameters
+        ----------
+        objective: str
+            The objective to be added. Defaults to "makespan".
+        """
+        self._objective = objective
+
     def solve(self, time_limit: Optional[int] = None) -> CpoSolveResult:
         """
         Solves the problem data instance created by the model.
@@ -351,6 +364,5 @@ class Model:
         Result
             A results object containing solver result.
         """
-        data = self.data()
-        cp_model = default_model(data)
+        cp_model = default_model(self.data())
         return cp_model.solve(TimeLimit=time_limit)
