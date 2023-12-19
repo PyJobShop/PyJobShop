@@ -36,6 +36,8 @@ optional = true
 
 [tool.poetry.group.docs.dependencies]
 sphinx = "^7.2.6"
+numpydoc = "^1.6.0"
+nbsphinx = "^0.9.3"
 
 
 [tool.black]
@@ -74,4 +76,5 @@ addopts = "--cov=. --cov-report=xml"
 omit = [
     "tests/examples/*",
     "pyjobshop/cp/*",
+    "docs/*"
 ]
