@@ -30,6 +30,14 @@ pytest-cov = "^4.1.0"
 codecov = "^2.1.13"
 
 
+[tool.poetry.group.docs]
+optional = true
+
+
+[tool.poetry.group.docs.dependencies]
+sphinx = "^7.2.6"
+
+
 [tool.black]
 line-length = 79
 
