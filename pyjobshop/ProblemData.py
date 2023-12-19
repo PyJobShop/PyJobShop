@@ -211,7 +211,9 @@ class ProblemData:
             if setup_times is not None
             else np.zeros((num_mach, num_ops, num_ops), dtype=int)
         )
-        self._process_plans = process_plans if process_plans else []
+        self._process_plans = (
+            process_plans if process_plans is not None else []
+        )
 
         self._machine2ops: list[list[int]] = [[] for _ in range(num_mach)]
         self._op2machines: list[list[int]] = [[] for _ in range(num_ops)]

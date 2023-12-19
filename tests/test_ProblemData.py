@@ -110,6 +110,7 @@ def test_problem_data_input_parameter_attributes():
     assignment_precedences = {(0, 1): [AssignmentPrecedence.PREVIOUS]}
     access_matrix = np.full((5, 5), True)
     setup_times = np.ones((5, 5, 5), dtype=int)
+    process_plans = [[[0, 1, 2, 3, 4]]]
 
     data = ProblemData(
         jobs,
@@ -121,6 +122,7 @@ def test_problem_data_input_parameter_attributes():
         assignment_precedences,
         access_matrix,
         setup_times,
+        process_plans,
     )
 
     assert_equal(data.jobs, jobs)
@@ -132,6 +134,7 @@ def test_problem_data_input_parameter_attributes():
     assert_equal(data.assignment_precedences, assignment_precedences)
     assert_equal(data.access_matrix, access_matrix)
     assert_allclose(data.setup_times, setup_times)
+    assert_equal(data.process_plans, process_plans)
 
 
 def test_problem_data_non_input_parameter_attributes():
@@ -182,6 +185,7 @@ def test_problem_data_default_values():
     assert_equal(data.assignment_precedences, {})
     assert_allclose(data.access_matrix, np.full((1, 1), True))
     assert_allclose(data.setup_times, np.zeros((1, 1, 1), dtype=int))
+    assert_equal(data.process_plans, [])
 
 
 @pytest.mark.parametrize(
