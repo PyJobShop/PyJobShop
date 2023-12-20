@@ -329,7 +329,7 @@ class Model:
 
         Parameters
         ----------
-        *plans: list[Operation]
+        plans: list[Operation]
             The plans to be added. Each plan is a list of operations. Multiple
             plans can be passed as separate arguments.
         """
