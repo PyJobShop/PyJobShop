@@ -5,12 +5,12 @@ from pyjobshop.ProblemData import ProblemData
 
 
 def makespan(
-    m: CpoModel, data: ProblemData, job_vars: list[CpoIntervalVar]
+    m: CpoModel, data: ProblemData, op_vars: list[CpoIntervalVar]
 ) -> CpoExpr:
     """
     Minimizes the makespan of the schedule.
     """
-    return m.minimize(m.max(m.end_of(var) for var in job_vars))
+    return m.minimize(m.max(m.end_of(var) for var in op_vars))
 
 
 def total_completion_time(

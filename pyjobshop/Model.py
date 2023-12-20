@@ -340,12 +340,12 @@ class Model:
 
     def add_objective(self, objective: str = "makespan"):
         """
-        Adds an objective to the problem.
+        Adds an objective expression (to be minimized).
 
         Parameters
         ----------
         objective: str
-            The objective to be added. Defaults to "makespan".
+            The objective expression to be minimized. Defaults to "makespan".
         """
         self._objective = objective
 
