@@ -14,6 +14,7 @@ extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.intersphinx",
     "sphinx.ext.napoleon",
+    "sphinx_immaterial",
     "numpydoc",
 ]
 
@@ -44,5 +45,48 @@ intersphinx_mapping = {
 intersphinx_disabled_domains = ["std"]
 
 # -- Options for HTML output -------------------------------------------------
-html_theme = "alabaster"
+html_theme = "sphinx_immaterial"
 html_static_path = ["_static"]
+
+html_theme_options = {
+    "repo_url": "https://github.com/leonlan/PyJobShop/",
+    "icon": {
+        "repo": "fontawesome/brands/github",
+        "edit": "material/file-edit-outline",
+    },
+    "features": [
+        "navigation.expand",
+        "navigation.top",
+    ],
+    "palette": [
+        {
+            "media": "(prefers-color-scheme: light)",
+            "primary": "indigo",
+            "accent": "purple",
+            "scheme": "default",
+            "toggle": {
+                "icon": "material/lightbulb-outline",
+                "name": "Switch to dark mode",
+            },
+        },
+        {
+            "media": "(prefers-color-scheme: dark)",
+            "primary": "indigo",
+            "accent": "purple",
+            "scheme": "slate",
+            "toggle": {
+                "icon": "material/lightbulb",
+                "name": "Switch to light mode",
+            },
+        },
+    ],
+}
+
+object_description_options = [
+    (
+        "py:.*",
+        {"include_fields_in_toc": False, "include_rubrics_in_toc": False},
+    ),
+    ("py:attribute", {"include_in_toc": False}),
+    ("py:parameter", {"include_in_toc": False}),
+]

@@ -1,5 +1,5 @@
 Welcome to PyJobShop's documentation!
-===================================
+=====================================
 
 **PyJobShop** is a Python library for modeling and solving scheduling problems.
 It provides an *easy-to-use* modeling interface and uses *state-of-the-art* constraint programming solvers to find the optimal schedule.
