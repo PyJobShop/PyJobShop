@@ -6,19 +6,51 @@ from strenum import StrEnum
 
 
 class Job:
+    """
+    Simple dataclass storing all job-related data.
+
+    Parameters
+    ----------
+    weight: int
+        The importance weight, used as contribution factor in the objective.
+    release_date: int
+        The first moment when the job is available for processing. Default 0.
+    due_date: Optional[int]
+        The latest time by which completion must happen before incurring
+        penalties. Default is None, which is no due date.
+    deadline: Optional[int]
+        The last moment before which the job must be completed.
+        Note that this is different from ``due_date``, which does not restrict
+        the latest completion time. Default is None, which is no deadline.
+    name: Optional[str]
+        Name of the job.
+    """
+
     def __init__(
         self,
+        weight: int = 1,
         release_date: int = 0,
+        due_date: Optional[int] = None,
         deadline: Optional[int] = None,
         name: Optional[str] = None,
     ):
+        self._weight = weight
         self._release_date = release_date
+        self._due_date = due_date
         self._deadline = deadline
         self._name = name
 
     @property
+    def weight(self) -> int:
+        return self._weight
+
+    @property
     def release_date(self) -> int:
         return self._release_date
+
+    @property
+    def due_date(self) -> Optional[int]:
+        return self._due_date
 
     @property
     def deadline(self) -> Optional[int]:
@@ -31,7 +63,7 @@ class Job:
 
 class Machine:
     """
-    A machine represents a resource that can process operations.
+    Simple dataclass for storing all machine-related data.
 
     Parameters
     ----------
@@ -49,7 +81,7 @@ class Machine:
 
 class Operation:
     """
-    An operation is a task that must be processed by a machine.
+    Simple dataclass storing all operation-related data.
 
     Parameters
     ----------

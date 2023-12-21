@@ -89,7 +89,9 @@ class Model:
 
     def add_job(
         self,
+        weight: int = 1,
         release_date: int = 0,
+        due_date: Optional[int] = None,
         deadline: Optional[int] = None,
         name: Optional[str] = None,
     ) -> Job:
@@ -98,19 +100,26 @@ class Model:
 
         Parameters
         ----------
+        weight: int
+            The importance weight, used as contribution factor in the objective.
         release_date: int
-            Release date of the job. Defaults to 0.
+            The first moment when the job is available for processing. Default 0.
+        due_date: Optional[int]
+            The latest time by which completion must happen before incurring
+            penalties. Default is None, which is no due date.
         deadline: Optional[int]
-            Optional deadline of the job.
+            The last moment before which the job must be completed.
+            Note that this is different from ``due_date``, which does not restrict
+            the latest completion time. Default is None, which is no deadline.
         name: Optional[str]
-            Optional name of the job.
+            Name of the job.
 
         Returns
         -------
         Job
             The created job.
         """
-        job = Job(release_date, deadline, name)
+        job = Job(weight, release_date, due_date, deadline, name)
 
         self._id2job[id(job)] = len(self.jobs)
         self._jobs.append(job)
