@@ -7,6 +7,78 @@ from pyjobshop.ProblemData import AssignmentPrecedence, TimingPrecedence
 # TODO refactor with Solution
 
 
+def test_job_release_date():
+    """
+    Tests that the operations belonging to a job start no earlier than
+    the job's release date.
+    """
+    model = Model()
+
+    job = model.add_job(release_date=1)
+    machine = model.add_machine()
+    operation = model.add_operation()
+
+    model.assign_job_operations(job, [operation])
+    model.add_processing_time(machine, operation, duration=1)
+
+    result = model.solve()
+
+    # Job's release date is one, so the operation starts at one.
+    assert_equal(result.get_solve_status(), "Optimal")
+    assert_equal(result.get_objective_value(), 2)
+
+
+def test_job_deadline():
+    """
+    Tests that the operations beloning to a job end no later than the
+    job's deadline.
+    """
+    model = Model()
+
+    machine = model.add_machine()
+
+    job1 = model.add_job()
+    operation1 = model.add_operation()
+    model.assign_job_operations(job1, [operation1])
+
+    job2 = model.add_job(deadline=2)
+    operation2 = model.add_operation()
+    model.assign_job_operations(job2, [operation2])
+
+    for operation in [operation1, operation2]:
+        model.add_processing_time(machine, operation, duration=2)
+
+    model.add_setup_time(machine, operation2, operation1, 10)
+
+    result = model.solve()
+
+    # Operation 1 (processing time of 2) cannot start before operation 2,
+    # otherwise operation 2 cannot start before time 1. So operation 2 is
+    # scheduled first and is processed from 0 to 2. Then a setup time of 10
+    # is added and operation 1 is processed from 12 to 14.
+    assert_equal(result.get_solve_status(), "Optimal")
+    assert_equal(result.get_objective_value(), 14)
+
+
+def test_job_deadline_infeasible():
+    """
+    Tests that a too restrictive job deadline results in an infeasible model.
+    """
+    model = Model()
+
+    job = model.add_job(deadline=1)
+    machine = model.add_machine()
+    operation = model.add_operation()
+
+    model.assign_job_operations(job, [operation])
+    model.add_processing_time(machine, operation, duration=2)
+
+    result = model.solve()
+
+    # Operation's processing time is 2, but job deadline is 1.
+    assert_equal(result.get_solve_status(), "Infeasible")
+
+
 def test_earliest_start():
     """
     Tests that an operation starts no earlier than its earliest start time.

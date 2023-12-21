@@ -12,6 +12,23 @@ AssignVars = dict[tuple[int, int], CpoIntervalVar]
 SeqVars = list[CpoSequenceVar]
 
 
+def job_data_constraints(
+    m: CpoModel, data: ProblemData, job_vars: JobVars
+) -> list[CpoExpr]:
+    """
+    Creates constraints related to the job data.
+    """
+    constraints = []
+
+    for job_data, job_var in zip(data.jobs, job_vars):
+        constraints.append(m.start_of(job_var) >= job_data.release_date)
+
+        if job_data.deadline is not None:
+            constraints.append(m.end_of(job_var) <= job_data.deadline)
+
+    return constraints
+
+
 def job_operation_constraints(
     m: CpoModel, data: ProblemData, job_vars: JobVars, op_vars: OpVars
 ) -> list[CpoExpr]:
