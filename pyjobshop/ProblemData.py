@@ -34,6 +34,21 @@ class Job:
         deadline: Optional[int] = None,
         name: Optional[str] = None,
     ):
+        if weight < 0:
+            raise ValueError("Weight must be non-negative.")
+
+        if release_date < 0:
+            raise ValueError("Release date must be non-negative.")
+
+        if due_date is not None and due_date < 0:
+            raise ValueError("Due date must be non-negative.")
+
+        if deadline is not None and deadline < 0:
+            raise ValueError("Deadline must be non-negative.")
+
+        if deadline is not None and release_date > deadline:
+            raise ValueError("Must have release_date <= deadline.")
+
         self._weight = weight
         self._release_date = release_date
         self._due_date = due_date
