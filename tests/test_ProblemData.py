@@ -31,13 +31,13 @@ def test_job_default_attributes():
     """
     Tests that the default attributes of the Job class are set correctly.
     """
-    job = Job(weight=0, release_date=1, due_date=2, deadline=3, name="test")
+    job = Job()
 
-    assert_equal(job.weight, 0)
-    assert_equal(job.release_date, 1)
-    assert_equal(job.due_date, 2)
-    assert_equal(job.deadline, 3)
-    assert_equal(job.name, "test")
+    assert_equal(job.weight, 1)
+    assert_equal(job.release_date, 0)
+    assert_equal(job.due_date, None)
+    assert_equal(job.deadline, None)
+    assert_equal(job.name, None)
 
 
 @pytest.mark.parametrize(
