@@ -27,6 +27,19 @@ def test_job_attributes():
     assert_equal(job.name, "test")
 
 
+def test_job_default_attributes():
+    """
+    Tests that the default attributes of the Job class are set correctly.
+    """
+    job = Job(weight=0, release_date=1, due_date=2, deadline=3, name="test")
+
+    assert_equal(job.weight, 0)
+    assert_equal(job.release_date, 1)
+    assert_equal(job.due_date, 2)
+    assert_equal(job.deadline, 3)
+    assert_equal(job.name, "test")
+
+
 @pytest.mark.parametrize(
     "weight, release_date, due_date, deadline, name",
     [
@@ -37,7 +50,7 @@ def test_job_attributes():
         (0, 10, 0, 0, ""),  # release_date > deadline
     ],
 )
-def test_job_default_attributes(
+def test_job_attributes_raises_invalid_parameters(
     weight: int, release_date: int, due_date: int, deadline: int, name: str
 ):
     """
@@ -51,13 +64,6 @@ def test_job_default_attributes(
             deadline=deadline,
             name=name,
         )
-
-
-def test_job_attributes_raises_invalid_parameters():
-    """
-    x
-    """
-    pass
 
 
 def test_machine_attributes():
