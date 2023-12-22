@@ -6,19 +6,67 @@ from strenum import StrEnum
 
 
 class Job:
+    """
+    Simple dataclass for storing all job-related data.
+
+    Parameters
+    ----------
+    weight: int
+        The job importance weight, used as multiplicative factor in the
+        objective function.
+    release_date: int
+        The earliest time that the job can start processing. Default is zero.
+    due_date: Optional[int]
+        The latest time that the job should be completed before incurring
+        penalties. Default is None, meaning that there is no due date.
+    deadline: Optional[int]
+        The latest time that the job must be completed. Note that a deadline
+        is different from a due date; the latter does not constrain the latest
+        completion time. Default is None, meaning that there is no deadline.
+    name: Optional[str]
+        Name of the job. Default is None.
+    """
+
     def __init__(
         self,
+        weight: int = 1,
         release_date: int = 0,
+        due_date: Optional[int] = None,
         deadline: Optional[int] = None,
         name: Optional[str] = None,
     ):
+        if weight < 0:
+            raise ValueError("Weight must be non-negative.")
+
+        if release_date < 0:
+            raise ValueError("Release date must be non-negative.")
+
+        if due_date is not None and due_date < 0:
+            raise ValueError("Due date must be non-negative.")
+
+        if deadline is not None and deadline < 0:
+            raise ValueError("Deadline must be non-negative.")
+
+        if deadline is not None and release_date > deadline:
+            raise ValueError("Must have release_date <= deadline.")
+
+        self._weight = weight
         self._release_date = release_date
+        self._due_date = due_date
         self._deadline = deadline
         self._name = name
 
     @property
+    def weight(self) -> int:
+        return self._weight
+
+    @property
     def release_date(self) -> int:
         return self._release_date
+
+    @property
+    def due_date(self) -> Optional[int]:
+        return self._due_date
 
     @property
     def deadline(self) -> Optional[int]:
@@ -31,7 +79,7 @@ class Job:
 
 class Machine:
     """
-    A machine represents a resource that can process operations.
+    Simple dataclass for storing all machine-related data.
 
     Parameters
     ----------
@@ -49,7 +97,7 @@ class Machine:
 
 class Operation:
     """
-    An operation is a task that must be processed by a machine.
+    Simple dataclass for storing all operation-related data.
 
     Parameters
     ----------
