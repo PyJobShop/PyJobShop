@@ -217,14 +217,18 @@ def optional_operation_selection_constraints(
     constraints = []
 
     for plan in data.process_plans:
-        constraints.append(
-            m.sum(
-                m.logical_and(
-                    [m.presence_of(op_vars[op]) for op in operations]
-                )
-                for operations in plan
-            )
-            == 1
-        )
+        presence_by_plan = []
+
+        for operations in plan:
+            presence = [m.presence_of(op_vars[idx]) for idx in operations]
+            presence_by_plan.append(m.logical_and(presence))
+
+            # Presence of operation intervals is the same for all operations
+            # within one process plan option.
+            for idx in range(len(operations) - 1):
+                constraints.append(presence[idx] == presence[idx + 1])
+
+        # Select exactly one group per process plan.
+        constraints.append(m.sum(presence_by_plan) == 1)
 
     return constraints
