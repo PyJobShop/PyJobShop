@@ -27,9 +27,6 @@ PyJobShop
     .. autoclass:: TimingPrecedence
        :members:
 
-    .. autoclass:: AssignmentPrecedence
-       :members:
-
 .. automodule:: pyjobshop.Solution
 
    .. autoclass:: Solution

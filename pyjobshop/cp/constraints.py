@@ -113,36 +113,6 @@ def timing_precedence_constraints(
     return constraints
 
 
-def assignment_precedence_constraints(
-    m: CpoModel, data: ProblemData, assign_vars: AssignVars, seq_vars: SeqVars
-) -> list[CpoExpr]:
-    constraints = []
-
-    for machine, ops in enumerate(data.machine2ops):
-        seq_var = seq_vars[machine]
-
-        for op1, op2 in product(ops, repeat=2):
-            if op1 == op2 or (op1, op2) not in data.assignment_precedences:
-                continue
-
-            var1 = assign_vars[op1, machine]
-            var2 = assign_vars[op2, machine]
-
-            for prec_type in data.assignment_precedences[op1, op2]:
-                if prec_type == "previous":
-                    expr = m.previous(seq_var, var1, var2)
-                elif prec_type == "same_unit":
-                    expr = m.presence_of(var1) == m.presence_of(var2)
-                elif prec_type == "different_unit":
-                    expr = m.presence_of(var1) != m.presence_of(var2)
-                else:
-                    raise ValueError(f"Unknown precedence type: {prec_type}")
-
-                constraints.append(expr)
-
-    return constraints
-
-
 def alternative_constraints(
     m: CpoModel, data: ProblemData, op_vars: OpVars, assign_vars: AssignVars
 ) -> list[CpoExpr]:

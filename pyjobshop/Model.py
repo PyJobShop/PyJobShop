@@ -6,7 +6,6 @@ from docplex.cp.solution import CpoSolveResult
 
 from .cp import default_model
 from .ProblemData import (
-    AssignmentPrecedence,
     Job,
     Machine,
     Operation,
@@ -30,9 +29,6 @@ class Model:
         self._processing_times: dict[tuple[int, int], int] = {}
         self._timing_precedences: dict[
             tuple[int, int], list[tuple[TimingPrecedence, int]]
-        ] = defaultdict(list)
-        self._assignment_precedences: dict[
-            tuple[int, int], list[AssignmentPrecedence]
         ] = defaultdict(list)
         self._access_matrix: dict[tuple[int, int], bool] = {}
         self._setup_times: dict[tuple[int, int, int], int] = {}
@@ -81,7 +77,6 @@ class Model:
             job2ops,
             self._processing_times,
             self._timing_precedences,
-            self._assignment_precedences,
             access_matrix,
             setup_times,
             self._process_plans,
@@ -258,30 +253,6 @@ class Model:
         op1 = self._id2op[id(operation1)]
         op2 = self._id2op[id(operation2)]
         self._timing_precedences[op1, op2].append((timing_precedence, delay))
-
-    def add_assignment_precedence(
-        self,
-        operation1: Operation,
-        operation2: Operation,
-        assignment_precedence: AssignmentPrecedence,
-    ):
-        """
-        Adds an assignment precedence constraints between two operations.
-
-        Parameters
-        ----------
-        operation1: Operation
-            First operation.
-        operation2: Operation
-            Second operation.
-        assignment_precedence: AssignmentPrecedence
-            Assignment precedence relation between the first and the second
-            operation.
-
-        """
-        op1 = self._id2op[id(operation1)]
-        op2 = self._id2op[id(operation2)]
-        self._assignment_precedences[op1, op2].append(assignment_precedence)
 
     def add_access_constraint(
         self, machine1: Machine, machine2: Machine, is_accessible: bool = False

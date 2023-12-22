@@ -5,7 +5,6 @@ import pytest
 from numpy.testing import assert_allclose, assert_equal, assert_raises
 
 from pyjobshop.ProblemData import (
-    AssignmentPrecedence,
     Job,
     Machine,
     Operation,
@@ -140,7 +139,6 @@ def test_problem_data_input_parameter_attributes():
         key: [TimingPrecedence.END_BEFORE_START]
         for key in ((0, 1), (2, 3), (4, 5))
     }
-    assignment_precedences = {(0, 1): [AssignmentPrecedence.PREVIOUS]}
     access_matrix = np.full((5, 5), True)
     setup_times = np.ones((5, 5, 5), dtype=int)
     process_plans = [[[0, 1, 2, 3, 4]]]
@@ -152,7 +150,6 @@ def test_problem_data_input_parameter_attributes():
         job2ops,
         processing_times,
         timing_precedences,
-        assignment_precedences,
         access_matrix,
         setup_times,
         process_plans,
@@ -164,7 +161,6 @@ def test_problem_data_input_parameter_attributes():
     assert_equal(data.job2ops, job2ops)
     assert_equal(data.processing_times, processing_times)
     assert_equal(data.timing_precedences, timing_precedences)
-    assert_equal(data.assignment_precedences, assignment_precedences)
     assert_equal(data.access_matrix, access_matrix)
     assert_allclose(data.setup_times, setup_times)
     assert_equal(data.process_plans, process_plans)
@@ -215,7 +211,6 @@ def test_problem_data_default_values():
         timing_precedences,
     )
 
-    assert_equal(data.assignment_precedences, {})
     assert_allclose(data.access_matrix, np.full((1, 1), True))
     assert_allclose(data.setup_times, np.zeros((1, 1, 1), dtype=int))
     assert_equal(data.process_plans, [])

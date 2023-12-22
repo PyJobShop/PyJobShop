@@ -2,7 +2,7 @@ import pytest
 from numpy.testing import assert_equal
 
 from pyjobshop.Model import Model
-from pyjobshop.ProblemData import AssignmentPrecedence, TimingPrecedence
+from pyjobshop.ProblemData import TimingPrecedence
 
 # TODO refactor with Solution
 
@@ -334,40 +334,6 @@ def test_timing_precedence_with_one_delay(
     model.add_timing_precedence(
         operations[0], operations[1], prec_type, delay=1
     )
-
-    result = model.solve()
-
-    assert_equal(result.get_objective_value(), expected_makespan)
-
-
-@pytest.mark.parametrize(
-    "prec_type,expected_makespan",
-    [
-        (AssignmentPrecedence.PREVIOUS, 2),  # TODO needs better test
-        (AssignmentPrecedence.SAME_UNIT, 4),
-        (AssignmentPrecedence.DIFFERENT_UNIT, 2),
-    ],
-)
-def test_assignment_precedence(
-    prec_type: AssignmentPrecedence, expected_makespan: int
-):
-    """
-    Tests that assignment precedence constraints are respected. This example
-    uses two operations and two machines with processing times of 2.
-    """
-    model = Model()
-
-    job = model.add_job()
-    machines = [model.add_machine(), model.add_machine()]
-    operations = [model.add_operation(), model.add_operation()]
-
-    model.assign_job_operations(job, operations)
-
-    for machine in machines:
-        for operation in operations:
-            model.add_processing_time(machine, operation, duration=2)
-
-    model.add_assignment_precedence(operations[0], operations[1], prec_type)
 
     result = model.solve()
 

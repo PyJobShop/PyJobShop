@@ -1,7 +1,7 @@
 from numpy.testing import assert_equal
 
 from pyjobshop.Model import Model
-from pyjobshop.ProblemData import AssignmentPrecedence, TimingPrecedence
+from pyjobshop.ProblemData import TimingPrecedence
 
 MAX_VALUE = 2**25
 
@@ -31,9 +31,6 @@ def test_model_data():
         op1, op2, TimingPrecedence.START_BEFORE_END, 10
     )
 
-    model.add_assignment_precedence(op2, op1, AssignmentPrecedence.SAME_UNIT)
-    model.add_assignment_precedence(op2, op1, AssignmentPrecedence.PREVIOUS)
-
     model.add_access_constraint(mach1, mach2, False)
 
     model.add_setup_time(mach1, op1, op2, 3)
@@ -54,15 +51,6 @@ def test_model_data():
             (0, 1): [
                 (TimingPrecedence.END_BEFORE_START, 10),
                 (TimingPrecedence.START_BEFORE_END, 10),
-            ]
-        },
-    )
-    assert_equal(
-        data.assignment_precedences,
-        {
-            (1, 0): [
-                AssignmentPrecedence.SAME_UNIT,
-                AssignmentPrecedence.PREVIOUS,
             ]
         },
     )

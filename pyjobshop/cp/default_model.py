@@ -4,7 +4,6 @@ from pyjobshop.ProblemData import ProblemData
 
 from .constraints import (
     alternative_constraints,
-    assignment_precedence_constraints,
     job_data_constraints,
     job_operation_constraints,
     machine_accessibility_constraints,
@@ -39,9 +38,6 @@ def default_model(data: ProblemData) -> CpoModel:
     model.add(job_operation_constraints(model, data, job_vars, op_vars))
     model.add(operation_constraints(model, data, op_vars))
     model.add(timing_precedence_constraints(model, data, op_vars))
-    model.add(
-        assignment_precedence_constraints(model, data, assign_vars, seq_vars)
-    )
     model.add(alternative_constraints(model, data, op_vars, assign_vars))
     model.add(no_overlap_constraints(model, data, seq_vars))
     model.add(machine_accessibility_constraints(model, data, assign_vars))

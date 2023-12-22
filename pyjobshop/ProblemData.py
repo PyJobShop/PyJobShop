@@ -170,6 +170,41 @@ class Operation:
         return self._name
 
 
+class OperationConstraint(StrEnum):
+    """
+    Constraint between two operations.
+
+    Constraints
+    -----------
+    - start_at_start:        $s(i) == s(j)$
+    - start_at_end:          $s(i) == f(j)$
+    - start_before_start:    $s(i) <= s(j)$
+    - start_before_end:      $s(i) <= f(j)$
+    - end_at_start:          $f(i) == s(j)$
+    - end_at_end:            $f(i) == f(j)$
+    - end_before_start:      $f(i) <= s(j)$
+    - end_before_end:        $f(i) <= f(j)$
+    - before:                i is right before j in sequence variable.
+    - previous:              i is previous to j in sequence variable.
+    - same_unit:             i and j are processed on the same unit.
+    - different_unit:        i and j are processed on different units.
+    """
+
+    START_AT_START = "start_at_start"
+    START_AT_END = "start_at_end"
+    START_BEFORE_START = "start_before_start"
+    START_BEFORE_END = "start_before_end"
+    END_AT_START = "end_at_start"
+    END_AT_END = "end_at_end"
+    END_BEFORE_START = "end_before_start"
+    END_BEFORE_END = "end_before_end"
+    PREVIOUS = "previous"
+    BEFORE = "before"
+    SAME_UNIT = "same_unit"
+    DIFFERENT_UNIT = "different_unit"
+    CONNECTED_UNITS = "connected_units"
+
+
 class TimingPrecedence(StrEnum):
     """
     Types of precedence constraints between two operations $i$ and $j$.
@@ -201,21 +236,6 @@ class TimingPrecedence(StrEnum):
     END_BEFORE_END = "end_before_end"
 
 
-class AssignmentPrecedence(StrEnum):
-    """
-    Types of assignment precedence constraints between two operations $i$ and
-    $j$.
-
-    - previous:              i is previous to j in sequence variable.
-    - same_unit:             i and j are processed on the same unit.
-    - different_unit:        i and j are processed on different units.
-    """
-
-    PREVIOUS = "previous"
-    SAME_UNIT = "same_unit"
-    DIFFERENT_UNIT = "different_unit"
-
-
 class ProblemData:
     def __init__(
         self,
@@ -224,12 +244,10 @@ class ProblemData:
         operations: list[Operation],
         job2ops: list[list[int]],
         processing_times: dict[tuple[int, int], int],
+        # TODO RENAME
         timing_precedences: dict[
             tuple[int, int], list[tuple[TimingPrecedence, int]]
         ],
-        assignment_precedences: Optional[
-            dict[tuple[int, int], list[AssignmentPrecedence]]
-        ] = None,
         access_matrix: Optional[np.ndarray] = None,
         setup_times: Optional[np.ndarray] = None,
         process_plans: Optional[list[list[list[int]]]] = None,
@@ -240,11 +258,6 @@ class ProblemData:
         self._job2ops = job2ops
         self._processing_times = processing_times
         self._timing_precedences = timing_precedences
-        self._assignment_precedences = (
-            assignment_precedences
-            if assignment_precedences is not None
-            else {}
-        )
 
         num_mach = self.num_machines
         num_ops = self.num_operations
@@ -353,21 +366,6 @@ class ProblemData:
             constraints and delays.
         """
         return self._timing_precedences
-
-    @property
-    def assignment_precedences(
-        self,
-    ) -> dict[tuple[int, int], list[AssignmentPrecedence]]:
-        """
-        Assignment precedence constraints between operations.
-
-        Returns
-        -------
-        dict[tuple[int, int], list[AssignmentPrecedence]]
-            Dict indexed by operation pairs with list of assignment precedence
-            constraints.
-        """
-        return self._assignment_precedences
 
     @property
     def access_matrix(self) -> np.ndarray:
