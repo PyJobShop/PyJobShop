@@ -101,18 +101,19 @@ class Model:
         Parameters
         ----------
         weight: int
-            The importance weight, used as contribution factor in the objective.
+            The job importance weight, used as multiplicative factor in the
+            objective function.
         release_date: int
-            The first moment when the job is available for processing. Default 0.
+            The earliest time that the job can start processing. Default is zero.
         due_date: Optional[int]
-            The latest time by which completion must happen before incurring
-            penalties. Default is None, which is no due date.
+            The latest time that the job should be completed before incurring
+            penalties. Default is None, meaning that there is no due date.
         deadline: Optional[int]
-            The last moment before which the job must be completed.
-            Note that this is different from ``due_date``, which does not restrict
-            the latest completion time. Default is None, which is no deadline.
+            The latest time that the job must be completed. Note that a deadline
+            is different from a due date; the latter does not constrain the latest
+            completion time. Default is None, meaning that there is no deadline.
         name: Optional[str]
-            Name of the job.
+            Name of the job. Default is None.
 
         Returns
         -------
