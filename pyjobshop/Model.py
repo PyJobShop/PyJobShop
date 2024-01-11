@@ -363,4 +363,4 @@ class Model:
         """
         data = self.data()
         cp_model = default_model(data)
-        return cp_model.solve(TimeLimit=time_limit)
+        return cp_model.solve(TimeLimit=time_limit, LogVerbosity="Terse")
