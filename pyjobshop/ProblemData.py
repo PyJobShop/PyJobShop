@@ -170,6 +170,18 @@ class Operation:
         return self._name
 
 
+class Objective(StrEnum):
+    """
+    Objective functions.
+    """
+
+    # TODO https://stackoverflow.com/questions/52624736/type-annotations-for-enum-attribute
+    MAKESPAN = "makespan"
+    TOTAL_COMPLETION_TIME = "completion_time"
+    TOTAL_FLOW_TIME = "flow_time"
+    TOTAL_TARDINESS = "tardiness"
+
+
 class TimingPrecedence(StrEnum):
     """
     Types of precedence constraints between two operations $i$ and $j$.
@@ -233,7 +245,7 @@ class ProblemData:
         access_matrix: Optional[np.ndarray] = None,
         setup_times: Optional[np.ndarray] = None,
         process_plans: Optional[list[list[list[int]]]] = None,
-        objective: str = "makespan",
+        objective: Objective = Objective.MAKESPAN,
     ):
         self._jobs = jobs
         self._machines = machines

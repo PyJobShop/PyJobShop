@@ -22,6 +22,21 @@ def total_completion_time(
     return m.minimize(m.sum(m.end_of(var) for var in job_vars))
 
 
+def total_flow_time(
+    m: CpoModel, data: ProblemData, job_vars: list[CpoIntervalVar]
+) -> CpoExpr:
+    """
+    Minimizes the sum of the flow times of each job. The flow time is defined
+    as the difference between the completion time and the release date.
+    """
+    expr = m.sum(
+        m.end_of(var) - job_data.release_date
+        for job_data, var in zip(data.jobs, job_vars)
+    )
+
+    return m.minimize(expr)
+
+
 def total_tardiness(
     m: CpoModel, data: ProblemData, job_vars: list[CpoIntervalVar]
 ) -> CpoExpr:

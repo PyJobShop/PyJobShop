@@ -1,7 +1,11 @@
 from numpy.testing import assert_equal
 
 from pyjobshop.Model import Model
-from pyjobshop.ProblemData import AssignmentPrecedence, TimingPrecedence
+from pyjobshop.ProblemData import (
+    AssignmentPrecedence,
+    Objective,
+    TimingPrecedence,
+)
 
 MAX_VALUE = 2**25
 
@@ -69,6 +73,7 @@ def test_model_data():
     assert_equal(data.access_matrix, [[True, False], [True, True]])
     assert_equal(data.setup_times, [[[0, 3], [0, 0]], [[0, 4], [0, 0]]])
     assert_equal(data.process_plans, [[[0], [1]]])
+    assert_equal(data.objective, Objective.MAKESPAN)
 
 
 def test_add_job_attributes():
@@ -128,3 +133,14 @@ def test_model_attributes():
     assert_equal(model.jobs, jobs)
     assert_equal(model.machines, machine)
     assert_equal(model.operations, operation)
+
+
+def test_model_set_objective():
+    """
+    Tests that setting the objective changes.
+    """
+    model = Model()
+
+    model.set_objective(Objective.TOTAL_FLOW_TIME)
+
+    assert_equal(model.objective, Objective.TOTAL_FLOW_TIME)
