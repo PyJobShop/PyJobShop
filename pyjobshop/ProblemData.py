@@ -83,12 +83,37 @@ class Machine:
 
     Parameters
     ----------
+    available_from: Optional[int]
+        Earliest time that the machine is available for processing.
+        Default is None, meaning there is no restriction.
+    available_till: Optional[int]
+        Latest time that the machine is available for processing.
+        Default is None, meaning there is no restriction.
     name: Optional[str]
         Optional name of the machine.
     """
 
-    def __init__(self, name: Optional[str] = None):
+    def __init__(
+        self,
+        available_from: Optional[int] = None,
+        available_till: Optional[int] = None,
+        name: Optional[str] = None,
+    ):
+        if available_from is not None and available_till is not None:
+            if available_from > available_till:
+                raise ValueError("Must have available_from <= available_till.")
+
+        self._available_from = available_from
+        self._available_till = available_till
         self._name = name
+
+    @property
+    def available_from(self) -> Optional[int]:
+        return self._available_from
+
+    @property
+    def available_till(self) -> Optional[int]:
+        return self._available_till
 
     @property
     def name(self) -> Optional[str]:

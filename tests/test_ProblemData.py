@@ -54,7 +54,8 @@ def test_job_attributes_raises_invalid_parameters(
     weight: int, release_date: int, due_date: int, deadline: int, name: str
 ):
     """
-    Tests that the default values for each job attribute is set correctly.
+    Tests that a ValueError is raised when invalid parameters are passed to
+    Job.
     """
     with assert_raises(ValueError):
         Job(
@@ -73,12 +74,33 @@ def test_machine_attributes():
     # Let's first test the default values.
     machine = Machine()
 
+    assert_equal(machine.available_from, None)
+    assert_equal(machine.available_till, None)
     assert_equal(machine.name, None)
 
     # Now test with some values.
-    machine = Machine("TestMachine")
+    machine = Machine(1, 2, name="TestMachine")
 
+    assert_equal(machine.available_from, 1)
+    assert_equal(machine.available_till, 2)
     assert_equal(machine.name, "TestMachine")
+
+
+@pytest.mark.parametrize(
+    "available_from, available_till",
+    [
+        (1, 0),  # available_from > available_till
+    ],
+)
+def test_machine_attributes_raises_invalid_parameters(
+    available_from: Optional[int], available_till: Optional[int]
+):
+    """
+    Tests that a ValueError is raised when invalid parameters are passed to
+    Machine.
+    """
+    with assert_raises(ValueError):
+        Machine(available_from, available_till)
 
 
 def test_operation_attributes():
