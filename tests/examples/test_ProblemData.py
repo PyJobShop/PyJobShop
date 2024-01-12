@@ -79,25 +79,66 @@ def test_job_deadline_infeasible():
     assert_equal(result.get_solve_status(), "Infeasible")
 
 
-# def test_machine_availability():
-#     """
-#     Tests that operations scheduled only when a machine available.
-#     """
-#     model = Model()
-#     jobs = model.add_job()
-#     machine = [model.add_machine(0,2), model.add_machine((1, 10))]
-#     operations = [model.add_operation() for _ in range(2)]
+def test_machine_available_from():
+    """
+    Tests that operations scheduled only when a machine available.
+    """
+    model = Model()
+    job = model.add_job()
+    machine = model.add_machine(2)
+    operation = model.add_operation()
 
-#     model.assign_job_operations(job, operations)
+    model.assign_job_operations(job, [operation])
+    model.add_processing_time(machine, operation, duration=2)
 
-#     for machine, operatin in product(machine, operations):
-#         model.add_processing_times(machine, operation, duration=2)
+    result = model.solve()
 
-#     # Machine 1 is unavailable between [0, 2]. Machine 2 is unavailable
-#     # between [1, 10]. Both operations with duration 2 are therefore scheduled
-#     # on machine 1 one it's available, resulting in a makespan of 6.
-#     assert_equal(result.get_solve_status(), "Optimal")
-#     assert_equal(result.get_objective_value(), 6)
+    # Machine is only available from time 2 onwards, so the makespan is be 4.
+    assert_equal(result.get_solve_status(), "Optimal")
+    assert_equal(result.get_objective_value(), 4)
+
+
+def test_machine_available_till():
+    """
+    Tests that operations scheduled only when a machine available.
+    """
+    model = Model()
+    job = model.add_job()
+    machine1 = model.add_machine(available_till=2)
+    machine2 = model.add_machine()
+    operations = [model.add_operation() for _ in range(2)]
+
+    model.assign_job_operations(job, operations)
+
+    for operation in operations:
+        model.add_processing_time(machine1, operation, duration=2)
+        model.add_processing_time(machine2, operation, duration=10)
+
+    result = model.solve()
+
+    # Machine 1 is only available till time 2. One operation can be scheduled
+    # on that machine, but the other operation has to be scheduled on machine2
+    # with much longer proceesing time (10). So the makespan is 10.
+    assert_equal(result.get_solve_status(), "Optimal")
+    assert_equal(result.get_objective_value(), 10)
+
+
+def test_machine_infeasible_available_interval():
+    """
+    Tests that the model is infeasible when the availability interval is too
+    restrictive.
+    """
+    model = Model()
+    job = model.add_job()
+    machine = model.add_machine(0, 1)
+    operation = model.add_operation()
+
+    model.assign_job_operations(job, [operation])
+    model.add_processing_time(machine, operation, duration=2)
+
+    result = model.solve()
+
+    assert_equal(result.get_solve_status(), "Infeasible")
 
 
 def test_operation_earliest_start():
