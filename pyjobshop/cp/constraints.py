@@ -12,6 +12,8 @@ OpVars = list[CpoIntervalVar]
 AssignVars = dict[tuple[int, int], CpoIntervalVar]
 SeqVars = list[CpoSequenceVar]
 
+_INT_MAX = 2**32
+
 
 def job_data_constraints(
     m: CpoModel, data: ProblemData, job_vars: JobVars
@@ -199,14 +201,14 @@ def machine_data_constraints(
             continue  # machine is always available
 
         step = CpoStepFunction()
-        step.set_value(0, 2**32, 0)
+        step.set_value(0, _INT_MAX, 0)
 
         if start is not None and end is not None:
             step.set_value(start, end, 1)
         elif start is None:
             step.set_value(0, end, 1)
         elif end is None:
-            step.set_value(start, 2**32, 1)
+            step.set_value(start, _INT_MAX, 1)
 
         constraints.append(m.forbid_extent(var, step))
 
