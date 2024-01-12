@@ -18,19 +18,52 @@ def test_job_attributes():
     """
     Tests that the attributes of the Job class are set correctly.
     """
-    # Let's first test the default values.
+    job = Job(weight=0, release_date=1, due_date=2, deadline=3, name="test")
+
+    assert_equal(job.weight, 0)
+    assert_equal(job.release_date, 1)
+    assert_equal(job.due_date, 2)
+    assert_equal(job.deadline, 3)
+    assert_equal(job.name, "test")
+
+
+def test_job_default_attributes():
+    """
+    Tests that the default attributes of the Job class are set correctly.
+    """
     job = Job()
 
+    assert_equal(job.weight, 1)
     assert_equal(job.release_date, 0)
+    assert_equal(job.due_date, None)
     assert_equal(job.deadline, None)
     assert_equal(job.name, None)
 
-    # Now test with some values.
-    job = Job(5, 10, "test")
 
-    assert_equal(job.release_date, 5)
-    assert_equal(job.deadline, 10)
-    assert_equal(job.name, "test")
+@pytest.mark.parametrize(
+    "weight, release_date, due_date, deadline, name",
+    [
+        (-1, 0, 0, 0, ""),  # weight < 0
+        (0, -1, 0, 0, ""),  # release_date < 0
+        (0, 0, -1, 0, ""),  # due_date < 0
+        (0, 0, 0, -1, ""),  # deadline < 0
+        (0, 10, 0, 0, ""),  # release_date > deadline
+    ],
+)
+def test_job_attributes_raises_invalid_parameters(
+    weight: int, release_date: int, due_date: int, deadline: int, name: str
+):
+    """
+    Tests that the default values for each job attribute is set correctly.
+    """
+    with assert_raises(ValueError):
+        Job(
+            weight=weight,
+            release_date=release_date,
+            due_date=due_date,
+            deadline=deadline,
+            name=name,
+        )
 
 
 def test_machine_attributes():

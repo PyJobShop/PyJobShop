@@ -37,7 +37,6 @@ class Model:
         self._access_matrix: dict[tuple[int, int], bool] = {}
         self._setup_times: dict[tuple[int, int, int], int] = {}
         self._process_plans: list[list[list[int]]] = []
-        self._objective = "makespan"
 
         self._id2job: dict[int, int] = {}
         self._id2machine: dict[int, int] = {}
@@ -86,12 +85,13 @@ class Model:
             access_matrix,
             setup_times,
             self._process_plans,
-            self._objective,
         )
 
     def add_job(
         self,
+        weight: int = 1,
         release_date: int = 0,
+        due_date: Optional[int] = None,
         deadline: Optional[int] = None,
         name: Optional[str] = None,
     ) -> Job:
@@ -100,19 +100,27 @@ class Model:
 
         Parameters
         ----------
+        weight: int
+            The job importance weight, used as multiplicative factor in the
+            objective function.
         release_date: int
-            Release date of the job. Defaults to 0.
+            The earliest time that the job can start processing. Default is zero.
+        due_date: Optional[int]
+            The latest time that the job should be completed before incurring
+            penalties. Default is None, meaning that there is no due date.
         deadline: Optional[int]
-            Optional deadline of the job.
+            The latest time that the job must be completed. Note that a deadline
+            is different from a due date; the latter does not constrain the latest
+            completion time. Default is None, meaning that there is no deadline.
         name: Optional[str]
-            Optional name of the job.
+            Name of the job. Default is None.
 
         Returns
         -------
         Job
             The created job.
         """
-        job = Job(release_date, deadline, name)
+        job = Job(weight, release_date, due_date, deadline, name)
 
         self._id2job[id(job)] = len(self.jobs)
         self._jobs.append(job)
@@ -331,23 +339,12 @@ class Model:
 
         Parameters
         ----------
-        *plans: list[Operation]
+        plans: list[Operation]
             The plans to be added. Each plan is a list of operations. Multiple
             plans can be passed as separate arguments.
         """
         ids = [[self._id2op[id(op)] for op in plan] for plan in plans]
         self._process_plans.append(ids)
-
-    def add_objective(self, objective: str = "makespan"):
-        """
-        Adds an objective expression (to be minimized).
-
-        Parameters
-        ----------
-        objective: str
-            The objective expression to be minimized. Defaults to "makespan".
-        """
-        self._objective = objective
 
     def solve(self, time_limit: Optional[int] = None) -> CpoSolveResult:
         """
@@ -364,5 +361,6 @@ class Model:
         Result
             A results object containing solver result.
         """
-        cp_model = default_model(self.data())
-        return cp_model.solve(TimeLimit=time_limit)
+        data = self.data()
+        cp_model = default_model(data)
+        return cp_model.solve(TimeLimit=time_limit, LogVerbosity="Terse")

@@ -12,6 +12,23 @@ AssignVars = dict[tuple[int, int], CpoIntervalVar]
 SeqVars = list[CpoSequenceVar]
 
 
+def job_data_constraints(
+    m: CpoModel, data: ProblemData, job_vars: JobVars
+) -> list[CpoExpr]:
+    """
+    Creates constraints related to the job data.
+    """
+    constraints = []
+
+    for job_data, job_var in zip(data.jobs, job_vars):
+        constraints.append(m.start_of(job_var) >= job_data.release_date)
+
+        if job_data.deadline is not None:
+            constraints.append(m.end_of(job_var) <= job_data.deadline)
+
+    return constraints
+
+
 def job_operation_constraints(
     m: CpoModel, data: ProblemData, job_vars: JobVars, op_vars: OpVars
 ) -> list[CpoExpr]:
@@ -200,14 +217,18 @@ def optional_operation_selection_constraints(
     constraints = []
 
     for plan in data.process_plans:
-        constraints.append(
-            m.sum(
-                m.logical_and(
-                    [m.presence_of(op_vars[op]) for op in operations]
-                )
-                for operations in plan
-            )
-            == 1
-        )
+        presence_by_plan = []
+
+        for operations in plan:
+            presence = [m.presence_of(op_vars[idx]) for idx in operations]
+            presence_by_plan.append(m.logical_and(presence))
+
+            # Presence of operation intervals is the same for all operations
+            # within one process plan option.
+            for idx in range(len(operations) - 1):
+                constraints.append(presence[idx] == presence[idx + 1])
+
+        # Select exactly one group per process plan.
+        constraints.append(m.sum(presence_by_plan) == 1)
 
     return constraints

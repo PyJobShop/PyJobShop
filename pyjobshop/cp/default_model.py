@@ -5,6 +5,7 @@ from pyjobshop.ProblemData import ProblemData
 from .constraints import (
     alternative_constraints,
     assignment_precedence_constraints,
+    job_data_constraints,
     job_operation_constraints,
     machine_accessibility_constraints,
     no_overlap_constraints,
@@ -37,6 +38,7 @@ def default_model(data: ProblemData) -> CpoModel:
     else:
         raise ValueError(f"Unknown objective: {data.objective}")
 
+    model.add(job_data_constraints(model, data, job_vars))
     model.add(job_operation_constraints(model, data, job_vars, op_vars))
     model.add(operation_constraints(model, data, op_vars))
     model.add(timing_precedence_constraints(model, data, op_vars))

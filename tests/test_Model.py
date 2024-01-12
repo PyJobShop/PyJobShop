@@ -77,10 +77,14 @@ def test_add_job_attributes():
     """
     model = Model()
 
-    job = model.add_job(deadline=1, release_date=2, name="job")
+    job = model.add_job(
+        weight=0, release_date=1, due_date=2, deadline=3, name="job"
+    )
 
-    assert_equal(job.deadline, 1)
-    assert_equal(job.release_date, 2)
+    assert_equal(job.weight, 0)
+    assert_equal(job.release_date, 1)
+    assert_equal(job.due_date, 2)
+    assert_equal(job.deadline, 3)
     assert_equal(job.name, "job")
 
 
