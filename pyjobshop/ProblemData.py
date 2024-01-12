@@ -1,5 +1,5 @@
 import bisect
-from typing import Iterable, Optional
+from typing import Optional
 
 import numpy as np
 from strenum import StrEnum
@@ -83,30 +83,37 @@ class Machine:
 
     Parameters
     ----------
-    downtimes: Iterable[tuple[int, int]]
-        List of time intervals during which the machine is unavailable.
-        Each interval is represented as a tuple (start_time, end_time),
-        during which the machine is unavailable. Defaults to an empty
-        tuple, meaning that the machine is always available.
+    available_from: Optional[int]
+        Earliest time that the machine is available for processing.
+        Default is None, meaning there is no restriction.
+    available_till: Optional[int]
+        Latest time that the machine is available for processing.
+        Default is None, meaning there is no restriction.
     name: Optional[str]
         Optional name of the machine.
     """
 
     def __init__(
         self,
-        downtimes: Iterable[tuple[int, int]] = (),
+        available_from: Optional[int] = None,
+        available_till: Optional[int] = None,
         name: Optional[str] = None,
     ):
-        for early, late in downtimes:
-            if early > late:
-                raise ValueError("Downtime interval (a, b) must be a <= b.")
+        if available_from is not None and available_till is not None:
+            if available_from > available_till:
+                raise ValueError("Must have available_from <= available_till.")
 
-        self._downtimes = downtimes
+        self._available_from = available_from
+        self._available_till = available_till
         self._name = name
 
     @property
-    def downtimes(self) -> Iterable[tuple[int, int]]:
-        return self._downtimes
+    def available_from(self) -> Optional[int]:
+        return self._available_from
+
+    @property
+    def available_till(self) -> Optional[int]:
+        return self._available_till
 
     @property
     def name(self) -> Optional[str]:

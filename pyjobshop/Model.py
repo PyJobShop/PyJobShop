@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import Iterable, Optional
+from typing import Optional
 
 import numpy as np
 from docplex.cp.solution import CpoSolveResult
@@ -129,7 +129,8 @@ class Model:
 
     def add_machine(
         self,
-        downtimes: Iterable[tuple[int, int]] = (),
+        available_from: Optional[int] = None,
+        available_till: Optional[int] = None,
         name: Optional[str] = None,
     ) -> Machine:
         """
@@ -137,11 +138,12 @@ class Model:
 
         Parameters
         ----------
-        downtimes: Iterable[tuple[int, int]]
-            List of time intervals during which the machine is unavailable.
-            Each interval is represented as a tuple (start_time, end_time),
-            during which the machine is unavailable. Defaults to an empty
-            tuple, meaning that the machine is always available.
+        available_from: Optional[int]
+            Earliest time that the machine is available for processing.
+            Default is None, meaning there is no restriction.
+        available_till: Optional[int]
+            Latest time that the machine is available for processing.
+            Default is None, meaning there is no restriction.
         name: Optional[str]
             Optional name of the machine.
 
@@ -150,7 +152,7 @@ class Model:
         Machine
             The created machine.
         """
-        machine = Machine(downtimes, name=name)
+        machine = Machine(available_from, available_till, name=name)
 
         self._id2machine[id(machine)] = len(self.machines)
         self._machines.append(machine)

@@ -74,31 +74,33 @@ def test_machine_attributes():
     # Let's first test the default values.
     machine = Machine()
 
-    assert_equal(machine.downtimes, ())
+    assert_equal(machine.available_from, None)
+    assert_equal(machine.available_till, None)
     assert_equal(machine.name, None)
 
     # Now test with some values.
-    machine = Machine(downtimes=[(1, 2), (3, 4)], name="TestMachine")
+    machine = Machine(1, 2, name="TestMachine")
 
-    assert_equal(machine.downtimes, [(1, 2), (3, 4)])
+    assert_equal(machine.available_from, 1)
+    assert_equal(machine.available_till, 2)
     assert_equal(machine.name, "TestMachine")
 
 
 @pytest.mark.parametrize(
-    "downtimes",
+    "available_from, available_till",
     [
-        ([(1, 2), (4, 3)]),  # downtime interval with early > late
+        (1, 0),  # available_from > available_till
     ],
 )
 def test_machine_attributes_raises_invalid_parameters(
-    downtimes: tuple[tuple[int, int]]
+    available_from: Optional[int], available_till: Optional[int]
 ):
     """
     Tests that a ValueError is raised when invalid parameters are passed to
     Machine.
     """
     with assert_raises(ValueError):
-        Machine(downtimes=downtimes)
+        Machine(available_from, available_till)
 
 
 def test_operation_attributes():

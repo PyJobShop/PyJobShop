@@ -79,7 +79,28 @@ def test_job_deadline_infeasible():
     assert_equal(result.get_solve_status(), "Infeasible")
 
 
-def test_earliest_start():
+# def test_machine_availability():
+#     """
+#     Tests that operations scheduled only when a machine available.
+#     """
+#     model = Model()
+#     jobs = model.add_job()
+#     machine = [model.add_machine(0,2), model.add_machine((1, 10))]
+#     operations = [model.add_operation() for _ in range(2)]
+
+#     model.assign_job_operations(job, operations)
+
+#     for machine, operatin in product(machine, operations):
+#         model.add_processing_times(machine, operation, duration=2)
+
+#     # Machine 1 is unavailable between [0, 2]. Machine 2 is unavailable
+#     # between [1, 10]. Both operations with duration 2 are therefore scheduled
+#     # on machine 1 one it's available, resulting in a makespan of 6.
+#     assert_equal(result.get_solve_status(), "Optimal")
+#     assert_equal(result.get_objective_value(), 6)
+
+
+def test_operation_earliest_start():
     """
     Tests that an operation starts no earlier than its earliest start time.
     """
@@ -99,7 +120,7 @@ def test_earliest_start():
     assert_equal(result.get_objective_value(), 2)
 
 
-def test_latest_start():
+def test_operation_latest_start():
     """
     Tests that an operation starts no later than its latest start time.
     """
@@ -129,7 +150,7 @@ def test_latest_start():
     assert_equal(result.get_objective_value(), 14)
 
 
-def test_fixed_start():
+def test_operation_fixed_start():
     """
     Tests that an operation starts at its fixed start time when earliest
     and latest start times are equal.
@@ -150,7 +171,7 @@ def test_fixed_start():
     assert_equal(result.get_objective_value(), 43)
 
 
-def test_earliest_end():
+def test_operation_earliest_end():
     """
     Tests that an operation end no earlier than its earliest end time.
     """
@@ -171,7 +192,7 @@ def test_earliest_end():
     assert_equal(result.get_objective_value(), 2)
 
 
-def test_latest_end():
+def test_operation_latest_end():
     """
     Tests that an operation ends no later than its latest end time.
     """
@@ -201,7 +222,7 @@ def test_latest_end():
     assert_equal(result.get_objective_value(), 14)
 
 
-def test_fixed_end():
+def test_operation_fixed_end():
     """
     Tests that an operation ends at its fixed end time when earliest
     and latest end times are equal.
