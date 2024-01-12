@@ -139,7 +139,7 @@ class Model:
         ----------
         downtimes: Iterable[tuple[int, int]]
             List of time intervals during which the machine is unavailable.
-            Each interval is represented as a tuple [start_time, end_time],
+            Each interval is represented as a tuple (start_time, end_time),
             during which the machine is unavailable. Defaults to an empty
             tuple, meaning that the machine is always available.
         name: Optional[str]

@@ -54,7 +54,8 @@ def test_job_attributes_raises_invalid_parameters(
     weight: int, release_date: int, due_date: int, deadline: int, name: str
 ):
     """
-    Tests that the default values for each job attribute is set correctly.
+    Tests that a ValueError is raised when invalid parameters are passed to
+    Job.
     """
     with assert_raises(ValueError):
         Job(
@@ -81,6 +82,23 @@ def test_machine_attributes():
 
     assert_equal(machine.downtimes, [(1, 2), (3, 4)])
     assert_equal(machine.name, "TestMachine")
+
+
+@pytest.mark.parametrize(
+    "downtimes",
+    [
+        ([(1, 2), (4, 3)]),  # downtime interval with early > late
+    ],
+)
+def test_machine_attributes_raises_invalid_parameters(
+    downtimes: tuple[tuple[int, int]]
+):
+    """
+    Tests that a ValueError is raised when invalid parameters are passed to
+    Machine.
+    """
+    with assert_raises(ValueError):
+        Machine(downtimes=downtimes)
 
 
 def test_operation_attributes():

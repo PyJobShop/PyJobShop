@@ -85,7 +85,7 @@ class Machine:
     ----------
     downtimes: Iterable[tuple[int, int]]
         List of time intervals during which the machine is unavailable.
-        Each interval is represented as a tuple [start_time, end_time],
+        Each interval is represented as a tuple (start_time, end_time),
         during which the machine is unavailable. Defaults to an empty
         tuple, meaning that the machine is always available.
     name: Optional[str]
@@ -97,6 +97,10 @@ class Machine:
         downtimes: Iterable[tuple[int, int]] = (),
         name: Optional[str] = None,
     ):
+        for early, late in downtimes:
+            if early > late:
+                raise ValueError("Downtime interval (a, b) must be a <= b.")
+
         self._downtimes = downtimes
         self._name = name
 
