@@ -1,5 +1,5 @@
 import bisect
-from typing import Optional
+from typing import Iterable, Optional
 
 import numpy as np
 from strenum import StrEnum
@@ -83,12 +83,26 @@ class Machine:
 
     Parameters
     ----------
+    downtimes: Iterable[tuple[int, int]]
+        List of time intervals during which the machine is unavailable.
+        Each interval is represented as a tuple [start_time, end_time],
+        during which the machine is unavailable. Defaults to an empty
+        tuple, meaning that the machine is always available.
     name: Optional[str]
         Optional name of the machine.
     """
 
-    def __init__(self, name: Optional[str] = None):
+    def __init__(
+        self,
+        downtimes: Iterable[tuple[int, int]] = (),
+        name: Optional[str] = None,
+    ):
+        self._downtimes = downtimes
         self._name = name
+
+    @property
+    def downtimes(self) -> Iterable[tuple[int, int]]:
+        return self._downtimes
 
     @property
     def name(self) -> Optional[str]:

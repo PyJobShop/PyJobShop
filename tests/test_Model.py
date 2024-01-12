@@ -94,8 +94,9 @@ def test_add_machine_attributes():
     """
     model = Model()
 
-    machine = model.add_machine(name="machine")
+    machine = model.add_machine([(1, 2), (3, 4)], name="machine")
 
+    assert_equal(machine.downtimes, [(1, 2), (3, 4)])
     assert_equal(machine.name, "machine")
 
 

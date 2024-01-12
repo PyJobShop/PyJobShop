@@ -73,11 +73,13 @@ def test_machine_attributes():
     # Let's first test the default values.
     machine = Machine()
 
+    assert_equal(machine.downtimes, ())
     assert_equal(machine.name, None)
 
     # Now test with some values.
-    machine = Machine("TestMachine")
+    machine = Machine(downtimes=[(1, 2), (3, 4)], name="TestMachine")
 
+    assert_equal(machine.downtimes, [(1, 2), (3, 4)])
     assert_equal(machine.name, "TestMachine")
 
 
