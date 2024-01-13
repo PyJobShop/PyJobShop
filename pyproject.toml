@@ -17,7 +17,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.dependencies]
 python = ">=3.9, <3.11"
-cplex = "^22.1.1.1"
+cplex = "^22.1.1"
 docplex = "^2.25.236"
 numpy = "^1.24.2"
 matplotlib = "^3.7.1"
