@@ -1,12 +1,16 @@
 from numpy.testing import assert_equal
 
 from pyjobshop.Model import Model
-from pyjobshop.ProblemData import AssignmentPrecedence, TimingPrecedence
+from pyjobshop.ProblemData import (
+    AssignmentPrecedence,
+    Objective,
+    TimingPrecedence,
+)
 
 MAX_VALUE = 2**25
 
 
-def test_model_data():
+def test_model_to_data():
     """
     Tests that calling ``Model.data()`` returns a correct ProblemData instance.
     """
@@ -40,6 +44,7 @@ def test_model_data():
     model.add_setup_time(mach2, op1, op2, 4)
 
     model.add_process_plan([op1], [op2])
+    model.set_objective(Objective.TOTAL_TARDINESS)
 
     data = model.data()
 
@@ -69,6 +74,7 @@ def test_model_data():
     assert_equal(data.access_matrix, [[True, False], [True, True]])
     assert_equal(data.setup_times, [[[0, 3], [0, 0]], [[0, 4], [0, 0]]])
     assert_equal(data.process_plans, [[[0], [1]]])
+    assert_equal(data.objective, Objective.TOTAL_TARDINESS)
 
 
 def test_add_job_attributes():
@@ -119,14 +125,29 @@ def test_add_operation_attributes():
 
 def test_model_attributes():
     """
-    Tests that the model attributes are correctly set when adding data objects.
+    Tests that the model attributes are correctly.
     """
     model = Model()
 
     jobs = [model.add_job() for _ in range(10)]
-    machine = [model.add_machine() for _ in range(20)]
-    operation = [model.add_operation() for _ in range(30)]
+    machines = [model.add_machine() for _ in range(20)]
+    operations = [model.add_operation() for _ in range(30)]
 
     assert_equal(model.jobs, jobs)
-    assert_equal(model.machines, machine)
-    assert_equal(model.operations, operation)
+    assert_equal(model.machines, machines)
+    assert_equal(model.operations, operations)
+
+
+def test_model_set_objective():
+    """
+    Tests that setting the objective changes.
+    """
+    model = Model()
+
+    # The default objective function is the makespan.
+    assert_equal(model.objective, Objective.MAKESPAN)
+
+    # Now we set the objective function to total tardiness.
+    model.set_objective(Objective.TOTAL_TARDINESS)
+
+    assert_equal(model.objective, Objective.TOTAL_TARDINESS)

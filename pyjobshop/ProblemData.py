@@ -1,8 +1,8 @@
 import bisect
+from enum import Enum
 from typing import Optional
 
 import numpy as np
-from strenum import StrEnum
 
 
 class Job:
@@ -195,7 +195,17 @@ class Operation:
         return self._name
 
 
-class TimingPrecedence(StrEnum):
+class Objective(str, Enum):
+    """
+    Choices for objective functions (to be minimized).
+    """
+
+    MAKESPAN = "makespan"
+    TOTAL_COMPLETION_TIME = "total_completion_time"
+    TOTAL_TARDINESS = "total_tardiness"
+
+
+class TimingPrecedence(str, Enum):
     """
     Types of precedence constraints between two operations $i$ and $j$.
     Let $s(i)$ and $f(i)$ be the start and finish times of operation $i$,
@@ -226,7 +236,7 @@ class TimingPrecedence(StrEnum):
     END_BEFORE_END = "end_before_end"
 
 
-class AssignmentPrecedence(StrEnum):
+class AssignmentPrecedence(str, Enum):
     """
     Types of assignment precedence constraints between two operations $i$ and
     $j$.
@@ -258,6 +268,7 @@ class ProblemData:
         access_matrix: Optional[np.ndarray] = None,
         setup_times: Optional[np.ndarray] = None,
         process_plans: Optional[list[list[list[int]]]] = None,
+        objective: Objective = Objective.MAKESPAN,
     ):
         self._jobs = jobs
         self._machines = machines
@@ -287,6 +298,7 @@ class ProblemData:
         self._process_plans = (
             process_plans if process_plans is not None else []
         )
+        self._objective = objective
 
         self._machine2ops: list[list[int]] = [[] for _ in range(num_mach)]
         self._op2machines: list[list[int]] = [[] for _ in range(num_ops)]
@@ -436,6 +448,13 @@ class ProblemData:
             List of processing plans.
         """
         return self._process_plans
+
+    @property
+    def objective(self) -> Objective:
+        """
+        The objective function to be minimized.
+        """
+        return self._objective
 
     @property
     def machine2ops(self) -> list[list[int]]:

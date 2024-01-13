@@ -5,12 +5,12 @@ from pyjobshop.ProblemData import ProblemData
 
 
 def makespan(
-    m: CpoModel, data: ProblemData, job_vars: list[CpoIntervalVar]
+    m: CpoModel, data: ProblemData, op_vars: list[CpoIntervalVar]
 ) -> CpoExpr:
     """
     Minimizes the makespan of the schedule.
     """
-    return m.minimize(m.max(m.end_of(var) for var in job_vars))
+    return m.minimize(m.max(m.end_of(var) for var in op_vars))
 
 
 def total_completion_time(
@@ -19,7 +19,12 @@ def total_completion_time(
     """
     Minimizes the sum of the completion times of each job.
     """
-    return m.minimize(m.sum(m.end_of(var) for var in job_vars))
+    return m.minimize(
+        m.sum(
+            job_data.weight * m.end_of(var)
+            for job_data, var in zip(data.jobs, job_vars)
+        )
+    )
 
 
 def total_tardiness(
@@ -28,10 +33,10 @@ def total_tardiness(
     """
     Minimizes the sum of the tardiness of each job. A job's tardiness is
     defined as the maximum of 0 and its completion time minus the job's
-    deadline.
+    due date.
     """
     expr = m.sum(
-        m.max(0, m.end_of(var) - job_data.deadline)
+        m.max(0, job_data.weight * (m.end_of(var) - job_data.due_date))
         for job_data, var in zip(data.jobs, job_vars)
     )
     return m.minimize(expr)

@@ -9,12 +9,11 @@ from .ProblemData import (
     AssignmentPrecedence,
     Job,
     Machine,
+    Objective,
     Operation,
     ProblemData,
     TimingPrecedence,
 )
-
-MAX_VALUE = 2**25
 
 
 class Model:
@@ -37,6 +36,7 @@ class Model:
         self._access_matrix: dict[tuple[int, int], bool] = {}
         self._setup_times: dict[tuple[int, int, int], int] = {}
         self._process_plans: list[list[list[int]]] = []
+        self._objective: Objective = Objective.MAKESPAN
 
         self._id2job: dict[int, int] = {}
         self._id2machine: dict[int, int] = {}
@@ -53,6 +53,10 @@ class Model:
     @property
     def operations(self) -> list[Operation]:
         return self._operations
+
+    @property
+    def objective(self) -> Objective:
+        return self._objective
 
     def data(self) -> ProblemData:
         """
@@ -85,6 +89,7 @@ class Model:
             access_matrix,
             setup_times,
             self._process_plans,
+            self._objective,
         )
 
     def add_job(
@@ -356,6 +361,17 @@ class Model:
         """
         ids = [[self._id2op[id(op)] for op in plan] for plan in plans]
         self._process_plans.append(ids)
+
+    def set_objective(self, objective: Objective):
+        """
+        Sets the objective to be minimized in this model.
+
+        Parameters
+        ----------
+        objective: Objective
+            An objective function.
+        """
+        self._objective = objective
 
     def solve(self, time_limit: Optional[int] = None) -> CpoSolveResult:
         """

@@ -30,6 +30,9 @@ PyJobShop
     .. autoclass:: AssignmentPrecedence
        :members:
 
+    .. autoclass:: Objective
+       :members:	   
+
 .. automodule:: pyjobshop.Solution
 
    .. autoclass:: Solution
