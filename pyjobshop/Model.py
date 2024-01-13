@@ -36,7 +36,7 @@ class Model:
         self._access_matrix: dict[tuple[int, int], bool] = {}
         self._setup_times: dict[tuple[int, int, int], int] = {}
         self._process_plans: list[list[list[int]]] = []
-        self._objective = Objective.MAKESPAN
+        self._objective: Objective = Objective.MAKESPAN
 
         self._id2job: dict[int, int] = {}
         self._id2machine: dict[int, int] = {}

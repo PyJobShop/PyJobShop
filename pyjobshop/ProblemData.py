@@ -1,8 +1,8 @@
 import bisect
+from enum import Enum
 from typing import Optional
 
 import numpy as np
-from strenum import StrEnum
 
 
 class Job:
@@ -195,7 +195,7 @@ class Operation:
         return self._name
 
 
-class Objective(StrEnum):
+class Objective(str, Enum):
     """
     Types of objective functions to be minimized.
     """
@@ -205,7 +205,7 @@ class Objective(StrEnum):
     TOTAL_TARDINESS = "total_tardiness"
 
 
-class TimingPrecedence(StrEnum):
+class TimingPrecedence(str, Enum):
     """
     Types of precedence constraints between two operations $i$ and $j$.
     Let $s(i)$ and $f(i)$ be the start and finish times of operation $i$,
@@ -236,7 +236,7 @@ class TimingPrecedence(StrEnum):
     END_BEFORE_END = "end_before_end"
 
 
-class AssignmentPrecedence(StrEnum):
+class AssignmentPrecedence(str, Enum):
     """
     Types of assignment precedence constraints between two operations $i$ and
     $j$.
@@ -268,8 +268,7 @@ class ProblemData:
         access_matrix: Optional[np.ndarray] = None,
         setup_times: Optional[np.ndarray] = None,
         process_plans: Optional[list[list[list[int]]]] = None,
-        # TODO https://stackoverflow.com/questions/52624736/type-annotations-for-enum-attribute
-        objective=Objective.MAKESPAN,
+        objective: Objective = Objective.MAKESPAN,
     ):
         self._jobs = jobs
         self._machines = machines
