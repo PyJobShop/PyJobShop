@@ -151,3 +151,23 @@ def test_model_set_objective():
     model.set_objective(Objective.TOTAL_TARDINESS)
 
     assert_equal(model.objective, Objective.TOTAL_TARDINESS)
+
+
+def test_solve():
+    """
+    Tests the solve method of the Model class.
+    """
+    model = Model()
+
+    job = model.add_job()
+    machine = model.add_machine()
+    operations = [model.add_operation() for _ in range(3)]
+
+    model.assign_job_operations(job, operations)
+
+    for operation, duration in zip(operations, [1, 2, 3]):
+        model.add_processing_time(machine, operation, duration)
+
+    result = model.solve()
+
+    assert_equal(result.get_objective_value(), 6)

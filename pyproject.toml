@@ -17,6 +17,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.dependencies]
 python = ">=3.9, <3.11"
+cplex = "22.1.1.0"
 docplex = "^2.25.236"
 numpy = "^1.24.2"
 matplotlib = "^3.7.1"
@@ -74,7 +75,7 @@ addopts = "--cov=. --cov-report=xml"
 
 [tool.coverage.run]
 omit = [
-    "tests/examples/*",
+    "tests/*",
     "pyjobshop/cp/*",
     "docs/*"
 ]
