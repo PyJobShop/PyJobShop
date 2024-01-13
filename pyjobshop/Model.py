@@ -364,12 +364,12 @@ class Model:
 
     def set_objective(self, objective: Objective):
         """
-        Sets the objective function.
+        Sets the objective to be minimized in this model.
 
         Parameters
         ----------
         objective: Objective
-            The objective function.
+            An objective function.
         """
         self._objective = objective
 

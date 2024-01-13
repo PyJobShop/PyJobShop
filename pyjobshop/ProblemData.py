@@ -197,10 +197,9 @@ class Operation:
 
 class Objective(StrEnum):
     """
-    Objective functions.
+    Types of objective functions to be minimized.
     """
 
-    # TODO https://stackoverflow.com/questions/52624736/type-annotations-for-enum-attribute
     MAKESPAN = "makespan"
     TOTAL_COMPLETION_TIME = "total_completion_time"
     TOTAL_TARDINESS = "total_tardiness"
@@ -269,7 +268,8 @@ class ProblemData:
         access_matrix: Optional[np.ndarray] = None,
         setup_times: Optional[np.ndarray] = None,
         process_plans: Optional[list[list[list[int]]]] = None,
-        objective=Objective.MAKESPAN,  # TODO type hint
+        # TODO https://stackoverflow.com/questions/52624736/type-annotations-for-enum-attribute
+        objective=Objective.MAKESPAN,
     ):
         self._jobs = jobs
         self._machines = machines
@@ -451,9 +451,9 @@ class ProblemData:
         return self._process_plans
 
     @property
-    def objective(self) -> str:
+    def objective(self) -> Objective:
         """
-        Returns the objective function of this problem instance.
+        Returns the objective function of this problem data instance.
         """
         return self._objective
 
