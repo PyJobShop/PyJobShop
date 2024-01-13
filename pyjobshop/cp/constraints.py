@@ -2,6 +2,7 @@ from itertools import product
 
 import numpy as np
 from docplex.cp.expression import CpoExpr, CpoIntervalVar, CpoSequenceVar
+from docplex.cp.function import CpoStepFunction
 from docplex.cp.model import CpoModel
 
 from pyjobshop.ProblemData import ProblemData
@@ -10,6 +11,8 @@ JobVars = list[CpoIntervalVar]
 OpVars = list[CpoIntervalVar]
 AssignVars = dict[tuple[int, int], CpoIntervalVar]
 SeqVars = list[CpoSequenceVar]
+
+_INT_MAX = 2**32
 
 
 def job_data_constraints(
@@ -177,6 +180,37 @@ def no_overlap_constraints(
 
         distance_matrix = data.setup_times[machine, :, :][np.ix_(ops, ops)]
         constraints.append(m.no_overlap(seq_vars[machine], distance_matrix))
+
+    return constraints
+
+
+def machine_data_constraints(
+    m: CpoModel, data: ProblemData, assign_vars: AssignVars
+) -> list[CpoExpr]:
+    """
+    Creates constraints related to the machine data.
+    """
+    constraints = []
+
+    for (_op, machine), var in assign_vars.items():
+        machine_data = data.machines[machine]
+        start = machine_data.available_from
+        end = machine_data.available_till
+
+        if start is None and end is None:
+            continue  # machine is always available
+
+        step = CpoStepFunction()
+        step.set_value(0, _INT_MAX, 0)
+
+        if start is not None and end is not None:
+            step.set_value(start, end, 1)
+        elif start is None:
+            step.set_value(0, end, 1)
+        elif end is None:
+            step.set_value(start, _INT_MAX, 1)
+
+        constraints.append(m.forbid_extent(var, step))
 
     return constraints
 

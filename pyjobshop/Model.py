@@ -132,12 +132,23 @@ class Model:
 
         return job
 
-    def add_machine(self, name: Optional[str] = None) -> Machine:
+    def add_machine(
+        self,
+        available_from: Optional[int] = None,
+        available_till: Optional[int] = None,
+        name: Optional[str] = None,
+    ) -> Machine:
         """
         Adds a machine to the model.
 
         Parameters
         ----------
+        available_from: Optional[int]
+            Earliest time that the machine is available for processing.
+            Default is None, meaning there is no restriction.
+        available_till: Optional[int]
+            Latest time that the machine is available for processing.
+            Default is None, meaning there is no restriction.
         name: Optional[str]
             Optional name of the machine.
 
@@ -146,7 +157,7 @@ class Model:
         Machine
             The created machine.
         """
-        machine = Machine(name)
+        machine = Machine(available_from, available_till, name=name)
 
         self._id2machine[id(machine)] = len(self.machines)
         self._machines.append(machine)

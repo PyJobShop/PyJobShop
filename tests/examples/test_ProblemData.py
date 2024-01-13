@@ -83,7 +83,69 @@ def test_job_deadline_infeasible():
     assert_equal(result.get_solve_status(), "Infeasible")
 
 
-def test_earliest_start():
+def test_machine_available_from():
+    """
+    Tests that operations scheduled only when a machine available.
+    """
+    model = Model()
+    job = model.add_job()
+    machine = model.add_machine(2)
+    operation = model.add_operation()
+
+    model.assign_job_operations(job, [operation])
+    model.add_processing_time(machine, operation, duration=2)
+
+    result = model.solve()
+
+    # Machine is only available from time 2 onwards, so the makespan is be 4.
+    assert_equal(result.get_solve_status(), "Optimal")
+    assert_equal(result.get_objective_value(), 4)
+
+
+def test_machine_available_till():
+    """
+    Tests that operations scheduled only when a machine available.
+    """
+    model = Model()
+    job = model.add_job()
+    machine1 = model.add_machine(available_till=2)
+    machine2 = model.add_machine()
+    operations = [model.add_operation() for _ in range(2)]
+
+    model.assign_job_operations(job, operations)
+
+    for operation in operations:
+        model.add_processing_time(machine1, operation, duration=2)
+        model.add_processing_time(machine2, operation, duration=10)
+
+    result = model.solve()
+
+    # Machine 1 is only available till time 2. One operation can be scheduled
+    # on that machine, but the other operation has to be scheduled on machine2
+    # with much longer proceesing time (10). So the makespan is 10.
+    assert_equal(result.get_solve_status(), "Optimal")
+    assert_equal(result.get_objective_value(), 10)
+
+
+def test_machine_infeasible_available_interval():
+    """
+    Tests that the model is infeasible when the availability interval is too
+    restrictive.
+    """
+    model = Model()
+    job = model.add_job()
+    machine = model.add_machine(0, 1)
+    operation = model.add_operation()
+
+    model.assign_job_operations(job, [operation])
+    model.add_processing_time(machine, operation, duration=2)
+
+    result = model.solve()
+
+    assert_equal(result.get_solve_status(), "Infeasible")
+
+
+def test_operation_earliest_start():
     """
     Tests that an operation starts no earlier than its earliest start time.
     """
@@ -103,7 +165,7 @@ def test_earliest_start():
     assert_equal(result.get_objective_value(), 2)
 
 
-def test_latest_start():
+def test_operation_latest_start():
     """
     Tests that an operation starts no later than its latest start time.
     """
@@ -133,7 +195,7 @@ def test_latest_start():
     assert_equal(result.get_objective_value(), 14)
 
 
-def test_fixed_start():
+def test_operation_fixed_start():
     """
     Tests that an operation starts at its fixed start time when earliest
     and latest start times are equal.
@@ -154,7 +216,7 @@ def test_fixed_start():
     assert_equal(result.get_objective_value(), 43)
 
 
-def test_earliest_end():
+def test_operation_earliest_end():
     """
     Tests that an operation end no earlier than its earliest end time.
     """
@@ -175,7 +237,7 @@ def test_earliest_end():
     assert_equal(result.get_objective_value(), 2)
 
 
-def test_latest_end():
+def test_operation_latest_end():
     """
     Tests that an operation ends no later than its latest end time.
     """
@@ -205,7 +267,7 @@ def test_latest_end():
     assert_equal(result.get_objective_value(), 14)
 
 
-def test_fixed_end():
+def test_operation_fixed_end():
     """
     Tests that an operation ends at its fixed end time when earliest
     and latest end times are equal.
