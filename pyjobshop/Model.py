@@ -89,6 +89,7 @@ class Model:
             access_matrix,
             setup_times,
             self._process_plans,
+            self._objective,
         )
 
     def add_job(

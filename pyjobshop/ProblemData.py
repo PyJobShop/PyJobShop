@@ -177,9 +177,8 @@ class Objective(StrEnum):
 
     # TODO https://stackoverflow.com/questions/52624736/type-annotations-for-enum-attribute
     MAKESPAN = "makespan"
-    TOTAL_COMPLETION_TIME = "completion_time"
-    TOTAL_FLOW_TIME = "flow_time"
-    TOTAL_TARDINESS = "tardiness"
+    TOTAL_COMPLETION_TIME = "total_completion_time"
+    TOTAL_TARDINESS = "total_tardiness"
 
 
 class TimingPrecedence(StrEnum):
@@ -245,7 +244,7 @@ class ProblemData:
         access_matrix: Optional[np.ndarray] = None,
         setup_times: Optional[np.ndarray] = None,
         process_plans: Optional[list[list[list[int]]]] = None,
-        objective: Objective = Objective.MAKESPAN,
+        objective=Objective.MAKESPAN,  # TODO type hint
     ):
         self._jobs = jobs
         self._machines = machines

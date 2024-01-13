@@ -13,7 +13,7 @@ from .constraints import (
     optional_operation_selection_constraints,
     timing_precedence_constraints,
 )
-from .objectives import makespan
+from .objectives import makespan, total_completion_time, total_tardiness
 from .variables import (
     assignment_variables,
     job_variables,
@@ -35,6 +35,10 @@ def default_model(data: ProblemData) -> CpoModel:
 
     if data.objective == "makespan":
         model.add(makespan(model, data, op_vars))
+    elif data.objective == "total_tardiness":
+        model.add(total_tardiness(model, data, job_vars))
+    elif data.objective == "total_completion_time":
+        model.add(total_completion_time(model, data, job_vars))
     else:
         raise ValueError(f"Unknown objective: {data.objective}")
 

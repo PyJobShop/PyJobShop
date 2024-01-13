@@ -2,7 +2,11 @@ import pytest
 from numpy.testing import assert_equal
 
 from pyjobshop.Model import Model
-from pyjobshop.ProblemData import AssignmentPrecedence, TimingPrecedence
+from pyjobshop.ProblemData import (
+    AssignmentPrecedence,
+    Objective,
+    TimingPrecedence,
+)
 
 # TODO refactor with Solution
 
@@ -397,3 +401,133 @@ def test_process_plans():
 
     # Schedule plan 1, so the makespan is 1 + 2 = 3.
     assert_equal(result.get_objective_value(), 3)
+
+
+def test_makespan_objective():
+    """
+    Tests that the makespan objective is correctly optimized.
+    """
+    model = Model()
+
+    job = model.add_job()
+    machine = model.add_machine()
+    operations = [model.add_operation() for _ in range(2)]
+
+    model.assign_job_operations(job, operations)
+
+    for operation in operations:
+        model.add_processing_time(machine, operation, duration=2)
+
+    result = model.solve()
+
+    assert_equal(result.get_objective_value(), 4)
+    assert_equal(result.get_solve_status(), "Optimal")
+
+
+def test_total_completion_time():
+    """
+    Tests that the total completion time objective is correctly optimized.
+    """
+    model = Model()
+
+    machines = [model.add_machine() for _ in range(2)]
+
+    for idx in range(3):
+        job = model.add_job()
+        operation = model.add_operation()
+
+        model.assign_job_operations(job, [operation])
+
+        for machine in machines:
+            model.add_processing_time(machine, operation, duration=idx + 1)
+
+    model.set_objective(Objective.TOTAL_COMPLETION_TIME)
+
+    result = model.solve()
+
+    # We have three jobs (A, B, C) with processing times of 1, 2, 3 on either
+    # machine. The optimal schedule is [A, C] and [B] with total completion
+    # time of: 1 (A) + 4 (C) + 2 (B) = 7. Note how this leads a suboptimal
+    # makespan of 4, while it could have been 3 (with schedule [A, B] and [C]).
+    assert_equal(result.get_objective_value(), 7)
+    assert_equal(result.get_solve_status(), "Optimal")
+
+
+def test_total_weighted_completion_time():
+    model = Model()
+
+    machine = model.add_machine()
+    weights = [2, 10]
+
+    for idx in range(2):
+        job = model.add_job(weight=weights[idx])
+        operation = model.add_operation()
+
+        model.assign_job_operations(job, [operation])
+        model.add_processing_time(machine, operation, duration=idx + 1)
+
+    model.set_objective(Objective.TOTAL_COMPLETION_TIME)
+
+    result = model.solve()
+
+    # One machine and two jobs (A, B) with processing times (1, 2) and weights
+    # (2, 10). Because of these weights, it's optimal to schedule B for A with
+    # completion times (3, 2) and objective 2 * 3 + 10 * 2 = 26.
+    assert_equal(result.get_objective_value(), 26)
+    assert_equal(result.get_solve_status(), "Optimal")
+
+
+def test_total_tardiness():
+    model = Model()
+
+    machines = [model.add_machine() for _ in range(2)]
+    due_dates = [1, 2, 3]
+
+    for idx in range(3):
+        job = model.add_job(due_date=due_dates[idx])
+        operation = model.add_operation()
+
+        model.assign_job_operations(job, [operation])
+
+        for machine in machines:
+            model.add_processing_time(machine, operation, duration=idx + 1)
+
+    model.set_objective(Objective.TOTAL_TARDINESS)
+
+    result = model.solve()
+
+    # We have three jobs (A, B, C) with processing times of 1, 2, 3 on either
+    # machine and due dates 1, 2, 3. We schedule A and B first on both machines
+    # and C is scheduled after A on machine 1. Jobs A and B are on time
+    # while C is one time unit late, resulting in 1 total tardiness.
+    assert_equal(result.get_objective_value(), 1)
+    assert_equal(result.get_solve_status(), "Optimal")
+
+
+def test_total_weighted_tardiness():
+    model = Model()
+
+    machine = model.add_machine()
+    processing_times = [2, 4]
+    due_dates = [2, 2]
+    weights = [2, 10]
+
+    for idx in range(2):
+        job = model.add_job(weight=weights[idx], due_date=due_dates[idx])
+        operation = model.add_operation()
+
+        model.assign_job_operations(job, [operation])
+        model.add_processing_time(
+            machine, operation, duration=processing_times[idx]
+        )
+
+    model.set_objective(Objective.TOTAL_TARDINESS)
+
+    result = model.solve()
+
+    # We have an instance with one machine and two jobs (A, B) with processing
+    # times (2, 4), due dates (2, 2), and weights (2, 10). Because of the
+    # weights, it's optimal to schedule B before A resulting in completion
+    # times (6, 4) and thus a total tardiness of 2 * 4 + 10 * 2 = 28.
+    assert_equal(result.get_objective_value(), 28)
+    assert_equal(result.get_solve_status(), "Optimal")

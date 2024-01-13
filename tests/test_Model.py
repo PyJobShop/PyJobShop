@@ -10,7 +10,7 @@ from pyjobshop.ProblemData import (
 MAX_VALUE = 2**25
 
 
-def test_model_data():
+def test_model_to_data():
     """
     Tests that calling ``Model.data()`` returns a correct ProblemData instance.
     """
@@ -44,6 +44,7 @@ def test_model_data():
     model.add_setup_time(mach2, op1, op2, 4)
 
     model.add_process_plan([op1], [op2])
+    model.set_objective(Objective.TOTAL_TARDINESS)
 
     data = model.data()
 
@@ -73,7 +74,7 @@ def test_model_data():
     assert_equal(data.access_matrix, [[True, False], [True, True]])
     assert_equal(data.setup_times, [[[0, 3], [0, 0]], [[0, 4], [0, 0]]])
     assert_equal(data.process_plans, [[[0], [1]]])
-    assert_equal(data.objective, Objective.MAKESPAN)
+    assert_equal(data.objective, Objective.TOTAL_TARDINESS)
 
 
 def test_add_job_attributes():
@@ -141,6 +142,6 @@ def test_model_set_objective():
     """
     model = Model()
 
-    model.set_objective(Objective.TOTAL_FLOW_TIME)
+    model.set_objective(Objective.TOTAL_TARDINESS)
 
-    assert_equal(model.objective, Objective.TOTAL_FLOW_TIME)
+    assert_equal(model.objective, Objective.TOTAL_TARDINESS)
