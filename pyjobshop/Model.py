@@ -109,14 +109,15 @@ class Model:
             The job importance weight, used as multiplicative factor in the
             objective function.
         release_date: int
-            The earliest time that the job can start processing. Default is zero.
+            The earliest time that the job may start. Default is zero.
         due_date: Optional[int]
             The latest time that the job should be completed before incurring
             penalties. Default is None, meaning that there is no due date.
         deadline: Optional[int]
-            The latest time that the job must be completed. Note that a deadline
-            is different from a due date; the latter does not constrain the latest
-            completion time. Default is None, meaning that there is no deadline.
+            The latest time by which the job must be completed. Note that a
+            deadline is different from a due date; the latter does not restrict
+            the latest completion time. Default is None, meaning that there is
+            no deadline.
         name: Optional[str]
             Name of the job. Default is None.
 
@@ -350,8 +351,8 @@ class Model:
     def add_process_plan(self, *plans: list[Operation]):
         """
         Adds one or multiple process plans. Each plan is a list of operations.
-        Exactly one process plan is selected, meaning that all operations in the
-        selected plan are required to be processed.
+        Exactly one process plan is selected, meaning that all operations in
+        the selected plan are required to be processed.
 
         Parameters
         ----------

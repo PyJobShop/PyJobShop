@@ -41,15 +41,12 @@ nbsphinx = "^0.9.3"
 sphinx-immaterial = "^0.11.10"
 
 
-[tool.black]
-line-length = 79
-
-
 [tool.mypy]
 ignore_missing_imports = true
 
 
 [tool.ruff]
+line-length = 79
 select = [
     "E",  # pycodestyle errors
     "W",  # pycodestyle warnings
@@ -59,11 +56,9 @@ select = [
     "B",  # flake8-bugbear
 ]
 ignore = [
-    "E501",  # line too long, handled by black
     "E741",  # ambiguous variable name, needed for indexing
     "C901",  # too complex
 ]
-
 
 [tool.ruff.per-file-ignores]
 "__init__.py" = ["F401"]
