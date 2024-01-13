@@ -197,7 +197,7 @@ class Operation:
 
 class Objective(str, Enum):
     """
-    Types of objective functions to be minimized.
+    Choices for objective functions (to be minimized).
     """
 
     MAKESPAN = "makespan"
@@ -452,7 +452,7 @@ class ProblemData:
     @property
     def objective(self) -> Objective:
         """
-        Returns the objective function of this problem data instance.
+        The objective function to be minimized.
         """
         return self._objective
 
