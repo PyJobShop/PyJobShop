@@ -125,17 +125,17 @@ def test_add_operation_attributes():
 
 def test_model_attributes():
     """
-    Tests that the model attributes are correctly set when adding data objects.
+    Tests that the model attributes are correctly.
     """
     model = Model()
 
     jobs = [model.add_job() for _ in range(10)]
-    machine = [model.add_machine() for _ in range(20)]
-    operation = [model.add_operation() for _ in range(30)]
+    machines = [model.add_machine() for _ in range(20)]
+    operations = [model.add_operation() for _ in range(30)]
 
     assert_equal(model.jobs, jobs)
-    assert_equal(model.machines, machine)
-    assert_equal(model.operations, operation)
+    assert_equal(model.machines, machines)
+    assert_equal(model.operations, operations)
 
 
 def test_model_set_objective():
@@ -144,6 +144,10 @@ def test_model_set_objective():
     """
     model = Model()
 
+    # The default objective function is the makespan.
+    assert_equal(model.objective, Objective.MAKESPAN)
+
+    # Now we set the objective function to total tardiness.
     model.set_objective(Objective.TOTAL_TARDINESS)
 
     assert_equal(model.objective, Objective.TOTAL_TARDINESS)

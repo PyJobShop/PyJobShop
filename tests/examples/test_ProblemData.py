@@ -516,6 +516,10 @@ def test_total_completion_time():
 
 
 def test_total_weighted_completion_time():
+    """
+    Tests that the weights are taken into account when using the total
+    completion time objective function.
+    """
     model = Model()
 
     machine = model.add_machine()
@@ -540,6 +544,9 @@ def test_total_weighted_completion_time():
 
 
 def test_total_tardiness():
+    """
+    Tests that the total tardiness objective function is correctly optimized.
+    """
     model = Model()
 
     machines = [model.add_machine() for _ in range(2)]
@@ -567,6 +574,10 @@ def test_total_tardiness():
 
 
 def test_total_weighted_tardiness():
+    """
+    Tests that the weights are taken into account when using the total
+    tardiness objective function.
+    """
     model = Model()
 
     machine = model.add_machine()
