@@ -15,7 +15,8 @@ def plot(
     ax: Optional[plt.Axes] = None,
 ):
     """
-    Plots a Gantt chart of the solver result.
+    Plots a Gantt chart of the solution. Each unique job is associated with a
+    distinct color (up to 92 unique colors, after which the colors are cycled).
 
     Parameters
     ----------
