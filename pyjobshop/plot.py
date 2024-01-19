@@ -12,6 +12,7 @@ def plot(
     solution: Solution,
     machines_to_plot: Optional[list[int]] = None,
     plot_labels: bool = False,
+    ax: Optional[plt.Axes] = None,
 ):
     """
     Plots a Gantt chart of the solver result.
@@ -26,9 +27,12 @@ def plot(
         The machines to plot (by index) and in which order they should appear
         (from top to bottom). Defaults to all machines in the data instance.
     plot_labels: bool
-        Whether to plot the operation names as labels on the bars.
+        Whether to plot the operation names as labels.
+    ax
+        Axes object to draw the plot on. One will be created if not provided.
     """
-    fig, ax = plt.subplots(1, 1, figsize=(12, 8))
+    if ax is None:
+        _, ax = plt.subplots(1, 1, figsize=(12, 8))
 
     # Custom ordering of machines to plot.
     if machines_to_plot is not None:
@@ -67,6 +71,3 @@ def plot(
     ax.set_xlim(0, ax.get_xlim()[1])  # start time at zero
     ax.set_xlabel("Time")
     ax.set_title("Solution")
-
-    fig.tight_layout()
-    plt.show()
