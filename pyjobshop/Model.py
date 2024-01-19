@@ -137,6 +137,7 @@ class Model:
         self,
         available_from: Optional[int] = None,
         available_till: Optional[int] = None,
+        allow_overlap: bool = False,
         name: Optional[str] = None,
     ) -> Machine:
         """
@@ -150,6 +151,9 @@ class Model:
         available_till: Optional[int]
             Latest time that the machine is available for processing.
             Default is None, meaning there is no restriction.
+        allow_overlap: False
+            Whether it is allowed to schedule multiple operations on the
+            machine at the same time. Default is False.
         name: Optional[str]
             Optional name of the machine.
 
@@ -158,7 +162,12 @@ class Model:
         Machine
             The created machine.
         """
-        machine = Machine(available_from, available_till, name=name)
+        machine = Machine(
+            available_from=available_from,
+            available_till=available_till,
+            allow_overlap=allow_overlap,
+            name=name,
+        )
 
         self._id2machine[id(machine)] = len(self.machines)
         self._machines.append(machine)

@@ -100,10 +100,13 @@ def test_add_machine_attributes():
     """
     model = Model()
 
-    machine = model.add_machine(1, 2, name="machine")
+    machine = model.add_machine(
+        available_from=1, available_till=2, allow_overlap=True, name="machine"
+    )
 
     assert_equal(machine.available_from, 1)
     assert_equal(machine.available_till, 2)
+    assert_equal(machine.allow_overlap, True)
     assert_equal(machine.name, "machine")
 
 
