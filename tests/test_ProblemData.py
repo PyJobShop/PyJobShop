@@ -79,13 +79,15 @@ def test_machine_attributes():
 
     assert_equal(machine.available_from, None)
     assert_equal(machine.available_till, None)
+    assert_equal(machine.allow_overlap, False)
     assert_equal(machine.name, None)
 
     # Now test with some values.
-    machine = Machine(1, 2, name="TestMachine")
+    machine = Machine(1, 2, True, name="TestMachine")
 
     assert_equal(machine.available_from, 1)
     assert_equal(machine.available_till, 2)
+    assert_equal(machine.allow_overlap, True)
     assert_equal(machine.name, "TestMachine")
 
 
@@ -417,6 +419,44 @@ def test_machine_infeasible_available_interval():
     result = model.solve()
 
     assert_equal(result.get_solve_status(), "Infeasible")
+
+
+def test_machine_allow_overlap():
+    """
+    Tests that allowing overlap results in a shorter makespan.
+    """
+    model = Model()
+    job = model.add_job()
+    machine = model.add_machine()  # no overlap
+    operations = [model.add_operation(), model.add_operation()]
+
+    model.assign_job_operations(job, operations)
+    for operation in operations:
+        model.add_processing_time(machine, operation, duration=2)
+
+    result = model.solve()
+
+    # No overlap, so we schedule the two operations consecutively with
+    # final makespan of four.
+    assert_equal(result.get_solve_status(), "Optimal")
+    assert_equal(result.get_objective_value(), 4)
+
+    # Let's now allow for overlap.
+    model = Model()
+    job = model.add_job()
+    machine = model.add_machine(allow_overlap=True)
+    operations = [model.add_operation(), model.add_operation()]
+
+    model.assign_job_operations(job, operations)
+    for operation in operations:
+        model.add_processing_time(machine, operation, duration=2)
+
+    result = model.solve()
+
+    # With overlap we can schedule both operations simultaneously on the
+    # machine, resulting in a makespan of two.
+    assert_equal(result.get_solve_status(), "Optimal")
+    assert_equal(result.get_objective_value(), 2)
 
 
 def test_operation_earliest_start():
