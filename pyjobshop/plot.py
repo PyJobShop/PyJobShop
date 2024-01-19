@@ -1,7 +1,7 @@
 from typing import Optional
 
 import matplotlib.pyplot as plt
-import numpy as np
+from matplotlib.cm import get_cmap
 
 from .ProblemData import ProblemData
 from .Solution import Solution
@@ -40,8 +40,7 @@ def plot(
     else:
         order = {idx: idx for idx in range(len(data.machines))}
 
-    # Operations belonging to the same job get the same unique color.
-    colors = plt.cm.tab20c(np.linspace(0, 1, len(data.jobs)))
+    colors = _get_colors()
 
     for scheduled_op in solution.schedule:
         op, machine, start, duration = (
@@ -51,8 +50,13 @@ def plot(
             scheduled_op.duration,
         )
 
+        # Operations belonging to the same job get the same unique color.
         job = [job for job, ops in enumerate(data.job2ops) if op in ops][0]
-        kwargs = {"color": colors[job], "linewidth": 1, "edgecolor": "black"}
+        kwargs = {
+            "color": colors[job % len(colors)],
+            "linewidth": 1,
+            "edgecolor": "black",
+        }
         ax.barh(order[machine], duration, left=start, **kwargs)
 
         if plot_labels:
@@ -71,3 +75,13 @@ def plot(
     ax.set_xlim(0, ax.get_xlim()[1])  # start time at zero
     ax.set_xlabel("Time")
     ax.set_title("Solution")
+
+
+def _get_colors() -> list[str]:
+    """
+    Color sequence based on concatenation of different common color maps.
+    """
+    names = ["tab20c", "Dark2", "Set1", "tab20b", "Set2", "tab20", "Accent"]
+    cmaps = [get_cmap(name) for name in names]
+    colors = [color for cmap in cmaps for color in cmap.colors]
+    return list(dict.fromkeys(colors))  # unique and ordered colors
