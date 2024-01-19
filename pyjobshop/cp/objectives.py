@@ -13,6 +13,21 @@ def makespan(
     return m.minimize(m.max(m.end_of(var) for var in op_vars))
 
 
+def tardy_jobs(
+    m: CpoModel, data: ProblemData, job_vars: list[CpoIntervalVar]
+) -> CpoExpr:
+    """
+    Minimize the number of tardy jobs.
+    """
+    total = []
+
+    for job_data, job_var in zip(data.jobs, job_vars):
+        is_tardy = m.greater(m.end_of(job_var) - job_data.due_date, 0)
+        total.append(is_tardy)
+
+    return m.minimize(m.sum(total))
+
+
 def total_completion_time(
     m: CpoModel, data: ProblemData, job_vars: list[CpoIntervalVar]
 ) -> CpoExpr:

@@ -800,6 +800,31 @@ def test_makespan_objective():
     assert_equal(result.get_solve_status(), "Optimal")
 
 
+def test_tardy_jobs():
+    """
+    Tests that the (number of) tardy jobs objective is correctly optimized.
+    """
+    model = Model()
+
+    machine = model.add_machine()
+
+    for idx in range(3):
+        job = model.add_job(due_date=idx + 1)
+        operation = model.add_operation()
+
+        model.assign_job_operations(job, [operation])
+        model.add_processing_time(machine, operation, duration=3)
+
+    model.set_objective(Objective.TARDY_JOBS)
+
+    result = model.solve()
+
+    # Only the last job/operation can be scheduled on time. The other two
+    # are tardy.
+    assert_equal(result.get_objective_value(), 2)
+    assert_equal(result.get_solve_status(), "Optimal")
+
+
 def test_total_completion_time():
     """
     Tests that the total completion time objective is correctly optimized.
