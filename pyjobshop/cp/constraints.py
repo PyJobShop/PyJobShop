@@ -171,6 +171,9 @@ def no_overlap_and_setup_time_constraints(
     # Assumption: the interval variables in the sequence variable
     # are ordered in the same way as the operations in machine2ops.
     for machine in range(data.num_machines):
+        if data.machines[machine].allow_overlap:
+            continue  # Overlap is allowed for this machine.
+
         if not (ops := data.machine2ops[machine]):
             continue  # There no operations for this machine.
 
