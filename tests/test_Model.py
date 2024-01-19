@@ -44,7 +44,7 @@ def test_model_to_data():
     model.add_setup_time(mach2, op1, op2, 4)
 
     model.add_process_plan([op1], [op2])
-    model.set_objective(Objective.TOTAL_TARDINESS)
+    model.set_objective(Objective.TOTAL_COMPLETION_TIME)
 
     data = model.data()
 
@@ -74,7 +74,7 @@ def test_model_to_data():
     assert_equal(data.access_matrix, [[True, False], [True, True]])
     assert_equal(data.setup_times, [[[0, 3], [0, 0]], [[0, 4], [0, 0]]])
     assert_equal(data.process_plans, [[[0], [1]]])
-    assert_equal(data.objective, Objective.TOTAL_TARDINESS)
+    assert_equal(data.objective, Objective.TOTAL_COMPLETION_TIME)
 
 
 def test_add_job_attributes():

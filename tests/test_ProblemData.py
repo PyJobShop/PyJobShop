@@ -284,6 +284,28 @@ def test_problem_data_raises_when_invalid_arguments(
         )
 
 
+@pytest.mark.parametrize(
+    "objective", [Objective.TARDY_JOBS, Objective.TOTAL_TARDINESS]
+)
+def test_problem_data_tardy_objective_without_job_due_dates(
+    objective: Objective,
+):
+    """
+    Tests that an error is raised when jobs have no due dates and a
+    tardiness-based objective is selected.
+    """
+    with assert_raises(ValueError):
+        ProblemData(
+            [Job()],
+            [Machine()],
+            [Operation()],
+            [[0]],
+            {},
+            {},
+            objective=objective,
+        )
+
+
 # --- Tests that involve checking solver correctness of problem data. ---
 
 

@@ -347,6 +347,9 @@ class ProblemData:
             raise ValueError(msg)
 
         # TODO validate objective and objective combination
+        if self.objective in [Objective.TARDY_JOBS, Objective.TOTAL_TARDINESS]:
+            if any(job.due_date is None for job in self.jobs):
+                raise ValueError("TODO")
 
     @property
     def jobs(self) -> list[Job]:
