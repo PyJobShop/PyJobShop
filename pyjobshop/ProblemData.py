@@ -89,6 +89,9 @@ class Machine:
     available_till: Optional[int]
         Latest time that the machine is available for processing.
         Default is None, meaning there is no restriction.
+    allow_overlap: bool
+        Whether it is allowed to schedule multiple operations on the machine
+        at the same time. Default is False.
     name: Optional[str]
         Optional name of the machine.
     """
@@ -97,6 +100,7 @@ class Machine:
         self,
         available_from: Optional[int] = None,
         available_till: Optional[int] = None,
+        allow_overlap: bool = False,
         name: Optional[str] = None,
     ):
         if available_from is not None and available_till is not None:
@@ -105,6 +109,7 @@ class Machine:
 
         self._available_from = available_from
         self._available_till = available_till
+        self._allow_overlap = allow_overlap
         self._name = name
 
     @property
@@ -114,6 +119,10 @@ class Machine:
     @property
     def available_till(self) -> Optional[int]:
         return self._available_till
+
+    @property
+    def allow_overlap(self) -> bool:
+        return self._allow_overlap
 
     @property
     def name(self) -> Optional[str]:
