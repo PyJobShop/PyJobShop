@@ -159,7 +159,7 @@ def machine_data_constraints(
     return constraints
 
 
-def no_overlap_constraints(
+def no_overlap_and_setup_time_constraints(
     m: CpoModel, data: ProblemData, seq_vars: SeqVars
 ) -> list[CpoExpr]:
     """
