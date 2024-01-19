@@ -29,7 +29,7 @@ def plot(
         (from top to bottom). Defaults to all machines in the data instance.
     plot_labels: bool
         Whether to plot the operation names as labels.
-    ax
+    ax: plt.Axes
         Axes object to draw the plot on. One will be created if not provided.
     """
     if ax is None:
