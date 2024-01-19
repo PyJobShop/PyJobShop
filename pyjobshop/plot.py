@@ -85,4 +85,5 @@ def _get_colors() -> list[str]:
     names = ["tab20c", "Dark2", "Set1", "tab20b", "Set2", "tab20", "Accent"]
     cmaps = [get_cmap(name) for name in names]
     colors = [color for cmap in cmaps for color in cmap.colors]
-    return list(dict.fromkeys(colors))  # unique and ordered colors
+
+    return list(dict.fromkeys(colors))  # unique colors
