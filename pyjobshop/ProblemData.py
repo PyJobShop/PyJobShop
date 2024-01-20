@@ -346,10 +346,10 @@ class ProblemData:
             msg = "Access matrix shape must be (num_machines, num_machines)."
             raise ValueError(msg)
 
-        # TODO validate objective and objective combination
         if self.objective in [Objective.TARDY_JOBS, Objective.TOTAL_TARDINESS]:
             if any(job.due_date is None for job in self.jobs):
-                raise ValueError("TODO")
+                msg = "Job due dates required for tardiness-based objectives."
+                raise ValueError(msg)
 
     @property
     def jobs(self) -> list[Job]:
