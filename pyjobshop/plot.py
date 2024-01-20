@@ -57,6 +57,7 @@ def plot(
             "color": colors[job % len(colors)],
             "linewidth": 1,
             "edgecolor": "black",
+            "alpha": 0.75,
         }
         ax.barh(order[machine], duration, left=start, **kwargs)
 
