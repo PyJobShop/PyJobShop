@@ -171,6 +171,8 @@ def test_problem_data_input_parameter_attributes():
     access_matrix = np.full((5, 5), True)
     setup_times = np.ones((5, 5, 5), dtype=int)
     process_plans = [[[0, 1, 2, 3, 4]]]
+    planning_horizon = 100
+    objective = Objective.TOTAL_COMPLETION_TIME
 
     data = ProblemData(
         jobs,
@@ -183,6 +185,8 @@ def test_problem_data_input_parameter_attributes():
         access_matrix,
         setup_times,
         process_plans,
+        planning_horizon,
+        objective,
     )
 
     assert_equal(data.jobs, jobs)
@@ -195,6 +199,8 @@ def test_problem_data_input_parameter_attributes():
     assert_equal(data.access_matrix, access_matrix)
     assert_allclose(data.setup_times, setup_times)
     assert_equal(data.process_plans, process_plans)
+    assert_equal(data.planning_horizon, planning_horizon)
+    assert_equal(data.objective, objective)
 
 
 def test_problem_data_non_input_parameter_attributes():
@@ -246,6 +252,8 @@ def test_problem_data_default_values():
     assert_allclose(data.access_matrix, np.full((1, 1), True))
     assert_allclose(data.setup_times, np.zeros((1, 1, 1), dtype=int))
     assert_equal(data.process_plans, [])
+    assert_equal(data.planning_horizon, None)
+    assert_equal(data.objective, Objective.MAKESPAN)
 
 
 @pytest.mark.parametrize(

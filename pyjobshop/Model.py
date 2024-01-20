@@ -79,17 +79,17 @@ class Model:
             setup_times[machine, op1, op2] = duration
 
         return ProblemData(
-            self.jobs,
-            self.machines,
-            self.operations,
-            job2ops,
-            self._processing_times,
-            self._timing_precedences,
-            self._assignment_precedences,
-            access_matrix,
-            setup_times,
-            self._process_plans,
-            self._objective,
+            jobs=self.jobs,
+            machines=self.machines,
+            operations=self.operations,
+            job2ops=job2ops,
+            processing_times=self._processing_times,
+            timing_precedences=self._timing_precedences,
+            assignment_precedences=self._assignment_precedences,
+            access_matrix=access_matrix,
+            setup_times=setup_times,
+            process_plans=self._process_plans,
+            objective=self._objective,
         )
 
     def add_job(
