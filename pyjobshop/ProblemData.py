@@ -269,7 +269,8 @@ class AssignmentPrecedence(str, Enum):
 
 class ProblemData:
     """
-    A problem data instance.
+    Creates a problem data instance. This instance contains all information
+    need to solve the scheduling problem.
 
     Parameters
     ----------
