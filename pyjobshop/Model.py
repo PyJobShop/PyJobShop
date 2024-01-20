@@ -36,6 +36,7 @@ class Model:
         self._access_matrix: dict[tuple[int, int], bool] = {}
         self._setup_times: dict[tuple[int, int, int], int] = {}
         self._process_plans: list[list[list[int]]] = []
+        self._planning_horizon: Optional[int] = None
         self._objective: Objective = Objective.MAKESPAN
 
         self._id2job: dict[int, int] = {}
@@ -89,6 +90,7 @@ class Model:
             access_matrix=access_matrix,
             setup_times=setup_times,
             process_plans=self._process_plans,
+            planning_horizon=self._planning_horizon,
             objective=self._objective,
         )
 
@@ -371,6 +373,17 @@ class Model:
         """
         ids = [[self._id2op[id(op)] for op in plan] for plan in plans]
         self._process_plans.append(ids)
+
+    def set_planning_horizon(self, horizon: int):
+        """
+        Sets the planning horizon of the model.
+
+        Parameters
+        ----------
+        horizon: int
+            The planning horizon.
+        """
+        self._planning_horizon = horizon
 
     def set_objective(self, objective: Objective):
         """
