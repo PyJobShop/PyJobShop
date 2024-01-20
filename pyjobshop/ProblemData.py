@@ -389,12 +389,13 @@ class ProblemData:
             msg = "Access matrix shape must be (num_machines, num_machines)."
             raise ValueError(msg)
 
+        if self.planning_horizon is not None and self.planning_horizon < 0:
+            raise ValueError("Planning horizon must be non-negative.")
+
         if self.objective in [Objective.TARDY_JOBS, Objective.TOTAL_TARDINESS]:
             if any(job.due_date is None for job in self.jobs):
                 msg = "Job due dates required for tardiness-based objectives."
                 raise ValueError(msg)
-
-        # TODO planning horizon cannot be negative
 
     @property
     def jobs(self) -> list[Job]:

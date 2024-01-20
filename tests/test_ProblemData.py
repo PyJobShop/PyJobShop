@@ -257,22 +257,25 @@ def test_problem_data_default_values():
 
 
 @pytest.mark.parametrize(
-    "processing_times, access_matrix, setup_times",
+    "processing_times, access_matrix, setup_times, planning_horizon",
     [
         # Negative processing times.
-        ({(0, 0): -1}, np.full((1, 1), True), np.ones((1, 1, 1))),
+        ({(0, 0): -1}, np.full((1, 1), True), np.ones((1, 1, 1)), 1),
         # Negative setup times.
-        ({(0, 0): 1}, np.full((1, 1), True), np.ones((1, 1, 1)) * -1),
+        ({(0, 0): 1}, np.full((1, 1), True), np.ones((1, 1, 1)) * -1, 1),
         # Invalid setup times shape.
-        ({(0, 0): 1}, np.full((1, 1), True), np.ones((2, 2, 2))),
+        ({(0, 0): 1}, np.full((1, 1), True), np.ones((2, 2, 2)), 1),
         # Invalid access matrix shape.
-        ({(0, 0): 1}, np.full((2, 2), True), np.ones((1, 1, 1))),
+        ({(0, 0): 1}, np.full((2, 2), True), np.ones((1, 1, 1)), 1),
+        # Negative planning horizon.
+        ({(0, 0): 1}, np.full((2, 2), True), np.ones((2, 2, 2)), -1),
     ],
 )
 def test_problem_data_raises_when_invalid_arguments(
     processing_times: dict[tuple[int, int], int],
     access_matrix: np.ndarray,
     setup_times: np.ndarray,
+    planning_horizon: int,
 ):
     """
     Tests that the ProblemData class raises an error when invalid arguments are
@@ -289,6 +292,7 @@ def test_problem_data_raises_when_invalid_arguments(
             {},
             access_matrix.astype(int),
             setup_times.astype(int),
+            planning_horizon=planning_horizon,
         )
 
 
