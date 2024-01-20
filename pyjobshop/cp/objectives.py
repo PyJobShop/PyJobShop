@@ -13,18 +13,34 @@ def makespan(
     return m.minimize(m.max(m.end_of(var) for var in op_vars))
 
 
+def tardy_jobs(
+    m: CpoModel, data: ProblemData, job_vars: list[CpoIntervalVar]
+) -> CpoExpr:
+    """
+    Minimize the number of tardy jobs.
+    """
+    total = []
+
+    for job_data, job_var in zip(data.jobs, job_vars):
+        is_tardy = m.greater(m.end_of(job_var) - job_data.due_date, 0)
+        total.append(is_tardy)
+
+    return m.minimize(m.sum(total))
+
+
 def total_completion_time(
     m: CpoModel, data: ProblemData, job_vars: list[CpoIntervalVar]
 ) -> CpoExpr:
     """
     Minimizes the sum of the completion times of each job.
     """
-    return m.minimize(
-        m.sum(
-            job_data.weight * m.end_of(var)
-            for job_data, var in zip(data.jobs, job_vars)
-        )
-    )
+    total = []
+
+    for job_data, job_var in zip(data.jobs, job_vars):
+        completion_time = job_data.weight * m.end_of(job_var)
+        total.append(completion_time)
+
+    return m.minimize(m.sum(total))
 
 
 def total_tardiness(
@@ -35,8 +51,12 @@ def total_tardiness(
     defined as the maximum of 0 and its completion time minus the job's
     due date.
     """
-    expr = m.sum(
-        m.max(0, job_data.weight * (m.end_of(var) - job_data.due_date))
-        for job_data, var in zip(data.jobs, job_vars)
-    )
-    return m.minimize(expr)
+    total = []
+
+    for job_data, job_var in zip(data.jobs, job_vars):
+        tardiness = m.max(
+            0, job_data.weight * (m.end_of(job_var) - job_data.due_date)
+        )
+        total.append(tardiness)
+
+    return m.minimize(m.sum(total))

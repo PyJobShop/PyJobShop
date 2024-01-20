@@ -284,6 +284,28 @@ def test_problem_data_raises_when_invalid_arguments(
         )
 
 
+@pytest.mark.parametrize(
+    "objective", [Objective.TARDY_JOBS, Objective.TOTAL_TARDINESS]
+)
+def test_problem_data_tardy_objective_without_job_due_dates(
+    objective: Objective,
+):
+    """
+    Tests that an error is raised when jobs have no due dates and a
+    tardiness-based objective is selected.
+    """
+    with assert_raises(ValueError):
+        ProblemData(
+            [Job()],
+            [Machine()],
+            [Operation()],
+            [[0]],
+            {},
+            {},
+            objective=objective,
+        )
+
+
 # --- Tests that involve checking solver correctness of problem data. ---
 
 
@@ -797,6 +819,31 @@ def test_makespan_objective():
     result = model.solve()
 
     assert_equal(result.get_objective_value(), 4)
+    assert_equal(result.get_solve_status(), "Optimal")
+
+
+def test_tardy_jobs():
+    """
+    Tests that the (number of) tardy jobs objective is correctly optimized.
+    """
+    model = Model()
+
+    machine = model.add_machine()
+
+    for idx in range(3):
+        job = model.add_job(due_date=idx + 1)
+        operation = model.add_operation()
+
+        model.assign_job_operations(job, [operation])
+        model.add_processing_time(machine, operation, duration=3)
+
+    model.set_objective(Objective.TARDY_JOBS)
+
+    result = model.solve()
+
+    # Only the last job/operation can be scheduled on time. The other two
+    # are tardy.
+    assert_equal(result.get_objective_value(), 2)
     assert_equal(result.get_solve_status(), "Optimal")
 
 

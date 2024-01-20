@@ -207,9 +207,16 @@ class Operation:
 class Objective(str, Enum):
     """
     Choices for objective functions (to be minimized).
+
+    - makespan:               Maximum completion time of all jobs.
+    - tardy_jobs:             Number of tardy jobs.
+    - total_completion_time:  Sum of completion times of all jobs.
+    - total_tardiness:        Sum of tardiness of all jobs.
+
     """
 
     MAKESPAN = "makespan"
+    TARDY_JOBS = "tardy_jobs"
     TOTAL_COMPLETION_TIME = "total_completion_time"
     TOTAL_TARDINESS = "total_tardiness"
 
@@ -338,6 +345,11 @@ class ProblemData:
         if self.access_matrix.shape != (num_mach, num_mach):
             msg = "Access matrix shape must be (num_machines, num_machines)."
             raise ValueError(msg)
+
+        if self.objective in [Objective.TARDY_JOBS, Objective.TOTAL_TARDINESS]:
+            if any(job.due_date is None for job in self.jobs):
+                msg = "Job due dates required for tardiness-based objectives."
+                raise ValueError(msg)
 
     @property
     def jobs(self) -> list[Job]:
