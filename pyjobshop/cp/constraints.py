@@ -238,6 +238,28 @@ def optional_operation_selection_constraints(
     return constraints
 
 
+def planning_horizon_constraints(
+    m: CpoModel,
+    data: ProblemData,
+    job_vars: JobVars,
+    assign_vars: AssignVars,
+    op_vars: OpVars,
+) -> list[CpoExpr]:
+    """
+    Creates the planning horizon constraints for the interval variables,
+    ensuring that the end of each interval is within the planning horizon.
+    """
+    if data.planning_horizon is None:
+        return []  # unbounded planning horizon
+
+    constraints = []
+
+    for vars in [job_vars, assign_vars.values(), op_vars]:
+        constraints += [m.end_of(var) <= data.planning_horizon for var in vars]
+
+    return constraints
+
+
 def timing_precedence_constraints(
     m: CpoModel, data: ProblemData, op_vars: OpVars
 ) -> list[CpoExpr]:

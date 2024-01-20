@@ -268,6 +268,48 @@ class AssignmentPrecedence(str, Enum):
 
 
 class ProblemData:
+    """
+    Creates a problem data instance. This instance contains all information
+    need to solve the scheduling problem.
+
+    Parameters
+    ----------
+    jobs: list[Job]
+        List of jobs.
+    machines: list[Machine]
+        List of machines.
+    operations: list[Operation]
+        List of operations.
+    job2ops: list[list[int]]
+        List of operation indices for each job.
+    processing_times: dict[tuple[int, int], int]
+        Processing times of operations on machines. First index is the machine
+        index, second index is the operation index.
+    timing_precedences
+        Dict indexed by operation pairs with list of timing precedence
+        constraints and delays.
+    assignment_precedences
+        Dict indexed by operation pairs with list of assignment precedence
+        constraints.
+    access_matrix: Optional[np.ndarray]
+        Accessibility matrix. The (i, j)-th entry of the matrix is True if
+        machine i can be used to process operations of job j.
+    setup_times: Optional[np.ndarray]
+        Sequence-dependent setup times between operations on a given machine.
+        The first dimension of the array is indexed by the machine index. The
+        last two dimensions of the array are indexed by operation indices.
+    process_plans: Optional[list[list[list[int]]]]
+        List of processing plans. Each process plan represents a list
+        containing lists of operation indices, one of which is selected to be
+        scheduled. All operations from the selected list are then scheduled,
+        while operations from unselected lists will not be scheduled.
+    planning_horizon: Optional[int]
+        The planning horizon value. Default is None, meaning that the planning
+        horizon is unbounded.
+    objective: Objective
+        The objective function to be minimized. Default is the makespan.
+    """
+
     def __init__(
         self,
         jobs: list[Job],
@@ -284,6 +326,7 @@ class ProblemData:
         access_matrix: Optional[np.ndarray] = None,
         setup_times: Optional[np.ndarray] = None,
         process_plans: Optional[list[list[list[int]]]] = None,
+        planning_horizon: Optional[int] = None,
         objective: Objective = Objective.MAKESPAN,
     ):
         self._jobs = jobs
@@ -314,6 +357,7 @@ class ProblemData:
         self._process_plans = (
             process_plans if process_plans is not None else []
         )
+        self._planning_horizon = planning_horizon
         self._objective = objective
 
         self._machine2ops: list[list[int]] = [[] for _ in range(num_mach)]
@@ -345,6 +389,9 @@ class ProblemData:
         if self.access_matrix.shape != (num_mach, num_mach):
             msg = "Access matrix shape must be (num_machines, num_machines)."
             raise ValueError(msg)
+
+        if self.planning_horizon is not None and self.planning_horizon < 0:
+            raise ValueError("Planning horizon must be non-negative.")
 
         if self.objective in [Objective.TARDY_JOBS, Objective.TOTAL_TARDINESS]:
             if any(job.due_date is None for job in self.jobs):
@@ -471,9 +518,27 @@ class ProblemData:
         return self._process_plans
 
     @property
+    def planning_horizon(self) -> Optional[int]:
+        """
+        The planning horizon of this instance.
+
+        Returns
+        -------
+        Optional[int]
+            The planning horizon value. If None, then the planning horizon
+            is unbounded.
+        """
+        return self._planning_horizon
+
+    @property
     def objective(self) -> Objective:
         """
         The objective function to be minimized.
+
+        Returns
+        -------
+        Objective
+            The objective function to be minimized.
         """
         return self._objective
 

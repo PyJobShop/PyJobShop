@@ -44,6 +44,7 @@ def test_model_to_data():
     model.add_setup_time(mach2, op1, op2, 4)
 
     model.add_process_plan([op1], [op2])
+    model.set_planning_horizon(100)
     model.set_objective(Objective.TOTAL_COMPLETION_TIME)
 
     data = model.data()
@@ -74,7 +75,36 @@ def test_model_to_data():
     assert_equal(data.access_matrix, [[True, False], [True, True]])
     assert_equal(data.setup_times, [[[0, 3], [0, 0]], [[0, 4], [0, 0]]])
     assert_equal(data.process_plans, [[[0], [1]]])
+    assert_equal(data.planning_horizon, 100)
     assert_equal(data.objective, Objective.TOTAL_COMPLETION_TIME)
+
+
+def test_model_to_data_default_values():
+    """
+    Tests ``Model.data()`` uses the correct default values.
+    """
+    model = Model()
+
+    job = model.add_job()
+    machine = model.add_machine()
+    operation = model.add_operation()
+
+    model.assign_job_operations(job, [operation])
+
+    data = model.data()
+
+    assert_equal(data.jobs, [job])
+    assert_equal(data.machines, [machine])
+    assert_equal(data.operations, [operation])
+    assert_equal(data.job2ops, [[0]])
+    assert_equal(data.processing_times, {})
+    assert_equal(data.timing_precedences, {})
+    assert_equal(data.assignment_precedences, {})
+    assert_equal(data.access_matrix, [[True]])
+    assert_equal(data.setup_times, [[[0]]])
+    assert_equal(data.process_plans, [])
+    assert_equal(data.planning_horizon, None)
+    assert_equal(data.objective, Objective.MAKESPAN)
 
 
 def test_add_job_attributes():

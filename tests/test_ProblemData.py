@@ -171,6 +171,8 @@ def test_problem_data_input_parameter_attributes():
     access_matrix = np.full((5, 5), True)
     setup_times = np.ones((5, 5, 5), dtype=int)
     process_plans = [[[0, 1, 2, 3, 4]]]
+    planning_horizon = 100
+    objective = Objective.TOTAL_COMPLETION_TIME
 
     data = ProblemData(
         jobs,
@@ -183,6 +185,8 @@ def test_problem_data_input_parameter_attributes():
         access_matrix,
         setup_times,
         process_plans,
+        planning_horizon,
+        objective,
     )
 
     assert_equal(data.jobs, jobs)
@@ -195,6 +199,8 @@ def test_problem_data_input_parameter_attributes():
     assert_equal(data.access_matrix, access_matrix)
     assert_allclose(data.setup_times, setup_times)
     assert_equal(data.process_plans, process_plans)
+    assert_equal(data.planning_horizon, planning_horizon)
+    assert_equal(data.objective, objective)
 
 
 def test_problem_data_non_input_parameter_attributes():
@@ -246,25 +252,30 @@ def test_problem_data_default_values():
     assert_allclose(data.access_matrix, np.full((1, 1), True))
     assert_allclose(data.setup_times, np.zeros((1, 1, 1), dtype=int))
     assert_equal(data.process_plans, [])
+    assert_equal(data.planning_horizon, None)
+    assert_equal(data.objective, Objective.MAKESPAN)
 
 
 @pytest.mark.parametrize(
-    "processing_times, access_matrix, setup_times",
+    "processing_times, access_matrix, setup_times, planning_horizon",
     [
         # Negative processing times.
-        ({(0, 0): -1}, np.full((1, 1), True), np.ones((1, 1, 1))),
+        ({(0, 0): -1}, np.full((1, 1), True), np.ones((1, 1, 1)), 1),
         # Negative setup times.
-        ({(0, 0): 1}, np.full((1, 1), True), np.ones((1, 1, 1)) * -1),
+        ({(0, 0): 1}, np.full((1, 1), True), np.ones((1, 1, 1)) * -1, 1),
         # Invalid setup times shape.
-        ({(0, 0): 1}, np.full((1, 1), True), np.ones((2, 2, 2))),
+        ({(0, 0): 1}, np.full((1, 1), True), np.ones((2, 2, 2)), 1),
         # Invalid access matrix shape.
-        ({(0, 0): 1}, np.full((2, 2), True), np.ones((1, 1, 1))),
+        ({(0, 0): 1}, np.full((2, 2), True), np.ones((1, 1, 1)), 1),
+        # Negative planning horizon.
+        ({(0, 0): 1}, np.full((2, 2), True), np.ones((2, 2, 2)), -1),
     ],
 )
 def test_problem_data_raises_when_invalid_arguments(
     processing_times: dict[tuple[int, int], int],
     access_matrix: np.ndarray,
     setup_times: np.ndarray,
+    planning_horizon: int,
 ):
     """
     Tests that the ProblemData class raises an error when invalid arguments are
@@ -281,6 +292,7 @@ def test_problem_data_raises_when_invalid_arguments(
             {},
             access_matrix.astype(int),
             setup_times.astype(int),
+            planning_horizon=planning_horizon,
         )
 
 
@@ -799,6 +811,26 @@ def test_process_plans():
 
     # Schedule plan 1, so the makespan is 1 + 2 = 3.
     assert_equal(result.get_objective_value(), 3)
+
+
+def test_tight_planning_horizon_results_in_infeasiblity():
+    """
+    Tests that a tight planning horizon results in an infeasible instance.
+    """
+    model = Model()
+
+    job = model.add_job()
+    machine = model.add_machine()
+    operation = model.add_operation()
+
+    model.assign_job_operations(job, [operation])
+    model.add_processing_time(machine, operation, duration=2)
+    model.set_planning_horizon(1)
+
+    result = model.solve()
+
+    # Processing time is 2, but planning horizon is 1, so this is infeasible.
+    assert_equal(result.get_solve_status(), "Infeasible")
 
 
 def test_makespan_objective():
