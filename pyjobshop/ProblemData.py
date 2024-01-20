@@ -538,7 +538,7 @@ class ProblemData:
         Returns
         -------
         Objective
-            An Objective describing the objective function.
+            The objective function to be minimized.
         """
         return self._objective
 
