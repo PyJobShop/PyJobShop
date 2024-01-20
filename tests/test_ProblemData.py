@@ -813,6 +813,26 @@ def test_process_plans():
     assert_equal(result.get_objective_value(), 3)
 
 
+def test_tight_planning_horizon_results_in_infeasiblity():
+    """
+    Tests that a tight planning horizon results in an infeasible instance.
+    """
+    model = Model()
+
+    job = model.add_job()
+    machine = model.add_machine()
+    operation = model.add_operation()
+
+    model.assign_job_operations(job, [operation])
+    model.add_processing_time(machine, operation, duration=2)
+    model.set_planning_horizon(1)
+
+    result = model.solve()
+
+    # Processing time is 2, but planning horizon is 1, so this is infeasible.
+    assert_equal(result.get_solve_status(), "Infeasible")
+
+
 def test_makespan_objective():
     """
     Tests that the makespan objective is correctly optimized.
