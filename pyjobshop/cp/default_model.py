@@ -7,7 +7,6 @@ from .constraints import (
     assignment_precedence_constraints,
     job_data_constraints,
     job_operation_constraints,
-    machine_accessibility_constraints,
     machine_data_constraints,
     no_overlap_and_setup_time_constraints,
     operation_constraints,
@@ -61,7 +60,6 @@ def default_model(data: ProblemData) -> CpoModel:
     )
     model.add(alternative_constraints(model, data, op_vars, assign_vars))
     model.add(no_overlap_and_setup_time_constraints(model, data, seq_vars))
-    model.add(machine_accessibility_constraints(model, data, assign_vars))
     model.add(optional_operation_selection_constraints(model, data, op_vars))
     model.add(
         planning_horizon_constraints(

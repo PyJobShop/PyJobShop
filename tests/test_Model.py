@@ -38,8 +38,6 @@ def test_model_to_data():
     model.add_assignment_precedence(op2, op1, AssignmentPrecedence.SAME_UNIT)
     model.add_assignment_precedence(op2, op1, AssignmentPrecedence.PREVIOUS)
 
-    model.add_access_constraint(mach1, mach2, False)
-
     model.add_setup_time(mach1, op1, op2, 3)
     model.add_setup_time(mach2, op1, op2, 4)
 
@@ -72,7 +70,6 @@ def test_model_to_data():
             ]
         },
     )
-    assert_equal(data.access_matrix, [[True, False], [True, True]])
     assert_equal(data.setup_times, [[[0, 3], [0, 0]], [[0, 4], [0, 0]]])
     assert_equal(data.process_plans, [[[0], [1]]])
     assert_equal(data.planning_horizon, 100)
@@ -100,7 +97,6 @@ def test_model_to_data_default_values():
     assert_equal(data.processing_times, {})
     assert_equal(data.timing_precedences, {})
     assert_equal(data.assignment_precedences, {})
-    assert_equal(data.access_matrix, [[True]])
     assert_equal(data.setup_times, [[[0]]])
     assert_equal(data.process_plans, [])
     assert_equal(data.planning_horizon, None)

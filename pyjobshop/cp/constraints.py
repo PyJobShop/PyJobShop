@@ -103,31 +103,6 @@ def job_operation_constraints(
     return constraints
 
 
-def machine_accessibility_constraints(
-    m: CpoModel, data: ProblemData, assign_vars: AssignVars
-) -> list[CpoExpr]:
-    """
-    Creates the machine accessibility constraints for the operations, ensuring
-    that an operation can only be scheduled on a machine that is accessible
-    from the machine on which the previous operation is scheduled.
-    """
-    constraints = []
-
-    for op1, op2 in data.timing_precedences:
-        machines1 = data.op2machines[op1]
-        machines2 = data.op2machines[op2]
-
-        for mach1, mach2 in product(machines1, machines2):
-            if not data.access_matrix[mach1, mach2]:
-                # If m1 cannot access m2, then we cannot schedule operation 1
-                # on m1 and operation 2 on m2.
-                frm = assign_vars[op1, mach1]
-                to = assign_vars[op2, mach2]
-                constraints.append(m.presence_of(frm) + m.presence_of(to) <= 1)
-
-    return constraints
-
-
 def machine_data_constraints(
     m: CpoModel, data: ProblemData, assign_vars: AssignVars
 ) -> list[CpoExpr]:

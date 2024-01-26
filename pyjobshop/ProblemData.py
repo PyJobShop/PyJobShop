@@ -291,9 +291,6 @@ class ProblemData:
     assignment_precedences
         Dict indexed by operation pairs with list of assignment precedence
         constraints.
-    access_matrix: Optional[np.ndarray]
-        Accessibility matrix. The (i, j)-th entry of the matrix is True if
-        machine i can be used to process operations of job j.
     setup_times: Optional[np.ndarray]
         Sequence-dependent setup times between operations on a given machine.
         The first dimension of the array is indexed by the machine index. The
@@ -323,7 +320,6 @@ class ProblemData:
         assignment_precedences: Optional[
             dict[tuple[int, int], list[AssignmentPrecedence]]
         ] = None,
-        access_matrix: Optional[np.ndarray] = None,
         setup_times: Optional[np.ndarray] = None,
         process_plans: Optional[list[list[list[int]]]] = None,
         planning_horizon: Optional[int] = None,
@@ -344,11 +340,6 @@ class ProblemData:
         num_mach = self.num_machines
         num_ops = self.num_operations
 
-        self._access_matrix = (
-            access_matrix
-            if access_matrix is not None
-            else np.ones((num_mach, num_mach), dtype=bool)
-        )
         self._setup_times = (
             setup_times
             if setup_times is not None
@@ -384,10 +375,6 @@ class ProblemData:
 
         if self.setup_times.shape != (num_mach, num_ops, num_ops):
             msg = "Setup times shape must be (num_machines, num_ops, num_ops)."
-            raise ValueError(msg)
-
-        if self.access_matrix.shape != (num_mach, num_mach):
-            msg = "Access matrix shape must be (num_machines, num_machines)."
             raise ValueError(msg)
 
         if self.planning_horizon is not None and self.planning_horizon < 0:
@@ -473,19 +460,6 @@ class ProblemData:
             constraints.
         """
         return self._assignment_precedences
-
-    @property
-    def access_matrix(self) -> np.ndarray:
-        """
-        Returns the machine accessibility matrix of this problem instance.
-
-        Returns
-        -------
-        np.ndarray
-            Accessibility matrix. The (i, j)-th entry of the matrix is True if
-            machine i can be used to process operations of job j.
-        """
-        return self._access_matrix
 
     @property
     def setup_times(self) -> np.ndarray:

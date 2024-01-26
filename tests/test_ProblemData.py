@@ -168,7 +168,6 @@ def test_problem_data_input_parameter_attributes():
         for key in ((0, 1), (2, 3), (4, 5))
     }
     assignment_precedences = {(0, 1): [AssignmentPrecedence.PREVIOUS]}
-    access_matrix = np.full((5, 5), True)
     setup_times = np.ones((5, 5, 5), dtype=int)
     process_plans = [[[0, 1, 2, 3, 4]]]
     planning_horizon = 100
@@ -182,7 +181,6 @@ def test_problem_data_input_parameter_attributes():
         processing_times,
         timing_precedences,
         assignment_precedences,
-        access_matrix,
         setup_times,
         process_plans,
         planning_horizon,
@@ -196,7 +194,6 @@ def test_problem_data_input_parameter_attributes():
     assert_equal(data.processing_times, processing_times)
     assert_equal(data.timing_precedences, timing_precedences)
     assert_equal(data.assignment_precedences, assignment_precedences)
-    assert_equal(data.access_matrix, access_matrix)
     assert_allclose(data.setup_times, setup_times)
     assert_equal(data.process_plans, process_plans)
     assert_equal(data.planning_horizon, planning_horizon)
@@ -249,7 +246,6 @@ def test_problem_data_default_values():
     )
 
     assert_equal(data.assignment_precedences, {})
-    assert_allclose(data.access_matrix, np.full((1, 1), True))
     assert_allclose(data.setup_times, np.zeros((1, 1, 1), dtype=int))
     assert_equal(data.process_plans, [])
     assert_equal(data.planning_horizon, None)
@@ -257,23 +253,20 @@ def test_problem_data_default_values():
 
 
 @pytest.mark.parametrize(
-    "processing_times, access_matrix, setup_times, planning_horizon",
+    "processing_times,  setup_times, planning_horizon",
     [
         # Negative processing times.
-        ({(0, 0): -1}, np.full((1, 1), True), np.ones((1, 1, 1)), 1),
+        ({(0, 0): -1}, np.ones((1, 1, 1)), 1),
         # Negative setup times.
-        ({(0, 0): 1}, np.full((1, 1), True), np.ones((1, 1, 1)) * -1, 1),
+        ({(0, 0): 1}, np.ones((1, 1, 1)) * -1, 1),
         # Invalid setup times shape.
-        ({(0, 0): 1}, np.full((1, 1), True), np.ones((2, 2, 2)), 1),
-        # Invalid access matrix shape.
-        ({(0, 0): 1}, np.full((2, 2), True), np.ones((1, 1, 1)), 1),
+        ({(0, 0): 1}, np.ones((2, 2, 2)), 1),
         # Negative planning horizon.
-        ({(0, 0): 1}, np.full((2, 2), True), np.ones((2, 2, 2)), -1),
+        ({(0, 0): 1}, np.ones((2, 2, 2)), -1),
     ],
 )
 def test_problem_data_raises_when_invalid_arguments(
     processing_times: dict[tuple[int, int], int],
-    access_matrix: np.ndarray,
     setup_times: np.ndarray,
     planning_horizon: int,
 ):
@@ -290,7 +283,6 @@ def test_problem_data_raises_when_invalid_arguments(
             processing_times,
             {},
             {},
-            access_matrix.astype(int),
             setup_times.astype(int),
             planning_horizon=planning_horizon,
         )
@@ -1012,9 +1004,6 @@ def test_flowshop():
     model = Model()
     jobs = [model.add_job() for _ in range(NUM_JOBS)]
     machines = [model.add_machine() for _ in range(NUM_MACHINES)]
-
-    for idx in range(NUM_MACHINES - 1):
-        model.add_access_constraint(machines[idx], machines[idx + 1], True)
 
     for job in jobs:
         # One operation per job and machine pair.

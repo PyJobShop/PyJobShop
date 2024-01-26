@@ -33,7 +33,6 @@ class Model:
         self._assignment_precedences: dict[
             tuple[int, int], list[AssignmentPrecedence]
         ] = defaultdict(list)
-        self._access_matrix: dict[tuple[int, int], bool] = {}
         self._setup_times: dict[tuple[int, int, int], int] = {}
         self._process_plans: list[list[list[int]]] = []
         self._planning_horizon: Optional[int] = None
@@ -69,11 +68,6 @@ class Model:
 
         job2ops = [self._job2ops[idx] for idx in range(num_jobs)]
 
-        # Convert access matrix into a 2D array with True as default.
-        access_matrix = np.full((num_machines, num_machines), True)
-        for (machine1, machine2), is_accessible in self._access_matrix.items():
-            access_matrix[machine1, machine2] = is_accessible
-
         # Convert setup times into a 3D array with zero as default.
         setup_times = np.zeros((num_machines, num_ops, num_ops), dtype=int)
         for (machine, op1, op2), duration in self._setup_times.items():
@@ -87,7 +81,6 @@ class Model:
             processing_times=self._processing_times,
             timing_precedences=self._timing_precedences,
             assignment_precedences=self._assignment_precedences,
-            access_matrix=access_matrix,
             setup_times=setup_times,
             process_plans=self._process_plans,
             planning_horizon=self._planning_horizon,
@@ -310,26 +303,6 @@ class Model:
         op1 = self._id2op[id(operation1)]
         op2 = self._id2op[id(operation2)]
         self._assignment_precedences[op1, op2].append(assignment_precedence)
-
-    def add_access_constraint(
-        self, machine1: Machine, machine2: Machine, is_accessible: bool = False
-    ):
-        """
-        Adds an access constraint between two machines.
-
-        Parameters
-        ----------
-        machine1: Machine
-            First machine.
-        machine2: Machine
-            Second machine.
-        is_accessible: bool
-            Whether the second machine is accessible from the first machine.
-            Defaults to False.
-        """
-        idx1 = self._id2machine[id(machine1)]
-        idx2 = self._id2machine[id(machine2)]
-        self._access_matrix[idx1, idx2] = is_accessible
 
     def add_setup_time(
         self,
