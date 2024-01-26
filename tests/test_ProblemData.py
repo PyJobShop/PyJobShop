@@ -40,7 +40,7 @@ def test_job_default_attributes():
     assert_equal(job.release_date, 0)
     assert_equal(job.due_date, None)
     assert_equal(job.deadline, None)
-    assert_equal(job.name, None)
+    assert_equal(job.name, "")
 
 
 @pytest.mark.parametrize(
@@ -80,7 +80,7 @@ def test_machine_attributes():
     assert_equal(machine.available_from, None)
     assert_equal(machine.available_till, None)
     assert_equal(machine.allow_overlap, False)
-    assert_equal(machine.name, None)
+    assert_equal(machine.name, "")
 
     # Now test with some values.
     machine = Machine(1, 2, True, name="TestMachine")
@@ -129,7 +129,7 @@ def test_operation_attributes():
     assert_equal(operation.earliest_end, None)
     assert_equal(operation.latest_end, None)
     assert_equal(operation.optional, False)
-    assert_equal(operation.name, None)
+    assert_equal(operation.name, "")
 
 
 @pytest.mark.parametrize(

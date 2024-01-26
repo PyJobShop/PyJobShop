@@ -100,7 +100,7 @@ class Model:
         release_date: int = 0,
         due_date: Optional[int] = None,
         deadline: Optional[int] = None,
-        name: Optional[str] = None,
+        name: str = "",
     ) -> Job:
         """
         Adds a job to the model.
@@ -120,8 +120,8 @@ class Model:
             deadline is different from a due date; the latter does not restrict
             the latest completion time. Default is None, meaning that there is
             no deadline.
-        name: Optional[str]
-            Name of the job. Default is None.
+        name: str
+            Name of the job.
 
         Returns
         -------
@@ -140,7 +140,7 @@ class Model:
         available_from: Optional[int] = None,
         available_till: Optional[int] = None,
         allow_overlap: bool = False,
-        name: Optional[str] = None,
+        name: str = "",
     ) -> Machine:
         """
         Adds a machine to the model.
@@ -156,8 +156,8 @@ class Model:
         allow_overlap: False
             Whether it is allowed to schedule multiple operations on the
             machine at the same time. Default is False.
-        name: Optional[str]
-            Optional name of the machine.
+        name: str
+            Name of the machine.
 
         Returns
         -------
@@ -183,7 +183,7 @@ class Model:
         earliest_end: Optional[int] = None,
         latest_end: Optional[int] = None,
         optional: bool = False,
-        name: Optional[str] = None,
+        name: str = "",
     ) -> Operation:
         """
         Adds an operation to the model.
@@ -200,7 +200,7 @@ class Model:
             Latest end time of the operation.
         optional: bool
             Whether processing this operation is optional. Defaults to False.
-        name: Optional[str]
+        name: str
             Name of the operation.
 
         Returns

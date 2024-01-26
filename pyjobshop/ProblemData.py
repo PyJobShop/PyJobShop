@@ -23,8 +23,8 @@ class Job:
         The latest time that the job must be completed. Note that a deadline
         is different from a due date; the latter does not constrain the latest
         completion time. Default is None, meaning that there is no deadline.
-    name: Optional[str]
-        Name of the job. Default is None.
+    name: str
+        Name of the job.
     """
 
     def __init__(
@@ -33,7 +33,7 @@ class Job:
         release_date: int = 0,
         due_date: Optional[int] = None,
         deadline: Optional[int] = None,
-        name: Optional[str] = None,
+        name: str = "",
     ):
         if weight < 0:
             raise ValueError("Weight must be non-negative.")
@@ -73,7 +73,7 @@ class Job:
         return self._deadline
 
     @property
-    def name(self) -> Optional[str]:
+    def name(self) -> str:
         return self._name
 
 
@@ -92,8 +92,8 @@ class Machine:
     allow_overlap: bool
         Whether it is allowed to schedule multiple operations on the machine
         at the same time. Default is False.
-    name: Optional[str]
-        Optional name of the machine.
+    name: str
+        Name of the machine.
     """
 
     def __init__(
@@ -101,7 +101,7 @@ class Machine:
         available_from: Optional[int] = None,
         available_till: Optional[int] = None,
         allow_overlap: bool = False,
-        name: Optional[str] = None,
+        name: str = "",
     ):
         if available_from is not None and available_till is not None:
             if available_from > available_till:
@@ -125,7 +125,7 @@ class Machine:
         return self._allow_overlap
 
     @property
-    def name(self) -> Optional[str]:
+    def name(self) -> str:
         return self._name
 
 
@@ -145,7 +145,7 @@ class Operation:
         Latest end time of the operation.
     optional: bool
         Whether processing this operation is optional. Defaults to False.
-    name: Optional[str]
+    name: str
         Name of the operation.
     """
 
@@ -156,7 +156,7 @@ class Operation:
         earliest_end: Optional[int] = None,
         latest_end: Optional[int] = None,
         optional: bool = False,
-        name: Optional[str] = None,
+        name: str = "",
     ):
         if (
             earliest_start is not None
@@ -200,7 +200,7 @@ class Operation:
         return self._optional
 
     @property
-    def name(self) -> Optional[str]:
+    def name(self) -> str:
         return self._name
 
 
