@@ -111,25 +111,15 @@ def machine_data_constraints(
     """
     constraints = []
 
-    for (_op, machine), var in assign_vars.items():
+    for (_, machine), var in assign_vars.items():
         machine_data = data.machines[machine]
-        start = machine_data.available_from
-        end = machine_data.available_till
 
-        if start is None and end is None:
-            continue  # machine is always available
+        for start, end in machine_data.downtimes:
+            step = CpoStepFunction()
+            step.set_value(0, _INT_MAX, 1)
+            step.set_value(start, end, 0)
 
-        step = CpoStepFunction()
-        step.set_value(0, _INT_MAX, 0)
-
-        if start is not None and end is not None:
-            step.set_value(start, end, 1)
-        elif start is None:
-            step.set_value(0, end, 1)
-        elif end is None:
-            step.set_value(start, _INT_MAX, 1)
-
-        constraints.append(m.forbid_extent(var, step))
+            constraints.append(m.forbid_extent(var, step))
 
     return constraints
 

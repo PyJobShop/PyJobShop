@@ -77,35 +77,33 @@ def test_machine_attributes():
     # Let's first test the default values.
     machine = Machine()
 
-    assert_equal(machine.available_from, None)
-    assert_equal(machine.available_till, None)
+    assert_equal(machine.downtimes, ())
     assert_equal(machine.allow_overlap, False)
     assert_equal(machine.name, "")
 
     # Now test with some values.
-    machine = Machine(1, 2, True, name="TestMachine")
+    machine = Machine([(1, 2)], True, name="TestMachine")
 
-    assert_equal(machine.available_from, 1)
-    assert_equal(machine.available_till, 2)
+    assert_equal(machine.downtimes, [(1, 2)])
     assert_equal(machine.allow_overlap, True)
     assert_equal(machine.name, "TestMachine")
 
 
 @pytest.mark.parametrize(
-    "available_from, available_till",
+    "downtimes",
     [
-        (1, 0),  # available_from > available_till
+        [(1, 0)],  # start > end
     ],
 )
 def test_machine_attributes_raises_invalid_parameters(
-    available_from: Optional[int], available_till: Optional[int]
+    downtimes: list[tuple[int, int]],
 ):
     """
     Tests that a ValueError is raised when invalid parameters are passed to
     Machine.
     """
     with assert_raises(ValueError):
-        Machine(available_from, available_till)
+        Machine(downtimes)
 
 
 def test_operation_attributes():
@@ -385,13 +383,13 @@ def test_job_deadline_infeasible():
     assert_equal(result.get_solve_status(), "Infeasible")
 
 
-def test_machine_available_from():
+def test_machine_downtime_single_interval():
     """
-    Tests that operations scheduled only when a machine available.
+    Tests that operations are scheduled around machine downtimes.
     """
     model = Model()
     job = model.add_job()
-    machine = model.add_machine(2)
+    machine = model.add_machine([(0, 2)])
     operation = model.add_operation()
 
     model.assign_job_operations(job, [operation])
@@ -399,51 +397,29 @@ def test_machine_available_from():
 
     result = model.solve()
 
-    # Machine is only available from time 2 onwards, so the makespan is be 4.
+    # Machine is down between (0, 2) onwards, so the makespan is be 4.
     assert_equal(result.get_solve_status(), "Optimal")
     assert_equal(result.get_objective_value(), 4)
 
 
-def test_machine_available_till():
+def test_restrictive_machine_downtime_and_horizon():
     """
-    Tests that operations scheduled only when a machine available.
-    """
-    model = Model()
-    job = model.add_job()
-    machine1 = model.add_machine(available_till=2)
-    machine2 = model.add_machine()
-    operations = [model.add_operation() for _ in range(2)]
-
-    model.assign_job_operations(job, operations)
-
-    for operation in operations:
-        model.add_processing_time(machine1, operation, duration=2)
-        model.add_processing_time(machine2, operation, duration=10)
-
-    result = model.solve()
-
-    # Machine 1 is only available till time 2. One operation can be scheduled
-    # on that machine, but the other operation has to be scheduled on machine2
-    # with much longer proceesing time (10). So the makespan is 10.
-    assert_equal(result.get_solve_status(), "Optimal")
-    assert_equal(result.get_objective_value(), 10)
-
-
-def test_machine_infeasible_available_interval():
-    """
-    Tests that the model is infeasible when the availability interval is too
-    restrictive.
+    Tests that a restrictive machine downtime and planning horizon results
+    in an infeasible model.
     """
     model = Model()
     job = model.add_job()
-    machine = model.add_machine(0, 1)
+    machine = model.add_machine([(0, 2)])
     operation = model.add_operation()
 
     model.assign_job_operations(job, [operation])
     model.add_processing_time(machine, operation, duration=2)
+    model.set_planning_horizon(3)
 
     result = model.solve()
 
+    # Machine is down between (0, 2) onwards, but the planning horizon is
+    # only 3, so the operation cannot be scheduled.
     assert_equal(result.get_solve_status(), "Infeasible")
 
 
