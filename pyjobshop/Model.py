@@ -365,12 +365,16 @@ class Model:
         """
         self._objective = objective
 
-    def solve(self, time_limit: Optional[int] = None) -> CpoSolveResult:
+    def solve(
+        self, log: bool = False, time_limit: Optional[int] = None
+    ) -> CpoSolveResult:
         """
         Solves the problem data instance created by the model.
 
         Parameters
         ----------
+        log: bool
+            Whether to log the solver output. Defaults to False.
         time_limit: Optional[int]
             Time limit in seconds for the solver, defaults to None. If set to
             None, the solver will run until an optimal solution is found.
@@ -382,4 +386,5 @@ class Model:
         """
         data = self.data()
         cp_model = default_model(data)
-        return cp_model.solve(TimeLimit=time_limit, LogVerbosity="Terse")
+        log_verbosity = "Terse" if log else "Quiet"
+        return cp_model.solve(TimeLimit=time_limit, LogVerbosity=log_verbosity)
