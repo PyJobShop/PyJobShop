@@ -10,7 +10,7 @@ from .Solution import Solution
 def plot(
     data: ProblemData,
     solution: Solution,
-    machines_to_plot: Optional[list[int]] = None,
+    machines: Optional[list[int]] = None,
     plot_labels: bool = False,
     ax: Optional[plt.Axes] = None,
 ):
@@ -24,8 +24,8 @@ def plot(
         The problem data instance.
     solution: Solution
         A solution to the problem.
-    machines_to_plot: Optional[list[int]]
-        The machines to plot (by index) and in which order they should appear
+    machines: Optional[list[int]]
+        The machines (by index) to plot and in which order they should appear
         (from top to bottom). Defaults to all machines in the data instance.
     plot_labels: bool
         Whether to plot the operation names as labels.
@@ -34,10 +34,11 @@ def plot(
     """
     if ax is None:
         _, ax = plt.subplots(1, 1, figsize=(12, 8))
+        assert ax is not None  # for linting
 
     # Custom ordering of machines to plot.
-    if machines_to_plot is not None:
-        order = {machine: idx for idx, machine in enumerate(machines_to_plot)}
+    if machines is not None:
+        order = {machine: idx for idx, machine in enumerate(machines)}
     else:
         order = {idx: idx for idx in range(len(data.machines))}
 
@@ -59,7 +60,9 @@ def plot(
             "edgecolor": "black",
             "alpha": 0.75,
         }
-        ax.barh(order[machine], duration, left=start, **kwargs)
+
+        if machine in order:
+            ax.barh(order[machine], duration, left=start, **kwargs)
 
         if plot_labels:
             ax.text(
@@ -71,6 +74,7 @@ def plot(
             )
 
     labels = [data.machines[idx].name for idx in order.keys()]
+
     ax.set_yticks(ticks=range(len(labels)), labels=labels)
     ax.set_ylim(ax.get_ylim()[::-1])
 
