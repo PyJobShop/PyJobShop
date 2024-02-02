@@ -75,6 +75,8 @@ ignore = [
     "E741",  # ambiguous variable name, needed for indexing
     "C901",  # too complex
 ]
+extend-include = ["*.ipynb"]
+
 
 [tool.ruff.per-file-ignores]
 "__init__.py" = ["F401"]
