@@ -253,7 +253,7 @@ class Model:
         self,
         operation1: Operation,
         operation2: Operation,
-        timing_precedence: TimingPrecedence,
+        constraint: TimingPrecedence = TimingPrecedence.END_BEFORE_START,
         delay: int = 0,
     ):
         """
@@ -265,16 +265,17 @@ class Model:
             First operation.
         operation2: Operation
             Second operation.
-        timing_precedence: TimingPrecedence
+        constraint: TimingPrecedence
             Timing precedence constraint between the first and the second
-            operation.
+            operation. Defaults to END_BEFORE_START, meaning that the first
+            operation must end before the second operation starts.
         delay: int
             Delay between the first and the second operation. Defaults to
             zero (no delay).
         """
         op1 = self._id2op[id(operation1)]
         op2 = self._id2op[id(operation2)]
-        self._timing_precedences[op1, op2].append((timing_precedence, delay))
+        self._timing_precedences[op1, op2].append((constraint, delay))
 
     def add_assignment_precedence(
         self,
