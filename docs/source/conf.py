@@ -1,4 +1,5 @@
 import datetime
+import shutil
 
 # Project information
 now = datetime.date.today()
@@ -6,6 +7,9 @@ now = datetime.date.today()
 project = "PyJobShop"
 authors = "Leon Lan"
 copyright = f"2023 - {now.year}, {authors}"
+
+print("Copying example notebooks into docs/source/examples/")
+shutil.copytree("../../examples", "examples/", dirs_exist_ok=True)
 
 
 # -- General configuration
@@ -15,6 +19,7 @@ extensions = [
     "sphinx.ext.intersphinx",
     "sphinx.ext.napoleon",
     "sphinx_immaterial",
+    "nbsphinx",
     "numpydoc",
 ]
 
@@ -43,6 +48,10 @@ intersphinx_mapping = {
     "matplotlib": ("https://matplotlib.org/stable/", None),
 }
 intersphinx_disabled_domains = ["std"]
+
+# -- nbsphinx
+nbsphinx_execute = "always"  # change to "never" to avoid running notebooks
+
 
 # -- Options for HTML output -------------------------------------------------
 html_theme = "sphinx_immaterial"
