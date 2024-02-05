@@ -328,8 +328,8 @@ def test_job_release_date():
     result = model.solve()
 
     # Job's release date is one, so the operation starts at one.
-    assert_equal(result.get_solve_status(), "Optimal")
-    assert_equal(result.get_objective_value(), 2)
+    assert_equal(result.solve_status, "Optimal")
+    assert_equal(result.objective_value, 2)
 
 
 def test_job_deadline():
@@ -360,8 +360,8 @@ def test_job_deadline():
     # otherwise operation 2 cannot start before time 1. So operation 2 is
     # scheduled first and is processed from 0 to 2. Then a setup time of 10
     # is added and operation 1 is processed from 12 to 14.
-    assert_equal(result.get_solve_status(), "Optimal")
-    assert_equal(result.get_objective_value(), 14)
+    assert_equal(result.solve_status, "Optimal")
+    assert_equal(result.objective_value, 14)
 
 
 def test_job_deadline_infeasible():
@@ -380,7 +380,7 @@ def test_job_deadline_infeasible():
     result = model.solve()
 
     # Operation's processing time is 2, but job deadline is 1.
-    assert_equal(result.get_solve_status(), "Infeasible")
+    assert_equal(result.solve_status, "Infeasible")
 
 
 def test_machine_downtime_single_interval():
@@ -398,8 +398,8 @@ def test_machine_downtime_single_interval():
     result = model.solve()
 
     # Machine is down between (0, 2) onwards, so the makespan is be 4.
-    assert_equal(result.get_solve_status(), "Optimal")
-    assert_equal(result.get_objective_value(), 4)
+    assert_equal(result.solve_status, "Optimal")
+    assert_equal(result.objective_value, 4)
 
 
 def test_restrictive_machine_downtime_and_horizon():
@@ -420,7 +420,7 @@ def test_restrictive_machine_downtime_and_horizon():
 
     # Machine is down between (0, 2) onwards, but the planning horizon is
     # only 3, so the operation cannot be scheduled.
-    assert_equal(result.get_solve_status(), "Infeasible")
+    assert_equal(result.solve_status, "Infeasible")
 
 
 def test_machine_allow_overlap():
@@ -440,8 +440,8 @@ def test_machine_allow_overlap():
 
     # No overlap, so we schedule the two operations consecutively with
     # final makespan of four.
-    assert_equal(result.get_solve_status(), "Optimal")
-    assert_equal(result.get_objective_value(), 4)
+    assert_equal(result.solve_status, "Optimal")
+    assert_equal(result.objective_value, 4)
 
     # Let's now allow for overlap.
     model = Model()
@@ -457,8 +457,8 @@ def test_machine_allow_overlap():
 
     # With overlap we can schedule both operations simultaneously on the
     # machine, resulting in a makespan of two.
-    assert_equal(result.get_solve_status(), "Optimal")
-    assert_equal(result.get_objective_value(), 2)
+    assert_equal(result.solve_status, "Optimal")
+    assert_equal(result.objective_value, 2)
 
 
 def test_operation_earliest_start():
@@ -477,8 +477,8 @@ def test_operation_earliest_start():
     result = model.solve()
 
     # Operation starts at time 1 and takes 1 time unit, so the makespan is 2.
-    assert_equal(result.get_solve_status(), "Optimal")
-    assert_equal(result.get_objective_value(), 2)
+    assert_equal(result.solve_status, "Optimal")
+    assert_equal(result.objective_value, 2)
 
 
 def test_operation_latest_start():
@@ -507,8 +507,8 @@ def test_operation_latest_start():
     # otherwise operation 2 cannot start before time 1. So operation 2 is
     # scheduled first and is processed from 0 to 2. Then a setup time of 10
     # is added and operation 1 is processed from 12 to 14.
-    assert_equal(result.get_solve_status(), "Optimal")
-    assert_equal(result.get_objective_value(), 14)
+    assert_equal(result.solve_status, "Optimal")
+    assert_equal(result.objective_value, 14)
 
 
 def test_operation_fixed_start():
@@ -528,8 +528,8 @@ def test_operation_fixed_start():
     result = model.solve()
 
     # Operation starts at time 42 and takes 1 time unit, so the makespan is 43.
-    assert_equal(result.get_solve_status(), "Optimal")
-    assert_equal(result.get_objective_value(), 43)
+    assert_equal(result.solve_status, "Optimal")
+    assert_equal(result.objective_value, 43)
 
 
 def test_operation_earliest_end():
@@ -549,8 +549,8 @@ def test_operation_earliest_end():
 
     # Operation cannot end before time 2, so it starts at time 1 with
     # duration 1, thus the makespan is 2.
-    assert_equal(result.get_solve_status(), "Optimal")
-    assert_equal(result.get_objective_value(), 2)
+    assert_equal(result.solve_status, "Optimal")
+    assert_equal(result.objective_value, 2)
 
 
 def test_operation_latest_end():
@@ -579,8 +579,8 @@ def test_operation_latest_end():
     # otherwise operation 2 cannot end before time 2. So operation 2 is
     # scheduled first and is processed from 0 to 2. Then a setup time of 10
     # is added and operation 1 is processed from 12 to 14.
-    assert_equal(result.get_solve_status(), "Optimal")
-    assert_equal(result.get_objective_value(), 14)
+    assert_equal(result.solve_status, "Optimal")
+    assert_equal(result.objective_value, 14)
 
 
 def test_operation_fixed_end():
@@ -600,8 +600,8 @@ def test_operation_fixed_end():
     result = model.solve()
 
     # Operation ends at 42, so the makespan is 42.
-    assert_equal(result.get_solve_status(), "Optimal")
-    assert_equal(result.get_objective_value(), 42)
+    assert_equal(result.solve_status, "Optimal")
+    assert_equal(result.objective_value, 42)
 
 
 def test_optional_operations():
@@ -622,8 +622,8 @@ def test_optional_operations():
 
     # Operation 2 is not scheduled, so the makespan is 10, just the duration
     # of operation 1.
-    assert_equal(result.get_solve_status(), "Optimal")
-    assert_equal(result.get_objective_value(), 10)
+    assert_equal(result.solve_status, "Optimal")
+    assert_equal(result.objective_value, 10)
 
 
 @pytest.mark.parametrize(
@@ -670,7 +670,7 @@ def test_timing_precedence(
 
     result = model.solve()
 
-    assert_equal(result.get_objective_value(), expected_makespan)
+    assert_equal(result.objective_value, expected_makespan)
 
 
 @pytest.mark.parametrize(
@@ -719,7 +719,7 @@ def test_timing_precedence_with_one_delay(
 
     result = model.solve()
 
-    assert_equal(result.get_objective_value(), expected_makespan)
+    assert_equal(result.objective_value, expected_makespan)
 
 
 @pytest.mark.parametrize(
@@ -753,7 +753,7 @@ def test_assignment_precedence(
 
     result = model.solve()
 
-    assert_equal(result.get_objective_value(), expected_makespan)
+    assert_equal(result.objective_value, expected_makespan)
 
 
 def test_process_plans():
@@ -778,7 +778,7 @@ def test_process_plans():
     result = model.solve()
 
     # Schedule plan 1, so the makespan is 1 + 2 = 3.
-    assert_equal(result.get_objective_value(), 3)
+    assert_equal(result.objective_value, 3)
 
 
 def test_tight_planning_horizon_results_in_infeasiblity():
@@ -798,7 +798,7 @@ def test_tight_planning_horizon_results_in_infeasiblity():
     result = model.solve()
 
     # Processing time is 2, but planning horizon is 1, so this is infeasible.
-    assert_equal(result.get_solve_status(), "Infeasible")
+    assert_equal(result.solve_status, "Infeasible")
 
 
 def test_makespan_objective():
@@ -818,8 +818,8 @@ def test_makespan_objective():
 
     result = model.solve()
 
-    assert_equal(result.get_objective_value(), 4)
-    assert_equal(result.get_solve_status(), "Optimal")
+    assert_equal(result.objective_value, 4)
+    assert_equal(result.solve_status, "Optimal")
 
 
 def test_tardy_jobs():
@@ -843,8 +843,8 @@ def test_tardy_jobs():
 
     # Only the last job/operation can be scheduled on time. The other two
     # are tardy.
-    assert_equal(result.get_objective_value(), 2)
-    assert_equal(result.get_solve_status(), "Optimal")
+    assert_equal(result.objective_value, 2)
+    assert_equal(result.solve_status, "Optimal")
 
 
 def test_total_completion_time():
@@ -872,8 +872,8 @@ def test_total_completion_time():
     # machine. The optimal schedule is [A, C] and [B] with total completion
     # time of: 1 (A) + 4 (C) + 2 (B) = 7. Note how this leads a suboptimal
     # makespan of 4, while it could have been 3 (with schedule [A, B] and [C]).
-    assert_equal(result.get_objective_value(), 7)
-    assert_equal(result.get_solve_status(), "Optimal")
+    assert_equal(result.objective_value, 7)
+    assert_equal(result.solve_status, "Optimal")
 
 
 def test_total_weighted_completion_time():
@@ -900,8 +900,8 @@ def test_total_weighted_completion_time():
     # One machine and two jobs (A, B) with processing times (1, 2) and weights
     # (2, 10). Because of these weights, it's optimal to schedule B for A with
     # completion times (3, 2) and objective 2 * 3 + 10 * 2 = 26.
-    assert_equal(result.get_objective_value(), 26)
-    assert_equal(result.get_solve_status(), "Optimal")
+    assert_equal(result.objective_value, 26)
+    assert_equal(result.solve_status, "Optimal")
 
 
 def test_total_tardiness():
@@ -930,8 +930,8 @@ def test_total_tardiness():
     # machine and due dates 1, 2, 3. We schedule A and B first on both machines
     # and C is scheduled after A on machine 1. Jobs A and B are on time
     # while C is one time unit late, resulting in 1 total tardiness.
-    assert_equal(result.get_objective_value(), 1)
-    assert_equal(result.get_solve_status(), "Optimal")
+    assert_equal(result.objective_value, 1)
+    assert_equal(result.solve_status, "Optimal")
 
 
 def test_total_weighted_tardiness():
@@ -963,8 +963,8 @@ def test_total_weighted_tardiness():
     # times (2, 4), due dates (2, 2), and weights (2, 10). Because of the
     # weights, it's optimal to schedule B before A resulting in completion
     # times (6, 4) and thus a total tardiness of 2 * 4 + 10 * 2 = 28.
-    assert_equal(result.get_objective_value(), 28)
-    assert_equal(result.get_solve_status(), "Optimal")
+    assert_equal(result.objective_value, 28)
+    assert_equal(result.solve_status, "Optimal")
 
 
 # --- Small classical examples. ---
@@ -999,8 +999,8 @@ def test_flowshop():
 
     result = model.solve()
 
-    assert_equal(result.get_solve_status(), "Optimal")
-    assert_equal(result.get_objective_value(), 51)
+    assert_equal(result.solve_status, "Optimal")
+    assert_equal(result.objective_value, 51)
 
 
 def test_jobshop():
@@ -1044,5 +1044,5 @@ def test_jobshop():
 
     result = model.solve()
 
-    assert_equal(result.get_solve_status(), "Optimal")
-    assert_equal(result.get_objective_value(), 20)
+    assert_equal(result.solve_status, "Optimal")
+    assert_equal(result.objective_value, 20)
