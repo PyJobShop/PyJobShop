@@ -4,7 +4,7 @@ from typing import Iterable, Optional
 import numpy as np
 from docplex.cp.solution import CpoSolveResult
 
-from .cp import default_model
+from .cp import default_model, result2solution
 from .ProblemData import (
     AssignmentPrecedence,
     Job,
@@ -14,6 +14,7 @@ from .ProblemData import (
     ProblemData,
     TimingPrecedence,
 )
+from .Result import Result
 
 
 class Model:
@@ -372,7 +373,7 @@ class Model:
 
     def solve(
         self, log: bool = False, time_limit: Optional[int] = None
-    ) -> CpoSolveResult:
+    ) -> Result:
         """
         Solves the problem data instance created by the model.
 
@@ -387,9 +388,22 @@ class Model:
         Returns
         -------
         Result
-            A results object containing solver result.
+            A Result object containing solver results.
         """
         data = self.data()
         cp_model = default_model(data)
+
         log_verbosity = "Terse" if log else "Quiet"
-        return cp_model.solve(TimeLimit=time_limit, LogVerbosity=log_verbosity)
+        kwargs = {"TimeLimit": time_limit, "LogVerbosity": log_verbosity}
+        cp_result: CpoSolveResult = cp_model.solve(**kwargs)  # type: ignore
+
+        solve_status = cp_result.get_solve_status()
+
+        if solve_status == "Infeasible":
+            solution = None
+            objective_value = None
+        else:
+            solution = result2solution(self.data(), cp_result)
+            objective_value = cp_result.get_objective_value()
+
+        return Result(solve_status, solution, objective_value)
