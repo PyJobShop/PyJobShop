@@ -10,7 +10,7 @@ from .Solution import Solution
 def plot(
     data: ProblemData,
     solution: Solution,
-    machines: Optional[list[int]] = None,
+    machine_order: Optional[list[int]] = None,
     plot_labels: bool = False,
     ax: Optional[plt.Axes] = None,
 ):
@@ -24,7 +24,7 @@ def plot(
         The problem data instance.
     solution: Solution
         A solution to the problem.
-    machines: Optional[list[int]]
+    machine_order: Optional[list[int]]
         The machines (by index) to plot and in which order they should appear
         (from top to bottom). Defaults to all machines in the data instance.
     plot_labels: bool
@@ -37,8 +37,8 @@ def plot(
         assert ax is not None  # for linting
 
     # Custom ordering of machines to plot.
-    if machines is not None:
-        order = {machine: idx for idx, machine in enumerate(machines)}
+    if machine_order is not None:
+        order = {machine: idx for idx, machine in enumerate(machine_order)}
     else:
         order = {idx: idx for idx in range(len(data.machines))}
 
