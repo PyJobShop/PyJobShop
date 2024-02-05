@@ -135,6 +135,12 @@ class Operation:
         Earliest end time of the operation.
     latest_end: Optional[int]
         Latest end time of the operation.
+    fixed_duration: bool
+        Whether the operation has a fixed duration. A fixed duration means that
+        the operation duration is precisely the processing time (on a given
+        machine). If the duration is not fixed, then the operation duration
+        can take longer than the processing time, e.g., due to blocking.
+        Default is True.
     optional: bool
         Whether processing this operation is optional. Defaults to False.
     name: str
@@ -147,6 +153,7 @@ class Operation:
         latest_start: Optional[int] = None,
         earliest_end: Optional[int] = None,
         latest_end: Optional[int] = None,
+        fixed_duration: bool = True,
         optional: bool = False,
         name: str = "",
     ):
@@ -168,6 +175,7 @@ class Operation:
         self._latest_start = latest_start
         self._earliest_end = earliest_end
         self._latest_end = latest_end
+        self._fixed_duration = fixed_duration
         self._optional = optional
         self._name = name
 
@@ -186,6 +194,10 @@ class Operation:
     @property
     def latest_end(self) -> Optional[int]:
         return self._latest_end
+
+    @property
+    def fixed_duration(self) -> bool:
+        return self._fixed_duration
 
     @property
     def optional(self) -> bool:

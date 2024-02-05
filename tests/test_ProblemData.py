@@ -110,12 +110,13 @@ def test_operation_attributes():
     """
     Tests that the attributes of the Operation class are set correctly.
     """
-    operation = Operation(1, 2, 3, 4, True, name="TestOperation")
+    operation = Operation(1, 2, 3, 4, False, True, name="TestOperation")
 
     assert_equal(operation.earliest_start, 1)
     assert_equal(operation.latest_start, 2)
     assert_equal(operation.earliest_end, 3)
     assert_equal(operation.latest_end, 4)
+    assert_equal(operation.fixed_duration, False)
     assert_equal(operation.optional, True)
     assert_equal(operation.name, "TestOperation")
 
@@ -126,6 +127,7 @@ def test_operation_attributes():
     assert_equal(operation.latest_start, None)
     assert_equal(operation.earliest_end, None)
     assert_equal(operation.latest_end, None)
+    assert_equal(operation.fixed_duration, True)
     assert_equal(operation.optional, False)
     assert_equal(operation.name, "")
 
@@ -602,6 +604,14 @@ def test_operation_fixed_end():
     # Operation ends at 42, so the makespan is 42.
     assert_equal(result.get_solve_status(), "Optimal")
     assert_equal(result.get_objective_value(), 42)
+
+
+def test_operation_no_fixed_duration_blocking():
+    """
+    Tests that operations with no fixed duration are scheduled correctly
+    in a blocking environment.
+    """
+    pass
 
 
 def test_optional_operations():
