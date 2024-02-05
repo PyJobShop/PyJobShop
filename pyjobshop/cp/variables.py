@@ -30,22 +30,11 @@ def assignment_variables(m: CpoModel, data: ProblemData) -> AssignVars:
     Creates an optional interval variable for each operation and eligible
     machine pair.
     """
-    variables = {}
-
-    for op in range(data.num_operations):
-        machines = data.op2machines[op]
-
-        for machine in machines:
-            var = m.interval_var(name=f"A{op}_{machine}", optional=True)
-            variables[op, machine] = var
-
-            # The duration of the operation on the machine is at least the
-            # processing time; it could be longer due to blocking.
-            duration = data.processing_times[machine, op]
-            expr = duration * m.presence_of(var)
-            m.add(m.size_of(var) >= expr)
-
-    return variables
+    return {
+        (op, machine): m.interval_var(name=f"A{op}_{machine}", optional=True)
+        for op in range(data.num_operations)
+        for machine in data.op2machines[op]
+    }
 
 
 def sequence_variables(

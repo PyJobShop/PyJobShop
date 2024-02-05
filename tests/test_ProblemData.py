@@ -15,6 +15,7 @@ from pyjobshop.ProblemData import (
     ProblemData,
     TimingPrecedence,
 )
+from pyjobshop.Solution import ScheduledOperation
 
 
 def test_job_attributes():
@@ -606,12 +607,45 @@ def test_operation_fixed_end():
     assert_equal(result.objective_value, 42)
 
 
-def test_operation_no_fixed_duration_blocking():
+def test_operation_fixed_duration_infeasible_with_timing_constraints():
     """
-    Tests that operations with no fixed duration are scheduled correctly
-    in a blocking environment.
+    Tests that an operation with fixed duration cannot be feasibly scheduled
+    in combination with tight timing constraints.
     """
-    pass
+    model = Model()
+
+    machine = model.add_machine()
+    operation = model.add_operation(latest_start=0, earliest_end=10)
+    model.add_processing_time(machine, operation, duration=1)
+
+    # Because of the latest start and earliest end constraints, we cannot
+    # schedule the operation with fixed duration, since its processing time
+    # is 1.
+    result = model.solve()
+    assert_equal(result.solve_status, "Infeasible")
+
+
+def test_operation_non_fixed_duration():
+    """
+    Tests that an operation with non-fixed duration is scheduled correctly.
+    """
+    model = Model()
+
+    machine = model.add_machine()
+    operation = model.add_operation(
+        latest_start=0,
+        earliest_end=10,
+        fixed_duration=False,
+    )
+    model.add_processing_time(machine, operation, duration=1)
+
+    # Since the operation's duration is not fixed, it can be scheduled in a
+    # feasible way. In this case, it starts at 0 and ends at 10, which includes
+    # the processing time (1) and respects the timing constraints.
+    result = model.solve()
+    assert_equal(result.solve_status, "Optimal")
+    assert_equal(result.objective_value, 10)
+    assert_equal(result.solution.schedule, [ScheduledOperation(0, 0, 0, 10)])
 
 
 def test_optional_operations():
@@ -978,7 +1012,7 @@ def test_total_weighted_tardiness():
 
 
 # --- Small classical examples. ---
-def test_flowshop():
+def test_blocking_flowshop():
     """
     Blocking flowshop example.
     """
@@ -993,7 +1027,10 @@ def test_flowshop():
 
     for job in jobs:
         # One operation per job and machine pair.
-        operations = [model.add_operation() for _ in range(NUM_MACHINES)]
+        operations = [
+            model.add_operation(fixed_duration=False)
+            for _ in range(NUM_MACHINES)
+        ]
         model.assign_job_operations(job, operations)
 
         for machine, op in zip(machines, operations):
