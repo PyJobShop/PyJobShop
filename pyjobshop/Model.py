@@ -172,6 +172,7 @@ class Model:
         latest_start: Optional[int] = None,
         earliest_end: Optional[int] = None,
         latest_end: Optional[int] = None,
+        fixed_duration: bool = True,
         optional: bool = False,
         name: str = "",
     ) -> Operation:
@@ -188,6 +189,8 @@ class Model:
             Earliest end time of the operation.
         latest_end: Optional[int]
             Latest end time of the operation.
+        fixed_duration: bool
+            Whether the duration of the operation is fixed. Defaults to True.
         optional: bool
             Whether processing this operation is optional. Defaults to False.
         name: str
@@ -203,6 +206,7 @@ class Model:
             latest_start,
             earliest_end,
             latest_end,
+            fixed_duration,
             optional,
             name,
         )

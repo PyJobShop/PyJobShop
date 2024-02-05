@@ -12,6 +12,7 @@ from .constraints import (
     operation_constraints,
     optional_operation_selection_constraints,
     planning_horizon_constraints,
+    processing_time_constraints,
     timing_precedence_constraints,
 )
 from .objectives import (
@@ -54,7 +55,6 @@ def default_model(data: ProblemData) -> CpoModel:
     model.add(machine_data_constraints(model, data, assign_vars))
     model.add(job_operation_constraints(model, data, job_vars, op_vars))
     model.add(operation_constraints(model, data, op_vars))
-    model.add(timing_precedence_constraints(model, data, op_vars))
     model.add(
         assignment_precedence_constraints(model, data, assign_vars, seq_vars)
     )
@@ -66,5 +66,7 @@ def default_model(data: ProblemData) -> CpoModel:
             model, data, job_vars, assign_vars, op_vars
         )
     )
+    model.add(processing_time_constraints(model, data, assign_vars))
+    model.add(timing_precedence_constraints(model, data, op_vars))
 
     return model

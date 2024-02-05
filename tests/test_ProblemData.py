@@ -15,6 +15,7 @@ from pyjobshop.ProblemData import (
     ProblemData,
     TimingPrecedence,
 )
+from pyjobshop.Solution import ScheduledOperation
 
 
 def test_job_attributes():
@@ -110,12 +111,13 @@ def test_operation_attributes():
     """
     Tests that the attributes of the Operation class are set correctly.
     """
-    operation = Operation(1, 2, 3, 4, True, name="TestOperation")
+    operation = Operation(1, 2, 3, 4, False, True, name="TestOperation")
 
     assert_equal(operation.earliest_start, 1)
     assert_equal(operation.latest_start, 2)
     assert_equal(operation.earliest_end, 3)
     assert_equal(operation.latest_end, 4)
+    assert_equal(operation.fixed_duration, False)
     assert_equal(operation.optional, True)
     assert_equal(operation.name, "TestOperation")
 
@@ -126,6 +128,7 @@ def test_operation_attributes():
     assert_equal(operation.latest_start, None)
     assert_equal(operation.earliest_end, None)
     assert_equal(operation.latest_end, None)
+    assert_equal(operation.fixed_duration, True)
     assert_equal(operation.optional, False)
     assert_equal(operation.name, "")
 
@@ -604,6 +607,47 @@ def test_operation_fixed_end():
     assert_equal(result.objective_value, 42)
 
 
+def test_operation_fixed_duration_infeasible_with_timing_constraints():
+    """
+    Tests that an operation with fixed duration cannot be feasibly scheduled
+    in combination with tight timing constraints.
+    """
+    model = Model()
+
+    machine = model.add_machine()
+    operation = model.add_operation(latest_start=0, earliest_end=10)
+    model.add_processing_time(machine, operation, duration=1)
+
+    # Because of the latest start and earliest end constraints, we cannot
+    # schedule the operation with fixed duration, since its processing time
+    # is 1.
+    result = model.solve()
+    assert_equal(result.solve_status, "Infeasible")
+
+
+def test_operation_non_fixed_duration():
+    """
+    Tests that an operation with non-fixed duration is scheduled correctly.
+    """
+    model = Model()
+
+    machine = model.add_machine()
+    operation = model.add_operation(
+        latest_start=0,
+        earliest_end=10,
+        fixed_duration=False,
+    )
+    model.add_processing_time(machine, operation, duration=1)
+
+    # Since the operation's duration is not fixed, it can be scheduled in a
+    # feasible way. In this case, it starts at 0 and ends at 10, which includes
+    # the processing time (1) and respects the timing constraints.
+    result = model.solve()
+    assert_equal(result.solve_status, "Optimal")
+    assert_equal(result.objective_value, 10)
+    assert_equal(result.solution.schedule, [ScheduledOperation(0, 0, 0, 10)])
+
+
 def test_optional_operations():
     """
     Tests that optional operations are not scheduled.
@@ -968,7 +1012,7 @@ def test_total_weighted_tardiness():
 
 
 # --- Small classical examples. ---
-def test_flowshop():
+def test_blocking_flowshop():
     """
     Blocking flowshop example.
     """
@@ -983,7 +1027,10 @@ def test_flowshop():
 
     for job in jobs:
         # One operation per job and machine pair.
-        operations = [model.add_operation() for _ in range(NUM_MACHINES)]
+        operations = [
+            model.add_operation(fixed_duration=False)
+            for _ in range(NUM_MACHINES)
+        ]
         model.assign_job_operations(job, operations)
 
         for machine, op in zip(machines, operations):
