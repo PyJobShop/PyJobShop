@@ -6,7 +6,7 @@ from pyjobshop.ProblemData import (
     Objective,
     TimingPrecedence,
 )
-from pyjobshop.Solution import ScheduledOperation, Solution
+from pyjobshop.Solution import Solution, Task
 
 MAX_VALUE = 2**25
 
@@ -200,7 +200,7 @@ def test_solve():
 
     result = model.solve()
 
-    schedule = [ScheduledOperation(0, 0, 0, 1), ScheduledOperation(1, 0, 1, 2)]
+    schedule = [Task(0, 0, 0, 1), Task(1, 0, 1, 2)]
     solution = Solution(model.data(), schedule)
 
     assert_equal(result.solution, solution)

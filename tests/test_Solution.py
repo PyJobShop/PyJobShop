@@ -2,28 +2,28 @@ from numpy.testing import assert_, assert_equal
 from pytest import raises as assert_raises
 
 from pyjobshop.Model import Model
-from pyjobshop.Solution import ScheduledOperation, Solution
+from pyjobshop.Solution import Solution, Task
 
 
-def test_scheduled_operation_eq():
+def test_task_eq():
     """
-    Tests the equality comparison of scheduled operations.
+    Tests the equality comparison of tasks.
     """
-    op1 = ScheduledOperation(0, 1, 2, 3)
+    op1 = Task(0, 1, 2, 3)
 
-    assert_equal(op1, ScheduledOperation(0, 1, 2, 3))
-    assert_(op1 != ScheduledOperation(0, 1, 2, 4))
+    assert_equal(op1, Task(0, 1, 2, 3))
+    assert_(op1 != Task(0, 1, 2, 4))
 
 
 def test_solution_eq(small):
     """
     Tests the equality comparison of solutions.
     """
-    schedule = [ScheduledOperation(0, 0, 0, 1), ScheduledOperation(1, 0, 1, 2)]
+    schedule = [Task(0, 0, 0, 1), Task(1, 0, 1, 2)]
     sol1 = Solution(small, schedule)
 
     assert_equal(sol1, Solution(small, schedule))
-    other = [ScheduledOperation(0, 0, 0, 1), ScheduledOperation(0, 0, 3, 2)]
+    other = [Task(0, 0, 0, 1), Task(0, 0, 3, 2)]
     assert_(sol1 != Solution(small, other))
 
 
@@ -47,7 +47,7 @@ def test_solution_raises_invalid_schedule():
     data = model.data()
 
     # Invalid schedule: operation 0 is scheduled on machine 1.
-    schedule = [ScheduledOperation(0, 1, 0, 1), ScheduledOperation(1, 1, 1, 2)]
+    schedule = [Task(0, 1, 0, 1), Task(1, 1, 1, 2)]
 
     with assert_raises(ValueError):
         Solution(data, schedule)

@@ -25,10 +25,10 @@ def operation_variables(
     ]
 
 
-def assignment_variables(m: CpoModel, data: ProblemData) -> AssignVars:
+def task_variables(m: CpoModel, data: ProblemData) -> AssignVars:
     """
     Creates an optional interval variable for each operation and eligible
-    machine pair.
+    machine pair, i.e., a task.
     """
     return {
         (op, machine): m.interval_var(name=f"A{op}_{machine}", optional=True)

@@ -15,7 +15,7 @@ from pyjobshop.ProblemData import (
     ProblemData,
     TimingPrecedence,
 )
-from pyjobshop.Solution import ScheduledOperation
+from pyjobshop.Solution import Task
 
 
 def test_job_attributes():
@@ -645,7 +645,7 @@ def test_operation_non_fixed_duration():
     result = model.solve()
     assert_equal(result.solve_status, "Optimal")
     assert_equal(result.objective_value, 10)
-    assert_equal(result.solution.schedule, [ScheduledOperation(0, 0, 0, 10)])
+    assert_equal(result.solution.schedule, [Task(0, 0, 0, 10)])
 
 
 def test_optional_operations():

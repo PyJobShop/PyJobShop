@@ -44,12 +44,12 @@ def plot(
 
     colors = _get_colors()
 
-    for scheduled in solution.schedule:
+    for task in solution.schedule:
         op, machine, start, duration = (
-            scheduled.operation,
-            scheduled.machine,
-            scheduled.start,
-            scheduled.duration,
+            task.operation,
+            task.machine,
+            task.start,
+            task.duration,
         )
 
         # Operations belonging to the same job get the same unique color.
