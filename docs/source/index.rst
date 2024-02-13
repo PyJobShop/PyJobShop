@@ -14,6 +14,12 @@ Contents
 
 .. toctree::
    :maxdepth: 1
-   :caption: Getting started
+   :caption: Examples
+
+   examples/simple_example
+
+.. toctree::
+   :maxdepth: 1
+   :caption: API reference
 
    api/pyjobshop
