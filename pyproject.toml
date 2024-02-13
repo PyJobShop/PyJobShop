@@ -81,6 +81,10 @@ ignore = [
 ]
 
 
+[tool.ruff.per-file-ignores]
+"__init__.py" = ["F401"] # ignore unused module imports
+
+
 [tool.pytest.ini_options]
 addopts = "--cov=. --cov-report=xml"
 
