@@ -1,15 +1,15 @@
 from .ProblemData import ProblemData
 
 
-class ScheduledOperation:
+class Task:
     """
-    The ScheduledOperation class stores data related to scheduled operations.
+    The Task class stores data related to scheduled operations.
 
     Parameters
     ----------
-    op: int
-        The scheduled operation index.
-    assigned_machine: int
+    operation: int
+        The operation index.
+    machine: int
         The machine to which the operation is assigned.
     start: int
         The start time of the operation.
@@ -18,20 +18,28 @@ class ScheduledOperation:
     """
 
     def __init__(
-        self, op: int, assigned_machine: int, start: int, duration: int
+        self, operation: int, machine: int, start: int, duration: int
     ):
-        self._op = op
-        self._assigned_machine = assigned_machine
+        self._operation = operation
+        self._machine = machine
         self._start = start
         self._duration = duration
 
-    @property
-    def op(self) -> int:
-        return self._op
+    def __eq__(self, other) -> bool:
+        return (
+            self.operation == other.operation
+            and self.machine == other.machine
+            and self.start == other.start
+            and self.duration == other.duration
+        )
 
     @property
-    def assigned_machine(self) -> int:
-        return self._assigned_machine
+    def operation(self) -> int:
+        return self._operation
+
+    @property
+    def machine(self) -> int:
+        return self._machine
 
     @property
     def start(self) -> int:
@@ -50,18 +58,21 @@ class Solution:
     ----------
     data: ProblemData
         The problem data.
-    schedule: list[ScheduledOperation]
-        A list of scheduled operations.
+    schedule: list[Task]
+        A list of tasks.
     """
 
-    def __init__(self, data: ProblemData, schedule: list[ScheduledOperation]):
+    def __init__(self, data: ProblemData, schedule: list[Task]):
         self.schedule = schedule
         self._validate(data)
 
+    def __eq__(self, other) -> bool:
+        return self.schedule == other.schedule
+
     def _validate(self, data: ProblemData):
-        for scheduled_op in self.schedule:
-            op = scheduled_op.op
-            assigned = scheduled_op.assigned_machine
+        for task in self.schedule:
+            op = task.operation
+            assigned = task.machine
 
             if assigned not in data.op2machines[op]:
                 msg = f"Operation {op} not allowed on machine {assigned}."

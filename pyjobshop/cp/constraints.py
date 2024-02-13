@@ -10,14 +10,14 @@ from pyjobshop.ProblemData import ProblemData
 
 JobVars = list[CpoIntervalVar]
 OpVars = list[CpoIntervalVar]
-AssignVars = dict[tuple[int, int], CpoIntervalVar]
+TaskVars = dict[tuple[int, int], CpoIntervalVar]
 SeqVars = list[CpoSequenceVar]
 
 _INT_MAX = sys.maxsize
 
 
 def alternative_constraints(
-    m: CpoModel, data: ProblemData, op_vars: OpVars, assign_vars: AssignVars
+    m: CpoModel, data: ProblemData, op_vars: OpVars, task_vars: TaskVars
 ) -> list[CpoExpr]:
     """
     Creates the alternative constraints for the operations, ensuring that each
@@ -27,14 +27,14 @@ def alternative_constraints(
 
     for op in range(data.num_operations):
         machines = data.op2machines[op]
-        optional = [assign_vars[op, machine] for machine in machines]
+        optional = [task_vars[op, machine] for machine in machines]
         constraints.append(m.alternative(op_vars[op], optional))
 
     return constraints
 
 
 def assignment_precedence_constraints(
-    m: CpoModel, data: ProblemData, assign_vars: AssignVars, seq_vars: SeqVars
+    m: CpoModel, data: ProblemData, task_vars: TaskVars, seq_vars: SeqVars
 ) -> list[CpoExpr]:
     constraints = []
 
@@ -45,8 +45,8 @@ def assignment_precedence_constraints(
             if op1 == op2 or (op1, op2) not in data.assignment_precedences:
                 continue
 
-            var1 = assign_vars[op1, machine]
-            var2 = assign_vars[op2, machine]
+            var1 = task_vars[op1, machine]
+            var2 = task_vars[op2, machine]
 
             for prec_type in data.assignment_precedences[op1, op2]:
                 if prec_type == "previous":
@@ -104,14 +104,14 @@ def job_operation_constraints(
 
 
 def machine_data_constraints(
-    m: CpoModel, data: ProblemData, assign_vars: AssignVars
+    m: CpoModel, data: ProblemData, task_vars: TaskVars
 ) -> list[CpoExpr]:
     """
     Creates constraints related to the machine data.
     """
     constraints = []
 
-    for (_, machine), var in assign_vars.items():
+    for (_, machine), var in task_vars.items():
         machine_data = data.machines[machine]
 
         for start, end in machine_data.downtimes:
@@ -158,25 +158,20 @@ def operation_constraints(
     """
     Creates constraints on the operation variables.
     """
-    constraints = []
-
-    for op_data, op_var in zip(data.operations, op_vars):
-        start_var = m.start_of(op_var)
-        end_var = m.end_of(op_var)
-
+    for op_data, var in zip(data.operations, op_vars):
         if op_data.earliest_start is not None:
-            constraints.append(start_var >= op_data.earliest_start)
+            var.set_start_min(op_data.earliest_start)
 
         if op_data.latest_start is not None:
-            constraints.append(start_var <= op_data.latest_start)
+            var.set_start_max(op_data.latest_start)
 
         if op_data.earliest_end is not None:
-            constraints.append(end_var >= op_data.earliest_end)
+            var.set_end_min(op_data.earliest_end)
 
         if op_data.latest_end is not None:
-            constraints.append(end_var <= op_data.latest_end)
+            var.set_end_max(op_data.latest_end)
 
-    return constraints
+    return []  # no constraints because we use setters
 
 
 def optional_operation_selection_constraints(
@@ -211,7 +206,7 @@ def planning_horizon_constraints(
     m: CpoModel,
     data: ProblemData,
     job_vars: JobVars,
-    assign_vars: AssignVars,
+    task_vars: TaskVars,
     op_vars: OpVars,
 ) -> list[CpoExpr]:
     """
@@ -223,10 +218,30 @@ def planning_horizon_constraints(
 
     constraints = []
 
-    for vars in [job_vars, assign_vars.values(), op_vars]:
+    for vars in [job_vars, task_vars.values(), op_vars]:
         constraints += [m.end_of(var) <= data.planning_horizon for var in vars]
 
     return constraints
+
+
+def processing_time_constraints(
+    m: CpoModel, data: ProblemData, task_vars: TaskVars
+) -> list[CpoExpr]:
+    """
+    Creates the processing time constraints for the task variables, ensuring
+    that the duration of the operation on the machine is the processing time.
+    If the operation allows for variable duration, the duration could be longer
+    than the processing time due to blocking.
+    """
+    for (op, machine), var in task_vars.items():
+        duration = data.processing_times[machine, op]
+
+        if data.operations[op].fixed_duration:
+            var.set_size(duration)
+        else:
+            var.set_size_min(duration)  # at least duration
+
+    return []  # no constraints because we use setters
 
 
 def timing_precedence_constraints(

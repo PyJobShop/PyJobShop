@@ -6,6 +6,7 @@ from pyjobshop.ProblemData import (
     Objective,
     TimingPrecedence,
 )
+from pyjobshop.Solution import Solution, Task
 
 MAX_VALUE = 2**25
 
@@ -141,12 +142,13 @@ def test_add_operation_attributes():
     """
     model = Model()
 
-    operation = model.add_operation(1, 2, 3, 4, False, name="operation")
+    operation = model.add_operation(1, 2, 3, 4, True, False, name="operation")
 
     assert_equal(operation.earliest_start, 1)
     assert_equal(operation.latest_start, 2)
     assert_equal(operation.earliest_end, 3)
     assert_equal(operation.latest_end, 4)
+    assert_equal(operation.fixed_duration, True)
     assert_equal(operation.optional, False)
     assert_equal(operation.name, "operation")
 
@@ -189,13 +191,18 @@ def test_solve():
 
     job = model.add_job()
     machine = model.add_machine()
-    operations = [model.add_operation() for _ in range(3)]
+    operations = [model.add_operation() for _ in range(2)]
 
     model.assign_job_operations(job, operations)
 
-    for operation, duration in zip(operations, [1, 2, 3]):
+    for operation, duration in zip(operations, [1, 2]):
         model.add_processing_time(machine, operation, duration)
 
     result = model.solve()
 
-    assert_equal(result.get_objective_value(), 6)
+    schedule = [Task(0, 0, 0, 1), Task(1, 0, 1, 2)]
+    solution = Solution(model.data(), schedule)
+
+    assert_equal(result.solution, solution)
+    assert_equal(result.objective_value, 3)
+    assert_equal(result.solve_status, "Optimal")

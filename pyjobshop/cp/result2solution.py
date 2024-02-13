@@ -1,7 +1,7 @@
 from docplex.cp.solution import CpoSolveResult
 
 from pyjobshop.ProblemData import ProblemData
-from pyjobshop.Solution import ScheduledOperation, Solution
+from pyjobshop.Solution import Solution, Task
 
 
 def result2solution(data: ProblemData, result: CpoSolveResult) -> Solution:
@@ -20,6 +20,6 @@ def result2solution(data: ProblemData, result: CpoSolveResult) -> Solution:
             start = var.start
             duration = var.size
 
-            schedule.append(ScheduledOperation(op, machine, start, duration))
+            schedule.append(Task(op, machine, start, duration))
 
     return Solution(data, schedule)
