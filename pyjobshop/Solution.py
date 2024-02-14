@@ -7,13 +7,13 @@ class Task:
 
     Parameters
     ----------
-    operation: int
+    operation
         The operation index.
-    machine: int
+    machine
         The machine to which the operation is assigned.
-    start: int
+    start
         The start time of the operation.
-    duration: int
+    duration
         The duration of the operation.
     """
 
@@ -56,9 +56,9 @@ class Solution:
 
     Parameters
     ----------
-    data: ProblemData
-        The problem data.
-    schedule: list[Task]
+    data
+        The problem data instance.
+    schedule
         A list of tasks.
     """
 

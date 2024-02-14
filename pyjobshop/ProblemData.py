@@ -11,19 +11,19 @@ class Job:
 
     Parameters
     ----------
-    weight: int
+    weight
         The job importance weight, used as multiplicative factor in the
         objective function.
-    release_date: int
+    release_date
         The earliest time that the job can start processing. Default is zero.
-    due_date: Optional[int]
+    due_date
         The latest time that the job should be completed before incurring
         penalties. Default is None, meaning that there is no due date.
-    deadline: Optional[int]
+    deadline
         The latest time that the job must be completed. Note that a deadline
         is different from a due date; the latter does not constrain the latest
         completion time. Default is None, meaning that there is no deadline.
-    name: str
+    name
         Name of the job.
     """
 
@@ -83,14 +83,14 @@ class Machine:
 
     Parameters
     ----------
-    downtimes: Iterable[tuple[int, int]]
+    downtimes
         List of downtimes for the machine. A downtime is a time interval
         [start, end) during which the machine is unavailable for processing.
         Defaults to no downtimes.
-    allow_overlap: bool
+    allow_overlap
         Whether it is allowed to schedule multiple operations on the machine
         at the same time. Default is False.
-    name: str
+    name
         Name of the machine.
     """
 
@@ -127,23 +127,23 @@ class Operation:
 
     Parameters
     ----------
-    earliest_start: Optional[int]
+    earliest_start
         Earliest start time of the operation.
-    latest_start: Optional[int]
+    latest_start
         Latest start time of the operation.
-    earliest_end: Optional[int]
+    earliest_end
         Earliest end time of the operation.
-    latest_end: Optional[int]
+    latest_end
         Latest end time of the operation.
-    fixed_duration: bool
+    fixed_duration
         Whether the operation has a fixed duration. A fixed duration means that
         the operation duration is precisely the processing time (on a given
         machine). If the duration is not fixed, then the operation duration
         can take longer than the processing time, e.g., due to blocking.
         Default is True.
-    optional: bool
+    optional
         Whether processing this operation is optional. Defaults to False.
-    name: str
+    name
         Name of the operation.
     """
 
@@ -278,15 +278,15 @@ class ProblemData:
 
     Parameters
     ----------
-    jobs: list[Job]
+    jobs
         List of jobs.
-    machines: list[Machine]
+    machines
         List of machines.
-    operations: list[Operation]
+    operations
         List of operations.
-    job2ops: list[list[int]]
+    job2ops
         List of operation indices for each job.
-    processing_times: dict[tuple[int, int], int]
+    processing_times
         Processing times of operations on machines. First index is the machine
         index, second index is the operation index.
     timing_precedences
@@ -295,19 +295,19 @@ class ProblemData:
     assignment_precedences
         Dict indexed by operation pairs with list of assignment precedence
         constraints.
-    setup_times: Optional[np.ndarray]
+    setup_times
         Sequence-dependent setup times between operations on a given machine.
         The first dimension of the array is indexed by the machine index. The
         last two dimensions of the array are indexed by operation indices.
-    process_plans: Optional[list[list[list[int]]]]
+    process_plans
         List of processing plans. Each process plan represents a list
         containing lists of operation indices, one of which is selected to be
         scheduled. All operations from the selected list are then scheduled,
         while operations from unselected lists will not be scheduled.
-    planning_horizon: Optional[int]
+    planning_horizon
         The planning horizon value. Default is None, meaning that the planning
         horizon is unbounded.
-    objective: Objective
+    objective
         The objective function to be minimized. Default is the makespan.
     """
 
