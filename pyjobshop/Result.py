@@ -9,11 +9,11 @@ class Result:
 
     Parameters
     ----------
-    solve_status: str
+    solve_status
         The solve status.
-    solution: Optional[Solution]
+    solution
         The solution to the problem instance. None if no solution was found.
-    objective_value: Optional[float]
+    objective_value
         The objective value of the solution. None if no solution was found.
     """
 

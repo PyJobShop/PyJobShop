@@ -32,6 +32,16 @@ from .variables import (
 def default_model(data: ProblemData) -> CpoModel:
     """
     Creates a CP model for the given problem data.
+
+    Parameters
+    ----------
+    data
+        The problem data instance.
+
+    Returns
+    -------
+    CpoModel
+        The CP model for the given problem data.
     """
     model = CpoModel()
 
