@@ -20,16 +20,16 @@ def plot(
 
     Parameters
     ----------
-    data: ProblemData
+    data
         The problem data instance.
-    solution: Solution
+    solution
         A solution to the problem.
-    machine_order: Optional[list[int]]
+    machine_order
         The machines (by index) to plot and in which order they should appear
         (from top to bottom). Defaults to all machines in the data instance.
-    plot_labels: bool
+    plot_labels
         Whether to plot the operation names as labels.
-    ax: plt.Axes
+    ax
         Axes object to draw the plot on. One will be created if not provided.
     """
     if ax is None:

@@ -101,20 +101,20 @@ class Model:
 
         Parameters
         ----------
-        weight: int
+        weight
             The job importance weight, used as multiplicative factor in the
             objective function.
-        release_date: int
+        release_date
             The earliest time that the job may start. Default is zero.
-        due_date: Optional[int]
+        due_date
             The latest time that the job should be completed before incurring
             penalties. Default is None, meaning that there is no due date.
-        deadline: Optional[int]
+        deadline
             The latest time by which the job must be completed. Note that a
             deadline is different from a due date; the latter does not restrict
             the latest completion time. Default is None, meaning that there is
             no deadline.
-        name: str
+        name
             Name of the job.
 
         Returns
@@ -140,14 +140,14 @@ class Model:
 
         Parameters
         ----------
-        downtimes: Iterable[tuple[int, int]]
+        downtimes
             List of downtimes for the machine. A downtime is a time interval
             [start, end) during which the machine is unavailable for
             processing. Defaults to no downtimes.
-        allow_overlap: False
+        allow_overlap
             Whether it is allowed to schedule multiple operations on the
-            machine at the same time. Default is False.
-        name: str
+            machine at the same time. Default ``False``.
+        name
             Name of the machine.
 
         Returns
@@ -182,21 +182,21 @@ class Model:
 
         Parameters
         ----------
-        job: Optional[Job]
+        job
             The job that the operation belongs to.
-        earliest_start: Optional[int]
+        earliest_start
             Earliest start time of the operation.
-        latest_start: Optional[int]
+        latest_start
             Latest start time of the operation.
-        earliest_end: Optional[int]
+        earliest_end
             Earliest end time of the operation.
-        latest_end: Optional[int]
+        latest_end
             Latest end time of the operation.
-        fixed_duration: bool
+        fixed_duration
             Whether the duration of the operation is fixed. Defaults to True.
-        optional: bool
+        optional
             Whether processing this operation is optional. Defaults to False.
-        name: str
+        name
             Name of the operation.
 
         Returns
@@ -232,11 +232,11 @@ class Model:
 
         Parameters
         ----------
-        machine: Machine
+        machine
             The machine on which the operation is processed.
-        operation: Operation
+        operation
             An operation.
-        duration: int
+        duration
             Processing time of the operation on the machine.
         """
         if duration < 0:
@@ -258,15 +258,15 @@ class Model:
 
         Parameters
         ----------
-        operation1: Operation
+        operation1
             First operation.
-        operation2: Operation
+        operation2
             Second operation.
-        constraint: TimingPrecedence
+        constraint
             Timing precedence constraint between the first and the second
-            operation. Defaults to END_BEFORE_START, meaning that the first
+            operation. Defaults to ``END_BEFORE_START``, meaning that the first
             operation must end before the second operation starts.
-        delay: int
+        delay
             Delay between the first and the second operation. Defaults to
             zero (no delay).
         """
@@ -285,11 +285,11 @@ class Model:
 
         Parameters
         ----------
-        operation1: Operation
+        operation1
             First operation.
-        operation2: Operation
+        operation2
             Second operation.
-        assignment_precedence: AssignmentPrecedence
+        assignment_precedence
             Assignment precedence relation between the first and the second
             operation.
 
@@ -310,13 +310,13 @@ class Model:
 
         Parameters
         ----------
-        machine: Machine
+        machine
             Machine on which the setup time occurs.
-        operation1: Operation
+        operation1
             First operation.
-        operation2: Operation
+        operation2
             Second operation.
-        duration: int
+        duration
             Duration of the setup time when switching from the first operation
             to the second operation on the machine.
         """
@@ -334,7 +334,7 @@ class Model:
 
         Parameters
         ----------
-        plans: list[Operation]
+        plans
             The plans to be added. Each plan is a list of operations. Multiple
             plans can be passed as separate arguments.
         """
@@ -347,7 +347,7 @@ class Model:
 
         Parameters
         ----------
-        horizon: int
+        horizon
             The planning horizon.
         """
         self._planning_horizon = horizon
@@ -358,7 +358,7 @@ class Model:
 
         Parameters
         ----------
-        objective: Objective
+        objective
             An objective function.
         """
         self._objective = objective
@@ -371,9 +371,9 @@ class Model:
 
         Parameters
         ----------
-        log: bool
+        log
             Whether to log the solver output. Defaults to False.
-        time_limit: Optional[int]
+        time_limit
             Time limit in seconds for the solver, defaults to None. If set to
             None, the solver will run until an optimal solution is found.
 
