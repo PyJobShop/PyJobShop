@@ -323,9 +323,8 @@ def test_job_release_date():
 
     job = model.add_job(release_date=1)
     machine = model.add_machine()
-    operation = model.add_operation()
+    operation = model.add_operation(job=job)
 
-    model.assign_job_operations(job, [operation])
     model.add_processing_time(machine, operation, duration=1)
 
     result = model.solve()
@@ -345,12 +344,10 @@ def test_job_deadline():
     machine = model.add_machine()
 
     job1 = model.add_job()
-    operation1 = model.add_operation()
-    model.assign_job_operations(job1, [operation1])
+    operation1 = model.add_operation(job=job1)
 
     job2 = model.add_job(deadline=2)
-    operation2 = model.add_operation()
-    model.assign_job_operations(job2, [operation2])
+    operation2 = model.add_operation(job=job2)
 
     for operation in [operation1, operation2]:
         model.add_processing_time(machine, operation, duration=2)
@@ -375,9 +372,8 @@ def test_job_deadline_infeasible():
 
     job = model.add_job(deadline=1)
     machine = model.add_machine()
-    operation = model.add_operation()
+    operation = model.add_operation(job=job)
 
-    model.assign_job_operations(job, [operation])
     model.add_processing_time(machine, operation, duration=2)
 
     result = model.solve()
@@ -393,9 +389,8 @@ def test_machine_downtime_single_interval():
     model = Model()
     job = model.add_job()
     machine = model.add_machine([(0, 2)])
-    operation = model.add_operation()
+    operation = model.add_operation(job=job)
 
-    model.assign_job_operations(job, [operation])
     model.add_processing_time(machine, operation, duration=2)
 
     result = model.solve()
@@ -413,9 +408,8 @@ def test_restrictive_machine_downtime_and_horizon():
     model = Model()
     job = model.add_job()
     machine = model.add_machine([(0, 2)])
-    operation = model.add_operation()
+    operation = model.add_operation(job=job)
 
-    model.assign_job_operations(job, [operation])
     model.add_processing_time(machine, operation, duration=2)
     model.set_planning_horizon(3)
 
@@ -432,10 +426,9 @@ def test_machine_allow_overlap():
     """
     model = Model()
     job = model.add_job()
-    machine = model.add_machine()  # no overlap
-    operations = [model.add_operation(), model.add_operation()]
+    machine = model.add_machine(allow_overlap=False)  # no overlap
+    operations = [model.add_operation(job=job) for _ in range(2)]
 
-    model.assign_job_operations(job, operations)
     for operation in operations:
         model.add_processing_time(machine, operation, duration=2)
 
@@ -450,9 +443,8 @@ def test_machine_allow_overlap():
     model = Model()
     job = model.add_job()
     machine = model.add_machine(allow_overlap=True)
-    operations = [model.add_operation(), model.add_operation()]
+    operations = [model.add_operation(job=job) for _ in range(2)]
 
-    model.assign_job_operations(job, operations)
     for operation in operations:
         model.add_processing_time(machine, operation, duration=2)
 
@@ -472,9 +464,8 @@ def test_operation_earliest_start():
 
     job = model.add_job()
     machine = model.add_machine()
-    operation = model.add_operation(earliest_start=1)
+    operation = model.add_operation(job=job, earliest_start=1)
 
-    model.assign_job_operations(job, [operation])
     model.add_processing_time(machine, operation, duration=1)
 
     result = model.solve()
@@ -493,14 +484,12 @@ def test_operation_latest_start():
     job = model.add_job()
     machine = model.add_machine()
     operations = [
-        model.add_operation(),
-        model.add_operation(latest_start=1),
+        model.add_operation(job=job),
+        model.add_operation(job=job, latest_start=1),
     ]
 
     for operation in operations:
         model.add_processing_time(machine, operation, duration=2)
-
-    model.assign_job_operations(job, operations)
 
     model.add_setup_time(machine, operations[1], operations[0], 10)
 
@@ -523,9 +512,10 @@ def test_operation_fixed_start():
 
     job = model.add_job()
     machine = model.add_machine()
-    operation = model.add_operation(earliest_start=42, latest_start=42)
+    operation = model.add_operation(
+        job=job, earliest_start=42, latest_start=42
+    )
 
-    model.assign_job_operations(job, [operation])
     model.add_processing_time(machine, operation, duration=1)
 
     result = model.solve()
@@ -543,9 +533,8 @@ def test_operation_earliest_end():
 
     job = model.add_job()
     machine = model.add_machine()
-    operation = model.add_operation(earliest_end=2)
+    operation = model.add_operation(job=job, earliest_end=2)
 
-    model.assign_job_operations(job, [operation])
     model.add_processing_time(machine, operation, duration=1)
 
     result = model.solve()
@@ -565,14 +554,12 @@ def test_operation_latest_end():
     job = model.add_job()
     machine = model.add_machine()
     operations = [
-        model.add_operation(),
-        model.add_operation(latest_end=2),
+        model.add_operation(job=job),
+        model.add_operation(job=job, latest_end=2),
     ]
 
     for operation in operations:
         model.add_processing_time(machine, operation, duration=2)
-
-    model.assign_job_operations(job, operations)
 
     model.add_setup_time(machine, operations[1], operations[0], 10)
 
@@ -595,9 +582,8 @@ def test_operation_fixed_end():
 
     job = model.add_job()
     machine = model.add_machine()
-    operation = model.add_operation(earliest_end=42, latest_end=42)
+    operation = model.add_operation(job=job, earliest_end=42, latest_end=42)
 
-    model.assign_job_operations(job, [operation])
     model.add_processing_time(machine, operation, duration=1)
 
     result = model.solve()
@@ -656,9 +642,11 @@ def test_optional_operations():
 
     job = model.add_job()
     machine = model.add_machine()
-    operations = [model.add_operation(), model.add_operation(optional=True)]
+    operations = [
+        model.add_operation(job=job),
+        model.add_operation(job=job, optional=True),
+    ]
 
-    model.assign_job_operations(job, operations)
     model.add_processing_time(machine, operations[0], duration=10)
     model.add_processing_time(machine, operations[1], duration=15)
 
@@ -702,9 +690,7 @@ def test_timing_precedence(
 
     job = model.add_job()
     machines = [model.add_machine(), model.add_machine()]
-    operations = [model.add_operation(), model.add_operation()]
-
-    model.assign_job_operations(job, operations)
+    operations = [model.add_operation(job=job) for _ in range(2)]
 
     for machine in machines:
         for operation in operations:
@@ -749,9 +735,7 @@ def test_timing_precedence_with_one_delay(
 
     job = model.add_job()
     machines = [model.add_machine(), model.add_machine()]
-    operations = [model.add_operation(), model.add_operation()]
-
-    model.assign_job_operations(job, operations)
+    operations = [model.add_operation(job=job) for _ in range(2)]
 
     for machine in machines:
         for operation in operations:
@@ -785,9 +769,7 @@ def test_assignment_precedence(
 
     job = model.add_job()
     machines = [model.add_machine(), model.add_machine()]
-    operations = [model.add_operation(), model.add_operation()]
-
-    model.assign_job_operations(job, operations)
+    operations = [model.add_operation(job=job) for _ in range(2)]
 
     for machine in machines:
         for operation in operations:
@@ -808,9 +790,9 @@ def test_process_plans():
 
     job = model.add_job()
     machine = model.add_machine()
-    operations = [model.add_operation(optional=True) for _ in range(4)]
-
-    model.assign_job_operations(job, operations)
+    operations = [
+        model.add_operation(job=job, optional=True) for _ in range(4)
+    ]
 
     for operation, duration in zip(operations, [1, 2, 3, 4]):
         model.add_processing_time(machine, operation, duration)
@@ -833,9 +815,8 @@ def test_tight_planning_horizon_results_in_infeasiblity():
 
     job = model.add_job()
     machine = model.add_machine()
-    operation = model.add_operation()
+    operation = model.add_operation(job=job)
 
-    model.assign_job_operations(job, [operation])
     model.add_processing_time(machine, operation, duration=2)
     model.set_planning_horizon(1)
 
@@ -853,9 +834,7 @@ def test_makespan_objective():
 
     job = model.add_job()
     machine = model.add_machine()
-    operations = [model.add_operation() for _ in range(2)]
-
-    model.assign_job_operations(job, operations)
+    operations = [model.add_operation(job=job) for _ in range(2)]
 
     for operation in operations:
         model.add_processing_time(machine, operation, duration=2)
@@ -876,9 +855,7 @@ def test_tardy_jobs():
 
     for idx in range(3):
         job = model.add_job(due_date=idx + 1)
-        operation = model.add_operation()
-
-        model.assign_job_operations(job, [operation])
+        operation = model.add_operation(job=job)
         model.add_processing_time(machine, operation, duration=3)
 
     model.set_objective(Objective.TARDY_JOBS)
@@ -901,9 +878,7 @@ def test_total_completion_time():
 
     for idx in range(3):
         job = model.add_job()
-        operation = model.add_operation()
-
-        model.assign_job_operations(job, [operation])
+        operation = model.add_operation(job=job)
 
         for machine in machines:
             model.add_processing_time(machine, operation, duration=idx + 1)
@@ -932,9 +907,7 @@ def test_total_weighted_completion_time():
 
     for idx in range(2):
         job = model.add_job(weight=weights[idx])
-        operation = model.add_operation()
-
-        model.assign_job_operations(job, [operation])
+        operation = model.add_operation(job=job)
         model.add_processing_time(machine, operation, duration=idx + 1)
 
     model.set_objective(Objective.TOTAL_COMPLETION_TIME)
@@ -959,9 +932,7 @@ def test_total_tardiness():
 
     for idx in range(3):
         job = model.add_job(due_date=due_dates[idx])
-        operation = model.add_operation()
-
-        model.assign_job_operations(job, [operation])
+        operation = model.add_operation(job=job)
 
         for machine in machines:
             model.add_processing_time(machine, operation, duration=idx + 1)
@@ -992,9 +963,7 @@ def test_total_weighted_tardiness():
 
     for idx in range(2):
         job = model.add_job(weight=weights[idx], due_date=due_dates[idx])
-        operation = model.add_operation()
-
-        model.assign_job_operations(job, [operation])
+        operation = model.add_operation(job=job)
         model.add_processing_time(
             machine, operation, duration=processing_times[idx]
         )
@@ -1028,10 +997,9 @@ def test_blocking_flowshop():
     for job in jobs:
         # One operation per job and machine pair.
         operations = [
-            model.add_operation(fixed_duration=False)
+            model.add_operation(job=job, fixed_duration=False)
             for _ in range(NUM_MACHINES)
         ]
-        model.assign_job_operations(job, operations)
 
         for machine, op in zip(machines, operations):
             model.add_processing_time(machine, op, random.randint(1, 10))
@@ -1073,8 +1041,7 @@ def test_jobshop():
     machines = [model.add_machine() for _ in range(3)]
 
     for job_idx, tasks in enumerate(jobs_data):
-        operations = [model.add_operation() for _ in tasks]
-        model.assign_job_operations(jobs[job_idx], operations)
+        operations = [model.add_operation(job=jobs[job_idx]) for _ in tasks]
 
         # Add processing times.
         for idx, (machine_idx, duration) in enumerate(tasks):

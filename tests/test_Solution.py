@@ -37,9 +37,7 @@ def test_solution_raises_invalid_schedule():
 
     job = model.add_job()
     machines = [model.add_machine() for _ in range(2)]
-    operations = [model.add_operation() for _ in range(2)]
-
-    model.assign_job_operations(job, operations)
+    operations = [model.add_operation(job=job) for _ in range(2)]
 
     for duration, (machine, op) in enumerate(zip(machines, operations), 1):
         model.add_processing_time(machine, op, duration)
