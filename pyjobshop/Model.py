@@ -183,7 +183,7 @@ class Model:
         Parameters
         ----------
         job: Optional[Job]
-            The job to which the operation belongs.
+            The job that the operation belongs to.
         earliest_start: Optional[int]
             Earliest start time of the operation.
         latest_start: Optional[int]
