@@ -8,31 +8,29 @@ from pyjobshop import Model, default_model, result2solution
 MAX_INT = 2**25
 
 
-def parser(loc: Path | str, format: str) -> Model:
+def parser(loc: Path | str, instance_format: str) -> Model:
     lines = file2lines(loc)
 
-    if format == "jsp":
+    if instance_format == "jsp":
         data = parse_jsp(lines)
         return convert_to_model(data)
-    elif format == "pyjobshop":
+    elif instance_format == "fjsp":
         data = parse_fjsp(lines)
         return convert_to_model(data)
-    elif format == "fjsp_sdst":
+    elif instance_format == "fjsp_sdst":
         data = parse_fjsp_sdst(lines)
         return convert_to_model(data)
-    elif format == "fajsp":
+    elif instance_format == "fajsp":
         data = parse_fajsp(lines)
         return convert_to_model(data)
-    elif format == "naderi2022":
+    elif instance_format == "naderi2022":
         return parse_naderi2022(lines)
-    elif format == "yfjs":
+    elif instance_format == "yfjs":
         return parse_yfjs(lines)
-    elif format == "smrdsdst":
-        return parse_smrdsdst(lines)
-    elif format == "Kasapidis2021":
+    elif instance_format == "Kasapidis2021":
         return parse_kasapidis2021(lines)
     else:
-        raise ValueError(f"Unknown format: {format}")
+        raise ValueError(f"Unknown instance_format: {instance_format}")
 
 
 def parse_jsp(lines: list[list[float]]) -> dict:
@@ -77,7 +75,7 @@ def parse_fjsp_job_operation_data_line(
     line: list[float],
 ) -> list[dict[str, float]]:
     """
-    Parses a standard formatted FJSP job-operation data line:
+    Parses a standard instance_formatted FJSP job-operation data line:
     - The first number is the number of operations (n >= 1) of that job.
     - Repeat for n times:
         - First a number k >= 1 that represents the number of machines that can
@@ -112,7 +110,7 @@ def parse_fjsp_job_operation_data_line(
 def parse_fjsp(lines: list[list[float]]) -> dict:
     """
     Parses a flexible job shop problem instance that has the classical FJSP
-    benchmark instance format.
+    benchmark instance instance_format.
     """
     data: dict[str, float | str | list] = {"jobs": [], "precedence": []}
 
@@ -141,7 +139,7 @@ def parse_fjsp_sdst(lines: list[list[float]]) -> dict:
     Parses a flexible job shop problem with sequence-dependent setup times
     instance.
     """
-    # The first part of the file is the same as the classic FJSP format.
+    # The first part of the file is the same as the classic FJSP instance_format.
     num_jobs, _, _ = lines[0]
     data = parse_fjsp(lines[: num_jobs + 1])
 
@@ -203,7 +201,7 @@ def parse_yfjs(lines: list[list[float]]) -> Model:
     data["num_machines"] = _parse_metadata(metadata[2])
     data["num_machines_per_operation"] = _parse_metadata(metadata[3])
 
-    # The rest is mostly the same as the `fajsp` format, but
+    # The rest is mostly the same as the `fajsp` instance_format, but
     # there are multiple jobs to be completed.
     OFFSET = 3
     _, num_arcs, _ = lines[1 + OFFSET]
@@ -302,57 +300,6 @@ def parse_kasapidis2021(lines: list[list[float]]) -> Model:
     return convert_to_model(data)
 
 
-def parse_smrdsdst(lines: list[list[float]]) -> Model:
-    """
-    Parses a single machine release time setup time problem.
-
-    Instances from https://github.com/rsobralm/SMRDSDST/tree/main.
-    """
-    num_jobs, _ = lines[0]
-    num_machines = 1  # single machine instance
-
-    job_data = []
-    for line in lines[3 : 3 + num_jobs]:
-        job_idx, release_date, processing_time, due_date = line
-        job_data.append(
-            {
-                "release_date": release_date,
-                "due_date": due_date,
-                "processing_time": processing_time,
-            }
-        )
-
-    # First row is the initial setup time; let's ignore for now.
-    setup_times = np.array(lines[3 + num_jobs :][1:])
-
-    # Convert to Model.
-    model = Model()
-
-    jobs = [
-        model.add_job(
-            deadline=datum["due_date"], release_date=datum["release_date"]
-        )
-        for datum in job_data
-    ]
-    machines = [model.add_machine() for _ in range(num_machines)]
-    operations = [model.add_operation(job, machines) for job in jobs]
-
-    for job_datum, op in zip(job_data, operations):
-        for machine in machines:
-            model.add_processing_time(
-                machine, op, job_datum["processing_time"]
-            )
-
-    for idx1, op1 in enumerate(operations):
-        for idx2, op2 in enumerate(operations):
-            for machine in machines:
-                model.add_setup_time(
-                    machine, op1, op2, setup_times[idx1][idx2]
-                )
-
-    return model
-
-
 def file2lines(loc: Path | str) -> list[list[float]]:
     with open(loc, "r") as fh:
         lines = [line for line in fh.readlines() if line.strip()]
@@ -397,14 +344,14 @@ def convert_to_model(data: dict) -> Model:
 if __name__ == "__main__":
     argparser = argparse.ArgumentParser()
     argparser.add_argument("instances", type=Path, nargs="+")
-    argparser.add_argument("--format", default="pyjobshop")
+    argparser.add_argument("--instance_format", default="pyjobshop")
     argparser.add_argument("--time_limit", type=int, default=2)
 
     args = argparser.parse_args()
 
     for instance in args.instances:
         print(f"Processing {instance}... ", end="")
-        model = parser(instance, args.format)
+        model = parser(instance, args.instance_format)
         data = model.data()
         cp_model = default_model(data)
         result = cp_model.solve(
@@ -416,5 +363,5 @@ if __name__ == "__main__":
         # plot(data, solution)
 
 # poetry run python parse/parse_benchmark.py data/raw/fjsp/3_DauzerePaulli/01a.fjs --time_limit 20
-# poetry run python parse_benchmark.py data/raw/Kasapidis2021/CPC_MEDIUM_INSTANCES/scpc01.fjs --format Kasapidis2021 --time_limit 20
-# poetry run python parse_benchmark.py data/raw/Kasapidis2021/CPC_LARGE_INSTANCES/bcpc10.fjs --format Kasapidis2021 --time_limit 100
+# poetry run python parse_benchmark.py data/raw/Kasapidis2021/CPC_MEDIUM_INSTANCES/scpc01.fjs --instance_format Kasapidis2021 --time_limit 20
+# poetry run python parse_benchmark.py data/raw/Kasapidis2021/CPC_LARGE_INSTANCES/bcpc10.fjs --instance_format Kasapidis2021 --time_limit 100
