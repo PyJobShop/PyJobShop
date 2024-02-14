@@ -170,19 +170,15 @@ def parse_fjsp_sdst(lines: list[list[float]]) -> ParsedData:
     return data
 
 
-def parse_fajsp(lines: list[list[float]]) -> dict:
+def parse_fajsp(lines: list[list[float]]) -> ParsedData:
     """
     Parses a flexible assembly job shop problem instance.
     """
-    data: dict[str, float | str | list] = {"jobs": [], "precedence": []}
-
     num_operations, num_arcs, num_machines = lines[0]
-    data["num_operations"] = num_operations
-    data["num_arcs"] = num_arcs
-    data["num_machines"] = num_machines
 
+    precedence = []
     for line in lines[1 : num_arcs + 1]:
-        data["precedence"].append(tuple(line))  # to -> from
+        precedence.append(tuple(line))  # to -> from
 
     operations = []
     for line in lines[num_arcs + 1 :]:
@@ -190,19 +186,17 @@ def parse_fajsp(lines: list[list[float]]) -> dict:
         num_eligible_machines = int(line[0])
 
         for idx in range(num_eligible_machines):
-            machine = line[(idx * 2) + 1]
-            processing_time = line[(idx * 2) + 2]
-            operation.append(
-                {"machine": machine, "processing_time": processing_time}
-            )
+            machine = int(line[(idx * 2) + 1])
+            processing_time = int(line[(idx * 2) + 2])
+            operation.append(OperationData(machine, processing_time))
 
         operations.append(operation)
 
-    # One job that contains all operations.
-    data["jobs"].append(operations)
-    data["num_jobs"] = 1
+    # There are no jobs defined in this instance format, so we just store the
+    # operations as a single job.
+    jobs = [operations]
 
-    return data
+    return ParsedData(num_machines, jobs, precedence)
 
 
 def parse_yfjs(lines: list[list[float]]) -> Model:
