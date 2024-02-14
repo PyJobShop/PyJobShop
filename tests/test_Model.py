@@ -19,12 +19,10 @@ def test_model_to_data():
 
     job = model.add_job()
     machines = [model.add_machine() for _ in range(2)]
-    operations = [model.add_operation() for _ in range(2)]
+    operations = [model.add_operation(job=job) for _ in range(2)]
 
     mach1, mach2 = machines
     op1, op2 = operations
-
-    model.assign_job_operations(job, operations)
 
     model.add_processing_time(mach1, op1, 1)
     model.add_processing_time(mach2, op2, 2)
@@ -85,9 +83,7 @@ def test_model_to_data_default_values():
 
     job = model.add_job()
     machine = model.add_machine()
-    operation = model.add_operation()
-
-    model.assign_job_operations(job, [operation])
+    operation = model.add_operation(job=job)
 
     data = model.data()
 
@@ -142,7 +138,15 @@ def test_add_operation_attributes():
     """
     model = Model()
 
-    operation = model.add_operation(1, 2, 3, 4, True, False, name="operation")
+    operation = model.add_operation(
+        earliest_start=1,
+        latest_start=2,
+        earliest_end=3,
+        latest_end=4,
+        fixed_duration=True,
+        optional=False,
+        name="operation",
+    )
 
     assert_equal(operation.earliest_start, 1)
     assert_equal(operation.latest_start, 2)
@@ -191,9 +195,7 @@ def test_solve():
 
     job = model.add_job()
     machine = model.add_machine()
-    operations = [model.add_operation() for _ in range(2)]
-
-    model.assign_job_operations(job, operations)
+    operations = [model.add_operation(job=job) for _ in range(2)]
 
     for operation, duration in zip(operations, [1, 2]):
         model.add_processing_time(machine, operation, duration)

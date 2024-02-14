@@ -168,6 +168,7 @@ class Model:
 
     def add_operation(
         self,
+        job: Optional[Job] = None,
         earliest_start: Optional[int] = None,
         latest_start: Optional[int] = None,
         earliest_end: Optional[int] = None,
@@ -181,6 +182,8 @@ class Model:
 
         Parameters
         ----------
+        job: Optional[Job]
+            The job that the operation belongs to.
         earliest_start: Optional[int]
             Earliest start time of the operation.
         latest_start: Optional[int]
@@ -211,26 +214,15 @@ class Model:
             name,
         )
 
-        self._id2op[id(operation)] = len(self.operations)
+        op_idx = len(self.operations)
+        self._id2op[id(operation)] = op_idx
         self._operations.append(operation)
 
+        if job is not None:
+            job_idx = self._id2job[id(job)]
+            self._job2ops[job_idx].append(op_idx)
+
         return operation
-
-    def assign_job_operations(self, job: Job, operations: list[Operation]):
-        """
-        Assigns operations to a job.
-
-        Parameters
-        ----------
-        job: Job
-            The job to which the operations are added.
-        operations: list[Operation]
-            The operations to add to the job.
-        """
-        job_idx = self._id2job[id(job)]
-        op_idcs = [self._id2op[id(op)] for op in operations]
-
-        self._job2ops[job_idx].extend(op_idcs)
 
     def add_processing_time(
         self, machine: Machine, operation: Operation, duration: int
