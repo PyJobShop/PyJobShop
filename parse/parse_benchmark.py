@@ -11,10 +11,7 @@ MAX_INT = 2**25
 def parser(loc: Path | str, instance_format: str) -> Model:
     lines = file2lines(loc)
 
-    if instance_format == "jsp":
-        data = parse_jsp(lines)
-        return convert_to_model(data)
-    elif instance_format == "fjsp":
+    if instance_format == "fjsp":
         data = parse_fjsp(lines)
         return convert_to_model(data)
     elif instance_format == "fjsp_sdst":
@@ -31,44 +28,6 @@ def parser(loc: Path | str, instance_format: str) -> Model:
         return parse_kasapidis2021(lines)
     else:
         raise ValueError(f"Unknown instance_format: {instance_format}")
-
-
-def parse_jsp(lines: list[list[float]]) -> dict:
-    """
-    Parses a job shop problem instance.
-    """
-    data = {"jobs": [], "precedence": []}
-
-    # First line contains metadata.
-    num_jobs, num_machines = lines[0]
-    data["num_jobs"] = num_jobs
-    data["num_machines"] = num_machines
-
-    # Remaining lines contain operation data per job.
-    for job, line in enumerate(lines[1:]):
-        num_operations = len(line) // 2
-        operations = []
-
-        for idx in range(num_operations):
-            machine = line[idx * 2]
-            processing_time = line[idx * 2 + 1]
-            operations.append(
-                [{"machine": machine, "processing_time": processing_time}]
-            )
-
-        data["jobs"].append(operations)
-
-    # Precedence relationships among jobs.
-    data["precedence"] = []
-    op_idx = 0
-    for ops in data["jobs"]:
-        for _ in range(len(ops) - 1):
-            data["precedence"].append((op_idx, op_idx + 1))
-            op_idx += 1
-
-        op_idx += 1
-
-    return data
 
 
 def parse_fjsp_job_operation_data_line(
