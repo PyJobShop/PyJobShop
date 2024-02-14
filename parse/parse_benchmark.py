@@ -1,5 +1,7 @@
 import argparse
+from dataclasses import dataclass
 from pathlib import Path
+from typing import Optional
 
 import numpy as np
 
@@ -30,11 +32,68 @@ def parser(loc: Path | str, instance_format: str) -> Model:
         raise ValueError(f"Unknown instance_format: {instance_format}")
 
 
+@dataclass
+class OperationData:
+    machine: int
+    processing_time: int
+
+
+@dataclass
+class ParsedData:
+    """
+    Dataclass to hold the parsed data from the benchmark instances.
+
+    Parameters
+    ----------
+    num_machines
+        The number of machines in the instance.
+    jobs
+        A list of jobs, where each job is a list of operations. Each operation
+        is a dictionary with the keys "machine" and "processing_time".
+    precedence
+        A list of tuples (from, to) representing the precedence relationships
+        among operations. From and to are the indices of the operations.
+    """
+
+    num_machines: int
+    jobs: list[list[list[OperationData]]]
+    precedence: list[tuple[int, int]]
+    setup_times: Optional[np.ndarray] = None
+
+
+def convert_to_model(data: ParsedData) -> Model:
+    """
+    Converts the parsed data to a Model instance.
+    """
+    m = Model()
+
+    jobs = [m.add_job() for _ in range(len(data.jobs))]
+    machines = [m.add_machine() for _ in range(data.num_machines)]
+    operations = []
+
+    for job_idx, job_data in enumerate(data.jobs):
+        job = jobs[job_idx]
+
+        for operation in job_data:
+            op = m.add_operation(job=job)
+            operations.append(op)
+
+            for op_data in operation:
+                machine = machines[op_data.machine - 1]
+                duration = op_data.processing_time
+                m.add_processing_time(machine, op, duration)
+
+    for frm, to in data.precedence:
+        m.add_timing_precedence(operations[frm], operations[to])
+
+    return m
+
+
 def parse_fjsp_job_operation_data_line(
     line: list[float],
-) -> list[dict[str, float]]:
+) -> list[list[OperationData]]:
     """
-    Parses a standard instance_formatted FJSP job-operation data line:
+    Parses a standard formatted FJSP job-operation data line:
     - The first number is the number of operations (n >= 1) of that job.
     - Repeat for n times:
         - First a number k >= 1 that represents the number of machines that can
@@ -52,11 +111,9 @@ def parse_fjsp_job_operation_data_line(
         operation = []
 
         for _ in range(num_eligible_machines):
-            machine = line[idx]
-            processing_time = line[idx + 1]
-            operation.append(
-                {"machine": machine, "processing_time": processing_time}
-            )
+            machine = int(line[idx])
+            processing_time = int(line[idx + 1])
+            operation.append(OperationData(machine, processing_time))
             idx += 2
 
         operations.append(operation)
@@ -66,47 +123,49 @@ def parse_fjsp_job_operation_data_line(
     return operations
 
 
-def parse_fjsp(lines: list[list[float]]) -> dict:
+def parse_fjsp(lines: list[list[float]]) -> ParsedData:
     """
     Parses a flexible job shop problem instance that has the classical FJSP
     benchmark instance instance_format.
     """
-    data: dict[str, float | str | list] = {"jobs": [], "precedence": []}
-
     # First line contains metadata.
     num_jobs, num_machines, _ = lines[0]
-    data["num_jobs"] = num_jobs
-    data["num_machines"] = num_machines
 
-    for job, line in enumerate(lines[1:]):
-        data["jobs"].append(parse_fjsp_job_operation_data_line(line))
+    # The remaining lines contain the job-operation data, where each line
+    # represents a job and its operations.
+    jobs = [parse_fjsp_job_operation_data_line(line) for line in lines[1:]]
 
-    # Precedence relationships among operations.
-    op_idx = 0
-    for ops in data["jobs"]:
-        for _ in range(len(ops) - 1):
-            data["precedence"].append((op_idx, op_idx + 1))
-            op_idx += 1
+    # Precedence relationships between operations can be assumed from FJSP
+    # problem definition, where operations are processed in sequence of their
+    # appearance in the job-operation data.
+    precedences = []
+    idx = 0
+    for operations in jobs:
+        num_operations = len(operations)
 
-        op_idx += 1
+        for _ in range(num_operations - 1):
+            precedences.append((idx, idx + 1))
+            idx += 1
 
-    return data
+        idx += 1  # skip to the next job
+
+    return ParsedData(int(num_machines), jobs, precedences)
 
 
-def parse_fjsp_sdst(lines: list[list[float]]) -> dict:
+def parse_fjsp_sdst(lines: list[list[float]]) -> ParsedData:
     """
     Parses a flexible job shop problem with sequence-dependent setup times
     instance.
     """
-    # The first part of the file is the same as the classic FJSP instance_format.
+    # The first part of the file is the same as the classic FJSP format.
     num_jobs, _, _ = lines[0]
     data = parse_fjsp(lines[: num_jobs + 1])
 
     # The remaining lines contain the setup times, which are represented
     # as a matrix of size num_operations x num_operations for each machine.
     setup_times = np.array(lines[num_jobs + 1 :])
-    splits = np.array_split(setup_times, data["num_machines"])
-    data["setup_times"] = np.stack(splits)
+    splits = np.array_split(setup_times, data.num_machines)
+    data.setup_times = np.stack(splits)
 
     return data
 
@@ -275,35 +334,10 @@ def parse_num(c: str) -> int | float:
     return float(c) if "." in c else int(c)
 
 
-def convert_to_model(data: dict) -> Model:
-    m = Model()
-
-    jobs = [m.add_job() for _ in range(data["num_jobs"])]
-    machines = [m.add_machine() for _ in range(data["num_machines"])]
-    operations = []
-
-    for job_idx, ops in enumerate(data["jobs"]):
-        job = jobs[job_idx]
-
-        for op_data in ops:
-            op = m.add_operation(job=job)
-            operations.append(op)
-
-            for item in op_data:
-                machine = machines[item["machine"] - 1]
-                duration = item["processing_time"]
-                m.add_processing_time(machine, op, duration)
-
-    for frm, to in data["precedence"]:
-        m.add_timing_precedence(operations[frm], operations[to])
-
-    return m
-
-
 if __name__ == "__main__":
     argparser = argparse.ArgumentParser()
     argparser.add_argument("instances", type=Path, nargs="+")
-    argparser.add_argument("--instance_format", default="pyjobshop")
+    argparser.add_argument("--instance_format", default="fjsp")
     argparser.add_argument("--time_limit", type=int, default=2)
 
     args = argparser.parse_args()
