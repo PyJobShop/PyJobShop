@@ -21,8 +21,6 @@ def parser(loc: Path | str, instance_format: str) -> Model:
         data = parse_fajsp(lines)
     elif instance_format == "naderi2022":
         data = parse_naderi2022(lines)
-    elif instance_format == "yfjs":
-        data = parse_yfjs(lines)
     elif instance_format == "kasapidis2021":
         data = parse_kasapidis2021(lines)
     else:
@@ -58,34 +56,6 @@ class ParsedData:
     jobs: list[list[list[OperationData]]]
     precedence: list[tuple[int, int]]
     setup_times: Optional[np.ndarray] = None
-
-
-def convert_to_model(data: ParsedData) -> Model:
-    """
-    Converts the parsed data to a Model instance.
-    """
-    m = Model()
-
-    jobs = [m.add_job() for _ in range(len(data.jobs))]
-    machines = [m.add_machine() for _ in range(data.num_machines)]
-    operations = []
-
-    for job_idx, job_data in enumerate(data.jobs):
-        job = jobs[job_idx]
-
-        for operation in job_data:
-            op = m.add_operation(job=job)
-            operations.append(op)
-
-            for op_data in operation:
-                machine = machines[op_data.machine - 1]
-                duration = op_data.processing_time
-                m.add_processing_time(machine, op, duration)
-
-    for frm, to in data.precedence:
-        m.add_timing_precedence(operations[frm], operations[to])
-
-    return m
 
 
 def parse_fjsp_job_operation_data_line(
@@ -313,16 +283,39 @@ def file2lines(loc: Path | str) -> list[list[float]]:
     with open(loc, "r") as fh:
         lines = [line for line in fh.readlines() if line.strip()]
 
-    return [
-        [parse_num(x) for x in line.split()]
-        if not line.startswith("#")  # Shitty hack to deal with yfjsp
-        else line
-        for line in lines
-    ]
+    return [[parse_num(x) for x in line.split()] for line in lines]
 
 
 def parse_num(c: str) -> int | float:
     return float(c) if "." in c else int(c)
+
+
+def convert_to_model(data: ParsedData) -> Model:
+    """
+    Converts the parsed data to a Model instance.
+    """
+    m = Model()
+
+    jobs = [m.add_job() for _ in range(len(data.jobs))]
+    machines = [m.add_machine() for _ in range(data.num_machines)]
+    operations = []
+
+    for job_idx, job_data in enumerate(data.jobs):
+        job = jobs[job_idx]
+
+        for operation in job_data:
+            op = m.add_operation(job=job)
+            operations.append(op)
+
+            for op_data in operation:
+                machine = machines[op_data.machine - 1]
+                duration = op_data.processing_time
+                m.add_processing_time(machine, op, duration)
+
+    for frm, to in data.precedence:
+        m.add_timing_precedence(operations[frm], operations[to])
+
+    return m
 
 
 if __name__ == "__main__":
@@ -340,14 +333,8 @@ if __name__ == "__main__":
         cp_model = default_model(data)
         result = cp_model.solve(
             TimeLimit=args.time_limit,
-            LogVerbosity="Terse",
-            # LogVerbosity="Quiet",
+            LogVerbosity="Quiet",
         )
         print(result.solve_status, round(result.get_solve_time(), 2))
 
         solution = result2solution(data, result)
-        # plot(data, solution)
-
-# poetry run python parse/parse_benchmark.py data/raw/fjsp/3_DauzerePaulli/01a.fjs --time_limit 20
-# poetry run python parse_benchmark.py data/raw/Kasapidis2021/CPC_MEDIUM_INSTANCES/scpc01.fjs --instance_format Kasapidis2021 --time_limit 20
-# poetry run python parse_benchmark.py data/raw/Kasapidis2021/CPC_LARGE_INSTANCES/bcpc10.fjs --instance_format Kasapidis2021 --time_limit 100

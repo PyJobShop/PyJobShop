@@ -79,9 +79,10 @@ ignore = [
     "E741",  # ambiguous variable name, needed for indexing
     "C901",  # too complex
 ]
+exclude = ["parse/parse_benchmark.py"]
 
 
-[tool.ruff.per-file-ignores]
+[tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"] # ignore unused module imports
 
 
