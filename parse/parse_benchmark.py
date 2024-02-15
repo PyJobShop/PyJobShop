@@ -25,7 +25,8 @@ def parser(loc: Path | str, instance_format: str) -> Model:
     elif instance_format == "naderi2022":
         return parse_naderi2022(lines)
     elif instance_format == "yfjs":
-        return parse_yfjs(lines)
+        data = parse_yfjs(lines)
+        return convert_to_model(data)
     elif instance_format == "Kasapidis2021":
         return parse_kasapidis2021(lines)
     else:
@@ -126,10 +127,10 @@ def parse_fjsp_job_operation_data_line(
 def parse_fjsp(lines: list[list[float]]) -> ParsedData:
     """
     Parses a flexible job shop problem instance that has the classical FJSP
-    benchmark instance instance_format.
+    benchmark instance format.
     """
     # First line contains metadata.
-    num_jobs, num_machines, _ = lines[0]
+    num_jobs, num_machines, avg_ops_per_job = lines[0]
 
     # The remaining lines contain the job-operation data, where each line
     # represents a job and its operations.
@@ -199,28 +200,33 @@ def parse_fajsp(lines: list[list[float]]) -> ParsedData:
     return ParsedData(num_machines, jobs, precedence)
 
 
-def parse_yfjs(lines: list[list[float]]) -> Model:
+def parse_yfjs(lines: list[list[float]]) -> ParsedData:
+    """
+    Parses a flexible job shop problem instance with complex precedence
+    constraints from Birgin et al. (2014).
+    """
+
     # First four lines contain metadata about the number of jobs,
     # operation per job, number of machines and machines/operation.
     def _parse_metadata(line: list[float]):
         return int(line.split(":")[-1].strip())
 
-    data = {"jobs": [], "precedence": []}
-
     metadata = lines[:4]
-    data["num_jobs"] = _parse_metadata(metadata[0])
-    data["num_operations_per_job"] = _parse_metadata(metadata[1])
-    data["num_machines"] = _parse_metadata(metadata[2])
-    data["num_machines_per_operation"] = _parse_metadata(metadata[3])
+    num_jobs = _parse_metadata(metadata[0])
+    num_operations_per_job = _parse_metadata(metadata[1])
+    num_machines = _parse_metadata(metadata[2])
+    num_machines_per_operation = _parse_metadata(metadata[3])
 
-    # The rest is mostly the same as the `fajsp` instance_format, but
+    # The rest is mostly the same as the `fajsp` format, but
     # there are multiple jobs to be completed.
     OFFSET = 3
     _, num_arcs, _ = lines[1 + OFFSET]
 
+    precedence = []
     for line in lines[2 + OFFSET : num_arcs + 2 + OFFSET]:
-        data["precedence"].append(tuple(line))  # to -> from
+        precedence.append(tuple(line))  # to -> from
 
+    jobs = []
     operations = []
     for op_idx, line in enumerate(lines[num_arcs + 2 + OFFSET :], 1):
         operation = []
@@ -229,21 +235,22 @@ def parse_yfjs(lines: list[list[float]]) -> Model:
         for idx in range(num_eligible_machines):
             machine = line[(idx * 2) + 1]
             processing_time = line[(idx * 2) + 2]
-            operation.append(
-                {"machine": machine, "processing_time": processing_time}
-            )
+            operation.append(OperationData(machine, processing_time))
 
         operations.append(operation)
 
         # Store every `num_operations_per_job` operations as a single job.
-        if op_idx % data["num_operations_per_job"] == 0:
-            data["jobs"].append(operations)
+        if op_idx % num_operations_per_job == 0:
+            jobs.append(operations)
             operations = []
 
-    return convert_to_model(data)
+    return ParsedData(num_machines, jobs, precedence)
 
 
 def parse_naderi2022(lines: list[list[float]]) -> Model:
+    """
+    TODO
+    """
     data = {}
 
     data["num_jobs"] = lines[0][0]
@@ -342,9 +349,11 @@ if __name__ == "__main__":
         data = model.data()
         cp_model = default_model(data)
         result = cp_model.solve(
-            TimeLimit=args.time_limit, LogVerbosity="Terse"
+            TimeLimit=args.time_limit,
+            # LogVerbosity="Terse",
+            LogVerbosity="Quiet",
         )
-        print(result.solve_status)
+        print(result.solve_status, round(result.get_solve_time(), 2))
 
         solution = result2solution(data, result)
         # plot(data, solution)
