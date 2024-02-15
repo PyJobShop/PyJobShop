@@ -69,6 +69,9 @@ def parse_fjsp_job_operation_data_line(
           process the operation.
         - Then there are k pairs of numbers (machine, processing time) that
           specify which are the machines and the processing times.
+
+    Note that the machine indices start from 1, so we subtract 1 to make them
+    zero-based.
     """
     num_operations = line[0]
     operations = []
@@ -80,7 +83,7 @@ def parse_fjsp_job_operation_data_line(
         operation = []
 
         for _ in range(num_eligible_machines):
-            machine = int(line[idx])
+            machine = int(line[idx]) - 1  # make zero-based
             processing_time = int(line[idx + 1])
             operation.append(OperationData(machine, processing_time))
             idx += 2
@@ -308,7 +311,7 @@ def convert_to_model(data: ParsedData) -> Model:
             operations.append(op)
 
             for op_data in operation:
-                machine = machines[op_data.machine - 1]
+                machine = machines[op_data.machine]
                 duration = op_data.processing_time
                 m.add_processing_time(machine, op, duration)
 
