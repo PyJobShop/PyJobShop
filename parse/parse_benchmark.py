@@ -28,8 +28,9 @@ def parser(loc: Path | str, instance_format: str) -> Model:
     elif instance_format == "yfjs":
         data = parse_yfjs(lines)
         return convert_to_model(data)
-    elif instance_format == "Kasapidis2021":
-        return parse_kasapidis2021(lines)
+    elif instance_format == "kasapidis2021":
+        data = parse_kasapidis2021(lines)
+        return convert_to_model(data)
     else:
         raise ValueError(f"Unknown instance_format: {instance_format}")
 
@@ -287,31 +288,29 @@ def parse_naderi2022(lines: list[list[float]]) -> ParsedData:
     return ParsedData(num_machines, jobs, precedence)
 
 
-def parse_kasapidis2021(lines: list[list[float]]) -> Model:
+def parse_kasapidis2021(lines: list[list[float]]) -> ParsedData:
     """
     Parses an FJSP instance with complex precedence constraints
     from Kasapidis et al. (2021).
     """
-    data = {"jobs": [], "precedence": set()}
-
     num_jobs, num_machines, _, _, _ = lines[0]
-    data["num_jobs"] = num_jobs
-    data["num_machines"] = num_machines
 
+    jobs = []
     for line in lines[1 : num_jobs + 1]:
-        data["jobs"].append(parse_fjsp_job_operation_data_line(line))
+        jobs.append(parse_fjsp_job_operation_data_line(line))
 
+    precedence = set()
     for op_idx, line in enumerate(lines[num_jobs + 1 :]):
         num_predecessors = line[0]
         num_successors = line[num_predecessors + 1]
 
         for pred in line[1 : num_predecessors + 1]:
-            data["precedence"].add((pred, op_idx))
+            precedence.add((pred, op_idx))
 
         for succ in line[num_predecessors + 2 :]:
-            data["precedence"].add((op_idx, succ))
+            precedence.add((op_idx, succ))
 
-    return convert_to_model(data)
+    return ParsedData(num_machines, jobs, precedence)
 
 
 def file2lines(loc: Path | str) -> list[list[float]]:
