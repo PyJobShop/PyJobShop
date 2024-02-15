@@ -1,5 +1,6 @@
 from numpy.testing import assert_equal
 
+from pyjobshop.constants import MAX_VALUE
 from pyjobshop.Model import Model
 from pyjobshop.ProblemData import (
     AssignmentPrecedence,
@@ -7,8 +8,6 @@ from pyjobshop.ProblemData import (
     TimingPrecedence,
 )
 from pyjobshop.Solution import Solution, Task
-
-MAX_VALUE = 2**25
 
 
 def test_model_to_data():
@@ -96,7 +95,7 @@ def test_model_to_data_default_values():
     assert_equal(data.assignment_precedences, {})
     assert_equal(data.setup_times, [[[0]]])
     assert_equal(data.process_plans, [])
-    assert_equal(data.planning_horizon, None)
+    assert_equal(data.planning_horizon, MAX_VALUE)
     assert_equal(data.objective, Objective.MAKESPAN)
 
 

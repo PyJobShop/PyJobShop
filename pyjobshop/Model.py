@@ -15,6 +15,7 @@ from .ProblemData import (
     TimingPrecedence,
 )
 from .Result import Result
+from pyjobshop.constants import MAX_VALUE
 
 
 class Model:
@@ -36,7 +37,7 @@ class Model:
         ] = defaultdict(list)
         self._setup_times: dict[tuple[int, int, int], int] = {}
         self._process_plans: list[list[list[int]]] = []
-        self._planning_horizon: Optional[int] = None
+        self._planning_horizon: int = MAX_VALUE
         self._objective: Objective = Objective.MAKESPAN
 
         self._id2job: dict[int, int] = {}

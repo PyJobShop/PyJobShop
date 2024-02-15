@@ -4,6 +4,8 @@ from typing import Iterable, Optional
 
 import numpy as np
 
+from pyjobshop.constants import MAX_VALUE
+
 
 class Job:
     """
@@ -326,7 +328,7 @@ class ProblemData:
         ] = None,
         setup_times: Optional[np.ndarray] = None,
         process_plans: Optional[list[list[list[int]]]] = None,
-        planning_horizon: Optional[int] = None,
+        planning_horizon: int = MAX_VALUE,
         objective: Objective = Objective.MAKESPAN,
     ):
         self._jobs = jobs
@@ -496,15 +498,14 @@ class ProblemData:
         return self._process_plans
 
     @property
-    def planning_horizon(self) -> Optional[int]:
+    def planning_horizon(self) -> int:
         """
         The planning horizon of this instance.
 
         Returns
         -------
         Optional[int]
-            The planning horizon value. If None, then the planning horizon
-            is unbounded.
+            The planning horizon value.
         """
         return self._planning_horizon
 
