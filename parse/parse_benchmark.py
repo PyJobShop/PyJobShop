@@ -23,7 +23,8 @@ def parser(loc: Path | str, instance_format: str) -> Model:
         data = parse_fajsp(lines)
         return convert_to_model(data)
     elif instance_format == "naderi2022":
-        return parse_naderi2022(lines)
+        data = parse_naderi2022(lines)
+        return convert_to_model(data)
     elif instance_format == "yfjs":
         data = parse_yfjs(lines)
         return convert_to_model(data)
@@ -173,7 +174,8 @@ def parse_fjsp_sdst(lines: list[list[float]]) -> ParsedData:
 
 def parse_fajsp(lines: list[list[float]]) -> ParsedData:
     """
-    Parses a flexible assembly job shop problem instance.
+    Parses a flexible assembly job shop problem instance from
+    Birgin et al. (2014). These are the "DAFJS" named instances.
     """
     num_operations, num_arcs, num_machines = lines[0]
 
@@ -247,49 +249,42 @@ def parse_yfjs(lines: list[list[float]]) -> ParsedData:
     return ParsedData(num_machines, jobs, precedence)
 
 
-def parse_naderi2022(lines: list[list[float]]) -> Model:
+def parse_naderi2022(lines: list[list[float]]) -> ParsedData:
     """
-    TODO
+    Parses an FJSP instance from Naderi et al. (2022).
     """
-    data = {}
-
-    data["num_jobs"] = lines[0][0]
-    data["num_machines"] = lines[1][0]
+    num_jobs = lines[0][0]
+    num_machines = lines[1][0]
 
     num_operations_per_job = lines[2]
-    data["num_operations"] = sum(num_operations_per_job)
+    num_operations = sum(num_operations_per_job)
 
+    # The rest of the lines contain the processing times for each operation
+    # and machine pair.
     processing_times = np.array(lines[3:])
-    data["processing_times"] = np.where(
-        processing_times, processing_times, MAX_INT
-    )
+
+    jobs = []
+    indices = np.cumsum([0] + num_operations_per_job)
+
+    for start, end in zip(indices[:-1], indices[1:]):
+        operations = []
+        for durations in processing_times[start:end, :]:
+            operation = []
+            for machine in np.flatnonzero(durations):
+                operation.append(OperationData(machine, durations[machine]))
+
+            operations.append(operation)
+
+        jobs.append(operations)
 
     # Arc for each sequential operation pair for each job.
-    cumul = np.cumsum([0] + num_operations_per_job)
-    data["precedence"] = [
+    precedence = [
         (op, op + 1)
-        for idx in range(data["num_jobs"])
-        for op in range(cumul[idx], cumul[idx + 1] - 1)
+        for idx in range(num_jobs)
+        for op in range(indices[idx], indices[idx + 1] - 1)
     ]
 
-    # Convert to Model.
-    model = Model()
-
-    jobs = [model.add_job() for _ in range(data["num_jobs"])]
-    machines = [model.add_machine() for _ in range(data["num_machines"])]
-
-    operations = []
-    for idx, job in enumerate(jobs):
-        for _ in range(cumul[idx], cumul[idx + 1]):
-            operations.append(model.add_operation(job, machines))
-
-    for op_idx, op in enumerate(operations):
-        for m_idx, machine in enumerate(machines):
-            model.add_processing_time(
-                machine, op, data["processing_times"][op_idx][m_idx]
-            )
-
-    return model
+    return ParsedData(num_machines, jobs, precedence)
 
 
 def parse_kasapidis2021(lines: list[list[float]]) -> Model:
@@ -350,8 +345,8 @@ if __name__ == "__main__":
         cp_model = default_model(data)
         result = cp_model.solve(
             TimeLimit=args.time_limit,
-            # LogVerbosity="Terse",
-            LogVerbosity="Quiet",
+            LogVerbosity="Terse",
+            # LogVerbosity="Quiet",
         )
         print(result.solve_status, round(result.get_solve_time(), 2))
 
