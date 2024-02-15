@@ -15,24 +15,20 @@ def parser(loc: Path | str, instance_format: str) -> Model:
 
     if instance_format == "fjsp":
         data = parse_fjsp(lines)
-        return convert_to_model(data)
     elif instance_format == "fjsp_sdst":
         data = parse_fjsp_sdst(lines)
-        return convert_to_model(data)
     elif instance_format == "fajsp":
         data = parse_fajsp(lines)
-        return convert_to_model(data)
     elif instance_format == "naderi2022":
         data = parse_naderi2022(lines)
-        return convert_to_model(data)
     elif instance_format == "yfjs":
         data = parse_yfjs(lines)
-        return convert_to_model(data)
     elif instance_format == "kasapidis2021":
         data = parse_kasapidis2021(lines)
-        return convert_to_model(data)
     else:
         raise ValueError(f"Unknown instance_format: {instance_format}")
+
+    return convert_to_model(data)
 
 
 @dataclass
