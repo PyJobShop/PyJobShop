@@ -390,6 +390,7 @@ class Model:
         cp_result: CpoSolveResult = cp_model.solve(**kwargs)  # type: ignore
 
         solve_status = cp_result.get_solve_status()
+        runtime = cp_result.get_solve_time()
 
         if solve_status == "Infeasible":
             solution = None
@@ -398,4 +399,4 @@ class Model:
             solution = result2solution(self.data(), cp_result)
             objective_value = cp_result.get_objective_value()
 
-        return Result(solve_status, solution, objective_value)
+        return Result(solve_status, runtime, solution, objective_value)
