@@ -4,7 +4,7 @@
 
 # PyJobShop
 [![PyPI](https://img.shields.io/pypi/v/PyJobShop?style=flat-square)](https://pypi.org/project/pyjobshop/)
-[![License](https://img.shields.io/github/license/leonlan/PyJobShop?style=flat-square&color=blue)](https://github.com/leonlan/PyJobShop/)
+[![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](https://github.com/leonlan/PyJobShop/)
 [![CI](https://img.shields.io/github/actions/workflow/status/leonlan/PyJobShop/.github%2Fworkflows%2FCI.yml?style=flat-square)](https://github.com/leonlan/PyJobShop/)
 [![DOC](https://img.shields.io/readthedocs/pyjobshop?style=flat-square)](https://pyjobshop.readthedocs.io/)
 [![Codecov](https://img.shields.io/codecov/c/github/leonlan/PyJobShop?style=flat-square)](https://app.codecov.io/gh/leonlan/PyJobShop/)
