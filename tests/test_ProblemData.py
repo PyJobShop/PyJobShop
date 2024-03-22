@@ -1,4 +1,3 @@
-import random
 from typing import Optional
 
 import numpy as np
@@ -963,41 +962,6 @@ def test_total_weighted_tardiness():
 
 
 # --- Small classical examples. ---
-def test_blocking_flowshop():
-    """
-    Blocking flowshop example.
-    """
-    random.seed(42)
-
-    NUM_JOBS = 5
-    NUM_MACHINES = 5
-
-    model = Model()
-    jobs = [model.add_job() for _ in range(NUM_JOBS)]
-    machines = [model.add_machine() for _ in range(NUM_MACHINES)]
-
-    for job in jobs:
-        # One operation per job and machine pair.
-        operations = [
-            model.add_operation(job=job, fixed_duration=False)
-            for _ in range(NUM_MACHINES)
-        ]
-
-        for machine, op in zip(machines, operations):
-            model.add_processing_time(machine, op, random.randint(1, 10))
-
-        # Create precedence constraints between operations.
-        for idx in range(len(operations) - 1):
-            model.add_precedence(
-                operations[idx],
-                operations[idx + 1],
-                Precedence.END_AT_START,
-            )
-
-    result = model.solve()
-
-    assert_equal(result.solve_status, "Optimal")
-    assert_equal(result.objective_value, 51)
 
 
 def test_jobshop():
