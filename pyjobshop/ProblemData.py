@@ -287,7 +287,8 @@ class ProblemData:
         Processing times of operations on machines. First index is the machine
         index, second index is the operation index.
     precedences
-        Dict indexed by operation pairs with list of precedence constraints and delays.
+        Dict indexed by operation pairs with list of precedence constraints and
+        delays.
     setup_times
         Sequence-dependent setup times between operations on a given machine.
         The first dimension of the array is indexed by the machine index. The
