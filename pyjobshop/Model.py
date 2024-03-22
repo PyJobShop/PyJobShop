@@ -22,9 +22,9 @@ class Model:
     """
 
     def __init__(self):
-        self._jobs = []
-        self._machines = []
-        self._operations = []
+        self._jobs: list[Job] = []
+        self._machines: list[Machine] = []
+        self._operations: list[Operation] = []
         self._job2ops: dict[int, list[int]] = defaultdict(list)
         self._processing_times: dict[tuple[int, int], int] = {}
         self._precedences: dict[
