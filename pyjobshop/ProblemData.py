@@ -225,7 +225,7 @@ class Objective(str, Enum):
     TOTAL_TARDINESS = "total_tardiness"
 
 
-class TimingPrecedence(str, Enum):
+class Precedence(str, Enum):
     """
     Types of precedence constraints between two operations $i$ and $j$.
     Let $s(i)$ and $f(i)$ be the start and finish times of operation $i$,
@@ -244,6 +244,15 @@ class TimingPrecedence(str, Enum):
     Timing precedence constraints are combined with delays: a delay of $d$
     is added to the left-hand side of the constraint. For example, the
     constraint `start_at_start` with delay $d$ is then $s(i) + d == s(j)$.
+
+    -------
+
+    Types of assignment precedence constraints between two operations $i$ and
+    $j$.
+
+    - previous:              i is previous to j in sequence variable.
+    - same_unit:             i and j are processed on the same unit.
+    - different_unit:        i and j are processed on different units.
     """
 
     START_AT_START = "start_at_start"
@@ -254,18 +263,6 @@ class TimingPrecedence(str, Enum):
     END_AT_END = "end_at_end"
     END_BEFORE_START = "end_before_start"
     END_BEFORE_END = "end_before_end"
-
-
-class AssignmentPrecedence(str, Enum):
-    """
-    Types of assignment precedence constraints between two operations $i$ and
-    $j$.
-
-    - previous:              i is previous to j in sequence variable.
-    - same_unit:             i and j are processed on the same unit.
-    - different_unit:        i and j are processed on different units.
-    """
-
     PREVIOUS = "previous"
     SAME_UNIT = "same_unit"
     DIFFERENT_UNIT = "different_unit"
@@ -289,12 +286,8 @@ class ProblemData:
     processing_times
         Processing times of operations on machines. First index is the machine
         index, second index is the operation index.
-    timing_precedences
-        Dict indexed by operation pairs with list of timing precedence
-        constraints and delays.
-    assignment_precedences
-        Dict indexed by operation pairs with list of assignment precedence
-        constraints.
+    precedences
+        Dict indexed by operation pairs with list of precedence constraints and delays.
     setup_times
         Sequence-dependent setup times between operations on a given machine.
         The first dimension of the array is indexed by the machine index. The
@@ -318,12 +311,7 @@ class ProblemData:
         operations: list[Operation],
         job2ops: list[list[int]],
         processing_times: dict[tuple[int, int], int],
-        timing_precedences: dict[
-            tuple[int, int], list[tuple[TimingPrecedence, int]]
-        ],
-        assignment_precedences: Optional[
-            dict[tuple[int, int], list[AssignmentPrecedence]]
-        ] = None,
+        precedences: dict[tuple[int, int], list[tuple[Precedence, int]]],
         setup_times: Optional[np.ndarray] = None,
         process_plans: Optional[list[list[list[int]]]] = None,
         planning_horizon: Optional[int] = None,
@@ -334,12 +322,7 @@ class ProblemData:
         self._operations = operations
         self._job2ops = job2ops
         self._processing_times = processing_times
-        self._timing_precedences = timing_precedences
-        self._assignment_precedences = (
-            assignment_precedences
-            if assignment_precedences is not None
-            else {}
-        )
+        self._precedences = precedences
 
         num_mach = self.num_machines
         num_ops = self.num_operations
@@ -436,34 +419,19 @@ class ProblemData:
         return self._processing_times
 
     @property
-    def timing_precedences(
+    def precedences(
         self,
-    ) -> dict[tuple[int, int], list[tuple[TimingPrecedence, int]]]:
+    ) -> dict[tuple[int, int], list[tuple[Precedence, int]]]:
         """
-        Timing precedence constraints between operations.
+        Precedence constraints between operations.
 
         Returns
         -------
-        dict[tuple[int, int], list[tuple[TimingPrecedence, int]]]
+        dict[tuple[int, int], list[tuple[Precedence, int]]]
             Dict indexed by operation pairs with list of timing precedence
             constraints and delays.
         """
-        return self._timing_precedences
-
-    @property
-    def assignment_precedences(
-        self,
-    ) -> dict[tuple[int, int], list[AssignmentPrecedence]]:
-        """
-        Assignment precedence constraints between operations.
-
-        Returns
-        -------
-        dict[tuple[int, int], list[AssignmentPrecedence]]
-            Dict indexed by operation pairs with list of assignment precedence
-            constraints.
-        """
-        return self._assignment_precedences
+        return self._precedences
 
     @property
     def setup_times(self) -> np.ndarray:

@@ -1,11 +1,7 @@
 from numpy.testing import assert_equal
 
 from pyjobshop.Model import Model
-from pyjobshop.ProblemData import (
-    AssignmentPrecedence,
-    Objective,
-    TimingPrecedence,
-)
+from pyjobshop.ProblemData import Objective, Precedence
 from pyjobshop.Solution import Solution, Task
 
 MAX_VALUE = 2**25
@@ -27,15 +23,10 @@ def test_model_to_data():
     model.add_processing_time(mach1, op1, 1)
     model.add_processing_time(mach2, op2, 2)
 
-    model.add_timing_precedence(
-        op1, op2, TimingPrecedence.END_BEFORE_START, 10
-    )
-    model.add_timing_precedence(
-        op1, op2, TimingPrecedence.START_BEFORE_END, 10
-    )
-
-    model.add_assignment_precedence(op2, op1, AssignmentPrecedence.SAME_UNIT)
-    model.add_assignment_precedence(op2, op1, AssignmentPrecedence.PREVIOUS)
+    model.add_precedence(op1, op2, Precedence.END_BEFORE_START, 10)
+    model.add_precedence(op1, op2, Precedence.START_BEFORE_END, 10)
+    model.add_precedence(op2, op1, Precedence.SAME_UNIT)
+    model.add_precedence(op2, op1, Precedence.PREVIOUS)
 
     model.add_setup_time(mach1, op1, op2, 3)
     model.add_setup_time(mach2, op1, op2, 4)
@@ -52,21 +43,16 @@ def test_model_to_data():
     assert_equal(data.job2ops, [[0, 1]])
     assert_equal(data.processing_times, {(0, 0): 1, (1, 1): 2})
     assert_equal(
-        data.timing_precedences,
+        data.precedences,
         {
             (0, 1): [
-                (TimingPrecedence.END_BEFORE_START, 10),
-                (TimingPrecedence.START_BEFORE_END, 10),
-            ]
-        },
-    )
-    assert_equal(
-        data.assignment_precedences,
-        {
+                (Precedence.END_BEFORE_START, 10),
+                (Precedence.START_BEFORE_END, 10),
+            ],
             (1, 0): [
-                AssignmentPrecedence.SAME_UNIT,
-                AssignmentPrecedence.PREVIOUS,
-            ]
+                (Precedence.SAME_UNIT, 0),
+                (Precedence.PREVIOUS, 0),
+            ],
         },
     )
     assert_equal(data.setup_times, [[[0, 3], [0, 0]], [[0, 4], [0, 0]]])
@@ -92,8 +78,7 @@ def test_model_to_data_default_values():
     assert_equal(data.operations, [operation])
     assert_equal(data.job2ops, [[0]])
     assert_equal(data.processing_times, {})
-    assert_equal(data.timing_precedences, {})
-    assert_equal(data.assignment_precedences, {})
+    assert_equal(data.precedences, {})
     assert_equal(data.setup_times, [[[0]]])
     assert_equal(data.process_plans, [])
     assert_equal(data.planning_horizon, None)

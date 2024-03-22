@@ -24,10 +24,7 @@ PyJobShop
     .. autoclass:: Job
        :members:
 
-    .. autoclass:: TimingPrecedence
-       :members:
-
-    .. autoclass:: AssignmentPrecedence
+    .. autoclass:: Precedence
        :members:
 
     .. autoclass:: Objective

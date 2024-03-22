@@ -7,13 +7,12 @@ from numpy.testing import assert_allclose, assert_equal, assert_raises
 
 from pyjobshop.Model import Model
 from pyjobshop.ProblemData import (
-    AssignmentPrecedence,
     Job,
     Machine,
     Objective,
     Operation,
+    Precedence,
     ProblemData,
-    TimingPrecedence,
 )
 from pyjobshop.Solution import Task
 
@@ -164,11 +163,9 @@ def test_problem_data_input_parameter_attributes():
     operations = [Operation() for _ in range(5)]
     job2ops = [[0], [1], [2], [3], [4]]
     processing_times = {(i, j): 1 for i in range(5) for j in range(5)}
-    timing_precedences = {
-        key: [TimingPrecedence.END_BEFORE_START]
-        for key in ((0, 1), (2, 3), (4, 5))
+    precedences = {
+        key: [Precedence.END_BEFORE_START] for key in ((0, 1), (2, 3), (4, 5))
     }
-    assignment_precedences = {(0, 1): [AssignmentPrecedence.PREVIOUS]}
     setup_times = np.ones((5, 5, 5), dtype=int)
     process_plans = [[[0, 1, 2, 3, 4]]]
     planning_horizon = 100
@@ -180,8 +177,7 @@ def test_problem_data_input_parameter_attributes():
         operations,
         job2ops,
         processing_times,
-        timing_precedences,
-        assignment_precedences,
+        precedences,
         setup_times,
         process_plans,
         planning_horizon,
@@ -193,8 +189,7 @@ def test_problem_data_input_parameter_attributes():
     assert_equal(data.operations, operations)
     assert_equal(data.job2ops, job2ops)
     assert_equal(data.processing_times, processing_times)
-    assert_equal(data.timing_precedences, timing_precedences)
-    assert_equal(data.assignment_precedences, assignment_precedences)
+    assert_equal(data.precedences, precedences)
     assert_allclose(data.setup_times, setup_times)
     assert_equal(data.process_plans, process_plans)
     assert_equal(data.planning_horizon, planning_horizon)
@@ -235,18 +230,12 @@ def test_problem_data_default_values():
     machines = [Machine() for _ in range(1)]
     operations = [Operation() for _ in range(1)]
     job2ops = [[0]]
-    timing_precedences = {(0, 1): [TimingPrecedence.END_BEFORE_START]}
+    precedences = {(0, 1): [Precedence.END_BEFORE_START]}
     processing_times = {(0, 0): 1}
     data = ProblemData(
-        jobs,
-        machines,
-        operations,
-        job2ops,
-        processing_times,
-        timing_precedences,
+        jobs, machines, operations, job2ops, processing_times, precedences
     )
 
-    assert_equal(data.assignment_precedences, {})
     assert_allclose(data.setup_times, np.zeros((1, 1, 1), dtype=int))
     assert_equal(data.process_plans, [])
     assert_equal(data.planning_horizon, None)
@@ -282,7 +271,6 @@ def test_problem_data_raises_when_invalid_arguments(
             [Operation()],
             [[0]],
             processing_times,
-            {},
             {},
             setup_times.astype(int),
             planning_horizon=planning_horizon,
@@ -662,26 +650,24 @@ def test_optional_operations():
     "prec_type,expected_makespan",
     [
         # start 0 == start 0
-        (TimingPrecedence.START_AT_START, 2),
+        (Precedence.START_AT_START, 2),
         # start 2 == end 2
-        (TimingPrecedence.START_AT_END, 4),
+        (Precedence.START_AT_END, 4),
         # start 0 <= start 0
-        (TimingPrecedence.START_BEFORE_START, 2),
+        (Precedence.START_BEFORE_START, 2),
         # start 0 <= end 2
-        (TimingPrecedence.START_BEFORE_END, 2),
+        (Precedence.START_BEFORE_END, 2),
         # end 2 == start 2
-        (TimingPrecedence.END_AT_START, 4),
+        (Precedence.END_AT_START, 4),
         # end 2 == end 2
-        (TimingPrecedence.END_AT_END, 2),
+        (Precedence.END_AT_END, 2),
         # end 2 <= start 2
-        (TimingPrecedence.END_BEFORE_START, 4),
+        (Precedence.END_BEFORE_START, 4),
         # end 2 <= end 2
-        (TimingPrecedence.END_BEFORE_END, 2),
+        (Precedence.END_BEFORE_END, 2),
     ],
 )
-def test_timing_precedence(
-    prec_type: TimingPrecedence, expected_makespan: int
-):
+def test_precedence(prec_type: Precedence, expected_makespan: int):
     """
     Tests that timing precedence constraints are respected. This example
     uses two operations and two machines with processing times of 2.
@@ -696,7 +682,7 @@ def test_timing_precedence(
         for operation in operations:
             model.add_processing_time(machine, operation, duration=2)
 
-    model.add_timing_precedence(operations[0], operations[1], prec_type)
+    model.add_precedence(operations[0], operations[1], prec_type)
 
     result = model.solve()
 
@@ -707,29 +693,29 @@ def test_timing_precedence(
     "prec_type,expected_makespan",
     [
         # start 0 + delay 1 == start 1
-        (TimingPrecedence.START_AT_START, 3),
+        (Precedence.START_AT_START, 3),
         # start 1 + delay 1 == end 3
-        (TimingPrecedence.START_AT_END, 3),
+        (Precedence.START_AT_END, 3),
         # start 0 + delay 1 <= start 1
-        (TimingPrecedence.START_BEFORE_START, 3),
+        (Precedence.START_BEFORE_START, 3),
         # start 0 + delay 1 <= end 2
-        (TimingPrecedence.START_BEFORE_END, 2),
+        (Precedence.START_BEFORE_END, 2),
         # end 2 + delay 1 == start 0
-        (TimingPrecedence.END_AT_START, 5),
+        (Precedence.END_AT_START, 5),
         # end 2 + delay 1 == end 2
-        (TimingPrecedence.END_AT_END, 3),
+        (Precedence.END_AT_END, 3),
         # end 2 + delay 1 <= start 3
-        (TimingPrecedence.END_BEFORE_START, 5),
+        (Precedence.END_BEFORE_START, 5),
         # end 2 + delay 1 <= end 3
-        (TimingPrecedence.END_BEFORE_END, 3),
+        (Precedence.END_BEFORE_END, 3),
     ],
 )
-def test_timing_precedence_with_one_delay(
-    prec_type: TimingPrecedence, expected_makespan: int
+def test_precedence_with_one_delay(
+    prec_type: Precedence, expected_makespan: int
 ):
     """
-    Tests that timing precedence constraints with delays are respected. This
-    example is similar to `test_timing_precedence`, but with a delay of 1.
+    Tests that precedence constraints with delays are respected. This
+    example is similar to `test_precedence`, but with a delay of 1.
     """
     model = Model()
 
@@ -741,9 +727,7 @@ def test_timing_precedence_with_one_delay(
         for operation in operations:
             model.add_processing_time(machine, operation, duration=2)
 
-    model.add_timing_precedence(
-        operations[0], operations[1], prec_type, delay=1
-    )
+    model.add_precedence(operations[0], operations[1], prec_type, delay=1)
 
     result = model.solve()
 
@@ -753,14 +737,12 @@ def test_timing_precedence_with_one_delay(
 @pytest.mark.parametrize(
     "prec_type,expected_makespan",
     [
-        (AssignmentPrecedence.PREVIOUS, 2),  # TODO needs better test
-        (AssignmentPrecedence.SAME_UNIT, 4),
-        (AssignmentPrecedence.DIFFERENT_UNIT, 2),
+        (Precedence.PREVIOUS, 2),  # TODO needs better test
+        (Precedence.SAME_UNIT, 4),
+        (Precedence.DIFFERENT_UNIT, 2),
     ],
 )
-def test_assignment_precedence(
-    prec_type: AssignmentPrecedence, expected_makespan: int
-):
+def test_assignment_precedence(prec_type: Precedence, expected_makespan: int):
     """
     Tests that assignment precedence constraints are respected. This example
     uses two operations and two machines with processing times of 2.
@@ -775,7 +757,7 @@ def test_assignment_precedence(
         for operation in operations:
             model.add_processing_time(machine, operation, duration=2)
 
-    model.add_assignment_precedence(operations[0], operations[1], prec_type)
+    model.add_precedence(operations[0], operations[1], prec_type)
 
     result = model.solve()
 
@@ -1006,10 +988,10 @@ def test_blocking_flowshop():
 
         # Create precedence constraints between operations.
         for idx in range(len(operations) - 1):
-            model.add_timing_precedence(
+            model.add_precedence(
                 operations[idx],
                 operations[idx + 1],
-                TimingPrecedence.END_AT_START,
+                Precedence.END_AT_START,
             )
 
     result = model.solve()
@@ -1052,9 +1034,7 @@ def test_jobshop():
         # Impose linear routing precedence constraints.
         for op_idx in range(1, len(operations)):
             op1, op2 = operations[op_idx - 1], operations[op_idx]
-            model.add_timing_precedence(
-                op1, op2, TimingPrecedence.END_BEFORE_START
-            )
+            model.add_precedence(op1, op2, Precedence.END_BEFORE_START)
 
     result = model.solve()
 
