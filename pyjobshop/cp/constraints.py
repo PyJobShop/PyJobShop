@@ -223,11 +223,11 @@ def operation_graph_constraints(
 ) -> list[CpoExpr]:
     constraints = []
 
-    for (idx1, idx2), precedences in data.constraints.items():
+    for (idx1, idx2), op_constraints in data.constraints.items():
         op1 = op_vars[idx1]
         op2 = op_vars[idx2]
 
-        for constraint in precedences:
+        for constraint in op_constraints:
             if constraint == "start_at_start":
                 expr = m.start_at_start(op1, op2)
             elif constraint == "start_at_end":
@@ -244,7 +244,12 @@ def operation_graph_constraints(
                 expr = m.end_before_start(op1, op2)
             elif constraint == "end_before_end":
                 expr = m.end_before_end(op1, op2)
+            else:
+                continue
 
+            constraints.append(expr)
+
+    # Separately handle assignment related constraints for efficiency.
     for machine, ops in enumerate(data.machine2ops):
         seq_var = seq_vars[machine]
 
