@@ -13,5 +13,5 @@ def test_result_attributes(small):
 
     assert_equal(result.solve_status, "Optimal")
     assert_equal(result.runtime, 123.45)
-    assert_equal(result.solution, solution)
+    assert_equal(result.best, solution)
     assert_equal(result.objective_value, 100)

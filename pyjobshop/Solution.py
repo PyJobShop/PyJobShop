@@ -1,6 +1,9 @@
+from dataclasses import dataclass
+
 from .ProblemData import ProblemData
 
 
+@dataclass
 class Task:
     """
     The Task class stores data related to scheduled operations.
@@ -17,37 +20,10 @@ class Task:
         The duration of the operation.
     """
 
-    def __init__(
-        self, operation: int, machine: int, start: int, duration: int
-    ):
-        self._operation = operation
-        self._machine = machine
-        self._start = start
-        self._duration = duration
-
-    def __eq__(self, other) -> bool:
-        return (
-            self.operation == other.operation
-            and self.machine == other.machine
-            and self.start == other.start
-            and self.duration == other.duration
-        )
-
-    @property
-    def operation(self) -> int:
-        return self._operation
-
-    @property
-    def machine(self) -> int:
-        return self._machine
-
-    @property
-    def start(self) -> int:
-        return self._start
-
-    @property
-    def duration(self) -> int:
-        return self._duration
+    operation: int
+    machine: int
+    start: int
+    duration: int
 
 
 class Solution:
@@ -77,5 +53,3 @@ class Solution:
             if assigned not in data.op2machines[op]:
                 msg = f"Operation {op} not allowed on machine {assigned}."
                 raise ValueError(msg)
-
-    # TODO Add classmethod based on machine sequences (see #8).

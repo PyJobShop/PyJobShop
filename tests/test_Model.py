@@ -190,6 +190,6 @@ def test_solve():
     schedule = [Task(0, 0, 0, 1), Task(1, 0, 1, 2)]
     solution = Solution(model.data(), schedule)
 
-    assert_equal(result.solution, solution)
+    assert_equal(result.best, solution)
     assert_equal(result.objective_value, 3)
     assert_equal(result.solve_status, "Optimal")
