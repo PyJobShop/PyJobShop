@@ -255,8 +255,8 @@ class Model:
 
     def add_constraint(
         self,
-        operation1: Operation,
-        operation2: Operation,
+        first: Operation,
+        second: Operation,
         constraint: Constraint,
     ):
         """
@@ -264,15 +264,15 @@ class Model:
 
         Parameters
         ----------
-        operation1
+        first
             First operation.
-        operation2
+        second
             Second operation.
         constraint
             Constraint between the first and the second operation.
         """
-        op1 = self._id2op[id(operation1)]
-        op2 = self._id2op[id(operation2)]
+        op1 = self._id2op[id(first)]
+        op2 = self._id2op[id(second)]
         self._constraints[op1, op2].append(constraint)
 
     def add_setup_time(
