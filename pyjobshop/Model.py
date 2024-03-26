@@ -62,6 +62,9 @@ class Model:
 
     @property
     def objective(self) -> Objective:
+        """
+        Returns the objective function to be minimized in this model.
+        """
         return self._objective
 
     def data(self) -> ProblemData:
