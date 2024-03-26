@@ -24,14 +24,9 @@ PyJobShop
     .. autoclass:: Job
        :members:
 
-    .. autoclass:: TimingPrecedence
-       :members:
+    .. autoenum:: Constraint
 
-    .. autoclass:: AssignmentPrecedence
-       :members:
-
-    .. autoclass:: Objective
-       :members:	   
+    .. autoenum:: Objective
 
 .. automodule:: pyjobshop.Solution
 

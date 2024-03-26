@@ -33,36 +33,6 @@ def alternative_constraints(
     return constraints
 
 
-def assignment_precedence_constraints(
-    m: CpoModel, data: ProblemData, task_vars: TaskVars, seq_vars: SeqVars
-) -> list[CpoExpr]:
-    constraints = []
-
-    for machine, ops in enumerate(data.machine2ops):
-        seq_var = seq_vars[machine]
-
-        for op1, op2 in product(ops, repeat=2):
-            if op1 == op2 or (op1, op2) not in data.assignment_precedences:
-                continue
-
-            var1 = task_vars[op1, machine]
-            var2 = task_vars[op2, machine]
-
-            for prec_type in data.assignment_precedences[op1, op2]:
-                if prec_type == "previous":
-                    expr = m.previous(seq_var, var1, var2)
-                elif prec_type == "same_unit":
-                    expr = m.presence_of(var1) == m.presence_of(var2)
-                elif prec_type == "different_unit":
-                    expr = m.presence_of(var1) != m.presence_of(var2)
-                else:
-                    raise ValueError(f"Unknown precedence type: {prec_type}")
-
-                constraints.append(expr)
-
-    return constraints
-
-
 def job_data_constraints(
     m: CpoModel, data: ProblemData, job_vars: JobVars
 ) -> list[CpoExpr]:
@@ -244,35 +214,60 @@ def processing_time_constraints(
     return []  # no constraints because we use setters
 
 
-def timing_precedence_constraints(
-    m: CpoModel, data: ProblemData, op_vars: OpVars
+def operation_graph_constraints(
+    m: CpoModel,
+    data: ProblemData,
+    op_vars: OpVars,
+    task_vars: TaskVars,
+    seq_vars: SeqVars,
 ) -> list[CpoExpr]:
     constraints = []
 
-    for (idx1, idx2), precedences in data.timing_precedences.items():
+    for (idx1, idx2), op_constraints in data.constraints.items():
         op1 = op_vars[idx1]
         op2 = op_vars[idx2]
 
-        for prec_type, delay in precedences:
-            if prec_type == "start_at_start":
-                expr = m.start_at_start(op1, op2, delay)
-            elif prec_type == "start_at_end":
-                expr = m.start_at_end(op1, op2, delay)
-            elif prec_type == "start_before_start":
-                expr = m.start_before_start(op1, op2, delay)
-            elif prec_type == "start_before_end":
-                expr = m.start_before_end(op1, op2, delay)
-            elif prec_type == "end_at_start":
-                expr = m.end_at_start(op1, op2, delay)
-            elif prec_type == "end_at_end":
-                expr = m.end_at_end(op1, op2, delay)
-            elif prec_type == "end_before_start":
-                expr = m.end_before_start(op1, op2, delay)
-            elif prec_type == "end_before_end":
-                expr = m.end_before_end(op1, op2, delay)
+        for constraint in op_constraints:
+            if constraint == "start_at_start":
+                expr = m.start_at_start(op1, op2)
+            elif constraint == "start_at_end":
+                expr = m.start_at_end(op1, op2)
+            elif constraint == "start_before_start":
+                expr = m.start_before_start(op1, op2)
+            elif constraint == "start_before_end":
+                expr = m.start_before_end(op1, op2)
+            elif constraint == "end_at_start":
+                expr = m.end_at_start(op1, op2)
+            elif constraint == "end_at_end":
+                expr = m.end_at_end(op1, op2)
+            elif constraint == "end_before_start":
+                expr = m.end_before_start(op1, op2)
+            elif constraint == "end_before_end":
+                expr = m.end_before_end(op1, op2)
             else:
-                raise ValueError(f"Unknown precedence type: {prec_type}")
+                continue
 
             constraints.append(expr)
+
+    # Separately handle assignment related constraints for efficiency.
+    for machine, ops in enumerate(data.machine2ops):
+        seq_var = seq_vars[machine]
+
+        for op1, op2 in product(ops, repeat=2):
+            if op1 == op2 or (op1, op2) not in data.constraints:
+                continue
+
+            var1 = task_vars[op1, machine]
+            var2 = task_vars[op2, machine]
+
+            for constraint in data.constraints[op1, op2]:
+                if constraint == "previous":
+                    expr = m.previous(seq_var, var1, var2)
+                elif constraint == "same_unit":
+                    expr = m.presence_of(var1) == m.presence_of(var2)
+                elif constraint == "different_unit":
+                    expr = m.presence_of(var1) != m.presence_of(var2)
+
+                constraints.append(expr)
 
     return constraints

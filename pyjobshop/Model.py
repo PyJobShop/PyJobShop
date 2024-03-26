@@ -6,13 +6,12 @@ from docplex.cp.solution import CpoSolveResult
 
 from .cp import default_model, result2solution
 from .ProblemData import (
-    AssignmentPrecedence,
+    Constraint,
     Job,
     Machine,
     Objective,
     Operation,
     ProblemData,
-    TimingPrecedence,
 )
 from .Result import Result
 
@@ -23,16 +22,13 @@ class Model:
     """
 
     def __init__(self):
-        self._jobs = []
-        self._machines = []
-        self._operations = []
+        self._jobs: list[Job] = []
+        self._machines: list[Machine] = []
+        self._operations: list[Operation] = []
         self._job2ops: dict[int, list[int]] = defaultdict(list)
         self._processing_times: dict[tuple[int, int], int] = {}
-        self._timing_precedences: dict[
-            tuple[int, int], list[tuple[TimingPrecedence, int]]
-        ] = defaultdict(list)
-        self._assignment_precedences: dict[
-            tuple[int, int], list[AssignmentPrecedence]
+        self._constraints: dict[
+            tuple[int, int], list[Constraint]
         ] = defaultdict(list)
         self._setup_times: dict[tuple[int, int, int], int] = {}
         self._process_plans: list[list[list[int]]] = []
@@ -45,18 +41,30 @@ class Model:
 
     @property
     def jobs(self) -> list[Job]:
+        """
+        Returns the list of jobs in the model.
+        """
         return self._jobs
 
     @property
     def machines(self) -> list[Machine]:
+        """
+        Returns the list of machines in the model.
+        """
         return self._machines
 
     @property
     def operations(self) -> list[Operation]:
+        """
+        Returns the list of operations in the model.
+        """
         return self._operations
 
     @property
     def objective(self) -> Objective:
+        """
+        Returns the objective function to be minimized in this model.
+        """
         return self._objective
 
     def data(self) -> ProblemData:
@@ -80,8 +88,7 @@ class Model:
             operations=self.operations,
             job2ops=job2ops,
             processing_times=self._processing_times,
-            timing_precedences=self._timing_precedences,
-            assignment_precedences=self._assignment_precedences,
+            constraints=self._constraints,
             setup_times=setup_times,
             process_plans=self._process_plans,
             planning_horizon=self._planning_horizon,
@@ -246,57 +253,27 @@ class Model:
         op_idx = self._id2op[id(operation)]
         self._processing_times[machine_idx, op_idx] = duration
 
-    def add_timing_precedence(
+    def add_constraint(
         self,
-        operation1: Operation,
-        operation2: Operation,
-        constraint: TimingPrecedence = TimingPrecedence.END_BEFORE_START,
-        delay: int = 0,
+        first: Operation,
+        second: Operation,
+        constraint: Constraint,
     ):
         """
-        Adds a timing precedence constraint between two operations.
+        Adds a precedence constraint between two operations.
 
         Parameters
         ----------
-        operation1
+        first
             First operation.
-        operation2
+        second
             Second operation.
         constraint
-            Timing precedence constraint between the first and the second
-            operation. Defaults to ``END_BEFORE_START``, meaning that the first
-            operation must end before the second operation starts.
-        delay
-            Delay between the first and the second operation. Defaults to
-            zero (no delay).
+            Constraint between the first and the second operation.
         """
-        op1 = self._id2op[id(operation1)]
-        op2 = self._id2op[id(operation2)]
-        self._timing_precedences[op1, op2].append((constraint, delay))
-
-    def add_assignment_precedence(
-        self,
-        operation1: Operation,
-        operation2: Operation,
-        assignment_precedence: AssignmentPrecedence,
-    ):
-        """
-        Adds an assignment precedence constraints between two operations.
-
-        Parameters
-        ----------
-        operation1
-            First operation.
-        operation2
-            Second operation.
-        assignment_precedence
-            Assignment precedence relation between the first and the second
-            operation.
-
-        """
-        op1 = self._id2op[id(operation1)]
-        op2 = self._id2op[id(operation2)]
-        self._assignment_precedences[op1, op2].append(assignment_precedence)
+        op1 = self._id2op[id(first)]
+        op2 = self._id2op[id(second)]
+        self._constraints[op1, op2].append(constraint)
 
     def add_setup_time(
         self,
