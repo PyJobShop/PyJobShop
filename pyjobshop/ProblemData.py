@@ -5,7 +5,7 @@ from typing import Iterable, Optional
 import enum_tools.documentation
 import numpy as np
 
-_CONSTRAINTS_TYPE = dict[tuple[int, int], list[tuple["Constraint", dict]]]
+_CONSTRAINTS_TYPE = dict[tuple[int, int], list["Constraint"]]
 
 
 class Job:
@@ -234,53 +234,39 @@ class Objective(str, Enum):
 class Constraint(str, Enum):
     """
     Operation constraints between two operations :math:`i` and :math:`j`.
-    We distinguish between timing precedence constraints and assignment
-    constraints.
-
-    Timing precedence constraints are constraints on the start and finish
-    times of operations. Let :math:`s(i)` and :math:`f(i)` denote the start
-    and finish times of operation :math:`i`. The following precedence
-    constraints are supported:
-
-    Timing precedence constraints can combined a delay :math:`d`, which is
-    added to the left-hand side of the constraint. For example, the constraint
-    `start_at_start` with delay :math:`d` is then :math:`s(i) + d == s(j)`.
-
-    Assignment constraints are constraints on the assignment of operations to
-    machines.
     """
 
-    #: Start :math:`i` at start :math:`j`
+    #: Operation :math:`i` must start when operation :math:`j` starts.
     START_AT_START = "start_at_start"
 
-    #: Start :math:`i` at end :math:`j`
+    #: Operation :math:`i` must at start when operation :math:`j` ends.
     START_AT_END = "start_at_end"
 
-    #: Start :math:`i` before start :math:`j`
+    #: Operation :math:`i` must start before operation :math:`j` starts.
     START_BEFORE_START = "start_before_start"
 
-    #: Start :math:`i` before end :math:`j`
+    #: Operation :math:`i` must start before operation :math:`j` ends.
     START_BEFORE_END = "start_before_end"
 
-    #: End :math:`i` at start :math:`j`
+    #: Operation :math:`i` must end when operation :math:`j` starts.
     END_AT_START = "end_at_start"
 
-    #: End :math:`i` at end :math:`j`
+    #: Operation :math:`i` must end when operation :math:`j` ends.
     END_AT_END = "end_at_end"
 
-    #: End :math:`i` before start :math:`j`
+    #: Operation :math:`i` must end before operation :math:`j` starts.
     END_BEFORE_START = "end_before_start"
 
-    #: End :math:`i` before end :math:`j`
+    #: Operation :math:`i` must end before operation :math:`j` ends.
     END_BEFORE_END = "end_before_end"
 
-    #: Sequence :math:`i` previous to :math:`j` (if on the same machine)
+    #: Sequence :math:`i` right before :math:`j` (if assigned to same machine).
     PREVIOUS = "previous"
 
-    #: Assign :math:`i` and :math:`j` to the same machine
+    #: Assign operations :math:`i` and :math:`j` to the same machine.
     SAME_UNIT = "same_unit"
 
-    #: Assign :math:`i` and :math:`j` to different machine
+    #: Assign operations :math:`i` and :math:`j` to different machine.
     DIFFERENT_UNIT = "different_unit"
 
 
@@ -303,8 +289,7 @@ class ProblemData:
         Processing times of operations on machines. First index is the machine
         index, second index is the operation index.
     constraints
-        Dict indexed by operation pairs with list of precedence constraints and
-        delays.
+        Dict indexed by operation pairs with a list of constraints as values.
     setup_times
         Sequence-dependent setup times between operations on a given machine.
         The first dimension of the array is indexed by the machine index. The
@@ -442,9 +427,9 @@ class ProblemData:
 
         Returns
         -------
-        dict[tuple[int, int], list[tuple[Constraint, dict]]]
-            The dictionary is indexed by operation pairs with a list of tuples
-            that contain the constraint type and additional dictionary data.
+        dict[tuple[int, int], list[Constraint]]
+            The dictionary is indexed by operation pairs with a list of
+            constraints.
         """
         return self._constraints
 

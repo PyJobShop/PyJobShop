@@ -28,7 +28,7 @@ class Model:
         self._job2ops: dict[int, list[int]] = defaultdict(list)
         self._processing_times: dict[tuple[int, int], int] = {}
         self._constraints: dict[
-            tuple[int, int], list[tuple[Constraint, dict]]
+            tuple[int, int], list[Constraint]
         ] = defaultdict(list)
         self._setup_times: dict[tuple[int, int, int], int] = {}
         self._process_plans: list[list[list[int]]] = []
@@ -257,8 +257,7 @@ class Model:
         self,
         operation1: Operation,
         operation2: Operation,
-        constraint: Constraint = Constraint.END_BEFORE_START,
-        **kwargs,
+        constraint: Constraint,
     ):
         """
         Adds a precedence constraint between two operations.
@@ -270,15 +269,11 @@ class Model:
         operation2
             Second operation.
         constraint
-            Constraint between the first and the second operation. Default
-            is ``END_BEFORE_START``, meaning that the first operation must
-            end before the second operation starts.
-        kwargs
-            Additional keyword arguments for the constraint.
+            Constraint between the first and the second operation.
         """
         op1 = self._id2op[id(operation1)]
         op2 = self._id2op[id(operation2)]
-        self._constraints[op1, op2].append((constraint, kwargs))
+        self._constraints[op1, op2].append(constraint)
 
     def add_setup_time(
         self,

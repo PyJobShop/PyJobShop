@@ -227,25 +227,23 @@ def operation_graph_constraints(
         op1 = op_vars[idx1]
         op2 = op_vars[idx2]
 
-        for constraint_type, constraint_data in precedences:
-            delay = constraint_data.get("delay", 0)
-
-            if constraint_type == "start_at_start":
-                expr = m.start_at_start(op1, op2, delay)
-            elif constraint_type == "start_at_end":
-                expr = m.start_at_end(op1, op2, delay)
-            elif constraint_type == "start_before_start":
-                expr = m.start_before_start(op1, op2, delay)
-            elif constraint_type == "start_before_end":
-                expr = m.start_before_end(op1, op2, delay)
-            elif constraint_type == "end_at_start":
-                expr = m.end_at_start(op1, op2, delay)
-            elif constraint_type == "end_at_end":
-                expr = m.end_at_end(op1, op2, delay)
-            elif constraint_type == "end_before_start":
-                expr = m.end_before_start(op1, op2, delay)
-            elif constraint_type == "end_before_end":
-                expr = m.end_before_end(op1, op2, delay)
+        for constraint in precedences:
+            if constraint == "start_at_start":
+                expr = m.start_at_start(op1, op2)
+            elif constraint == "start_at_end":
+                expr = m.start_at_end(op1, op2)
+            elif constraint == "start_before_start":
+                expr = m.start_before_start(op1, op2)
+            elif constraint == "start_before_end":
+                expr = m.start_before_end(op1, op2)
+            elif constraint == "end_at_start":
+                expr = m.end_at_start(op1, op2)
+            elif constraint == "end_at_end":
+                expr = m.end_at_end(op1, op2)
+            elif constraint == "end_before_start":
+                expr = m.end_before_start(op1, op2)
+            elif constraint == "end_before_end":
+                expr = m.end_before_end(op1, op2)
 
     for machine, ops in enumerate(data.machine2ops):
         seq_var = seq_vars[machine]
@@ -257,12 +255,12 @@ def operation_graph_constraints(
             var1 = task_vars[op1, machine]
             var2 = task_vars[op2, machine]
 
-            for constraint_type, _ in data.constraints[op1, op2]:
-                if constraint_type == "previous":
+            for constraint in data.constraints[op1, op2]:
+                if constraint == "previous":
                     expr = m.previous(seq_var, var1, var2)
-                elif constraint_type == "same_unit":
+                elif constraint == "same_unit":
                     expr = m.presence_of(var1) == m.presence_of(var2)
-                elif constraint_type == "different_unit":
+                elif constraint == "different_unit":
                     expr = m.presence_of(var1) != m.presence_of(var2)
 
                 constraints.append(expr)

@@ -691,51 +691,6 @@ def test_timing_precedence(prec_type: Constraint, expected_makespan: int):
 @pytest.mark.parametrize(
     "prec_type,expected_makespan",
     [
-        # start 0 + delay 1 == start 1
-        (Constraint.START_AT_START, 3),
-        # start 1 + delay 1 == end 3
-        (Constraint.START_AT_END, 3),
-        # start 0 + delay 1 <= start 1
-        (Constraint.START_BEFORE_START, 3),
-        # start 0 + delay 1 <= end 2
-        (Constraint.START_BEFORE_END, 2),
-        # end 2 + delay 1 == start 0
-        (Constraint.END_AT_START, 5),
-        # end 2 + delay 1 == end 2
-        (Constraint.END_AT_END, 3),
-        # end 2 + delay 1 <= start 3
-        (Constraint.END_BEFORE_START, 5),
-        # end 2 + delay 1 <= end 3
-        (Constraint.END_BEFORE_END, 3),
-    ],
-)
-def test_timing_precedence_with_one_delay(
-    prec_type: Constraint, expected_makespan: int
-):
-    """
-    Tests that precedence constraints with delays are respected. This
-    example is similar to `test_precedence`, but with a delay of 1.
-    """
-    model = Model()
-
-    job = model.add_job()
-    machines = [model.add_machine(), model.add_machine()]
-    operations = [model.add_operation(job=job) for _ in range(2)]
-
-    for machine in machines:
-        for operation in operations:
-            model.add_processing_time(machine, operation, duration=2)
-
-    model.add_constraint(operations[0], operations[1], prec_type, delay=1)
-
-    result = model.solve()
-
-    assert_equal(result.objective_value, expected_makespan)
-
-
-@pytest.mark.parametrize(
-    "prec_type,expected_makespan",
-    [
         (Constraint.PREVIOUS, 2),  # TODO needs better test
         (Constraint.SAME_UNIT, 4),
         (Constraint.DIFFERENT_UNIT, 2),

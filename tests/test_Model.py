@@ -23,8 +23,8 @@ def test_model_to_data():
     model.add_processing_time(mach1, op1, 1)
     model.add_processing_time(mach2, op2, 2)
 
-    model.add_constraint(op1, op2, Constraint.END_BEFORE_START, delay=10)
-    model.add_constraint(op1, op2, Constraint.START_BEFORE_END, delay=10)
+    model.add_constraint(op1, op2, Constraint.END_BEFORE_START)
+    model.add_constraint(op1, op2, Constraint.START_BEFORE_END)
     model.add_constraint(op2, op1, Constraint.SAME_UNIT)
     model.add_constraint(op2, op1, Constraint.PREVIOUS)
 
@@ -46,12 +46,12 @@ def test_model_to_data():
         data.constraints,
         {
             (0, 1): [
-                (Constraint.END_BEFORE_START, {"delay": 10}),
-                (Constraint.START_BEFORE_END, {"delay": 10}),
+                Constraint.END_BEFORE_START,
+                Constraint.START_BEFORE_END,
             ],
             (1, 0): [
-                (Constraint.SAME_UNIT, {}),
-                (Constraint.PREVIOUS, {}),
+                Constraint.SAME_UNIT,
+                Constraint.PREVIOUS,
             ],
         },
     )
