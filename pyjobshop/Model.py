@@ -6,11 +6,11 @@ from docplex.cp.solution import CpoSolveResult
 
 from .cp import default_model, result2solution
 from .ProblemData import (
+    Constraint,
     Job,
     Machine,
     Objective,
     Operation,
-    Precedence,
     ProblemData,
 )
 from .Result import Result
@@ -27,8 +27,8 @@ class Model:
         self._operations: list[Operation] = []
         self._job2ops: dict[int, list[int]] = defaultdict(list)
         self._processing_times: dict[tuple[int, int], int] = {}
-        self._precedences: dict[
-            tuple[int, int], list[tuple[Precedence, int]]
+        self._constraints: dict[
+            tuple[int, int], list[tuple[Constraint, dict]]
         ] = defaultdict(list)
         self._setup_times: dict[tuple[int, int, int], int] = {}
         self._process_plans: list[list[list[int]]] = []
@@ -76,7 +76,7 @@ class Model:
             operations=self.operations,
             job2ops=job2ops,
             processing_times=self._processing_times,
-            precedences=self._precedences,
+            constraints=self._constraints,
             setup_times=setup_times,
             process_plans=self._process_plans,
             planning_horizon=self._planning_horizon,
@@ -241,12 +241,12 @@ class Model:
         op_idx = self._id2op[id(operation)]
         self._processing_times[machine_idx, op_idx] = duration
 
-    def add_precedence(
+    def add_constraint(
         self,
         operation1: Operation,
         operation2: Operation,
-        constraint: Precedence = Precedence.END_BEFORE_START,
-        delay: int = 0,
+        constraint: Constraint = Constraint.END_BEFORE_START,
+        **kwargs,
     ):
         """
         Adds a precedence constraint between two operations.
@@ -258,16 +258,15 @@ class Model:
         operation2
             Second operation.
         constraint
-            Timing precedence constraint between the first and the second
-            operation. Defaults to ``END_BEFORE_START``, meaning that the first
-            operation must end before the second operation starts.
-        delay
-            Delay between the first and the second operation. Defaults to
-            zero (no delay).
+            Constraint between the first and the second operation. Default
+            is ``END_BEFORE_START``, meaning that the first operation must
+            end before the second operation starts.
+        kwargs
+            Additional keyword arguments for the constraint.
         """
         op1 = self._id2op[id(operation1)]
         op2 = self._id2op[id(operation2)]
-        self._precedences[op1, op2].append((constraint, delay))
+        self._constraints[op1, op2].append((constraint, kwargs))
 
     def add_setup_time(
         self,

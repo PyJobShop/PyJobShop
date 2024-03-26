@@ -6,11 +6,11 @@ from numpy.testing import assert_allclose, assert_equal, assert_raises
 
 from pyjobshop.Model import Model
 from pyjobshop.ProblemData import (
+    Constraint,
     Job,
     Machine,
     Objective,
     Operation,
-    Precedence,
     ProblemData,
 )
 from pyjobshop.Solution import Task
@@ -162,8 +162,8 @@ def test_problem_data_input_parameter_attributes():
     operations = [Operation() for _ in range(5)]
     job2ops = [[0], [1], [2], [3], [4]]
     processing_times = {(i, j): 1 for i in range(5) for j in range(5)}
-    precedences = {
-        key: [Precedence.END_BEFORE_START] for key in ((0, 1), (2, 3), (4, 5))
+    constraints = {
+        key: [Constraint.END_BEFORE_START] for key in ((0, 1), (2, 3), (4, 5))
     }
     setup_times = np.ones((5, 5, 5), dtype=int)
     process_plans = [[[0, 1, 2, 3, 4]]]
@@ -176,7 +176,7 @@ def test_problem_data_input_parameter_attributes():
         operations,
         job2ops,
         processing_times,
-        precedences,
+        constraints,
         setup_times,
         process_plans,
         planning_horizon,
@@ -188,7 +188,7 @@ def test_problem_data_input_parameter_attributes():
     assert_equal(data.operations, operations)
     assert_equal(data.job2ops, job2ops)
     assert_equal(data.processing_times, processing_times)
-    assert_equal(data.precedences, precedences)
+    assert_equal(data.constraints, constraints)
     assert_allclose(data.setup_times, setup_times)
     assert_equal(data.process_plans, process_plans)
     assert_equal(data.planning_horizon, planning_horizon)
@@ -229,10 +229,10 @@ def test_problem_data_default_values():
     machines = [Machine() for _ in range(1)]
     operations = [Operation() for _ in range(1)]
     job2ops = [[0]]
-    precedences = {(0, 1): [Precedence.END_BEFORE_START]}
+    constraints = {(0, 1): [Constraint.END_BEFORE_START]}
     processing_times = {(0, 0): 1}
     data = ProblemData(
-        jobs, machines, operations, job2ops, processing_times, precedences
+        jobs, machines, operations, job2ops, processing_times, constraints
     )
 
     assert_allclose(data.setup_times, np.zeros((1, 1, 1), dtype=int))
@@ -649,24 +649,24 @@ def test_optional_operations():
     "prec_type,expected_makespan",
     [
         # start 0 == start 0
-        (Precedence.START_AT_START, 2),
+        (Constraint.START_AT_START, 2),
         # start 2 == end 2
-        (Precedence.START_AT_END, 4),
+        (Constraint.START_AT_END, 4),
         # start 0 <= start 0
-        (Precedence.START_BEFORE_START, 2),
+        (Constraint.START_BEFORE_START, 2),
         # start 0 <= end 2
-        (Precedence.START_BEFORE_END, 2),
+        (Constraint.START_BEFORE_END, 2),
         # end 2 == start 2
-        (Precedence.END_AT_START, 4),
+        (Constraint.END_AT_START, 4),
         # end 2 == end 2
-        (Precedence.END_AT_END, 2),
+        (Constraint.END_AT_END, 2),
         # end 2 <= start 2
-        (Precedence.END_BEFORE_START, 4),
+        (Constraint.END_BEFORE_START, 4),
         # end 2 <= end 2
-        (Precedence.END_BEFORE_END, 2),
+        (Constraint.END_BEFORE_END, 2),
     ],
 )
-def test_precedence(prec_type: Precedence, expected_makespan: int):
+def test_timing_precedence(prec_type: Constraint, expected_makespan: int):
     """
     Tests that timing precedence constraints are respected. This example
     uses two operations and two machines with processing times of 2.
@@ -681,7 +681,7 @@ def test_precedence(prec_type: Precedence, expected_makespan: int):
         for operation in operations:
             model.add_processing_time(machine, operation, duration=2)
 
-    model.add_precedence(operations[0], operations[1], prec_type)
+    model.add_constraint(operations[0], operations[1], prec_type)
 
     result = model.solve()
 
@@ -692,25 +692,25 @@ def test_precedence(prec_type: Precedence, expected_makespan: int):
     "prec_type,expected_makespan",
     [
         # start 0 + delay 1 == start 1
-        (Precedence.START_AT_START, 3),
+        (Constraint.START_AT_START, 3),
         # start 1 + delay 1 == end 3
-        (Precedence.START_AT_END, 3),
+        (Constraint.START_AT_END, 3),
         # start 0 + delay 1 <= start 1
-        (Precedence.START_BEFORE_START, 3),
+        (Constraint.START_BEFORE_START, 3),
         # start 0 + delay 1 <= end 2
-        (Precedence.START_BEFORE_END, 2),
+        (Constraint.START_BEFORE_END, 2),
         # end 2 + delay 1 == start 0
-        (Precedence.END_AT_START, 5),
+        (Constraint.END_AT_START, 5),
         # end 2 + delay 1 == end 2
-        (Precedence.END_AT_END, 3),
+        (Constraint.END_AT_END, 3),
         # end 2 + delay 1 <= start 3
-        (Precedence.END_BEFORE_START, 5),
+        (Constraint.END_BEFORE_START, 5),
         # end 2 + delay 1 <= end 3
-        (Precedence.END_BEFORE_END, 3),
+        (Constraint.END_BEFORE_END, 3),
     ],
 )
-def test_precedence_with_one_delay(
-    prec_type: Precedence, expected_makespan: int
+def test_timing_precedence_with_one_delay(
+    prec_type: Constraint, expected_makespan: int
 ):
     """
     Tests that precedence constraints with delays are respected. This
@@ -726,7 +726,7 @@ def test_precedence_with_one_delay(
         for operation in operations:
             model.add_processing_time(machine, operation, duration=2)
 
-    model.add_precedence(operations[0], operations[1], prec_type, delay=1)
+    model.add_constraint(operations[0], operations[1], prec_type, delay=1)
 
     result = model.solve()
 
@@ -736,14 +736,14 @@ def test_precedence_with_one_delay(
 @pytest.mark.parametrize(
     "prec_type,expected_makespan",
     [
-        (Precedence.PREVIOUS, 2),  # TODO needs better test
-        (Precedence.SAME_UNIT, 4),
-        (Precedence.DIFFERENT_UNIT, 2),
+        (Constraint.PREVIOUS, 2),  # TODO needs better test
+        (Constraint.SAME_UNIT, 4),
+        (Constraint.DIFFERENT_UNIT, 2),
     ],
 )
-def test_assignment_precedence(prec_type: Precedence, expected_makespan: int):
+def test_assignment_constraint(prec_type: Constraint, expected_makespan: int):
     """
-    Tests that assignment precedence constraints are respected. This example
+    Tests that assignment constraints are respected. This example
     uses two operations and two machines with processing times of 2.
     """
     model = Model()
@@ -756,7 +756,7 @@ def test_assignment_precedence(prec_type: Precedence, expected_makespan: int):
         for operation in operations:
             model.add_processing_time(machine, operation, duration=2)
 
-    model.add_precedence(operations[0], operations[1], prec_type)
+    model.add_constraint(operations[0], operations[1], prec_type)
 
     result = model.solve()
 
@@ -998,7 +998,7 @@ def test_jobshop():
         # Impose linear routing precedence constraints.
         for op_idx in range(1, len(operations)):
             op1, op2 = operations[op_idx - 1], operations[op_idx]
-            model.add_precedence(op1, op2, Precedence.END_BEFORE_START)
+            model.add_constraint(op1, op2, Constraint.END_BEFORE_START)
 
     result = model.solve()
 

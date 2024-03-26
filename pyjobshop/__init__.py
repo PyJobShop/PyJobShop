@@ -5,5 +5,4 @@ from .plot import plot as plot
 from .ProblemData import Job as Job
 from .ProblemData import Machine as Machine
 from .ProblemData import Operation as Operation
-from .ProblemData import Precedence as Precedence
 from .ProblemData import ProblemData as ProblemData

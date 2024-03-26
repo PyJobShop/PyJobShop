@@ -9,9 +9,9 @@ from .constraints import (
     machine_data_constraints,
     no_overlap_and_setup_time_constraints,
     operation_constraints,
+    operation_graph_constraints,
     optional_operation_selection_constraints,
     planning_horizon_constraints,
-    precedence_constraints,
     processing_time_constraints,
 )
 from .objectives import (
@@ -72,7 +72,7 @@ def default_model(data: ProblemData) -> CpoModel:
     )
     model.add(processing_time_constraints(model, data, task_vars))
     model.add(
-        precedence_constraints(model, data, op_vars, task_vars, seq_vars)
+        operation_graph_constraints(model, data, op_vars, task_vars, seq_vars)
     )
 
     return model

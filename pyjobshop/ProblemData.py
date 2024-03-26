@@ -4,6 +4,8 @@ from typing import Iterable, Optional
 
 import numpy as np
 
+_CONSTRAINTS_TYPE = dict[tuple[int, int], list[tuple["Constraint", dict]]]
+
 
 class Job:
     """
@@ -225,34 +227,42 @@ class Objective(str, Enum):
     TOTAL_TARDINESS = "total_tardiness"
 
 
-class Precedence(str, Enum):
+class Constraint(str, Enum):
     """
-    Types of precedence constraints between two operations $i$ and $j$.
-    Let $s(i)$ and $f(i)$ be the start and finish times of operation $i$,
-    and let $s(j)$ and $f(j)$ be defined similarly for operation $j$. The
-    following precedence constraints are supported (in CPLEX terminology):
+    Operation constraints between two operations :math:`i` and :math:`j`.
+    We distinguish between timing precedence constraints and assignment
+    constraints.
 
-    - start_at_start:        $s(i) == s(j)$
-    - start_at_end:          $s(i) == f(j)$
-    - start_before_start:    $s(i) <= s(j)$
-    - start_before_end:      $s(i) <= f(j)$
-    - end_at_start:          $f(i) == s(j)$
-    - end_at_end:            $f(i) == f(j)$
-    - end_before_start:      $f(i) <= s(j)$
-    - end_before_end:        $f(i) <= f(j)$
+    Timing precedence constraints
+    -----------------------------
 
-    Timing precedence constraints are combined with delays: a delay of $d$
-    is added to the left-hand side of the constraint. For example, the
-    constraint `start_at_start` with delay $d$ is then $s(i) + d == s(j)$.
+    Timing precedence constraints are constraints on the start and finish
+    times of operations. Let :math:`s(i)` and :math:`f(i)` denote the start
+    and finish times of operation :math:`i`. The following precedence
+    constraints are supported:
 
-    -------
+    * START_AT_START:        :math:`s(i) == s(j)`
+    * START_AT_END:          :math:`s(i) == f(j)`
+    * START_BEFORE_START:    :math:`s(i) <= s(j)`
+    * START_BEFORE_END:      :math:`s(i) <= f(j)`
+    * END_AT_START:          :math:`f(i) == s(j)`
+    * END_AT_END:            :math:`f(i) == f(j)`
+    * END_BEFORE_START:      :math:`f(i) <= s(j)`
+    * END_BEFORE_END:        :math:`f(i) <= f(j)`
 
-    Types of assignment precedence constraints between two operations $i$ and
-    $j$.
+    Timing precedence constraints can combined a delay :math:`d`, which is
+    added to the left-hand side of the constraint. For example, the constraint
+    `start_at_start` with delay :math:`d` is then :math:`s(i) + d == s(j)`.
 
-    - previous:              i is previous to j in sequence variable.
-    - same_unit:             i and j are processed on the same unit.
-    - different_unit:        i and j are processed on different units.
+    Assignment constraints
+    ----------------------
+
+    Assignment constraints are constraints on the assignment of operations to
+    machines. The following assignment constraints are supported:
+
+    * PREVIOUS:         sequence :math:`i` previous to :math:`j`.
+    * SAME_UNIT:        assign :math:`i` and :math:`j` on the same unit.
+    * DIFFERENT_UNIT:   assign :math:`i` and :math:`j` on different units.
     """
 
     START_AT_START = "start_at_start"
@@ -286,7 +296,7 @@ class ProblemData:
     processing_times
         Processing times of operations on machines. First index is the machine
         index, second index is the operation index.
-    precedences
+    constraints
         Dict indexed by operation pairs with list of precedence constraints and
         delays.
     setup_times
@@ -312,7 +322,7 @@ class ProblemData:
         operations: list[Operation],
         job2ops: list[list[int]],
         processing_times: dict[tuple[int, int], int],
-        precedences: dict[tuple[int, int], list[tuple[Precedence, int]]],
+        constraints: _CONSTRAINTS_TYPE,
         setup_times: Optional[np.ndarray] = None,
         process_plans: Optional[list[list[list[int]]]] = None,
         planning_horizon: Optional[int] = None,
@@ -323,7 +333,7 @@ class ProblemData:
         self._operations = operations
         self._job2ops = job2ops
         self._processing_times = processing_times
-        self._precedences = precedences
+        self._constraints = constraints
 
         num_mach = self.num_machines
         num_ops = self.num_operations
@@ -420,19 +430,17 @@ class ProblemData:
         return self._processing_times
 
     @property
-    def precedences(
-        self,
-    ) -> dict[tuple[int, int], list[tuple[Precedence, int]]]:
+    def constraints(self) -> _CONSTRAINTS_TYPE:
         """
-        Precedence constraints between operations.
+        Constraints between operations.
 
         Returns
         -------
-        dict[tuple[int, int], list[tuple[Precedence, int]]]
-            Dict indexed by operation pairs with list of timing precedence
-            constraints and delays.
+        dict[tuple[int, int], list[tuple[Precedence, dict]]]
+            The dictionary is indexed by operation pairs with a list of tuples
+            that contain the constraint type and additional dictionary data.
         """
-        return self._precedences
+        return self._constraints
 
     @property
     def setup_times(self) -> np.ndarray:

@@ -24,7 +24,7 @@ PyJobShop
     .. autoclass:: Job
        :members:
 
-    .. autoclass:: Precedence
+    .. autoclass:: Constraint
        :members:
 
     .. autoclass:: Objective
