@@ -13,8 +13,8 @@ class Result:
         The solve status.
     runtime
         The runtime of the solver.
-    solution
-        The solution to the problem instance. None if no solution was found.
+    best
+        The best found solution. None if no solution was found.
     objective_value
         The objective value of the solution. None if no solution was found.
     """
@@ -23,12 +23,12 @@ class Result:
         self,
         solve_status: str,
         runtime: float,
-        solution: Optional[Solution],
+        best: Optional[Solution],
         objective_value: Optional[float],
     ):
         self._solve_status = solve_status
         self._runtime = runtime
-        self._solution = solution
+        self._best = best
         self._objective_value = objective_value
 
     @property
@@ -40,8 +40,8 @@ class Result:
         return self._runtime
 
     @property
-    def solution(self) -> Optional[Solution]:
-        return self._solution
+    def best(self) -> Optional[Solution]:
+        return self._best
 
     @property
     def objective_value(self) -> Optional[float]:
