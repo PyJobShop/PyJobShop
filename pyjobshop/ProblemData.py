@@ -2,6 +2,7 @@ import bisect
 from enum import Enum
 from typing import Iterable, Optional
 
+import enum_tools.documentation
 import numpy as np
 
 _CONSTRAINTS_TYPE = dict[tuple[int, int], list[tuple["Constraint", dict]]]
@@ -210,71 +211,76 @@ class Operation:
         return self._name
 
 
+@enum_tools.documentation.document_enum
 class Objective(str, Enum):
     """
     Choices for objective functions (to be minimized).
-
-    - makespan:               Maximum completion time of all jobs.
-    - tardy_jobs:             Number of tardy jobs.
-    - total_completion_time:  Sum of completion times of all jobs.
-    - total_tardiness:        Sum of tardiness of all jobs.
-
     """
 
+    #: Minimize the maximum completion time of all jobs.
     MAKESPAN = "makespan"
+
+    #: Minimizes the number of jobs whose completion times exceed the due date.
     TARDY_JOBS = "tardy_jobs"
+
+    #: Minimize the sum of job completion times.
     TOTAL_COMPLETION_TIME = "total_completion_time"
+
+    #: Minimize the sum of job tardiness.
     TOTAL_TARDINESS = "total_tardiness"
 
 
+@enum_tools.documentation.document_enum
 class Constraint(str, Enum):
     """
     Operation constraints between two operations :math:`i` and :math:`j`.
     We distinguish between timing precedence constraints and assignment
     constraints.
 
-    Timing precedence constraints
-    -----------------------------
-
     Timing precedence constraints are constraints on the start and finish
     times of operations. Let :math:`s(i)` and :math:`f(i)` denote the start
     and finish times of operation :math:`i`. The following precedence
     constraints are supported:
 
-    * START_AT_START:        :math:`s(i) == s(j)`
-    * START_AT_END:          :math:`s(i) == f(j)`
-    * START_BEFORE_START:    :math:`s(i) <= s(j)`
-    * START_BEFORE_END:      :math:`s(i) <= f(j)`
-    * END_AT_START:          :math:`f(i) == s(j)`
-    * END_AT_END:            :math:`f(i) == f(j)`
-    * END_BEFORE_START:      :math:`f(i) <= s(j)`
-    * END_BEFORE_END:        :math:`f(i) <= f(j)`
-
     Timing precedence constraints can combined a delay :math:`d`, which is
     added to the left-hand side of the constraint. For example, the constraint
     `start_at_start` with delay :math:`d` is then :math:`s(i) + d == s(j)`.
 
-    Assignment constraints
-    ----------------------
-
     Assignment constraints are constraints on the assignment of operations to
-    machines. The following assignment constraints are supported:
-
-    * PREVIOUS:         sequence :math:`i` previous to :math:`j`.
-    * SAME_UNIT:        assign :math:`i` and :math:`j` on the same unit.
-    * DIFFERENT_UNIT:   assign :math:`i` and :math:`j` on different units.
+    machines.
     """
 
+    #: Start :math:`i` at start :math:`j`
     START_AT_START = "start_at_start"
+
+    #: Start :math:`i` at end :math:`j`
     START_AT_END = "start_at_end"
+
+    #: Start :math:`i` before start :math:`j`
     START_BEFORE_START = "start_before_start"
+
+    #: Start :math:`i` before end :math:`j`
     START_BEFORE_END = "start_before_end"
+
+    #: End :math:`i` at start :math:`j`
     END_AT_START = "end_at_start"
+
+    #: End :math:`i` at end :math:`j`
     END_AT_END = "end_at_end"
+
+    #: End :math:`i` before start :math:`j`
     END_BEFORE_START = "end_before_start"
+
+    #: End :math:`i` before end :math:`j`
     END_BEFORE_END = "end_before_end"
+
+    #: Sequence :math:`i` previous to :math:`j` (if on the same machine)
     PREVIOUS = "previous"
+
+    #: Assign :math:`i` and :math:`j` to the same machine
     SAME_UNIT = "same_unit"
+
+    #: Assign :math:`i` and :math:`j` to different machine
     DIFFERENT_UNIT = "different_unit"
 
 
@@ -436,7 +442,7 @@ class ProblemData:
 
         Returns
         -------
-        dict[tuple[int, int], list[tuple[Precedence, dict]]]
+        dict[tuple[int, int], list[tuple[Constraint, dict]]]
             The dictionary is indexed by operation pairs with a list of tuples
             that contain the constraint type and additional dictionary data.
         """

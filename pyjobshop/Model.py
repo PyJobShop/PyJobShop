@@ -41,14 +41,23 @@ class Model:
 
     @property
     def jobs(self) -> list[Job]:
+        """
+        Returns the list of jobs in the model.
+        """
         return self._jobs
 
     @property
     def machines(self) -> list[Machine]:
+        """
+        Returns the list of machines in the model.
+        """
         return self._machines
 
     @property
     def operations(self) -> list[Operation]:
+        """
+        Returns the list of operations in the model.
+        """
         return self._operations
 
     @property
