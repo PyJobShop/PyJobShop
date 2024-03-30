@@ -19,9 +19,9 @@ build-backend = "poetry.core.masonry.api"
 python = ">=3.9, <3.11"
 numpy = "^1.24.2"
 matplotlib = "^3.7.1"
-docplex = "^2.25.236"
-cplex = { version = "22.1.1.0", optional = true }
 enum-tools = "^0.11.0"
+docplex = { version = "^2.25.236", optional = true }
+cplex = { version = "22.1.1.0", optional = true }
 
 
 [tool.poetry.extras]
@@ -46,12 +46,12 @@ numpydoc = "^1.6.0"
 sphinx-immaterial = "^0.11.10"
 enum-tools = { extras = ["sphinx"], version = "^0.11.0" }
 
-[tool.poetry.group.examples.dependencies]
-jupyterlab = "^4.0.12"
-
 
 [tool.poetry.group.examples]
 optional = true
+
+[tool.poetry.group.examples.dependencies]
+jupyterlab = "^4.0.12"
 
 
 [tool.mypy]
@@ -80,6 +80,10 @@ ignore = [
     "E741",  # ambiguous variable name, needed for indexing
     "C901",  # too complex
 ]
+
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"] # ignore unused module imports
 
 
 [tool.pytest.ini_options]

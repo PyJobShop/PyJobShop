@@ -618,7 +618,7 @@ def test_operation_non_fixed_duration():
     result = model.solve()
     assert_equal(result.solve_status, "Optimal")
     assert_equal(result.objective_value, 10)
-    assert_equal(result.solution.schedule, [Task(0, 0, 0, 10)])
+    assert_equal(result.best.schedule, [Task(0, 0, 0, 10)])
 
 
 def test_optional_operations():
