@@ -17,8 +17,8 @@ Contents
    :caption: Examples
 
    examples/simple_example
-   examples/flexible_job_shop
    examples/hybrid_flow_shop
+   examples/flexible_job_shop
 
 .. toctree::
    :maxdepth: 1
