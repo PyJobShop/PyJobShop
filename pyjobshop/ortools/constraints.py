@@ -218,6 +218,9 @@ def setup_times_constraints(
                 # Maintain rank incrementally.
                 m.Add(var1.rank + 1 == var2.rank).OnlyEnforceIf(lit)
 
+                # TODO This automatically enforces classic start -> end
+                # precedence constraints and also does not allow for overlap.
+                # We need to validate this to catch it.
                 setup = setup_times[op1, op2]
                 m.Add(var1.end + setup <= var2.start).OnlyEnforceIf(lit)
 
