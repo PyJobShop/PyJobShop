@@ -137,9 +137,9 @@ def alternative_constraints(
             presences.append(is_present)
 
             # Link each optional interval variable with the main variable.
-            m.Add(main.start == assign.start).OnlyEnforceIf()
-            m.Add(main.duration == assign.duration).OnlyEnforceIf()
-            m.Add(main.end == assign.end).OnlyEnforceIf()
+            m.Add(main.start == assign.start).OnlyEnforceIf(is_present)
+            m.Add(main.duration == assign.duration).OnlyEnforceIf(is_present)
+            m.Add(main.end == assign.end).OnlyEnforceIf(is_present)
 
         # Select exactly one machine for the operation.
         m.AddExactlyOne(presences)
