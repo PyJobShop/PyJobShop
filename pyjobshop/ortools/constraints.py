@@ -237,8 +237,8 @@ def setup_times_constraints(
                 # TODO This automatically enforces classic start -> end
                 # precedence constraints and also does not allow for overlap.
                 # We need to validate this to catch it.
-                op1 = op_idcs[idx1]
-                op2 = op_idcs[idx2]
+                op1 = op_idcs[machine][idx1]
+                op2 = op_idcs[machine][idx2]
                 setup = setup_times[op1, op2]
                 m.Add(var1.end + setup <= var2.start).OnlyEnforceIf(lit)
 

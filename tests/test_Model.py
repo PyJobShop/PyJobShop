@@ -3,7 +3,6 @@ from numpy.testing import assert_equal
 from pyjobshop.constants import MAX_VALUE
 from pyjobshop.Model import Model
 from pyjobshop.ProblemData import Constraint, Objective
-from pyjobshop.Solution import Solution, Task
 
 
 def test_model_to_data():
@@ -178,9 +177,5 @@ def test_solve():
 
     result = model.solve()
 
-    schedule = [Task(0, 0, 0, 1), Task(1, 0, 1, 2)]
-    solution = Solution(model.data(), schedule)
-
-    # assert_equal(result.solution, solution) # TODO
     assert_equal(result.objective_value, 3)
     assert_equal(result.solve_status, "Optimal")
