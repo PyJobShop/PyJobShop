@@ -6,7 +6,6 @@ from .constraints import (
     alternative_constraints,
     job_data_constraints,
     job_operation_constraints,
-    machine_data_constraints,
     no_overlap_and_setup_time_constraints,
     operation_constraints,
     operation_graph_constraints,
@@ -60,7 +59,6 @@ def default_model(data: ProblemData) -> CpoModel:
         raise ValueError(f"Unknown objective: {data.objective}")
 
     model.add(job_data_constraints(model, data, job_vars))
-    model.add(machine_data_constraints(model, data, task_vars))
     model.add(job_operation_constraints(model, data, job_vars, op_vars))
     model.add(operation_constraints(model, data, op_vars))
     model.add(alternative_constraints(model, data, op_vars, task_vars))

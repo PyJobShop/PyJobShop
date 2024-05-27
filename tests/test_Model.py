@@ -105,11 +105,8 @@ def test_add_machine_attributes():
     """
     model = Model()
 
-    machine = model.add_machine(
-        downtimes=[(0, 1)], allow_overlap=True, name="machine"
-    )
+    machine = model.add_machine(allow_overlap=True, name="machine")
 
-    assert_equal(machine.downtimes, [(0, 1)])
     assert_equal(machine.allow_overlap, True)
     assert_equal(machine.name, "machine")
 
