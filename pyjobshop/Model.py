@@ -4,7 +4,7 @@ from typing import Optional
 import numpy as np
 from docplex.cp.solution import CpoSolveResult
 
-import pyjobshop.cp as cpoptimizer
+import pyjobshop.cpoptimizer as cpoptimizer
 import pyjobshop.ortools as ortools
 from ortools.sat.python.cp_model import CpSolver
 from pyjobshop.constants import MAX_VALUE
@@ -313,7 +313,7 @@ class Model:
 
     def solve(
         self,
-        solver: str = "ortools",
+        solver: str = "cpoptimizer",
         log: bool = False,
         time_limit: Optional[int] = None,
     ) -> Result:
