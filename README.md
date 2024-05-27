@@ -1,11 +1,17 @@
+> [!NOTE]
+> This package is under development. Expect things to break significantly during the v0.0.x phase.
+
+
 # PyJobShop
-[![pyjobshop](https://github.com/leonlan/pyjobshop/actions/workflows/CI.yml/badge.svg)](https://github.com/leonlan/pyjobshop/actions/workflows/CI.yml)
-[![codecov](https://codecov.io/gh/leonlan/PyJobShop/graph/badge.svg?token=5WZK5HW1FI)](https://codecov.io/gh/leonlan/PyJobShop)
+[![PyPI](https://img.shields.io/pypi/v/PyJobShop?style=flat-square)](https://pypi.org/project/pyjobshop/)
+[![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](https://github.com/leonlan/PyJobShop/)
+[![CI](https://img.shields.io/github/actions/workflow/status/leonlan/PyJobShop/.github%2Fworkflows%2FCI.yml?style=flat-square)](https://github.com/leonlan/PyJobShop/)
+[![DOC](https://img.shields.io/readthedocs/pyjobshop?style=flat-square)](https://pyjobshop.readthedocs.io/)
+[![Codecov](https://img.shields.io/codecov/c/github/leonlan/PyJobShop?style=flat-square)](https://app.codecov.io/gh/leonlan/PyJobShop/)
 
 PyJobShop is a package for implementing scheduling models in Python.
 It supports the classically known *flexible job shop problem* (FJSP) and many of its extensions such as arbitrary precedence relations, sequence-dependent setup times, and many more!
-The implementation is currently work in progress and V1 is planned to be finished in by April 2024.
-Feel free to open an issue if you have any questions.
+The implementation is currently work in progress - feel free to open an issue if you have any questions.
 
 
 ## Installation

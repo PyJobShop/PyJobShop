@@ -2,9 +2,12 @@ import bisect
 from enum import Enum
 from typing import Iterable, Optional
 
+import enum_tools.documentation
 import numpy as np
 
 from pyjobshop.constants import MAX_VALUE
+
+_CONSTRAINTS_TYPE = dict[tuple[int, int], list["Constraint"]]
 
 
 class Job:
@@ -143,8 +146,6 @@ class Operation:
         machine). If the duration is not fixed, then the operation duration
         can take longer than the processing time, e.g., due to blocking.
         Default is True.
-    optional
-        Whether processing this operation is optional. Defaults to False.
     name
         Name of the operation.
     """
@@ -156,7 +157,6 @@ class Operation:
         earliest_end: Optional[int] = None,
         latest_end: Optional[int] = None,
         fixed_duration: bool = True,
-        optional: bool = False,
         name: str = "",
     ):
         if (
@@ -178,7 +178,6 @@ class Operation:
         self._earliest_end = earliest_end
         self._latest_end = latest_end
         self._fixed_duration = fixed_duration
-        self._optional = optional
         self._name = name
 
     @property
@@ -202,74 +201,66 @@ class Operation:
         return self._fixed_duration
 
     @property
-    def optional(self) -> bool:
-        return self._optional
-
-    @property
     def name(self) -> str:
         return self._name
 
 
+@enum_tools.documentation.document_enum
 class Objective(str, Enum):
     """
     Choices for objective functions (to be minimized).
-
-    - makespan:               Maximum completion time of all jobs.
-    - tardy_jobs:             Number of tardy jobs.
-    - total_completion_time:  Sum of completion times of all jobs.
-    - total_tardiness:        Sum of tardiness of all jobs.
-
     """
 
+    #: Minimize the maximum completion time of all jobs.
     MAKESPAN = "makespan"
+
+    #: Minimizes the number of jobs whose completion times exceed the due date.
     TARDY_JOBS = "tardy_jobs"
+
+    #: Minimize the sum of job completion times.
     TOTAL_COMPLETION_TIME = "total_completion_time"
+
+    #: Minimize the sum of job tardiness.
     TOTAL_TARDINESS = "total_tardiness"
 
 
-class TimingPrecedence(str, Enum):
+@enum_tools.documentation.document_enum
+class Constraint(str, Enum):
     """
-    Types of precedence constraints between two operations $i$ and $j$.
-    Let $s(i)$ and $f(i)$ be the start and finish times of operation $i$,
-    and let $s(j)$ and $f(j)$ be defined similarly for operation $j$. The
-    following precedence constraints are supported (in CPLEX terminology):
-
-    - start_at_start:        $s(i) == s(j)$
-    - start_at_end:          $s(i) == f(j)$
-    - start_before_start:    $s(i) <= s(j)$
-    - start_before_end:      $s(i) <= f(j)$
-    - end_at_start:          $f(i) == s(j)$
-    - end_at_end:            $f(i) == f(j)$
-    - end_before_start:      $f(i) <= s(j)$
-    - end_before_end:        $f(i) <= f(j)$
-
-    Timing precedence constraints are combined with delays: a delay of $d$
-    is added to the left-hand side of the constraint. For example, the
-    constraint `start_at_start` with delay $d$ is then $s(i) + d == s(j)$.
+    Operation constraints between two operations :math:`i` and :math:`j`.
     """
 
+    #: Operation :math:`i` must start when operation :math:`j` starts.
     START_AT_START = "start_at_start"
+
+    #: Operation :math:`i` must at start when operation :math:`j` ends.
     START_AT_END = "start_at_end"
+
+    #: Operation :math:`i` must start before operation :math:`j` starts.
     START_BEFORE_START = "start_before_start"
+
+    #: Operation :math:`i` must start before operation :math:`j` ends.
     START_BEFORE_END = "start_before_end"
+
+    #: Operation :math:`i` must end when operation :math:`j` starts.
     END_AT_START = "end_at_start"
+
+    #: Operation :math:`i` must end when operation :math:`j` ends.
     END_AT_END = "end_at_end"
+
+    #: Operation :math:`i` must end before operation :math:`j` starts.
     END_BEFORE_START = "end_before_start"
+
+    #: Operation :math:`i` must end before operation :math:`j` ends.
     END_BEFORE_END = "end_before_end"
 
-
-class AssignmentPrecedence(str, Enum):
-    """
-    Types of assignment precedence constraints between two operations $i$ and
-    $j$.
-
-    - previous:              i is previous to j in sequence variable.
-    - same_unit:             i and j are processed on the same unit.
-    - different_unit:        i and j are processed on different units.
-    """
-
+    #: Sequence :math:`i` right before :math:`j` (if assigned to same machine).
     PREVIOUS = "previous"
+
+    #: Assign operations :math:`i` and :math:`j` to the same machine.
     SAME_UNIT = "same_unit"
+
+    #: Assign operations :math:`i` and :math:`j` to different machine.
     DIFFERENT_UNIT = "different_unit"
 
 
@@ -291,21 +282,12 @@ class ProblemData:
     processing_times
         Processing times of operations on machines. First index is the machine
         index, second index is the operation index.
-    timing_precedences
-        Dict indexed by operation pairs with list of timing precedence
-        constraints and delays.
-    assignment_precedences
-        Dict indexed by operation pairs with list of assignment precedence
-        constraints.
+    constraints
+        Dict indexed by operation pairs with a list of constraints as values.
     setup_times
         Sequence-dependent setup times between operations on a given machine.
         The first dimension of the array is indexed by the machine index. The
         last two dimensions of the array are indexed by operation indices.
-    process_plans
-        List of processing plans. Each process plan represents a list
-        containing lists of operation indices, one of which is selected to be
-        scheduled. All operations from the selected list are then scheduled,
-        while operations from unselected lists will not be scheduled.
     planning_horizon
         The planning horizon value. Default is None, meaning that the planning
         horizon is unbounded.
@@ -320,14 +302,8 @@ class ProblemData:
         operations: list[Operation],
         job2ops: list[list[int]],
         processing_times: dict[tuple[int, int], int],
-        timing_precedences: dict[
-            tuple[int, int], list[tuple[TimingPrecedence, int]]
-        ],
-        assignment_precedences: Optional[
-            dict[tuple[int, int], list[AssignmentPrecedence]]
-        ] = None,
+        constraints: _CONSTRAINTS_TYPE,
         setup_times: Optional[np.ndarray] = None,
-        process_plans: Optional[list[list[list[int]]]] = None,
         planning_horizon: int = MAX_VALUE,
         objective: Objective = Objective.MAKESPAN,
     ):
@@ -336,12 +312,7 @@ class ProblemData:
         self._operations = operations
         self._job2ops = job2ops
         self._processing_times = processing_times
-        self._timing_precedences = timing_precedences
-        self._assignment_precedences = (
-            assignment_precedences
-            if assignment_precedences is not None
-            else {}
-        )
+        self._constraints = constraints
 
         num_mach = self.num_machines
         num_ops = self.num_operations
@@ -350,9 +321,6 @@ class ProblemData:
             setup_times
             if setup_times is not None
             else np.zeros((num_mach, num_ops, num_ops), dtype=int)
-        )
-        self._process_plans = (
-            process_plans if process_plans is not None else []
         )
         self._planning_horizon = planning_horizon
         self._objective = objective
@@ -438,34 +406,17 @@ class ProblemData:
         return self._processing_times
 
     @property
-    def timing_precedences(
-        self,
-    ) -> dict[tuple[int, int], list[tuple[TimingPrecedence, int]]]:
+    def constraints(self) -> _CONSTRAINTS_TYPE:
         """
-        Timing precedence constraints between operations.
+        Constraints between operations.
 
         Returns
         -------
-        dict[tuple[int, int], list[tuple[TimingPrecedence, int]]]
-            Dict indexed by operation pairs with list of timing precedence
-            constraints and delays.
-        """
-        return self._timing_precedences
-
-    @property
-    def assignment_precedences(
-        self,
-    ) -> dict[tuple[int, int], list[AssignmentPrecedence]]:
-        """
-        Assignment precedence constraints between operations.
-
-        Returns
-        -------
-        dict[tuple[int, int], list[AssignmentPrecedence]]
-            Dict indexed by operation pairs with list of assignment precedence
+        dict[tuple[int, int], list[Constraint]]
+            The dictionary is indexed by operation pairs with a list of
             constraints.
         """
-        return self._assignment_precedences
+        return self._constraints
 
     @property
     def setup_times(self) -> np.ndarray:
@@ -483,28 +434,13 @@ class ProblemData:
         return self._setup_times
 
     @property
-    def process_plans(self) -> list[list[list[int]]]:
-        """
-        List of process plans. Each process plan represents a list containing
-        lists of operation indices, one of which is selected to be scheduled.
-        All operations from the selected list are then scheduled, while
-        operations from unselected lists will not be scheduled.
-
-        Returns
-        -------
-        list[list[list[int]]]
-            List of processing plans.
-        """
-        return self._process_plans
-
-    @property
     def planning_horizon(self) -> int:
         """
         The planning horizon of this instance.
 
         Returns
         -------
-        Optional[int]
+        int
             The planning horizon value.
         """
         return self._planning_horizon

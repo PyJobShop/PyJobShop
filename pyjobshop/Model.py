@@ -9,13 +9,12 @@ import pyjobshop.ortools as ortools
 from ortools.sat.python.cp_model import CpSolver
 from pyjobshop.constants import MAX_VALUE
 from pyjobshop.ProblemData import (
-    AssignmentPrecedence,
+    Constraint,
     Job,
     Machine,
     Objective,
     Operation,
     ProblemData,
-    TimingPrecedence,
 )
 from pyjobshop.Result import Result
 
@@ -26,19 +25,15 @@ class Model:
     """
 
     def __init__(self):
-        self._jobs = []
-        self._machines = []
-        self._operations = []
+        self._jobs: list[Job] = []
+        self._machines: list[Machine] = []
+        self._operations: list[Operation] = []
         self._job2ops: dict[int, list[int]] = defaultdict(list)
         self._processing_times: dict[tuple[int, int], int] = {}
-        self._timing_precedences: dict[
-            tuple[int, int], list[tuple[TimingPrecedence, int]]
-        ] = defaultdict(list)
-        self._assignment_precedences: dict[
-            tuple[int, int], list[AssignmentPrecedence]
+        self._constraints: dict[
+            tuple[int, int], list[Constraint]
         ] = defaultdict(list)
         self._setup_times: dict[tuple[int, int, int], int] = {}
-        self._process_plans: list[list[list[int]]] = []
         self._planning_horizon: int = MAX_VALUE
         self._objective: Objective = Objective.MAKESPAN
 
@@ -48,18 +43,30 @@ class Model:
 
     @property
     def jobs(self) -> list[Job]:
+        """
+        Returns the list of jobs in the model.
+        """
         return self._jobs
 
     @property
     def machines(self) -> list[Machine]:
+        """
+        Returns the list of machines in the model.
+        """
         return self._machines
 
     @property
     def operations(self) -> list[Operation]:
+        """
+        Returns the list of operations in the model.
+        """
         return self._operations
 
     @property
     def objective(self) -> Objective:
+        """
+        Returns the objective function to be minimized in this model.
+        """
         return self._objective
 
     def data(self) -> ProblemData:
@@ -83,10 +90,8 @@ class Model:
             operations=self.operations,
             job2ops=job2ops,
             processing_times=self._processing_times,
-            timing_precedences=self._timing_precedences,
-            assignment_precedences=self._assignment_precedences,
+            constraints=self._constraints,
             setup_times=setup_times,
-            process_plans=self._process_plans,
             planning_horizon=self._planning_horizon,
             objective=self._objective,
         )
@@ -177,7 +182,6 @@ class Model:
         earliest_end: Optional[int] = None,
         latest_end: Optional[int] = None,
         fixed_duration: bool = True,
-        optional: bool = False,
         name: str = "",
     ) -> Operation:
         """
@@ -197,8 +201,6 @@ class Model:
             Latest end time of the operation.
         fixed_duration
             Whether the duration of the operation is fixed. Defaults to True.
-        optional
-            Whether processing this operation is optional. Defaults to False.
         name
             Name of the operation.
 
@@ -213,7 +215,6 @@ class Model:
             earliest_end,
             latest_end,
             fixed_duration,
-            optional,
             name,
         )
 
@@ -249,57 +250,27 @@ class Model:
         op_idx = self._id2op[id(operation)]
         self._processing_times[machine_idx, op_idx] = duration
 
-    def add_timing_precedence(
+    def add_constraint(
         self,
-        operation1: Operation,
-        operation2: Operation,
-        constraint: TimingPrecedence = TimingPrecedence.END_BEFORE_START,
-        delay: int = 0,
+        first: Operation,
+        second: Operation,
+        constraint: Constraint,
     ):
         """
-        Adds a timing precedence constraint between two operations.
+        Adds a precedence constraint between two operations.
 
         Parameters
         ----------
-        operation1
+        first
             First operation.
-        operation2
+        second
             Second operation.
         constraint
-            Timing precedence constraint between the first and the second
-            operation. Defaults to ``END_BEFORE_START``, meaning that the first
-            operation must end before the second operation starts.
-        delay
-            Delay between the first and the second operation. Defaults to
-            zero (no delay).
+            Constraint between the first and the second operation.
         """
-        op1 = self._id2op[id(operation1)]
-        op2 = self._id2op[id(operation2)]
-        self._timing_precedences[op1, op2].append((constraint, delay))
-
-    def add_assignment_precedence(
-        self,
-        operation1: Operation,
-        operation2: Operation,
-        assignment_precedence: AssignmentPrecedence,
-    ):
-        """
-        Adds an assignment precedence constraints between two operations.
-
-        Parameters
-        ----------
-        operation1
-            First operation.
-        operation2
-            Second operation.
-        assignment_precedence
-            Assignment precedence relation between the first and the second
-            operation.
-
-        """
-        op1 = self._id2op[id(operation1)]
-        op2 = self._id2op[id(operation2)]
-        self._assignment_precedences[op1, op2].append(assignment_precedence)
+        op1 = self._id2op[id(first)]
+        op2 = self._id2op[id(second)]
+        self._constraints[op1, op2].append(constraint)
 
     def add_setup_time(
         self,
@@ -328,21 +299,6 @@ class Model:
         op_idx2 = self._id2op[id(operation2)]
 
         self._setup_times[machine_idx, op_idx1, op_idx2] = duration
-
-    def add_process_plan(self, *plans: list[Operation]):
-        """
-        Adds one or multiple process plans. Each plan is a list of operations.
-        Exactly one process plan is selected, meaning that all operations in
-        the selected plan are required to be processed.
-
-        Parameters
-        ----------
-        plans
-            The plans to be added. Each plan is a list of operations. Multiple
-            plans can be passed as separate arguments.
-        """
-        ids = [[self._id2op[id(op)] for op in plan] for plan in plans]
-        self._process_plans.append(ids)
 
     def set_planning_horizon(self, horizon: int):
         """

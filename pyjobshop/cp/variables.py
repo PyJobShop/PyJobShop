@@ -20,7 +20,7 @@ def operation_variables(
     Creates an interval variable for each operation in the problem.
     """
     return [
-        m.interval_var(name=f"O{idx}", optional=operation.optional)
+        m.interval_var(name=f"O{idx}")
         for idx, operation in enumerate(data.operations)
     ]
 
