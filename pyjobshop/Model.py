@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import Iterable, Optional
+from typing import Optional
 
 import numpy as np
 from docplex.cp.solution import CpoSolveResult
@@ -135,20 +135,13 @@ class Model:
         return job
 
     def add_machine(
-        self,
-        downtimes: Iterable[tuple[int, int]] = (),
-        allow_overlap: bool = False,
-        name: str = "",
+        self, allow_overlap: bool = False, name: str = ""
     ) -> Machine:
         """
         Adds a machine to the model.
 
         Parameters
         ----------
-        downtimes
-            List of downtimes for the machine. A downtime is a time interval
-            [start, end) during which the machine is unavailable for
-            processing. Defaults to no downtimes.
         allow_overlap
             Whether it is allowed to schedule multiple operations on the
             machine at the same time. Default ``False``.
@@ -160,11 +153,7 @@ class Model:
         Machine
             The created machine.
         """
-        machine = Machine(
-            downtimes=downtimes,
-            allow_overlap=allow_overlap,
-            name=name,
-        )
+        machine = Machine(allow_overlap=allow_overlap, name=name)
 
         self._id2machine[id(machine)] = len(self.machines)
         self._machines.append(machine)
