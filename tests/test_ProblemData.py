@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 from numpy.testing import assert_allclose, assert_equal, assert_raises
 
+from pyjobshop.constants import MAX_VALUE
 from pyjobshop.Model import Model
 from pyjobshop.ProblemData import (
     Constraint,
@@ -219,7 +220,7 @@ def test_problem_data_default_values():
     )
 
     assert_allclose(data.setup_times, np.zeros((1, 1, 1), dtype=int))
-    assert_equal(data.planning_horizon, None)
+    assert_equal(data.planning_horizon, MAX_VALUE)
     assert_equal(data.objective, Objective.MAKESPAN)
 
 

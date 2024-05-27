@@ -5,6 +5,8 @@ from typing import Optional
 import enum_tools.documentation
 import numpy as np
 
+from pyjobshop.constants import MAX_VALUE
+
 _CONSTRAINTS_TYPE = dict[tuple[int, int], list["Constraint"]]
 
 
@@ -284,7 +286,7 @@ class ProblemData:
         processing_times: dict[tuple[int, int], int],
         constraints: _CONSTRAINTS_TYPE,
         setup_times: Optional[np.ndarray] = None,
-        planning_horizon: Optional[int] = None,
+        planning_horizon: int = MAX_VALUE,
         objective: Objective = Objective.MAKESPAN,
     ):
         self._jobs = jobs
@@ -414,15 +416,14 @@ class ProblemData:
         return self._setup_times
 
     @property
-    def planning_horizon(self) -> Optional[int]:
+    def planning_horizon(self) -> int:
         """
         The planning horizon of this instance.
 
         Returns
         -------
-        Optional[int]
-            The planning horizon value. If None, then the planning horizon
-            is unbounded.
+        int
+            The planning horizon value.
         """
         return self._planning_horizon
 
