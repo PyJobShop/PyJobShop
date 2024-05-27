@@ -1,5 +1,5 @@
-from .cp import default_model as default_model
-from .cp import result2solution as result2solution
+from .cpoptimizer import default_model as default_model
+from .cpoptimizer import result2solution as result2solution
 from .Model import Model as Model
 from .plot import plot as plot
 from .ProblemData import Constraint as Constraint

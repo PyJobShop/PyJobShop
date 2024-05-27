@@ -1,4 +1,3 @@
-import sys
 from itertools import product
 
 import numpy as np
@@ -11,8 +10,6 @@ JobVars = list[CpoIntervalVar]
 OpVars = list[CpoIntervalVar]
 TaskVars = dict[tuple[int, int], CpoIntervalVar]
 SeqVars = list[CpoSequenceVar]
-
-_INT_MAX = sys.maxsize
 
 
 def alternative_constraints(
