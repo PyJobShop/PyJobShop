@@ -1,6 +1,8 @@
 from collections import defaultdict
 from itertools import product
 
+import numpy as np
+
 from ortools.sat.python.cp_model import CpModel
 from pyjobshop.ProblemData import ProblemData
 
@@ -179,6 +181,9 @@ def setup_times_constraints(
         arcs = []
         sequence = sequences[machine]
         setup_times = data.setup_times[machine]
+
+        if np.all(setup_times == 0):
+            continue
 
         for idx1, (var1, op1) in enumerate(sequence):
             # Set initial arcs from the dummy node (0) to/from a task.
