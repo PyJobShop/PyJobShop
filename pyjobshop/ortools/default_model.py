@@ -8,6 +8,7 @@ from .constraints import (
     no_overlap_constraints,
     operation_constraints,
     operation_graph_constraints,
+    processing_time_constraints,
     setup_times_constraints,
 )
 from .objectives import makespan
@@ -28,13 +29,11 @@ def default_model(data: ProblemData) -> CpModel:
         raise NotImplementedError(msg)
 
     job_data_constraints(model, data, job_vars)
-    # machine_data_constraints(model, data, task_vars)
     job_operation_constraints(model, data, job_vars, op_vars)
     operation_constraints(model, data, op_vars)
     alternative_constraints(model, data, op_vars, assign)
     no_overlap_constraints(model, data, assign)
-    # model.add(planning_horizon_constraints(model, data, job_vars, task_vars, op_vars)) # noqa
-    # model.add(processing_time_constraints(model, data, task_vars))
+    processing_time_constraints(model, data, assign)
     setup_times_constraints(model, data, assign)
     operation_graph_constraints(model, data, op_vars, assign)
 

@@ -32,8 +32,6 @@ def job_operation_constraints(
     Creates the constraints that ensure that the job variables govern the
     related operation variables.
     """
-    constraints = []
-
     for job in range(data.num_jobs):
         job_var = job_vars[job]
         related_op_vars = [op_vars[op] for op in data.job2ops[job]]
@@ -43,8 +41,6 @@ def job_operation_constraints(
 
         for var in related_op_vars:
             m.Add(var.start >= data.jobs[job].release_date)
-
-    return constraints
 
 
 def operation_constraints(
@@ -74,26 +70,26 @@ def operation_graph_constraints(
     assign: AssignmentVars,
 ):
     for (idx1, idx2), op_constraints in data.constraints.items():
-        op1 = op_vars[idx1]
-        op2 = op_vars[idx2]
+        op_var1 = op_vars[idx1]
+        op_var2 = op_vars[idx2]
 
         for prec_type in op_constraints:
             if prec_type == "start_at_start":
-                expr = op1.start == op2.start
+                expr = op_var1.start == op_var2.start
             elif prec_type == "start_at_end":
-                expr = op1.start == op2.end
+                expr = op_var1.start == op_var2.end
             elif prec_type == "start_before_start":
-                expr = op1.start <= op2.start
+                expr = op_var1.start <= op_var2.start
             elif prec_type == "start_before_end":
-                expr = op1.start <= op2.end
+                expr = op_var1.start <= op_var2.end
             elif prec_type == "end_at_start":
-                expr = op1.end == op2.start
+                expr = op_var1.end == op_var2.start
             elif prec_type == "end_at_end":
-                expr = op1.end == op2.end
+                expr = op_var1.end == op_var2.end
             elif prec_type == "end_before_start":
-                expr = op1.end <= op2.start
+                expr = op_var1.end <= op_var2.start
             elif prec_type == "end_before_end":
-                expr = op1.end <= op2.end
+                expr = op_var1.end <= op_var2.end
             else:
                 continue
 
@@ -163,6 +159,24 @@ def no_overlap_constraints(
             m.AddNoOverlap([var.interval for var in sequences[machine]])
 
 
+def processing_time_constraints(
+    m: CpModel, data: ProblemData, assign: AssignmentVars
+):
+    """
+    Creates the processing time constraints for the task variables, ensuring
+    that the duration of the operation on the machine is the processing time.
+    If the operation allows for variable duration, the duration could be longer
+    than the processing time due to blocking.
+    """
+    for (op, machine), var in assign.items():
+        duration = data.processing_times[machine, op]
+
+        if data.operations[op].fixed_duration:
+            m.Add(var.duration == duration)
+        else:
+            m.Add(var.duration >= duration)
+
+
 def setup_times_constraints(
     m: CpModel, data: ProblemData, assign: AssignmentVars
 ):
@@ -174,8 +188,10 @@ def setup_times_constraints(
     https://github.com/google/or-tools/blob/d4f9b8/examples/contrib/scheduling_with_transitions_sat.py
     """
     sequences = defaultdict(list)
+    op_idcs = defaultdict(list)
     for (op, machine), var in assign.items():
-        sequences[machine].append([var, op])
+        sequences[machine].append(var)
+        op_idcs[machine].append(op)
 
     for machine in range(data.num_machines):
         arcs = []
@@ -185,7 +201,7 @@ def setup_times_constraints(
         if np.all(setup_times == 0):
             continue
 
-        for idx1, (var1, op1) in enumerate(sequence):
+        for idx1, var1 in enumerate(sequence):
             # Set initial arcs from the dummy node (0) to/from a task.
             start_lit = m.NewBoolVar("")
             end_lit = m.NewBoolVar("")
@@ -205,7 +221,7 @@ def setup_times_constraints(
             arcs.append([idx1 + 1, idx1 + 1, var1.is_present.Not()])
             m.Add(var1.rank == -1).OnlyEnforceIf(var1.is_present.Not())
 
-            for idx2, (var2, op2) in enumerate(sequence):
+            for idx2, var2 in enumerate(sequence):
                 if idx1 == idx2:
                     continue
 
@@ -221,6 +237,8 @@ def setup_times_constraints(
                 # TODO This automatically enforces classic start -> end
                 # precedence constraints and also does not allow for overlap.
                 # We need to validate this to catch it.
+                op1 = op_idcs[idx1]
+                op2 = op_idcs[idx2]
                 setup = setup_times[op1, op2]
                 m.Add(var1.end + setup <= var2.start).OnlyEnforceIf(lit)
 
