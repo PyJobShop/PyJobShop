@@ -144,34 +144,6 @@ def operation_constraints(
     return []  # no constraints because we use setters
 
 
-def optional_operation_selection_constraints(
-    m: CpoModel, data: ProblemData, op_vars: OpVars
-) -> list[CpoExpr]:
-    """
-    Creates the process plan selection constraints. These constraints
-    ensure that for process plan, exactly one operation list is selected
-    and all operations in that list are set to present.
-    """
-    constraints = []
-
-    for plan in data.process_plans:
-        presence_by_plan = []
-
-        for operations in plan:
-            presence = [m.presence_of(op_vars[idx]) for idx in operations]
-            presence_by_plan.append(m.logical_and(presence))
-
-            # Presence of operation intervals is the same for all operations
-            # within one process plan option.
-            for idx in range(len(operations) - 1):
-                constraints.append(presence[idx] == presence[idx + 1])
-
-        # Select exactly one group per process plan.
-        constraints.append(m.sum(presence_by_plan) == 1)
-
-    return constraints
-
-
 def planning_horizon_constraints(
     m: CpoModel,
     data: ProblemData,

@@ -166,7 +166,6 @@ def test_problem_data_input_parameter_attributes():
         key: [Constraint.END_BEFORE_START] for key in ((0, 1), (2, 3), (4, 5))
     }
     setup_times = np.ones((5, 5, 5), dtype=int)
-    process_plans = [[[0, 1, 2, 3, 4]]]
     planning_horizon = 100
     objective = Objective.TOTAL_COMPLETION_TIME
 
@@ -178,7 +177,6 @@ def test_problem_data_input_parameter_attributes():
         processing_times,
         constraints,
         setup_times,
-        process_plans,
         planning_horizon,
         objective,
     )
@@ -190,7 +188,6 @@ def test_problem_data_input_parameter_attributes():
     assert_equal(data.processing_times, processing_times)
     assert_equal(data.constraints, constraints)
     assert_allclose(data.setup_times, setup_times)
-    assert_equal(data.process_plans, process_plans)
     assert_equal(data.planning_horizon, planning_horizon)
     assert_equal(data.objective, objective)
 
@@ -236,7 +233,6 @@ def test_problem_data_default_values():
     )
 
     assert_allclose(data.setup_times, np.zeros((1, 1, 1), dtype=int))
-    assert_equal(data.process_plans, [])
     assert_equal(data.planning_horizon, None)
     assert_equal(data.objective, Objective.MAKESPAN)
 
@@ -716,31 +712,6 @@ def test_assignment_constraint(prec_type: Constraint, expected_makespan: int):
     result = model.solve()
 
     assert_equal(result.objective_value, expected_makespan)
-
-
-def test_process_plans():
-    """
-    Tests that setting optional plans works correctly.
-    """
-    model = Model()
-
-    job = model.add_job()
-    machine = model.add_machine()
-    operations = [
-        model.add_operation(job=job, optional=True) for _ in range(4)
-    ]
-
-    for operation, duration in zip(operations, [1, 2, 3, 4]):
-        model.add_processing_time(machine, operation, duration)
-
-    plan1 = [operations[0], operations[1]]
-    plan2 = [operations[2], operations[3]]
-    model.add_process_plan(plan1, plan2)
-
-    result = model.solve()
-
-    # Schedule plan 1, so the makespan is 1 + 2 = 3.
-    assert_equal(result.objective_value, 3)
 
 
 def test_tight_planning_horizon_results_in_infeasiblity():

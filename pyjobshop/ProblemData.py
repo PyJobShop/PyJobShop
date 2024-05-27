@@ -294,11 +294,6 @@ class ProblemData:
         Sequence-dependent setup times between operations on a given machine.
         The first dimension of the array is indexed by the machine index. The
         last two dimensions of the array are indexed by operation indices.
-    process_plans
-        List of processing plans. Each process plan represents a list
-        containing lists of operation indices, one of which is selected to be
-        scheduled. All operations from the selected list are then scheduled,
-        while operations from unselected lists will not be scheduled.
     planning_horizon
         The planning horizon value. Default is None, meaning that the planning
         horizon is unbounded.
@@ -315,7 +310,6 @@ class ProblemData:
         processing_times: dict[tuple[int, int], int],
         constraints: _CONSTRAINTS_TYPE,
         setup_times: Optional[np.ndarray] = None,
-        process_plans: Optional[list[list[list[int]]]] = None,
         planning_horizon: Optional[int] = None,
         objective: Objective = Objective.MAKESPAN,
     ):
@@ -333,9 +327,6 @@ class ProblemData:
             setup_times
             if setup_times is not None
             else np.zeros((num_mach, num_ops, num_ops), dtype=int)
-        )
-        self._process_plans = (
-            process_plans if process_plans is not None else []
         )
         self._planning_horizon = planning_horizon
         self._objective = objective
@@ -447,21 +438,6 @@ class ProblemData:
             operation indices.
         """
         return self._setup_times
-
-    @property
-    def process_plans(self) -> list[list[list[int]]]:
-        """
-        List of process plans. Each process plan represents a list containing
-        lists of operation indices, one of which is selected to be scheduled.
-        All operations from the selected list are then scheduled, while
-        operations from unselected lists will not be scheduled.
-
-        Returns
-        -------
-        list[list[list[int]]]
-            List of processing plans.
-        """
-        return self._process_plans
 
     @property
     def planning_horizon(self) -> Optional[int]:
