@@ -1,6 +1,6 @@
 import bisect
 from enum import Enum
-from typing import Iterable, Optional
+from typing import Optional
 
 import enum_tools.documentation
 import numpy as np
@@ -88,10 +88,6 @@ class Machine:
 
     Parameters
     ----------
-    downtimes
-        List of downtimes for the machine. A downtime is a time interval
-        [start, end) during which the machine is unavailable for processing.
-        Defaults to no downtimes.
     allow_overlap
         Whether it is allowed to schedule multiple operations on the machine
         at the same time. Default is False.
@@ -99,23 +95,9 @@ class Machine:
         Name of the machine.
     """
 
-    def __init__(
-        self,
-        downtimes: Iterable[tuple[int, int]] = (),
-        allow_overlap: bool = False,
-        name: str = "",
-    ):
-        for start, end in downtimes:
-            if start > end:
-                raise ValueError("Must have downtime start <= end.")
-
-        self._downtimes = downtimes
+    def __init__(self, allow_overlap: bool = False, name: str = ""):
         self._allow_overlap = allow_overlap
         self._name = name
-
-    @property
-    def downtimes(self) -> Iterable[tuple[int, int]]:
-        return self._downtimes
 
     @property
     def allow_overlap(self) -> bool:

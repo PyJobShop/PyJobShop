@@ -77,33 +77,14 @@ def test_machine_attributes():
     # Let's first test the default values.
     machine = Machine()
 
-    assert_equal(machine.downtimes, ())
     assert_equal(machine.allow_overlap, False)
     assert_equal(machine.name, "")
 
     # Now test with some values.
-    machine = Machine([(1, 2)], True, name="TestMachine")
+    machine = Machine(allow_overlap=True, name="TestMachine")
 
-    assert_equal(machine.downtimes, [(1, 2)])
     assert_equal(machine.allow_overlap, True)
     assert_equal(machine.name, "TestMachine")
-
-
-@pytest.mark.parametrize(
-    "downtimes",
-    [
-        [(1, 0)],  # start > end
-    ],
-)
-def test_machine_attributes_raises_invalid_parameters(
-    downtimes: list[tuple[int, int]],
-):
-    """
-    Tests that a ValueError is raised when invalid parameters are passed to
-    Machine.
-    """
-    with assert_raises(ValueError):
-        Machine(downtimes)
 
 
 def test_operation_attributes():
@@ -368,44 +349,6 @@ def test_job_deadline_infeasible():
     result = model.solve()
 
     # Operation's processing time is 2, but job deadline is 1.
-    assert_equal(result.solve_status, "Infeasible")
-
-
-def test_machine_downtime_single_interval():
-    """
-    Tests that operations are scheduled around machine downtimes.
-    """
-    model = Model()
-    job = model.add_job()
-    machine = model.add_machine([(0, 2)])
-    operation = model.add_operation(job=job)
-
-    model.add_processing_time(machine, operation, duration=2)
-
-    result = model.solve()
-
-    # Machine is down between (0, 2) onwards, so the makespan is be 4.
-    assert_equal(result.solve_status, "Optimal")
-    assert_equal(result.objective_value, 4)
-
-
-def test_restrictive_machine_downtime_and_horizon():
-    """
-    Tests that a restrictive machine downtime and planning horizon results
-    in an infeasible model.
-    """
-    model = Model()
-    job = model.add_job()
-    machine = model.add_machine([(0, 2)])
-    operation = model.add_operation(job=job)
-
-    model.add_processing_time(machine, operation, duration=2)
-    model.set_planning_horizon(3)
-
-    result = model.solve()
-
-    # Machine is down between (0, 2) onwards, but the planning horizon is
-    # only 3, so the operation cannot be scheduled.
     assert_equal(result.solve_status, "Infeasible")
 
 

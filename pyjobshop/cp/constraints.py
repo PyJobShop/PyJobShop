@@ -3,7 +3,6 @@ from itertools import product
 
 import numpy as np
 from docplex.cp.expression import CpoExpr, CpoIntervalVar, CpoSequenceVar
-from docplex.cp.function import CpoStepFunction
 from docplex.cp.model import CpoModel
 
 from pyjobshop.ProblemData import ProblemData
@@ -69,27 +68,6 @@ def job_operation_constraints(
             constraints.append(
                 m.start_of(op_var) >= data.jobs[job].release_date
             )
-
-    return constraints
-
-
-def machine_data_constraints(
-    m: CpoModel, data: ProblemData, task_vars: TaskVars
-) -> list[CpoExpr]:
-    """
-    Creates constraints related to the machine data.
-    """
-    constraints = []
-
-    for (_, machine), var in task_vars.items():
-        machine_data = data.machines[machine]
-
-        for start, end in machine_data.downtimes:
-            step = CpoStepFunction()
-            step.set_value(0, _INT_MAX, 1)
-            step.set_value(start, end, 0)
-
-            constraints.append(m.forbid_extent(var, step))
 
     return constraints
 
