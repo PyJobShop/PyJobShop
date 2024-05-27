@@ -31,7 +31,6 @@ class Model:
             tuple[int, int], list[Constraint]
         ] = defaultdict(list)
         self._setup_times: dict[tuple[int, int, int], int] = {}
-        self._process_plans: list[list[list[int]]] = []
         self._planning_horizon: Optional[int] = None
         self._objective: Objective = Objective.MAKESPAN
 
@@ -90,7 +89,6 @@ class Model:
             processing_times=self._processing_times,
             constraints=self._constraints,
             setup_times=setup_times,
-            process_plans=self._process_plans,
             planning_horizon=self._planning_horizon,
             objective=self._objective,
         )
@@ -181,7 +179,6 @@ class Model:
         earliest_end: Optional[int] = None,
         latest_end: Optional[int] = None,
         fixed_duration: bool = True,
-        optional: bool = False,
         name: str = "",
     ) -> Operation:
         """
@@ -201,8 +198,6 @@ class Model:
             Latest end time of the operation.
         fixed_duration
             Whether the duration of the operation is fixed. Defaults to True.
-        optional
-            Whether processing this operation is optional. Defaults to False.
         name
             Name of the operation.
 
@@ -217,7 +212,6 @@ class Model:
             earliest_end,
             latest_end,
             fixed_duration,
-            optional,
             name,
         )
 
@@ -302,21 +296,6 @@ class Model:
         op_idx2 = self._id2op[id(operation2)]
 
         self._setup_times[machine_idx, op_idx1, op_idx2] = duration
-
-    def add_process_plan(self, *plans: list[Operation]):
-        """
-        Adds one or multiple process plans. Each plan is a list of operations.
-        Exactly one process plan is selected, meaning that all operations in
-        the selected plan are required to be processed.
-
-        Parameters
-        ----------
-        plans
-            The plans to be added. Each plan is a list of operations. Multiple
-            plans can be passed as separate arguments.
-        """
-        ids = [[self._id2op[id(op)] for op in plan] for plan in plans]
-        self._process_plans.append(ids)
 
     def set_planning_horizon(self, horizon: int):
         """

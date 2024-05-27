@@ -109,14 +109,20 @@ def test_operation_attributes():
     """
     Tests that the attributes of the Operation class are set correctly.
     """
-    operation = Operation(1, 2, 3, 4, False, True, name="TestOperation")
+    operation = Operation(
+        earliest_start=1,
+        latest_start=2,
+        earliest_end=3,
+        latest_end=4,
+        fixed_duration=False,
+        name="TestOperation",
+    )
 
     assert_equal(operation.earliest_start, 1)
     assert_equal(operation.latest_start, 2)
     assert_equal(operation.earliest_end, 3)
     assert_equal(operation.latest_end, 4)
     assert_equal(operation.fixed_duration, False)
-    assert_equal(operation.optional, True)
     assert_equal(operation.name, "TestOperation")
 
     # Also test that default values are set correctly.
@@ -127,7 +133,6 @@ def test_operation_attributes():
     assert_equal(operation.earliest_end, None)
     assert_equal(operation.latest_end, None)
     assert_equal(operation.fixed_duration, True)
-    assert_equal(operation.optional, False)
     assert_equal(operation.name, "")
 
 
@@ -166,7 +171,6 @@ def test_problem_data_input_parameter_attributes():
         key: [Constraint.END_BEFORE_START] for key in ((0, 1), (2, 3), (4, 5))
     }
     setup_times = np.ones((5, 5, 5), dtype=int)
-    process_plans = [[[0, 1, 2, 3, 4]]]
     planning_horizon = 100
     objective = Objective.TOTAL_COMPLETION_TIME
 
@@ -178,7 +182,6 @@ def test_problem_data_input_parameter_attributes():
         processing_times,
         constraints,
         setup_times,
-        process_plans,
         planning_horizon,
         objective,
     )
@@ -190,7 +193,6 @@ def test_problem_data_input_parameter_attributes():
     assert_equal(data.processing_times, processing_times)
     assert_equal(data.constraints, constraints)
     assert_allclose(data.setup_times, setup_times)
-    assert_equal(data.process_plans, process_plans)
     assert_equal(data.planning_horizon, planning_horizon)
     assert_equal(data.objective, objective)
 
@@ -236,7 +238,6 @@ def test_problem_data_default_values():
     )
 
     assert_allclose(data.setup_times, np.zeros((1, 1, 1), dtype=int))
-    assert_equal(data.process_plans, [])
     assert_equal(data.planning_horizon, None)
     assert_equal(data.objective, Objective.MAKESPAN)
 
@@ -621,30 +622,6 @@ def test_operation_non_fixed_duration():
     assert_equal(result.best.schedule, [Task(0, 0, 0, 10)])
 
 
-def test_optional_operations():
-    """
-    Tests that optional operations are not scheduled.
-    """
-    model = Model()
-
-    job = model.add_job()
-    machine = model.add_machine()
-    operations = [
-        model.add_operation(job=job),
-        model.add_operation(job=job, optional=True),
-    ]
-
-    model.add_processing_time(machine, operations[0], duration=10)
-    model.add_processing_time(machine, operations[1], duration=15)
-
-    result = model.solve()
-
-    # Operation 2 is not scheduled, so the makespan is 10, just the duration
-    # of operation 1.
-    assert_equal(result.solve_status, "Optimal")
-    assert_equal(result.objective_value, 10)
-
-
 @pytest.mark.parametrize(
     "prec_type,expected_makespan",
     [
@@ -716,31 +693,6 @@ def test_assignment_constraint(prec_type: Constraint, expected_makespan: int):
     result = model.solve()
 
     assert_equal(result.objective_value, expected_makespan)
-
-
-def test_process_plans():
-    """
-    Tests that setting optional plans works correctly.
-    """
-    model = Model()
-
-    job = model.add_job()
-    machine = model.add_machine()
-    operations = [
-        model.add_operation(job=job, optional=True) for _ in range(4)
-    ]
-
-    for operation, duration in zip(operations, [1, 2, 3, 4]):
-        model.add_processing_time(machine, operation, duration)
-
-    plan1 = [operations[0], operations[1]]
-    plan2 = [operations[2], operations[3]]
-    model.add_process_plan(plan1, plan2)
-
-    result = model.solve()
-
-    # Schedule plan 1, so the makespan is 1 + 2 = 3.
-    assert_equal(result.objective_value, 3)
 
 
 def test_tight_planning_horizon_results_in_infeasiblity():

@@ -144,8 +144,6 @@ class Operation:
         machine). If the duration is not fixed, then the operation duration
         can take longer than the processing time, e.g., due to blocking.
         Default is True.
-    optional
-        Whether processing this operation is optional. Defaults to False.
     name
         Name of the operation.
     """
@@ -157,7 +155,6 @@ class Operation:
         earliest_end: Optional[int] = None,
         latest_end: Optional[int] = None,
         fixed_duration: bool = True,
-        optional: bool = False,
         name: str = "",
     ):
         if (
@@ -179,7 +176,6 @@ class Operation:
         self._earliest_end = earliest_end
         self._latest_end = latest_end
         self._fixed_duration = fixed_duration
-        self._optional = optional
         self._name = name
 
     @property
@@ -201,10 +197,6 @@ class Operation:
     @property
     def fixed_duration(self) -> bool:
         return self._fixed_duration
-
-    @property
-    def optional(self) -> bool:
-        return self._optional
 
     @property
     def name(self) -> str:
@@ -294,11 +286,6 @@ class ProblemData:
         Sequence-dependent setup times between operations on a given machine.
         The first dimension of the array is indexed by the machine index. The
         last two dimensions of the array are indexed by operation indices.
-    process_plans
-        List of processing plans. Each process plan represents a list
-        containing lists of operation indices, one of which is selected to be
-        scheduled. All operations from the selected list are then scheduled,
-        while operations from unselected lists will not be scheduled.
     planning_horizon
         The planning horizon value. Default is None, meaning that the planning
         horizon is unbounded.
@@ -315,7 +302,6 @@ class ProblemData:
         processing_times: dict[tuple[int, int], int],
         constraints: _CONSTRAINTS_TYPE,
         setup_times: Optional[np.ndarray] = None,
-        process_plans: Optional[list[list[list[int]]]] = None,
         planning_horizon: Optional[int] = None,
         objective: Objective = Objective.MAKESPAN,
     ):
@@ -333,9 +319,6 @@ class ProblemData:
             setup_times
             if setup_times is not None
             else np.zeros((num_mach, num_ops, num_ops), dtype=int)
-        )
-        self._process_plans = (
-            process_plans if process_plans is not None else []
         )
         self._planning_horizon = planning_horizon
         self._objective = objective
@@ -447,21 +430,6 @@ class ProblemData:
             operation indices.
         """
         return self._setup_times
-
-    @property
-    def process_plans(self) -> list[list[list[int]]]:
-        """
-        List of process plans. Each process plan represents a list containing
-        lists of operation indices, one of which is selected to be scheduled.
-        All operations from the selected list are then scheduled, while
-        operations from unselected lists will not be scheduled.
-
-        Returns
-        -------
-        list[list[list[int]]]
-            List of processing plans.
-        """
-        return self._process_plans
 
     @property
     def planning_horizon(self) -> Optional[int]:
