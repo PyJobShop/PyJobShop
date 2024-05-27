@@ -27,6 +27,7 @@ class AssignmentVar:
     duration: IntVar
     end: IntVar
     is_present: IntVar
+    rank: IntVar  # the rank of the task on machine
 
 
 def job_variables(m: CpModel, data: ProblemData) -> list[JobVar]:
@@ -95,8 +96,14 @@ def assignment_variables(
             is_present_var,
             f"{name}_interval",
         )
+        rank_var = m.NewIntVar(-1, data.num_jobs, f"{name}_rank")
         variables[op, machine] = AssignmentVar(
-            interval_var, start_var, duration_var, end_var, is_present_var
+            interval=interval_var,
+            start=start_var,
+            duration=duration_var,
+            end=end_var,
+            is_present=is_present_var,
+            rank=rank_var,
         )
 
         m.Add(duration_var >= duration)

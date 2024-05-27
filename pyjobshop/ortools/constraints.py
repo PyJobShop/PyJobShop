@@ -159,3 +159,62 @@ def no_overlap_constraints(
     for machine in range(data.num_machines):
         if not data.machines[machine].allow_overlap:
             m.AddNoOverlap([var.interval for var in sequences[machine]])
+
+
+def setup_times_constraints(
+    m: CpModel, data: ProblemData, assign: AssignmentVars
+):
+    """
+    Creates the setup time constraints for each machine, ensuring that the
+    setup times are respected.
+
+    The implementation is based on the following example:
+    https://github.com/google/or-tools/blob/d4f9b8/examples/contrib/scheduling_with_transitions_sat.py
+    """
+    sequences = defaultdict(list)
+    for (op, machine), var in assign.items():
+        sequences[machine].append([var, op])
+
+    for machine in range(data.num_machines):
+        arcs = []
+        sequence = sequences[machine]
+        setup_times = data.setup_times[machine]
+
+        for idx1, (var1, op1) in enumerate(sequence):
+            # Set initial arcs from the dummy node (0) to/from a task.
+            start_lit = m.NewBoolVar("")
+            end_lit = m.NewBoolVar("")
+
+            arcs.append([0, idx1 + 1, start_lit])
+            arcs.append([idx1 + 1, 0, end_lit])
+
+            # If this task is the first, set rank.
+            m.Add(var1.rank == 0).OnlyEnforceIf(start_lit)
+
+            # If this task is the first, set start.
+            # TODO Do we want to set this? Not when the earliest start is
+            # defined or the release date.
+            # m.Add(var1.start == 0).OnlyEnforceIf(start_lit)
+
+            # Self arc if the task is not present on this machine.
+            arcs.append([idx1 + 1, idx1 + 1, var1.is_present.Not()])
+            m.Add(var1.rank == -1).OnlyEnforceIf(var1.is_present.Not())
+
+            for idx2, (var2, op2) in enumerate(sequence):
+                if idx1 == idx2:
+                    continue
+
+                lit = m.NewBoolVar(f"{idx1} -> {idx2}")
+                arcs.append([idx1 + 1, idx2 + 1, lit])
+
+                m.AddImplication(lit, var1.is_present)
+                m.AddImplication(lit, var2.is_present)
+
+                # Maintain rank incrementally.
+                m.Add(var1.rank + 1 == var2.rank).OnlyEnforceIf(lit)
+
+                setup = setup_times[op1, op2]
+                m.Add(var1.end + setup <= var2.start).OnlyEnforceIf(lit)
+
+        if arcs:
+            m.AddCircuit(arcs)

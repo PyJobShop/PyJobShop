@@ -8,6 +8,7 @@ from .constraints import (
     no_overlap_constraints,
     operation_constraints,
     operation_graph_constraints,
+    setup_times_constraints,
 )
 from .objectives import makespan
 from .variables import assignment_variables, job_variables, operation_variables
@@ -34,7 +35,7 @@ def default_model(data: ProblemData) -> CpModel:
     no_overlap_constraints(model, data, assign)
     # model.add(planning_horizon_constraints(model, data, job_vars, task_vars, op_vars)) # noqa
     # model.add(processing_time_constraints(model, data, task_vars))
-    # setup_times_constraints(model, data, assign)
+    setup_times_constraints(model, data, assign)
     operation_graph_constraints(model, data, op_vars, assign)
 
     return model, op_vars, assign

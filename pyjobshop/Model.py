@@ -357,16 +357,24 @@ class Model:
             if time_limit is not None:
                 cp_solver.parameters.max_time_in_seconds = time_limit
 
-            status = cp_solver.Solve(ort_model)
-            print("Solve status: %s" % cp_solver.StatusName(status))
-            print("Optimal objective value: %i" % cp_solver.ObjectiveValue())
-            solution = ortools.result2solution(data, cp_solver, assign_vars)
+            status_code = cp_solver.Solve(ort_model)
+            status = cp_solver.StatusName(status_code)
+            objective = cp_solver.ObjectiveValue()
+            print(f"Solve status: {status}")
+            print(f"Optimal objective value: {objective}")
+
+            if status != "INFEASIBLE":
+                solution = ortools.result2solution(
+                    data, cp_solver, assign_vars
+                )
+            else:
+                solution = None
 
             return Result(
-                cp_solver.StatusName(status).capitalize(),
+                status.capitalize(),
                 cp_solver.WallTime(),
                 solution,
-                cp_solver.ObjectiveValue(),
+                objective,
             )
 
         elif solver == "cpoptimizer":
