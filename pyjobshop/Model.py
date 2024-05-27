@@ -179,7 +179,6 @@ class Model:
         earliest_end: Optional[int] = None,
         latest_end: Optional[int] = None,
         fixed_duration: bool = True,
-        optional: bool = False,
         name: str = "",
     ) -> Operation:
         """
@@ -199,8 +198,6 @@ class Model:
             Latest end time of the operation.
         fixed_duration
             Whether the duration of the operation is fixed. Defaults to True.
-        optional
-            Whether processing this operation is optional. Defaults to False.
         name
             Name of the operation.
 
@@ -215,7 +212,6 @@ class Model:
             earliest_end,
             latest_end,
             fixed_duration,
-            optional,
             name,
         )
 

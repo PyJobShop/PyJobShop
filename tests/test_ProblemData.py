@@ -109,14 +109,20 @@ def test_operation_attributes():
     """
     Tests that the attributes of the Operation class are set correctly.
     """
-    operation = Operation(1, 2, 3, 4, False, True, name="TestOperation")
+    operation = Operation(
+        earliest_start=1,
+        latest_start=2,
+        earliest_end=3,
+        latest_end=4,
+        fixed_duration=False,
+        name="TestOperation",
+    )
 
     assert_equal(operation.earliest_start, 1)
     assert_equal(operation.latest_start, 2)
     assert_equal(operation.earliest_end, 3)
     assert_equal(operation.latest_end, 4)
     assert_equal(operation.fixed_duration, False)
-    assert_equal(operation.optional, True)
     assert_equal(operation.name, "TestOperation")
 
     # Also test that default values are set correctly.
@@ -127,7 +133,6 @@ def test_operation_attributes():
     assert_equal(operation.earliest_end, None)
     assert_equal(operation.latest_end, None)
     assert_equal(operation.fixed_duration, True)
-    assert_equal(operation.optional, False)
     assert_equal(operation.name, "")
 
 
@@ -615,30 +620,6 @@ def test_operation_non_fixed_duration():
     assert_equal(result.solve_status, "Optimal")
     assert_equal(result.objective_value, 10)
     assert_equal(result.best.schedule, [Task(0, 0, 0, 10)])
-
-
-def test_optional_operations():
-    """
-    Tests that optional operations are not scheduled.
-    """
-    model = Model()
-
-    job = model.add_job()
-    machine = model.add_machine()
-    operations = [
-        model.add_operation(job=job),
-        model.add_operation(job=job, optional=True),
-    ]
-
-    model.add_processing_time(machine, operations[0], duration=10)
-    model.add_processing_time(machine, operations[1], duration=15)
-
-    result = model.solve()
-
-    # Operation 2 is not scheduled, so the makespan is 10, just the duration
-    # of operation 1.
-    assert_equal(result.solve_status, "Optimal")
-    assert_equal(result.objective_value, 10)
 
 
 @pytest.mark.parametrize(

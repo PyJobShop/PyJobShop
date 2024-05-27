@@ -144,8 +144,6 @@ class Operation:
         machine). If the duration is not fixed, then the operation duration
         can take longer than the processing time, e.g., due to blocking.
         Default is True.
-    optional
-        Whether processing this operation is optional. Defaults to False.
     name
         Name of the operation.
     """
@@ -157,7 +155,6 @@ class Operation:
         earliest_end: Optional[int] = None,
         latest_end: Optional[int] = None,
         fixed_duration: bool = True,
-        optional: bool = False,
         name: str = "",
     ):
         if (
@@ -179,7 +176,6 @@ class Operation:
         self._earliest_end = earliest_end
         self._latest_end = latest_end
         self._fixed_duration = fixed_duration
-        self._optional = optional
         self._name = name
 
     @property
@@ -201,10 +197,6 @@ class Operation:
     @property
     def fixed_duration(self) -> bool:
         return self._fixed_duration
-
-    @property
-    def optional(self) -> bool:
-        return self._optional
 
     @property
     def name(self) -> str:
