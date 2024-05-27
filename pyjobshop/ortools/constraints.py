@@ -45,19 +45,6 @@ def job_operation_constraints(
     return constraints
 
 
-def machine_data_constraints(
-    m: CpModel, data: ProblemData, assign_vars: AssignmentVars
-):
-    """
-    Creates the constraints that ensure that the assignment variables are
-    consistent with the machine data.
-    """
-    for (op, machine), var in assign_vars.items():
-        machine_data = data.machines[machine]
-
-        # TODO downtime
-
-
 def operation_constraints(
     m: CpModel, data: ProblemData, op_vars: OperationVars
 ):
@@ -78,16 +65,17 @@ def operation_constraints(
             m.Add(var.end <= op_data.latest_end)
 
 
-def timing_precedence_constraints(
+def operation_graph_constraints(
     m: CpModel,
     data: ProblemData,
     op_vars: OperationVars,
+    assign: AssignmentVars,
 ):
-    for (idx1, idx2), constraints in data.timing_precedences.items():
+    for (idx1, idx2), op_constraints in data.constraints.items():
         op1 = op_vars[idx1]
         op2 = op_vars[idx2]
 
-        for prec_type, delay in constraints:
+        for prec_type in op_constraints:
             if prec_type == "start_at_start":
                 expr = op1.start == op2.start
             elif prec_type == "start_at_end":
@@ -109,27 +97,22 @@ def timing_precedence_constraints(
 
             m.Add(expr)
 
-
-def assignment_precedence_constraints(
-    m: CpModel, data: ProblemData, assign: AssignmentVars
-):
+    # Separately handle assignment related constraints for efficiency.
     for machine, ops in enumerate(data.machine2ops):
         for op1, op2 in product(ops, repeat=2):
-            if op1 == op2 or (op1, op2) not in data.assignment_precedences:
+            if op1 == op2 or (op1, op2) not in data.constraints:
                 continue
 
             var1 = assign[op1, machine]
             var2 = assign[op2, machine]
 
-            for prec_type in data.assignment_precedences[op1, op2]:
-                if prec_type == "previous":
+            for constraint in data.constraints[op1, op2]:
+                if constraint == "previous":
                     raise NotImplementedError
-                elif prec_type == "same_unit":
+                elif constraint == "same_unit":
                     expr = var1.is_present == var2.is_present
-                elif prec_type == "different_unit":
+                elif constraint == "different_unit":
                     expr = var1.is_present != var2.is_present
-                else:
-                    raise ValueError(f"Unknown precedence type: {prec_type}")
 
                 m.Add(expr)
 
