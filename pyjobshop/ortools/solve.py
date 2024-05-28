@@ -8,7 +8,7 @@ from .default_model import default_model
 from .result2solution import result2solution
 
 
-def solve(data: ProblemData, time_limit: Optional[int], log: bool):
+def solve(data: ProblemData, time_limit: Optional[float], log: bool):
     """
     TODO
     """
