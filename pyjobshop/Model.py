@@ -331,7 +331,7 @@ class Model:
         Returns
         -------
         Result
-            A Result object containing the best-found solution and additional
+            A Result object containing the best found solution and additional
             information about the solver run.
         """
         return solve(self.data(), solver, time_limit, log)

@@ -24,7 +24,7 @@ def solve(data: ProblemData, time_limit: float, log: bool):
     Returns
     -------
     Result
-        A Result object containing the best-found solution and additional
+        A Result object containing the best found solution and additional
         information about the solver run.
     """
     cp_model = default_model(data)

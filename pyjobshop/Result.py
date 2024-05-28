@@ -23,7 +23,7 @@ class Result:
     runtime
         The runtime of the solver.
     best
-        The best-found solution. If no solution was found, this should be a
+        The best found solution. If no solution was found, this should be a
         dummy solution.
     objective
         The objective value of the solution. If no solution was found, this
