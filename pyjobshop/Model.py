@@ -314,6 +314,7 @@ class Model:
         solver: str = "cpoptimizer",
         time_limit: float = float("inf"),
         log: bool = True,
+        num_workers: Optional[int] = None,
     ) -> Result:
         """
         Solves the problem data instance created by the model.
@@ -327,6 +328,10 @@ class Model:
             The time limit for the solver in seconds. Default ``float('inf')``.
         log
             Whether to log the solver output. Default ``True``.
+        num_workers
+            The number of workers to use for parallel solving. If not
+            specified, the default value of the selected solver is used, which
+            is typically the maximum number of available CPU cores.
 
         Returns
         -------
@@ -334,4 +339,4 @@ class Model:
             A Result object containing the best found solution and additional
             information about the solver run.
         """
-        return solve(self.data(), solver, time_limit, log)
+        return solve(self.data(), solver, time_limit, log, num_workers)

@@ -1,3 +1,5 @@
+from typing import Optional
+
 from docplex.cp.solution import CpoSolveResult
 
 from pyjobshop.ProblemData import ProblemData
@@ -8,7 +10,12 @@ from .default_model import default_model
 from .result2solution import result2solution
 
 
-def solve(data: ProblemData, time_limit: float, log: bool):
+def solve(
+    data: ProblemData,
+    time_limit: float,
+    log: bool,
+    num_workers: Optional[int] = None,
+):
     """
     Solves the given problem data instance with IBM ILOG CP Optimizer.
 
@@ -20,6 +27,9 @@ def solve(data: ProblemData, time_limit: float, log: bool):
         The time limit for the solver in seconds.
     log
         Whether to log the solver output.
+    num_workers
+        The number of workers to use for parallel solving. If not set, the
+        maximum number of available CPU cores is used.
 
     Returns
     -------
@@ -30,7 +40,11 @@ def solve(data: ProblemData, time_limit: float, log: bool):
     cp_model = default_model(data)
 
     log_verbosity = "Terse" if log else "Quiet"
-    params = {"TimeLimit": time_limit, "LogVerbosity": log_verbosity}
+    params = {
+        "TimeLimit": time_limit,
+        "LogVerbosity": log_verbosity,
+        "Workers": num_workers if num_workers is not None else "Auto",
+    }
     cp_result: CpoSolveResult = cp_model.solve(**params)  # type: ignore
     status = cp_result.get_solve_status()
 
