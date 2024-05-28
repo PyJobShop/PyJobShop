@@ -19,7 +19,7 @@ class Result:
     Parameters
     ----------
     status
-        The status of the solver run.
+        The termination status of the solver run.
     runtime
         The runtime of the solver.
     best

@@ -11,8 +11,22 @@ from .result2solution import result2solution
 # TODO warn if cpoptimizer is not installed.
 def solve(data: ProblemData, time_limit: float, log: bool):
     """
-    Is cache the problem?
-    TODO
+    Solves the given problem data instance with IBM ILOG CP Optimizer.
+
+    Parameters
+    ----------
+    data
+        The problem data instance.
+    time_limit
+        The time limit for the solver in seconds.
+    log
+        Whether to log the solver output.
+
+    Returns
+    -------
+    Result
+        A Result object containing the best-found solution and additional
+        information about the solver run.
     """
     cp_model = default_model(data)
 

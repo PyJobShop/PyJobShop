@@ -8,9 +8,24 @@ from .default_model import default_model
 from .result2solution import result2solution
 
 
-def solve(data: ProblemData, time_limit: float, log: bool):
+def solve(data: ProblemData, time_limit: float, log: bool) -> Result:
     """
-    TODO
+    Solves the given problem data instance with Google OR-Tools.
+
+    Parameters
+    ----------
+    data
+        The problem data instance.
+    time_limit
+        The time limit for the solver in seconds.
+    log
+        Whether to log the solver output.
+
+    Returns
+    -------
+    Result
+        A Result object containing the best-found solution and additional
+        information about the solver run.
     """
     cp_model, _, assign_vars = default_model(data)
 
