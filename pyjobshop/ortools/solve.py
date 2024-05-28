@@ -1,0 +1,3 @@
+def solve():
+    # TODO
+    pass
