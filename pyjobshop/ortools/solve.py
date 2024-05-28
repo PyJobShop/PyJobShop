@@ -1,4 +1,5 @@
 from ortools.sat.python.cp_model import CpSolver
+
 from pyjobshop.ProblemData import ProblemData
 from pyjobshop.Result import Result, SolveStatus
 from pyjobshop.Solution import Solution

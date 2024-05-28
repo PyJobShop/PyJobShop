@@ -1,4 +1,5 @@
 from ortools.sat.python.cp_model import CpModel
+
 from pyjobshop.ProblemData import ProblemData
 
 from .constraints import (

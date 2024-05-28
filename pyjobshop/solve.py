@@ -1,5 +1,5 @@
-import pyjobshop.cpoptimizer as cpoptimizer
-import pyjobshop.ortools as ortools
+import pyjobshop.cpoptimizer
+import pyjobshop.ortools
 from pyjobshop.ProblemData import ProblemData
 from pyjobshop.Result import Result
 
@@ -30,8 +30,12 @@ def solve(
         The result of the solver run, including the status, runtime, solution,
         and objective value.
     """
-    if solver not in ["ortools", "cpoptimizer"]:
-        raise ValueError(f"Unknown solver: {solver}.")
+    solve_funcs = {
+        "ortools": pyjobshop.ortools.solve,
+        "cpoptimizer": pyjobshop.cpoptimizer.solve,
+    }
 
-    solve_funcs = {"ortools": ortools.solve, "cpoptimizer": cpoptimizer.solve}
+    if solver not in solve_funcs:
+        raise ValueError(f"Unknown solver choice: {solver}.")
+
     return solve_funcs[solver](data, time_limit, log)

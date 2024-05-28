@@ -2,8 +2,8 @@ from collections import defaultdict
 from itertools import product
 
 import numpy as np
-
 from ortools.sat.python.cp_model import CpModel
+
 from pyjobshop.ProblemData import ProblemData
 
 from .variables import AssignmentVar, JobVar, OperationVar
