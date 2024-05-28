@@ -33,10 +33,8 @@ def solve(
         The result of the solver run, including the status, runtime, solution,
         and objective value.
     """
-    if solver == "ortools":
-        return ortools.solve(data, time_limit, log)
-    elif solver == "cpoptimizer":
-        return cpoptimizer.solve(data, time_limit, log)
-
-    else:
+    if solver not in ["ortools", "cpoptimizer"]:
         raise ValueError(f"Unknown solver: {solver}.")
+
+    solve_funcs = {"ortools": ortools.solve, "cpoptimizer": cpoptimizer.solve}
+    return solve_funcs[solver](data, time_limit, log)
