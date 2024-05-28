@@ -177,5 +177,5 @@ def test_solve():
 
     result = model.solve()
 
-    assert_equal(result.objective_value, 3)
-    assert_equal(result.solve_status, "Optimal")
+    assert_equal(result.objective, 3)
+    assert_equal(result.status.value, "Optimal")

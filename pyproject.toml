@@ -67,7 +67,6 @@ line-length = 79
 line-length = 79
 extend-include = ["*.ipynb"]
 
-
 [tool.ruff.lint]
 select = [
     "E",  # pycodestyle errors
@@ -82,9 +81,12 @@ ignore = [
     "C901",  # too complex
 ]
 
-
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"] # ignore unused module imports
+
+[tool.ruff.lint.isort]
+known-first-party = ["pyjobshop", "tests"]
+known-third-party = ["ortools"]
 
 
 [tool.pytest.ini_options]
@@ -93,7 +95,8 @@ addopts = "--cov=. --cov-report=xml"
 
 [tool.coverage.run]
 omit = [
+    "docs/*",
     "tests/*",
-    "pyjobshop/cp/*",
-    "docs/*"
+    "pyjobshop/cpoptimizer/*",
+    "pyjobshop/ortools/*",
 ]

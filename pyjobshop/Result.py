@@ -1,48 +1,36 @@
-from typing import Optional
+from dataclasses import dataclass
+from enum import Enum
 
 from .Solution import Solution
 
 
+class SolveStatus(str, Enum):
+    OPTIMAL = "Optimal"
+    FEASIBLE = "Feasible"
+    INFEASIBLE = "Infeasible"
+    TIME_LIMIT = "Time-limit"
+
+
+@dataclass
 class Result:
     """
-    Solver result class.
+    Result class that stores information about the solver run.
 
     Parameters
     ----------
-    solve_status
-        The solve status.
+    status
+        The termination status of the solver run.
     runtime
         The runtime of the solver.
     best
-        The best found solution. None if no solution was found.
-    objective_value
-        The objective value of the solution. None if no solution was found.
+        The best found solution. If no solution was found, this should be a
+        dummy solution.
+    objective
+        The objective value of the solution. If no solution was found, this
+        should be set to ``float('inf')``.
     """
 
-    def __init__(
-        self,
-        solve_status: str,
-        runtime: float,
-        best: Optional[Solution],
-        objective_value: Optional[float],
-    ):
-        self._solve_status = solve_status
-        self._runtime = runtime
-        self._best = best
-        self._objective_value = objective_value
-
-    @property
-    def solve_status(self) -> str:
-        return self._solve_status
-
-    @property
-    def runtime(self) -> float:
-        return self._runtime
-
-    @property
-    def best(self) -> Optional[Solution]:
-        return self._best
-
-    @property
-    def objective_value(self) -> Optional[float]:
-        return self._objective_value
+    status: SolveStatus
+    runtime: float
+    best: Solution
+    objective: float

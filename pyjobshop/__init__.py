@@ -1,5 +1,4 @@
-from .cpoptimizer import default_model as default_model
-from .cpoptimizer import result2solution as result2solution
+from .constants import MAX_VALUE as MAX_VALUE
 from .Model import Model as Model
 from .plot import plot as plot
 from .ProblemData import Constraint as Constraint
@@ -7,3 +6,4 @@ from .ProblemData import Job as Job
 from .ProblemData import Machine as Machine
 from .ProblemData import Operation as Operation
 from .ProblemData import ProblemData as ProblemData
+from .solve import solve as solve

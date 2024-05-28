@@ -1,4 +1,5 @@
 from ortools.sat.python.cp_model import CpModel
+
 from pyjobshop.ProblemData import ProblemData
 
 from .constraints import (
@@ -15,7 +16,7 @@ from .objectives import makespan
 from .variables import assignment_variables, job_variables, operation_variables
 
 
-def default_model(data: ProblemData) -> CpModel:
+def default_model(data: ProblemData) -> tuple[CpModel, list, dict]:
     model = CpModel()
 
     job_vars = job_variables(model, data)

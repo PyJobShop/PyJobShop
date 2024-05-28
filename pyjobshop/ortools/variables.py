@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
 from ortools.sat.python.cp_model import CpModel, IntervalVar, IntVar
+
 from pyjobshop.ProblemData import ProblemData
 
 

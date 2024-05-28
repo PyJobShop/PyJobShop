@@ -2,6 +2,7 @@ from ortools.sat.python.cp_model import (
     Constraint,
     CpModel,
 )
+
 from pyjobshop.ProblemData import ProblemData
 
 from .variables import OperationVar
