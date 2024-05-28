@@ -23,11 +23,11 @@ class Result:
     runtime
         The runtime of the solver.
     best
-        The best-found solution. If no solution was found, this is an dummy
-        solution.
+        The best-found solution. If no solution was found, this should be a
+        dummy solution.
     objective
-        The objective value of the solution. If no solution was found, this is
-        set to ``float('inf')``.
+        The objective value of the solution. If no solution was found, this
+        should be set to ``float('inf')``.
     """
 
     status: SolveStatus
