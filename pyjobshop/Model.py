@@ -30,9 +30,10 @@ class Model:
         self._operations: list[Operation] = []
         self._job2ops: dict[int, list[int]] = defaultdict(list)
         self._processing_times: dict[tuple[int, int], int] = {}
-        self._constraints: dict[
-            tuple[int, int], list[Constraint]
-        ] = defaultdict(list)
+        self._constraints: dict[tuple[int, int], list[Constraint]] = (
+            defaultdict(list)
+        )
+
         self._setup_times: dict[tuple[int, int, int], int] = {}
         self._planning_horizon: int = MAX_VALUE
         self._objective: Objective = Objective.MAKESPAN
