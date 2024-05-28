@@ -1,7 +1,5 @@
 from typing import Optional
 
-from docplex.cp.solution import CpoSolveResult
-
 import pyjobshop.cpoptimizer as cpoptimizer
 import pyjobshop.ortools as ortools
 from ortools.sat.python.cp_model import CpSolver
@@ -42,23 +40,7 @@ def solve(
         )
 
     elif solver == "cpoptimizer":
-        cp_model = cpoptimizer.default_model(data)
-
-        log_verbosity = "Terse" if log else "Quiet"
-        kwargs = {"TimeLimit": time_limit, "LogVerbosity": log_verbosity}
-        cp_result: CpoSolveResult = cp_model.solve(**kwargs)  # type: ignore
-
-        solve_status = cp_result.get_solve_status()
-        runtime = cp_result.get_solve_time()
-
-        if solve_status == "Infeasible":
-            solution = None
-            objective_value = None
-        else:
-            solution = cpoptimizer.result2solution(data, cp_result)
-            objective_value = cp_result.get_objective_value()
-
-        return Result(solve_status, runtime, solution, objective_value)
+        return cpoptimizer.solve(data, time_limit, log)
 
     else:
         raise ValueError(f"Unknown solver: {solver}.")
