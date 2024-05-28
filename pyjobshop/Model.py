@@ -311,9 +311,9 @@ class Model:
 
     def solve(
         self,
-        solver: str = "cpoptimizer",
-        time_limit: Optional[int] = None,
-        log: bool = False,
+        solver: str = "ortools",
+        time_limit: float = float("inf"),
+        log: bool = True,
     ) -> Result:
         """
         Solves the problem data instance created by the model.
@@ -321,17 +321,17 @@ class Model:
         Parameters
         ----------
         solver
-            The CP solver to use, one of ['ortools', 'cpoptimzer']. Default
+            The CP solver to use, one of ['ortools', 'cpoptimizer']. Default
             'ortools'.
-        log
-            Whether to log the solver output. Defaults to False.
         time_limit
-            Time limit in seconds for the solver, defaults to None. If set to
-            None, the solver will run until an optimal solution is found.
+            The time limit for the solver in seconds. Default ``float('inf')``.
+        log
+            Whether to log the solver output. Default ``True``.
 
         Returns
         -------
         Result
-            A Result object containing solver results.
+            A Result object containing the best-found solution and additional
+            information about the solver run.
         """
         return solve(self.data(), solver, time_limit, log)

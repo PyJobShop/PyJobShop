@@ -13,7 +13,7 @@ class Task:
     operation
         The operation index.
     machine
-        The machine to which the operation is assigned.
+        The machine index to which the operation is assigned.
     start
         The start time of the operation.
     duration
@@ -28,7 +28,7 @@ class Task:
 
 class Solution:
     """
-    Solution class.
+    Solution to the problem.
 
     Parameters
     ----------
