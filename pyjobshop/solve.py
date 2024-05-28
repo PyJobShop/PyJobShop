@@ -1,7 +1,13 @@
-import pyjobshop.cpoptimizer
 import pyjobshop.ortools
 from pyjobshop.ProblemData import ProblemData
 from pyjobshop.Result import Result
+
+try:
+    import pyjobshop.cpoptimizer
+
+    CPOPTIMIZER_AVAILABLE = True
+except ModuleNotFoundError:
+    CPOPTIMIZER_AVAILABLE = False
 
 
 def solve(
@@ -30,12 +36,18 @@ def solve(
         The result of the solver run, including the status, runtime, solution,
         and objective value.
     """
-    solve_funcs = {
-        "ortools": pyjobshop.ortools.solve,
-        "cpoptimizer": pyjobshop.cpoptimizer.solve,
-    }
-
-    if solver not in solve_funcs:
+    if solver not in ["ortools", "cpoptimizer"]:
         raise ValueError(f"Unknown solver choice: {solver}.")
 
-    return solve_funcs[solver](data, time_limit, log)
+    if solver == "cpoptimizer":
+        if not CPOPTIMIZER_AVAILABLE:
+            msg = (
+                "Using CP Optimizer requires the relevant dependencies to be "
+                "installed. You can install those using `pip install "
+                "pyjobshop[cpoptimizer]`."
+            )
+            raise ModuleNotFoundError(msg)
+
+        return pyjobshop.cpoptimizer.solve(data, time_limit, log)
+
+    return pyjobshop.ortools.solve(data, time_limit, log)

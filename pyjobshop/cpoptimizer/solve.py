@@ -8,7 +8,6 @@ from .default_model import default_model
 from .result2solution import result2solution
 
 
-# TODO warn if cpoptimizer is not installed.
 def solve(data: ProblemData, time_limit: float, log: bool):
     """
     Solves the given problem data instance with IBM ILOG CP Optimizer.
