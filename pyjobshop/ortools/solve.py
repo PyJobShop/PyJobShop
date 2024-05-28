@@ -1,3 +1,5 @@
+from typing import Optional
+
 from ortools.sat.python.cp_model import CpSolver
 
 from pyjobshop.ProblemData import ProblemData
@@ -8,7 +10,12 @@ from .default_model import default_model
 from .result2solution import result2solution
 
 
-def solve(data: ProblemData, time_limit: float, log: bool) -> Result:
+def solve(
+    data: ProblemData,
+    time_limit: float,
+    log: bool,
+    num_workers: Optional[int] = None,
+) -> Result:
     """
     Solves the given problem data instance with Google OR-Tools.
 
@@ -20,6 +27,9 @@ def solve(data: ProblemData, time_limit: float, log: bool) -> Result:
         The time limit for the solver in seconds.
     log
         Whether to log the solver output.
+    num_workers
+        The number of workers to use for parallel solving. If not set, the
+        maximum number of available CPU cores is used.
 
     Returns
     -------
@@ -32,6 +42,9 @@ def solve(data: ProblemData, time_limit: float, log: bool) -> Result:
     cp_solver = CpSolver()
     cp_solver.parameters.max_time_in_seconds = time_limit
     cp_solver.parameters.log_search_progress = log
+
+    if num_workers is not None:
+        cp_solver.parameters.num_workers = num_workers
 
     status_code = cp_solver.Solve(cp_model)
     status = cp_solver.StatusName(status_code)
