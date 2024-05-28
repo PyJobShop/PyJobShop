@@ -1,3 +1,1 @@
-from .default_model import default_model
-from .result2solution import result2solution
-from .solve import solve
+from .solve import solve as solve
