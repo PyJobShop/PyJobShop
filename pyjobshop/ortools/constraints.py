@@ -111,7 +111,8 @@ def operation_graph_constraints(
                     idx1 = sequence.tasks.index(var1)
                     idx2 = sequence.tasks.index(var2)
                     arc_lit = sequence.arcs[idx1, idx2]
-                    # https://github.com/google/or-tools/blob/stable/ortools/sat/docs/boolean_logic.md#product-of-two-boolean-variables
+
+                    # Equivalent: arc_lit <=> var1.is_present & var2.is_present
                     m.AddBoolOr(
                         [var1.is_present.Not(), var2.is_present.Not(), arc_lit]
                     )
@@ -193,14 +194,14 @@ def setup_times_constraints(
     setup times are respected.
     """
     for machine in range(data.num_machines):
-        arcs = []
         sequence = seq_vars[machine]
         assigns = sequence.tasks
         starts = sequence.starts
         ends = sequence.ends
         arc_lits = sequence.arcs
-        setup_times = data.setup_times[machine]
+        arcs = []
 
+        setup_times = data.setup_times[machine]
         if np.all(setup_times == 0):
             continue
 
@@ -240,8 +241,7 @@ def setup_times_constraints(
                 # TODO This automatically enforces classic start -> end
                 # precedence constraints and also does not allow for overlap.
                 # We need to validate this to catch it.
-                op1 = var1.task_idx
-                op2 = var2.task_idx
+                op1, op2 = var1.task_idx, var2.task_idx
                 setup = setup_times[op1, op2]
                 m.Add(var1.end + setup <= var2.start).OnlyEnforceIf(arc_lit)
 
