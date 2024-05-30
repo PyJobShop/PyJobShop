@@ -1,6 +1,7 @@
+from collections import defaultdict
 from dataclasses import dataclass
 
-from ortools.sat.python.cp_model import CpModel, IntervalVar, IntVar
+from ortools.sat.python.cp_model import BoolVarT, CpModel, IntervalVar, IntVar
 
 from pyjobshop.ProblemData import ProblemData
 
@@ -23,12 +24,37 @@ class OperationVar:
 
 @dataclass
 class AssignmentVar:
+    task_idx: int
     interval: IntervalVar
     start: IntVar
     duration: IntVar
     end: IntVar
     is_present: IntVar
     rank: IntVar  # the rank of the task on machine
+
+
+@dataclass
+class SequenceVar:
+    """
+    Represents a sequence of tasks assigned to a machine.
+
+    Parameters
+    ----------
+    tasks
+        The task variables in the sequence.
+    starts
+        The start literals for each task.
+    ends
+        The end literals for each task.
+    arcs
+        The arc literals between each pair of tasks. Keys are tuples of
+        indices.
+    """
+
+    tasks: list[AssignmentVar]
+    starts: list[BoolVarT]
+    ends: list[BoolVarT]
+    arcs: dict[tuple[int, int], BoolVarT]
 
 
 def job_variables(m: CpModel, data: ProblemData) -> list[JobVar]:
@@ -99,6 +125,7 @@ def assignment_variables(
         )
         rank_var = m.NewIntVar(-1, data.num_jobs, f"{name}_rank")
         variables[op, machine] = AssignmentVar(
+            task_idx=op,
             interval=interval_var,
             start=start_var,
             duration=duration_var,
@@ -108,5 +135,35 @@ def assignment_variables(
         )
 
         m.Add(duration_var >= duration)
+
+    return variables
+
+
+def sequence_variables(m: CpModel, data: ProblemData, assign):
+    variables = []
+
+    tasks_by_machine = defaultdict(list)
+    for (_, machine), var in assign.items():
+        tasks_by_machine[machine].append(var)
+
+    for machine in range(data.num_machines):
+        sequence = tasks_by_machine[machine]
+        starts = []
+        ends = []
+        arcs = {}
+
+        for idx1 in range(len(sequence)):
+            start_lit = m.NewBoolVar(f"sequence {machine} pos {idx1} start")
+            end_lit = m.NewBoolVar(f"sequence {machine} pos {idx1} end")
+            starts.append(start_lit)
+            ends.append(end_lit)
+
+            for idx2 in range(len(sequence)):
+                lit = m.NewBoolVar(f"sequence {machine} arc {idx1} -> {idx2}")
+                arcs[idx1, idx2] = lit
+
+        variables.append(
+            SequenceVar(tasks=sequence, starts=starts, ends=ends, arcs=arcs)
+        )
 
     return variables

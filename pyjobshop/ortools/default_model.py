@@ -13,7 +13,12 @@ from .constraints import (
     setup_times_constraints,
 )
 from .objectives import makespan
-from .variables import assignment_variables, job_variables, operation_variables
+from .variables import (
+    assignment_variables,
+    job_variables,
+    operation_variables,
+    sequence_variables,
+)
 
 
 def default_model(data: ProblemData) -> tuple[CpModel, list, dict]:
@@ -22,6 +27,7 @@ def default_model(data: ProblemData) -> tuple[CpModel, list, dict]:
     job_vars = job_variables(model, data)
     op_vars = operation_variables(model, data)
     assign = assignment_variables(model, data)
+    seq_vars = sequence_variables(model, data, assign)
 
     if data.objective == "makespan":
         makespan(model, data, op_vars)
@@ -35,7 +41,7 @@ def default_model(data: ProblemData) -> tuple[CpModel, list, dict]:
     alternative_constraints(model, data, op_vars, assign)
     no_overlap_constraints(model, data, assign)
     processing_time_constraints(model, data, assign)
-    setup_times_constraints(model, data, assign)
+    setup_times_constraints(model, data, seq_vars)
     operation_graph_constraints(model, data, op_vars, assign)
 
     return model, op_vars, assign

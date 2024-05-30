@@ -178,33 +178,30 @@ def processing_time_constraints(
 
 
 def setup_times_constraints(
-    m: CpModel, data: ProblemData, assign: AssignmentVars
+    m: CpModel,
+    data: ProblemData,
+    seq_vars,
 ):
     """
     Creates the setup time constraints for each machine, ensuring that the
     setup times are respected.
-
-    The implementation is based on the following example:
-    https://github.com/google/or-tools/blob/d4f9b8/examples/contrib/scheduling_with_transitions_sat.py
     """
-    sequences = defaultdict(list)
-    op_idcs = defaultdict(list)
-    for (op, machine), var in assign.items():
-        sequences[machine].append(var)
-        op_idcs[machine].append(op)
-
     for machine in range(data.num_machines):
         arcs = []
-        sequence = sequences[machine]
+        sequence = seq_vars[machine]
+        assigns = sequence.tasks
+        starts = sequence.starts
+        ends = sequence.ends
+        arc_lits = sequence.arcs
         setup_times = data.setup_times[machine]
 
         if np.all(setup_times == 0):
             continue
 
-        for idx1, var1 in enumerate(sequence):
+        for idx1, var1 in enumerate(assigns):
             # Set initial arcs from the dummy node (0) to/from a task.
-            start_lit = m.NewBoolVar("")
-            end_lit = m.NewBoolVar("")
+            start_lit = starts[idx1]
+            end_lit = ends[idx1]
 
             arcs.append([0, idx1 + 1, start_lit])
             arcs.append([idx1 + 1, 0, end_lit])
@@ -221,26 +218,26 @@ def setup_times_constraints(
             arcs.append([idx1 + 1, idx1 + 1, var1.is_present.Not()])
             m.Add(var1.rank == -1).OnlyEnforceIf(var1.is_present.Not())
 
-            for idx2, var2 in enumerate(sequence):
+            for idx2, var2 in enumerate(assigns):
                 if idx1 == idx2:
                     continue
 
-                lit = m.NewBoolVar(f"{idx1} -> {idx2}")
-                arcs.append([idx1 + 1, idx2 + 1, lit])
+                arc_lit = arc_lits[idx1, idx2]
+                arcs.append([idx1 + 1, idx2 + 1, arc_lit])
 
-                m.AddImplication(lit, var1.is_present)
-                m.AddImplication(lit, var2.is_present)
+                m.AddImplication(arc_lit, var1.is_present)
+                m.AddImplication(arc_lit, var2.is_present)
 
                 # Maintain rank incrementally.
-                m.Add(var1.rank + 1 == var2.rank).OnlyEnforceIf(lit)
+                m.Add(var1.rank + 1 == var2.rank).OnlyEnforceIf(arc_lit)
 
                 # TODO This automatically enforces classic start -> end
                 # precedence constraints and also does not allow for overlap.
                 # We need to validate this to catch it.
-                op1 = op_idcs[machine][idx1]
-                op2 = op_idcs[machine][idx2]
+                op1 = var1.task_idx
+                op2 = var2.task_idx
                 setup = setup_times[op1, op2]
-                m.Add(var1.end + setup <= var2.start).OnlyEnforceIf(lit)
+                m.Add(var1.end + setup <= var2.start).OnlyEnforceIf(arc_lit)
 
         if arcs:
             m.AddCircuit(arcs)
