@@ -39,7 +39,7 @@ def default_model(data: ProblemData) -> tuple[CpModel, list, dict]:
     job_operation_constraints(model, data, job_vars, op_vars)
     operation_constraints(model, data, op_vars)
     alternative_constraints(model, data, op_vars, assign)
-    no_overlap_constraints(model, data, assign)
+    no_overlap_constraints(model, data, seq_vars)
     processing_time_constraints(model, data, assign)
     setup_times_constraints(model, data, seq_vars)
     operation_graph_constraints(model, data, op_vars, assign, seq_vars)

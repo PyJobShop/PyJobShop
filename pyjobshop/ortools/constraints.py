@@ -1,4 +1,3 @@
-from collections import defaultdict
 from itertools import product
 
 import numpy as np
@@ -11,7 +10,7 @@ from .variables import AssignmentVar, JobVar, OperationVar, SequenceVar
 JobVars = list[JobVar]
 OperationVars = list[OperationVar]
 AssignmentVars = dict[tuple[int, int], AssignmentVar]
-SquenceVars = list[SequenceVar]
+SequenceVars = list[SequenceVar]
 
 
 def job_data_constraints(m: CpModel, data: ProblemData, job_vars: JobVars):
@@ -69,7 +68,7 @@ def operation_graph_constraints(
     data: ProblemData,
     op_vars: OperationVars,
     assign: AssignmentVars,
-    seq_vars: SquenceVars,
+    seq_vars: SequenceVars,
 ):
     for (idx1, idx2), op_constraints in data.constraints.items():
         op_var1 = op_vars[idx1]
@@ -155,19 +154,15 @@ def alternative_constraints(
 
 
 def no_overlap_constraints(
-    m: CpModel, data: ProblemData, assign: AssignmentVars
+    m: CpModel, data: ProblemData, seq_vars: SequenceVars
 ):
     """
-    Creates the no-overlap constraints for machines, ensuring that no two
+    Creates the no overlap constraints for machines, ensuring that no two
     intervals in a sequence variable are overlapping.
     """
-    sequences = defaultdict(list)
-    for (_, machine), var in assign.items():
-        sequences[machine].append(var)
-
     for machine in range(data.num_machines):
         if not data.machines[machine].allow_overlap:
-            m.AddNoOverlap([var.interval for var in sequences[machine]])
+            m.AddNoOverlap([var.interval for var in seq_vars[machine].tasks])
 
 
 def processing_time_constraints(
@@ -191,7 +186,7 @@ def processing_time_constraints(
 def setup_times_constraints(
     m: CpModel,
     data: ProblemData,
-    seq_vars,
+    seq_vars: SequenceVars,
 ):
     """
     Creates the setup time constraints for each machine, ensuring that the

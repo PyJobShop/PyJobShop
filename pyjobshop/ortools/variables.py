@@ -24,6 +24,28 @@ class OperationVar:
 
 @dataclass
 class AssignmentVar:
+    """
+    Variables that represent an assignment of a task to a machine.
+
+    Parameters
+    ----------
+    task_idx
+        The index of the task.
+    interval
+        The interval variable representing the assignment of the task.
+    start
+        The start variable time of the interval.
+    duration
+        The duration variable of the interval.
+    end
+        The end variable time of the interval.
+    is_present
+        The boolean variable indicating whether the internval is present.
+    rank
+        The rank variable of the interval on the machine. This is used to
+        order the intervals on the machine.
+    """
+
     task_idx: int
     interval: IntervalVar
     start: IntVar
