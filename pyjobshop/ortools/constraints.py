@@ -6,11 +6,12 @@ from ortools.sat.python.cp_model import CpModel
 
 from pyjobshop.ProblemData import ProblemData
 
-from .variables import AssignmentVar, JobVar, OperationVar
+from .variables import AssignmentVar, JobVar, OperationVar, SequenceVar
 
 JobVars = list[JobVar]
 OperationVars = list[OperationVar]
 AssignmentVars = dict[tuple[int, int], AssignmentVar]
+SquenceVars = list[SequenceVar]
 
 
 def job_data_constraints(m: CpModel, data: ProblemData, job_vars: JobVars):
@@ -68,6 +69,7 @@ def operation_graph_constraints(
     data: ProblemData,
     op_vars: OperationVars,
     assign: AssignmentVars,
+    seq_vars: SquenceVars,
 ):
     for (idx1, idx2), op_constraints in data.constraints.items():
         op_var1 = op_vars[idx1]
@@ -101,18 +103,27 @@ def operation_graph_constraints(
             if op1 == op2 or (op1, op2) not in data.constraints:
                 continue
 
+            sequence = seq_vars[machine]
             var1 = assign[op1, machine]
             var2 = assign[op2, machine]
 
             for constraint in data.constraints[op1, op2]:
                 if constraint == "previous":
-                    raise NotImplementedError
+                    idx1 = sequence.tasks.index(var1)
+                    idx2 = sequence.tasks.index(var2)
+                    arc_lit = sequence.arcs[idx1, idx2]
+                    # https://github.com/google/or-tools/blob/stable/ortools/sat/docs/boolean_logic.md#product-of-two-boolean-variables
+                    m.AddBoolOr(
+                        [var1.is_present.Not(), var2.is_present.Not(), arc_lit]
+                    )
+                    m.AddImplication(arc_lit, var1.is_present)
+                    m.AddImplication(arc_lit, var2.is_present)
                 elif constraint == "same_unit":
                     expr = var1.is_present == var2.is_present
+                    m.Add(expr)
                 elif constraint == "different_unit":
                     expr = var1.is_present != var2.is_present
-
-                m.Add(expr)
+                    m.Add(expr)
 
 
 def alternative_constraints(
