@@ -161,31 +161,44 @@ def assignment_variables(
     return variables
 
 
-def sequence_variables(m: CpModel, data: ProblemData, assign):
+def sequence_variables(
+    m: CpModel, data: ProblemData, assign: dict[tuple[int, int], AssignmentVar]
+) -> list[SequenceVar]:
+    """
+    Creates a sequence variable for each machine. Sequence variables are used
+    to model the ordering of intervals on a given machine. This is used for
+    modeling machine setups and sequencing task constraints.
+    """
     variables = []
 
-    tasks_by_machine = defaultdict(list)
+    # Group the assignment variables by machine.
+    machine2tasks = defaultdict(list)
     for (_, machine), var in assign.items():
-        tasks_by_machine[machine].append(var)
+        machine2tasks[machine].append(var)
 
     for machine in range(data.num_machines):
-        sequence = tasks_by_machine[machine]
-        starts = []
-        ends = []
-        arcs = {}
+        num_tasks = len(machine2tasks[machine])
 
-        for idx1 in range(len(sequence)):
-            start_lit = m.NewBoolVar(f"sequence {machine} pos {idx1} start")
-            end_lit = m.NewBoolVar(f"sequence {machine} pos {idx1} end")
-            starts.append(start_lit)
-            ends.append(end_lit)
+        # Start and end literals define whether the corresponding interval
+        # is first or last in the sequence, respectively.
+        starts = [m.NewBoolVar() for _ in range(num_tasks)]
+        ends = [m.NewBoolVar() for _ in range(num_tasks)]
 
-            for idx2 in range(len(sequence)):
-                lit = m.NewBoolVar(f"sequence {machine} arc {idx1} -> {idx2}")
-                arcs[idx1, idx2] = lit
+        # Arc literals define whether two intervals are consecutive in the
+        # sequence.
+        arcs = {
+            (i, j): m.NewBoolVar(f"{i}->{j}")
+            for i in range(num_tasks)
+            for j in range(num_tasks)
+        }
 
         variables.append(
-            SequenceVar(tasks=sequence, starts=starts, ends=ends, arcs=arcs)
+            SequenceVar(
+                tasks=machine2tasks[machine],
+                starts=starts,
+                ends=ends,
+                arcs=arcs,
+            )
         )
 
     return variables
