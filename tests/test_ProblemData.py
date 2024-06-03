@@ -609,10 +609,32 @@ def test_timing_precedence(prec_type: Constraint, expected_makespan: int):
     assert_equal(result.objective, expected_makespan)
 
 
+def test_previous_constraint():
+    """
+    Tests that the previous constraint is respected.
+    """
+    model = Model()
+
+    job = model.add_job()
+    machine = model.add_machine()
+    operations = [model.add_operation(job=job) for _ in range(2)]
+
+    model.add_processing_time(machine, operations[0], duration=1)
+    model.add_processing_time(machine, operations[1], duration=1)
+
+    model.add_setup_time(machine, operations[1], operations[0], duration=100)
+    model.add_constraint(operations[1], operations[0], Constraint.PREVIOUS)
+
+    result = model.solve()
+
+    # Operation 1 must be scheduled before operation 0, but the setup time
+    # between them is 100, so the makespan is 1 + 100 + 1 = 102.
+    assert_equal(result.objective, 102)
+
+
 @pytest.mark.parametrize(
     "prec_type,expected_makespan",
     [
-        (Constraint.PREVIOUS, 2),  # TODO needs better test
         (Constraint.SAME_UNIT, 4),
         (Constraint.DIFFERENT_UNIT, 2),
     ],
