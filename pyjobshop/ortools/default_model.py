@@ -13,7 +13,12 @@ from .constraints import (
     processing_time_constraints,
     setup_time_constraints,
 )
-from .objectives import makespan
+from .objectives import (
+    makespan,
+    tardy_jobs,
+    total_completion_time,
+    total_tardiness,
+)
 from .variables import (
     assignment_variables,
     job_variables,
@@ -32,9 +37,14 @@ def default_model(data: ProblemData) -> tuple[CpModel, list, dict]:
 
     if data.objective == "makespan":
         makespan(model, data, op_vars)
+    elif data.objective == "tardy_jobs":
+        tardy_jobs(model, data, job_vars)
+    elif data.objective == "total_tardiness":
+        total_tardiness(model, data, job_vars)
+    elif data.objective == "total_completion_time":
+        total_completion_time(model, data, job_vars)
     else:
-        msg = f"Objective '{data.objective}' not supported."
-        raise NotImplementedError(msg)
+        raise ValueError(f"Unknown objective: {data.objective}")
 
     job_data_constraints(model, data, job_vars)
     job_operation_constraints(model, data, job_vars, op_vars)
