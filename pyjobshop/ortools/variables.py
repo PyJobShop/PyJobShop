@@ -40,10 +40,10 @@ class AssignmentVar:
     end
         The end variable time of the interval.
     is_present
-        The boolean variable indicating whether the internval is present.
+        The boolean variable indicating whether the interval is present.
     rank
-        The rank variable of the interval on the machine. This is used to
-        order the intervals on the machine.
+        The rank variable of the interval on the machine. Used to order the
+        intervals in the sequence variable of the machine.
     """
 
     task_idx: int
@@ -72,8 +72,8 @@ class SequenceVar:
         The arc literals between each pair of tasks. Keys are tuples of
         indices.
     is_active
-        A boolean that indicates whether the sequence is active, meaning that
-        a sequence constraint must be enforced on this machine. Default False.
+        A boolean that indicates whether the sequence is active, meaning that a
+        circuit constraint must be added for this machine. Default ``False``.
     """
 
     tasks: list[AssignmentVar]
@@ -84,8 +84,8 @@ class SequenceVar:
 
     def activate(self):
         """
-        Activates the sequence variable, meaning that a sequence constraint
-        must be enforced on this machine.
+        Activates the sequence variable, meaning that a circuit constraint
+        must be added for this machine.
         """
         self.is_active = True
 
