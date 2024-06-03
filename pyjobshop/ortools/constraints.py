@@ -70,11 +70,15 @@ def operation_graph_constraints(
     assign: AssignmentVars,
     seq_vars: SequenceVars,
 ):
-    for (idx1, idx2), op_constraints in data.constraints.items():
+    """
+    Creates constraints based on the operation graph, ensuring that the
+    operations are scheduled according to the graph.
+    """
+    for (idx1, idx2), constraints in data.constraints.items():
         op_var1 = op_vars[idx1]
         op_var2 = op_vars[idx2]
 
-        for prec_type in op_constraints:
+        for prec_type in constraints:
             if prec_type == "start_at_start":
                 expr = op_var1.start == op_var2.start
             elif prec_type == "start_at_end":
@@ -108,9 +112,11 @@ def operation_graph_constraints(
 
             for constraint in data.constraints[op1, op2]:
                 if constraint == "previous":
-                    idx1 = sequence.tasks.index(var1)
-                    idx2 = sequence.tasks.index(var2)
-                    arc_lit = sequence.arcs[idx1, idx2]
+                    sequence.activate()
+
+                    rank1 = sequence.tasks.index(var1)
+                    rank2 = sequence.tasks.index(var2)
+                    arc_lit = sequence.arcs[rank1, rank2]
 
                     # Equivalent: arc_lit <=> var1.is_present & var2.is_present
                     m.AddBoolOr(
@@ -184,26 +190,45 @@ def processing_time_constraints(
             m.Add(var.duration >= duration)
 
 
-def setup_times_constraints(
+def setup_time_constraints(
     m: CpModel,
     data: ProblemData,
     seq_vars: SequenceVars,
 ):
     """
-    Creates the setup time constraints for each machine, ensuring that the
-    setup times are respected.
+    Actives the sequence variables for machines that have setup times. The
+    ``circuit_constraints`` function will in turn add the constraints to the
+    CP-SAT model to enforce setup times.
+    """
+    for machine in range(data.num_machines):
+        setup_times = data.setup_times[machine]
+
+        if np.any(setup_times != 0):
+            seq_vars[machine].activate()
+
+
+def circuit_constraints(
+    m: CpModel,
+    data: ProblemData,
+    seq_vars: SequenceVars,
+):
+    """
+    Creates the circuit constraints for each machine, ensuring that the
+    sequencing constraints are respected.
     """
     for machine in range(data.num_machines):
         sequence = seq_vars[machine]
+
+        if not sequence.is_active:
+            # No sequencing constraints found. Skip the creation of (expensive)
+            # circuit constraints.
+            continue
+
         assigns = sequence.tasks
         starts = sequence.starts
         ends = sequence.ends
         arc_lits = sequence.arcs
         arcs = []
-
-        setup_times = data.setup_times[machine]
-        if np.all(setup_times == 0):
-            continue
 
         for idx1, var1 in enumerate(assigns):
             # Set initial arcs from the dummy node (0) to/from a task.
@@ -215,11 +240,6 @@ def setup_times_constraints(
 
             # If this task is the first, set rank.
             m.Add(var1.rank == 0).OnlyEnforceIf(start_lit)
-
-            # If this task is the first, set start.
-            # TODO Do we want to set this? Not when the earliest start is
-            # defined or the release date.
-            # m.Add(var1.start == 0).OnlyEnforceIf(start_lit)
 
             # Self arc if the task is not present on this machine.
             arcs.append([idx1 + 1, idx1 + 1, var1.is_present.Not()])
@@ -238,11 +258,9 @@ def setup_times_constraints(
                 # Maintain rank incrementally.
                 m.Add(var1.rank + 1 == var2.rank).OnlyEnforceIf(arc_lit)
 
-                # TODO This automatically enforces classic start -> end
-                # precedence constraints and also does not allow for overlap.
-                # We need to validate this to catch it.
+                # TODO Validate that this cannot be combined with overlap.
                 op1, op2 = var1.task_idx, var2.task_idx
-                setup = setup_times[op1, op2]
+                setup = data.setup_times[machine][op1, op2]
                 m.Add(var1.end + setup <= var2.start).OnlyEnforceIf(arc_lit)
 
         if arcs:

@@ -71,12 +71,23 @@ class SequenceVar:
     arcs
         The arc literals between each pair of tasks. Keys are tuples of
         indices.
+    is_active
+        A boolean that indicates whether the sequence is active, meaning that
+        a sequence constraint must be enforced on this machine. Default False.
     """
 
     tasks: list[AssignmentVar]
     starts: list[BoolVarT]
     ends: list[BoolVarT]
     arcs: dict[tuple[int, int], BoolVarT]
+    is_active: bool = False
+
+    def activate(self):
+        """
+        Activates the sequence variable, meaning that a sequence constraint
+        must be enforced on this machine.
+        """
+        self.is_active = True
 
 
 def job_variables(m: CpModel, data: ProblemData) -> list[JobVar]:
@@ -167,7 +178,8 @@ def sequence_variables(
     """
     Creates a sequence variable for each machine. Sequence variables are used
     to model the ordering of intervals on a given machine. This is used for
-    modeling machine setups and sequencing task constraints.
+    modeling machine setups and sequencing task constraints, such as Previous,
+    Before, First, and Last.
     """
     variables = []
 
@@ -181,8 +193,8 @@ def sequence_variables(
 
         # Start and end literals define whether the corresponding interval
         # is first or last in the sequence, respectively.
-        starts = [m.NewBoolVar() for _ in range(num_tasks)]
-        ends = [m.NewBoolVar() for _ in range(num_tasks)]
+        starts = [m.NewBoolVar("") for _ in range(num_tasks)]
+        ends = [m.NewBoolVar("") for _ in range(num_tasks)]
 
         # Arc literals define whether two intervals are consecutive in the
         # sequence.

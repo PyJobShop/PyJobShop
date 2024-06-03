@@ -4,13 +4,14 @@ from pyjobshop.ProblemData import ProblemData
 
 from .constraints import (
     alternative_constraints,
+    circuit_constraints,
     job_data_constraints,
     job_operation_constraints,
     no_overlap_constraints,
     operation_constraints,
     operation_graph_constraints,
     processing_time_constraints,
-    setup_times_constraints,
+    setup_time_constraints,
 )
 from .objectives import makespan
 from .variables import (
@@ -41,7 +42,8 @@ def default_model(data: ProblemData) -> tuple[CpModel, list, dict]:
     alternative_constraints(model, data, op_vars, assign)
     no_overlap_constraints(model, data, seq_vars)
     processing_time_constraints(model, data, assign)
-    setup_times_constraints(model, data, seq_vars)
+    setup_time_constraints(model, data, seq_vars)
     operation_graph_constraints(model, data, op_vars, assign, seq_vars)
+    circuit_constraints(model, data, seq_vars)
 
     return model, op_vars, assign
