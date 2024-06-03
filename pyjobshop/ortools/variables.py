@@ -98,11 +98,11 @@ def job_variables(m: CpModel, data: ProblemData) -> list[JobVar]:
 
     for job in data.jobs:
         name = f"J{job}"
-        start_var = m.NewIntVar(0, data.planning_horizon, f"{name}_start")
-        duration_var = m.NewIntVar(
+        start_var = m.new_int_var(0, data.planning_horizon, f"{name}_start")
+        duration_var = m.new_int_var(
             0, data.planning_horizon, f"{name}_duration"
         )
-        end_var = m.NewIntVar(0, data.planning_horizon, f"{name}_end")
+        end_var = m.new_int_var(0, data.planning_horizon, f"{name}_end")
         interval_var = m.NewIntervalVar(
             start_var, duration_var, end_var, f"interval_{job}"
         )
@@ -119,11 +119,11 @@ def operation_variables(m: CpModel, data: ProblemData) -> list[OperationVar]:
 
     for op in data.operations:
         name = f"O{op}"
-        start_var = m.NewIntVar(0, data.planning_horizon, f"{name}_start")
-        duration_var = m.NewIntVar(
+        start_var = m.new_int_var(0, data.planning_horizon, f"{name}_start")
+        duration_var = m.new_int_var(
             0, data.planning_horizon, f"{name}_duration"
         )
-        end_var = m.NewIntVar(0, data.planning_horizon, f"{name}_end")
+        end_var = m.new_int_var(0, data.planning_horizon, f"{name}_end")
         interval_var = m.NewIntervalVar(
             start_var, duration_var, end_var, f"interval_{op}"
         )
@@ -143,20 +143,20 @@ def assignment_variables(
 
     for (machine, op), duration in data.processing_times.items():
         name = f"A{op}_{machine}"
-        start_var = m.NewIntVar(0, data.planning_horizon, f"{name}_start")
-        duration_var = m.NewIntVar(
+        start_var = m.new_int_var(0, data.planning_horizon, f"{name}_start")
+        duration_var = m.new_int_var(
             0, data.planning_horizon, f"{name}_duration"
         )
-        end_var = m.NewIntVar(0, data.planning_horizon, f"{name}_start")
-        is_present_var = m.NewBoolVar(f"{name}_is_present")
-        interval_var = m.NewOptionalIntervalVar(
+        end_var = m.new_int_var(0, data.planning_horizon, f"{name}_start")
+        is_present_var = m.new_bool_var(f"{name}_is_present")
+        interval_var = m.new_optional_interval_var(
             start_var,
             duration_var,
             end_var,
             is_present_var,
             f"{name}_interval",
         )
-        rank_var = m.NewIntVar(-1, data.num_jobs, f"{name}_rank")
+        rank_var = m.new_int_var(-1, data.num_jobs, f"{name}_rank")
         variables[op, machine] = AssignmentVar(
             task_idx=op,
             interval=interval_var,
@@ -167,7 +167,7 @@ def assignment_variables(
             rank=rank_var,
         )
 
-        m.Add(duration_var >= duration)
+        m.add(duration_var >= duration)
 
     return variables
 
@@ -194,12 +194,12 @@ def sequence_variables(
 
         # Start and end literals define whether the corresponding interval
         # is first or last in the sequence, respectively.
-        starts = [m.NewBoolVar("") for _ in range(num_tasks)]
-        ends = [m.NewBoolVar("") for _ in range(num_tasks)]
+        starts = [m.new_bool_var("") for _ in range(num_tasks)]
+        ends = [m.new_bool_var("") for _ in range(num_tasks)]
 
         # Arc literals indicate if two intervals are scheduled consecutively.
         arcs = {
-            (i, j): m.NewBoolVar(f"{i}->{j}")
+            (i, j): m.new_bool_var(f"{i}->{j}")
             for i in range(num_tasks)
             for j in range(num_tasks)
         }

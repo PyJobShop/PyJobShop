@@ -19,10 +19,10 @@ def job_data_constraints(m: CpModel, data: ProblemData, job_vars: JobVars):
     with the job data.
     """
     for job_data, job_var in zip(data.jobs, job_vars):
-        m.Add(job_var.start >= job_data.release_date)
+        m.add(job_var.start >= job_data.release_date)
 
         if job_data.deadline is not None:
-            m.Add(job_var.end <= job_data.deadline)
+            m.add(job_var.end <= job_data.deadline)
 
 
 def job_operation_constraints(
@@ -34,13 +34,13 @@ def job_operation_constraints(
     """
     for job in range(data.num_jobs):
         job_var = job_vars[job]
-        related_op_vars = [op_vars[op] for op in data.job2ops[job]]
+        related_vars = [op_vars[op] for op in data.job2ops[job]]
 
-        m.AddMinEquality(job_var.start, [var.start for var in related_op_vars])
-        m.AddMaxEquality(job_var.end, [var.end for var in related_op_vars])
+        m.add_min_equality(job_var.start, [var.start for var in related_vars])
+        m.add_max_equality(job_var.end, [var.end for var in related_vars])
 
-        for var in related_op_vars:
-            m.Add(var.start >= data.jobs[job].release_date)
+        for var in related_vars:
+            m.add(var.start >= data.jobs[job].release_date)
 
 
 def operation_constraints(
@@ -51,16 +51,16 @@ def operation_constraints(
     """
     for op_data, var in zip(data.operations, op_vars):
         if op_data.earliest_start is not None:
-            m.Add(var.start >= op_data.earliest_start)
+            m.add(var.start >= op_data.earliest_start)
 
         if op_data.latest_start is not None:
-            m.Add(var.start <= op_data.latest_start)
+            m.add(var.start <= op_data.latest_start)
 
         if op_data.earliest_end is not None:
-            m.Add(var.end >= op_data.earliest_end)
+            m.add(var.end >= op_data.earliest_end)
 
         if op_data.latest_end is not None:
-            m.Add(var.end <= op_data.latest_end)
+            m.add(var.end <= op_data.latest_end)
 
 
 def operation_graph_constraints(
@@ -98,7 +98,7 @@ def operation_graph_constraints(
             else:
                 continue
 
-            m.Add(expr)
+            m.add(expr)
 
     # Separately handle assignment related constraints for efficiency.
     for machine, ops in enumerate(data.machine2ops):
@@ -119,17 +119,17 @@ def operation_graph_constraints(
                     arc_lit = sequence.arcs[rank1, rank2]
 
                     # Equivalent: arc_lit <=> var1.is_present & var2.is_present
-                    m.AddBoolOr(
-                        [arc_lit, var1.is_present.Not(), var2.is_present.Not()]
+                    m.add_bool_or(
+                        [arc_lit, ~var1.is_present, ~var2.is_present]
                     )
-                    m.AddImplication(arc_lit, var1.is_present)
-                    m.AddImplication(arc_lit, var2.is_present)
+                    m.add_implication(arc_lit, var1.is_present)
+                    m.add_implication(arc_lit, var2.is_present)
                 elif constraint == "same_unit":
                     expr = var1.is_present == var2.is_present
-                    m.Add(expr)
+                    m.add(expr)
                 elif constraint == "different_unit":
                     expr = var1.is_present != var2.is_present
-                    m.Add(expr)
+                    m.add(expr)
 
 
 def alternative_constraints(
@@ -152,12 +152,12 @@ def alternative_constraints(
             presences.append(is_present)
 
             # Link each optional interval variable with the main variable.
-            m.Add(main.start == assign.start).OnlyEnforceIf(is_present)
-            m.Add(main.duration == assign.duration).OnlyEnforceIf(is_present)
-            m.Add(main.end == assign.end).OnlyEnforceIf(is_present)
+            m.add(main.start == assign.start).OnlyEnforceIf(is_present)
+            m.add(main.duration == assign.duration).OnlyEnforceIf(is_present)
+            m.add(main.end == assign.end).OnlyEnforceIf(is_present)
 
         # Select exactly one machine for the operation.
-        m.AddExactlyOne(presences)
+        m.add_exactly_one(presences)
 
 
 def no_overlap_constraints(
@@ -169,7 +169,7 @@ def no_overlap_constraints(
     """
     for machine in range(data.num_machines):
         if not data.machines[machine].allow_overlap:
-            m.AddNoOverlap([var.interval for var in seq_vars[machine].tasks])
+            m.add_no_overlap([var.interval for var in seq_vars[machine].tasks])
 
 
 def processing_time_constraints(
@@ -185,9 +185,9 @@ def processing_time_constraints(
         duration = data.processing_times[machine, op]
 
         if data.operations[op].fixed_duration:
-            m.Add(var.duration == duration)
+            m.add(var.duration == duration)
         else:
-            m.Add(var.duration >= duration)
+            m.add(var.duration >= duration)
 
 
 def setup_time_constraints(
@@ -239,11 +239,11 @@ def circuit_constraints(
             arcs.append([idx1 + 1, 0, end_lit])
 
             # If this task is the first, set rank.
-            m.Add(var1.rank == 0).OnlyEnforceIf(start_lit)
+            m.add(var1.rank == 0).OnlyEnforceIf(start_lit)
 
             # Self arc if the task is not present on this machine.
-            arcs.append([idx1 + 1, idx1 + 1, var1.is_present.Not()])
-            m.Add(var1.rank == -1).OnlyEnforceIf(var1.is_present.Not())
+            arcs.append([idx1 + 1, idx1 + 1, ~var1.is_present])
+            m.add(var1.rank == -1).OnlyEnforceIf(~var1.is_present)
 
             for idx2, var2 in enumerate(assigns):
                 if idx1 == idx2:
@@ -252,16 +252,16 @@ def circuit_constraints(
                 arc_lit = arc_lits[idx1, idx2]
                 arcs.append([idx1 + 1, idx2 + 1, arc_lit])
 
-                m.AddImplication(arc_lit, var1.is_present)
-                m.AddImplication(arc_lit, var2.is_present)
+                m.add_implication(arc_lit, var1.is_present)
+                m.add_implication(arc_lit, var2.is_present)
 
                 # Maintain rank incrementally.
-                m.Add(var1.rank + 1 == var2.rank).OnlyEnforceIf(arc_lit)
+                m.add(var1.rank + 1 == var2.rank).OnlyEnforceIf(arc_lit)
 
                 # TODO Validate that this cannot be combined with overlap.
                 op1, op2 = var1.task_idx, var2.task_idx
                 setup = data.setup_times[machine][op1, op2]
-                m.Add(var1.end + setup <= var2.start).OnlyEnforceIf(arc_lit)
+                m.add(var1.end + setup <= var2.start).OnlyEnforceIf(arc_lit)
 
         if arcs:
-            m.AddCircuit(arcs)
+            m.add_circuit(arcs)
