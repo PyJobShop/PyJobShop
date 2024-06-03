@@ -120,7 +120,7 @@ def operation_graph_constraints(
 
                     # Equivalent: arc_lit <=> var1.is_present & var2.is_present
                     m.add_bool_or(
-                        [arc_lit, var1.is_present.Not(), var2.is_present.Not()]
+                        [arc_lit, ~var1.is_present, ~var2.is_present]
                     )
                     m.add_implication(arc_lit, var1.is_present)
                     m.add_implication(arc_lit, var2.is_present)
@@ -242,8 +242,8 @@ def circuit_constraints(
             m.add(var1.rank == 0).OnlyEnforceIf(start_lit)
 
             # Self arc if the task is not present on this machine.
-            arcs.append([idx1 + 1, idx1 + 1, var1.is_present.Not()])
-            m.add(var1.rank == -1).OnlyEnforceIf(var1.is_present.Not())
+            arcs.append([idx1 + 1, idx1 + 1, ~var1.is_present])
+            m.add(var1.rank == -1).OnlyEnforceIf(~var1.is_present)
 
             for idx2, var2 in enumerate(assigns):
                 if idx1 == idx2:
