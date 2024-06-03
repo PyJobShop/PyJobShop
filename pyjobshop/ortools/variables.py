@@ -178,8 +178,8 @@ def sequence_variables(
     """
     Creates a sequence variable for each machine. Sequence variables are used
     to model the ordering of intervals on a given machine. This is used for
-    modeling machine setups and sequencing task constraints, such as Previous,
-    Before, First, and Last.
+    modeling machine setups and sequencing task constraints, such as previous,
+    before, first, last and permutations.
     """
     variables = []
 
@@ -189,28 +189,21 @@ def sequence_variables(
         machine2tasks[machine].append(var)
 
     for machine in range(data.num_machines):
-        num_tasks = len(machine2tasks[machine])
+        tasks = machine2tasks[machine]
+        num_tasks = len(tasks)
 
         # Start and end literals define whether the corresponding interval
         # is first or last in the sequence, respectively.
         starts = [m.NewBoolVar("") for _ in range(num_tasks)]
         ends = [m.NewBoolVar("") for _ in range(num_tasks)]
 
-        # Arc literals define whether two intervals are consecutive in the
-        # sequence.
+        # Arc literals indicate if two intervals are scheduled consecutively.
         arcs = {
             (i, j): m.NewBoolVar(f"{i}->{j}")
             for i in range(num_tasks)
             for j in range(num_tasks)
         }
 
-        variables.append(
-            SequenceVar(
-                tasks=machine2tasks[machine],
-                starts=starts,
-                ends=ends,
-                arcs=arcs,
-            )
-        )
+        variables.append(SequenceVar(tasks, starts, ends, arcs))
 
     return variables

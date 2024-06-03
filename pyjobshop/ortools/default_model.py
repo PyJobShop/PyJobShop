@@ -44,6 +44,8 @@ def default_model(data: ProblemData) -> tuple[CpModel, list, dict]:
     processing_time_constraints(model, data, assign)
     setup_time_constraints(model, data, seq_vars)
     operation_graph_constraints(model, data, op_vars, assign, seq_vars)
+
+    # Must be called last to ensure that sequence constriants are enforced!
     circuit_constraints(model, data, seq_vars)
 
     return model, op_vars, assign

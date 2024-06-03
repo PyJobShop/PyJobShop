@@ -120,7 +120,7 @@ def operation_graph_constraints(
 
                     # Equivalent: arc_lit <=> var1.is_present & var2.is_present
                     m.AddBoolOr(
-                        [var1.is_present.Not(), var2.is_present.Not(), arc_lit]
+                        [arc_lit, var1.is_present.Not(), var2.is_present.Not()]
                     )
                     m.AddImplication(arc_lit, var1.is_present)
                     m.AddImplication(arc_lit, var2.is_present)

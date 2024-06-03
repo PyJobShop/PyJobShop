@@ -611,8 +611,7 @@ def test_timing_precedence(prec_type: Constraint, expected_makespan: int):
 
 def test_previous_constraint():
     """
-    Tests that the previous constraint is respected. This example uses two
-    operations and two machines with processing times of 2.
+    Tests that the previous constraint is respected.
     """
     model = Model()
 
