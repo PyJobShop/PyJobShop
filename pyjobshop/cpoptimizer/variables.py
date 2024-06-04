@@ -21,7 +21,7 @@ def operation_variables(
     """
     return [
         m.interval_var(name=f"O{idx}")
-        for idx, operation in enumerate(data.operations)
+        for idx, operation in enumerate(data.tasks)
     ]
 
 
@@ -32,7 +32,7 @@ def task_variables(m: CpoModel, data: ProblemData) -> AssignVars:
     """
     return {
         (op, machine): m.interval_var(name=f"A{op}_{machine}", optional=True)
-        for op in range(data.num_operations)
+        for op in range(data.num_tasks)
         for machine in data.op2machines[op]
     }
 

@@ -11,10 +11,10 @@ from pyjobshop.ProblemData import (
     Job,
     Machine,
     Objective,
-    Operation,
     ProblemData,
+    Task,
 )
-from pyjobshop.Solution import Task
+from pyjobshop.Solution import Task as Task_
 
 
 def test_job_attributes():
@@ -91,7 +91,7 @@ def test_operation_attributes():
     """
     Tests that the attributes of the Operation class are set correctly.
     """
-    operation = Operation(
+    operation = Task(
         earliest_start=1,
         latest_start=2,
         earliest_end=3,
@@ -108,7 +108,7 @@ def test_operation_attributes():
     assert_equal(operation.name, "TestOperation")
 
     # Also test that default values are set correctly.
-    operation = Operation()
+    operation = Task()
 
     assert_equal(operation.earliest_start, None)
     assert_equal(operation.latest_start, None)
@@ -136,7 +136,7 @@ def test_operation_attributes_raises_invalid_parameters(
     Operation class.
     """
     with assert_raises(ValueError):
-        Operation(earliest_start, latest_start, earliest_end, latest_end)
+        Task(earliest_start, latest_start, earliest_end, latest_end)
 
 
 def test_problem_data_input_parameter_attributes():
@@ -146,7 +146,7 @@ def test_problem_data_input_parameter_attributes():
     """
     jobs = [Job() for _ in range(5)]
     machines = [Machine() for _ in range(5)]
-    operations = [Operation() for _ in range(5)]
+    operations = [Task() for _ in range(5)]
     job2ops = [[0], [1], [2], [3], [4]]
     processing_times = {(i, j): 1 for i in range(5) for j in range(5)}
     constraints = {
@@ -170,7 +170,7 @@ def test_problem_data_input_parameter_attributes():
 
     assert_equal(data.jobs, jobs)
     assert_equal(data.machines, machines)
-    assert_equal(data.operations, operations)
+    assert_equal(data.tasks, operations)
     assert_equal(data.job2ops, job2ops)
     assert_equal(data.processing_times, processing_times)
     assert_equal(data.constraints, constraints)
@@ -186,7 +186,7 @@ def test_problem_data_non_input_parameter_attributes():
     """
     jobs = [Job() for _ in range(1)]
     machines = [Machine() for _ in range(3)]
-    operations = [Operation() for _ in range(3)]
+    operations = [Task() for _ in range(3)]
     job2ops = [[0, 1, 2]]
     processing_times = {(1, 2): 1, (2, 1): 1, (0, 1): 1, (2, 0): 1}
 
@@ -202,7 +202,7 @@ def test_problem_data_non_input_parameter_attributes():
 
     assert_equal(data.num_jobs, 1)
     assert_equal(data.num_machines, 3)
-    assert_equal(data.num_operations, 3)
+    assert_equal(data.num_tasks, 3)
 
 
 def test_problem_data_default_values():
@@ -211,7 +211,7 @@ def test_problem_data_default_values():
     """
     jobs = [Job() for _ in range(1)]
     machines = [Machine() for _ in range(1)]
-    operations = [Operation() for _ in range(1)]
+    operations = [Task() for _ in range(1)]
     job2ops = [[0]]
     constraints = {(0, 1): [Constraint.END_BEFORE_START]}
     processing_times = {(0, 0): 1}
@@ -250,7 +250,7 @@ def test_problem_data_raises_when_invalid_arguments(
         ProblemData(
             [Job()],
             [Machine()],
-            [Operation()],
+            [Task()],
             [[0]],
             processing_times,
             {},
@@ -273,7 +273,7 @@ def test_problem_data_tardy_objective_without_job_due_dates(
         ProblemData(
             [Job()],
             [Machine()],
-            [Operation()],
+            [Task()],
             [[0]],
             {},
             {},
@@ -565,7 +565,7 @@ def test_operation_non_fixed_duration(solver: str):
     result = model.solve(solver=solver)
     assert_equal(result.status.value, "Optimal")
     assert_equal(result.objective, 10)
-    assert_equal(result.best.schedule, [Task(0, 0, 0, 10)])
+    assert_equal(result.best.schedule, [Task_(0, 0, 0, 10)])
 
 
 @pytest.mark.parametrize(

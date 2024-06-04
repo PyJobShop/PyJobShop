@@ -9,8 +9,8 @@ from pyjobshop.ProblemData import (
     Job,
     Machine,
     Objective,
-    Operation,
     ProblemData,
+    Task,
 )
 from pyjobshop.Result import Result
 from pyjobshop.solve import solve
@@ -24,7 +24,7 @@ class Model:
     def __init__(self):
         self._jobs: list[Job] = []
         self._machines: list[Machine] = []
-        self._operations: list[Operation] = []
+        self._operations: list[Task] = []
         self._job2ops: dict[int, list[int]] = defaultdict(list)
         self._processing_times: dict[tuple[int, int], int] = {}
         self._constraints: dict[tuple[int, int], list[Constraint]] = (
@@ -54,7 +54,7 @@ class Model:
         return self._machines
 
     @property
-    def operations(self) -> list[Operation]:
+    def operations(self) -> list[Task]:
         """
         Returns the list of operations in the model.
         """
@@ -85,7 +85,7 @@ class Model:
         return ProblemData(
             jobs=self.jobs,
             machines=self.machines,
-            operations=self.operations,
+            tasks=self.operations,
             job2ops=job2ops,
             processing_times=self._processing_times,
             constraints=self._constraints,
@@ -170,7 +170,7 @@ class Model:
         latest_end: Optional[int] = None,
         fixed_duration: bool = True,
         name: str = "",
-    ) -> Operation:
+    ) -> Task:
         """
         Adds an operation to the model.
 
@@ -196,7 +196,7 @@ class Model:
         Operation
             The created operation.
         """
-        operation = Operation(
+        operation = Task(
             earliest_start,
             latest_start,
             earliest_end,
@@ -216,7 +216,7 @@ class Model:
         return operation
 
     def add_processing_time(
-        self, machine: Machine, operation: Operation, duration: int
+        self, machine: Machine, operation: Task, duration: int
     ):
         """
         Adds a processing time for a machine and operation combination.
@@ -239,8 +239,8 @@ class Model:
 
     def add_constraint(
         self,
-        first: Operation,
-        second: Operation,
+        first: Task,
+        second: Task,
         constraint: Constraint,
     ):
         """
@@ -262,8 +262,8 @@ class Model:
     def add_setup_time(
         self,
         machine: Machine,
-        operation1: Operation,
-        operation2: Operation,
+        operation1: Task,
+        operation2: Task,
         duration: int,
     ):
         """

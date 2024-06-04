@@ -68,7 +68,7 @@ def plot(
             ax.text(
                 start + duration / 2,
                 order[machine],
-                data.operations[op].name,
+                data.tasks[op].name,
                 ha="center",
                 va="center",
             )

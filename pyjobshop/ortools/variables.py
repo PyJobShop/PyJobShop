@@ -117,7 +117,7 @@ def operation_variables(m: CpModel, data: ProblemData) -> list[OperationVar]:
     """
     tasks = []
 
-    for op in data.operations:
+    for op in data.tasks:
         name = f"O{op}"
         start_var = m.new_int_var(0, data.planning_horizon, f"{name}_start")
         duration_var = m.new_int_var(

@@ -49,7 +49,7 @@ def operation_constraints(
     """
     Creates constraints on the operation variables.
     """
-    for op_data, var in zip(data.operations, op_vars):
+    for op_data, var in zip(data.tasks, op_vars):
         if op_data.earliest_start is not None:
             m.add(var.start >= op_data.earliest_start)
 
@@ -142,7 +142,7 @@ def alternative_constraints(
     Creates the alternative constraints for the operations, ensuring that each
     operation is scheduled on exactly one machine.
     """
-    for op in range(data.num_operations):
+    for op in range(data.num_tasks):
         presences = []
 
         for machine in data.op2machines[op]:
@@ -184,7 +184,7 @@ def processing_time_constraints(
     for (op, machine), var in assign.items():
         duration = data.processing_times[machine, op]
 
-        if data.operations[op].fixed_duration:
+        if data.tasks[op].fixed_duration:
             m.add(var.duration == duration)
         else:
             m.add(var.duration >= duration)

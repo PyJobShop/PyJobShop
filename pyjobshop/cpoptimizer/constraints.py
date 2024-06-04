@@ -21,7 +21,7 @@ def alternative_constraints(
     """
     constraints = []
 
-    for op in range(data.num_operations):
+    for op in range(data.num_tasks):
         machines = data.op2machines[op]
         optional = [task_vars[op, machine] for machine in machines]
         constraints.append(m.alternative(op_vars[op], optional))
@@ -103,7 +103,7 @@ def operation_constraints(
     """
     Creates constraints on the operation variables.
     """
-    for op_data, var in zip(data.operations, op_vars):
+    for op_data, var in zip(data.tasks, op_vars):
         if op_data.earliest_start is not None:
             var.set_start_min(op_data.earliest_start)
 
@@ -153,7 +153,7 @@ def processing_time_constraints(
     for (op, machine), var in task_vars.items():
         duration = data.processing_times[machine, op]
 
-        if data.operations[op].fixed_duration:
+        if data.tasks[op].fixed_duration:
             var.set_size(duration)
         else:
             var.set_size_min(duration)  # at least duration
