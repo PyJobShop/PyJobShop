@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from .ProblemData import ProblemData
 
 
+# TODO rename Task
 @dataclass
 class Task:
     """
@@ -39,7 +40,7 @@ class Solution:
     """
 
     def __init__(self, data: ProblemData, schedule: list[Task]):
-        self.schedule = schedule
+        self.schedule = schedule  # TODO rename schedule
         self._validate(data)
 
     def __eq__(self, other) -> bool:
