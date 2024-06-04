@@ -164,7 +164,7 @@ def test_model_set_objective():
     assert_equal(model.objective, Objective.TOTAL_TARDINESS)
 
 
-def test_solve():
+def test_solve(solver):
     """
     Tests the solve method of the Model class.
     """
@@ -177,7 +177,7 @@ def test_solve():
     for operation, duration in zip(operations, [1, 2]):
         model.add_processing_time(machine, operation, duration)
 
-    result = model.solve()
+    result = model.solve(solver=solver)
 
     assert_equal(result.objective, 3)
     assert_equal(result.status.value, "Optimal")

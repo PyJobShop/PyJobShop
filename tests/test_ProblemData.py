@@ -284,7 +284,7 @@ def test_problem_data_tardy_objective_without_job_due_dates(
 # --- Tests that involve checking solver correctness of problem data. ---
 
 
-def test_job_release_date():
+def test_job_release_date(solver):
     """
     Tests that the operations belonging to a job start no earlier than
     the job's release date.
@@ -297,14 +297,14 @@ def test_job_release_date():
 
     model.add_processing_time(machine, operation, duration=1)
 
-    result = model.solve()
+    result = model.solve(solver=solver)
 
     # Job's release date is one, so the operation starts at one.
     assert_equal(result.status.value, "Optimal")
     assert_equal(result.objective, 2)
 
 
-def test_job_deadline():
+def test_job_deadline(solver):
     """
     Tests that the operations beloning to a job end no later than the
     job's deadline.
@@ -324,7 +324,7 @@ def test_job_deadline():
 
     model.add_setup_time(machine, operation2, operation1, 10)
 
-    result = model.solve()
+    result = model.solve(solver=solver)
 
     # Operation 1 (processing time of 2) cannot start before operation 2,
     # otherwise operation 2 cannot start before time 1. So operation 2 is
@@ -334,7 +334,7 @@ def test_job_deadline():
     assert_equal(result.objective, 14)
 
 
-def test_job_deadline_infeasible():
+def test_job_deadline_infeasible(solver):
     """
     Tests that a too restrictive job deadline results in an infeasible model.
     """
@@ -346,13 +346,13 @@ def test_job_deadline_infeasible():
 
     model.add_processing_time(machine, operation, duration=2)
 
-    result = model.solve()
+    result = model.solve(solver=solver)
 
     # Operation's processing time is 2, but job deadline is 1.
     assert_equal(result.status.value, "Infeasible")
 
 
-def test_machine_allow_overlap():
+def test_machine_allow_overlap(solver):
     """
     Tests that allowing overlap results in a shorter makespan.
     """
@@ -364,7 +364,7 @@ def test_machine_allow_overlap():
     for operation in operations:
         model.add_processing_time(machine, operation, duration=2)
 
-    result = model.solve()
+    result = model.solve(solver=solver)
 
     # No overlap, so we schedule the two operations consecutively with
     # final makespan of four.
@@ -380,7 +380,7 @@ def test_machine_allow_overlap():
     for operation in operations:
         model.add_processing_time(machine, operation, duration=2)
 
-    result = model.solve()
+    result = model.solve(solver=solver)
 
     # With overlap we can schedule both operations simultaneously on the
     # machine, resulting in a makespan of two.
@@ -388,7 +388,7 @@ def test_machine_allow_overlap():
     assert_equal(result.objective, 2)
 
 
-def test_operation_earliest_start():
+def test_operation_earliest_start(solver):
     """
     Tests that an operation starts no earlier than its earliest start time.
     """
@@ -400,14 +400,14 @@ def test_operation_earliest_start():
 
     model.add_processing_time(machine, operation, duration=1)
 
-    result = model.solve()
+    result = model.solve(solver=solver)
 
     # Operation starts at time 1 and takes 1 time unit, so the makespan is 2.
     assert_equal(result.status.value, "Optimal")
     assert_equal(result.objective, 2)
 
 
-def test_operation_latest_start():
+def test_operation_latest_start(solver):
     """
     Tests that an operation starts no later than its latest start time.
     """
@@ -425,7 +425,7 @@ def test_operation_latest_start():
 
     model.add_setup_time(machine, operations[1], operations[0], 10)
 
-    result = model.solve()
+    result = model.solve(solver=solver)
 
     # Operation 1 (processing time of 2) cannot start before operation 2,
     # otherwise operation 2 cannot start before time 1. So operation 2 is
@@ -435,7 +435,7 @@ def test_operation_latest_start():
     assert_equal(result.objective, 14)
 
 
-def test_operation_fixed_start():
+def test_operation_fixed_start(solver):
     """
     Tests that an operation starts at its fixed start time when earliest
     and latest start times are equal.
@@ -450,14 +450,14 @@ def test_operation_fixed_start():
 
     model.add_processing_time(machine, operation, duration=1)
 
-    result = model.solve()
+    result = model.solve(solver=solver)
 
     # Operation starts at time 42 and takes 1 time unit, so the makespan is 43.
     assert_equal(result.status.value, "Optimal")
     assert_equal(result.objective, 43)
 
 
-def test_operation_earliest_end():
+def test_operation_earliest_end(solver):
     """
     Tests that an operation end no earlier than its earliest end time.
     """
@@ -469,7 +469,7 @@ def test_operation_earliest_end():
 
     model.add_processing_time(machine, operation, duration=1)
 
-    result = model.solve()
+    result = model.solve(solver=solver)
 
     # Operation cannot end before time 2, so it starts at time 1 with
     # duration 1, thus the makespan is 2.
@@ -477,7 +477,7 @@ def test_operation_earliest_end():
     assert_equal(result.objective, 2)
 
 
-def test_operation_latest_end():
+def test_operation_latest_end(solver):
     """
     Tests that an operation ends no later than its latest end time.
     """
@@ -495,7 +495,7 @@ def test_operation_latest_end():
 
     model.add_setup_time(machine, operations[1], operations[0], 10)
 
-    result = model.solve()
+    result = model.solve(solver=solver)
 
     # Operation 1 (processing time of 2) cannot start before operation 2,
     # otherwise operation 2 cannot end before time 2. So operation 2 is
@@ -505,7 +505,7 @@ def test_operation_latest_end():
     assert_equal(result.objective, 14)
 
 
-def test_operation_fixed_end():
+def test_operation_fixed_end(solver):
     """
     Tests that an operation ends at its fixed end time when earliest
     and latest end times are equal.
@@ -518,14 +518,14 @@ def test_operation_fixed_end():
 
     model.add_processing_time(machine, operation, duration=1)
 
-    result = model.solve()
+    result = model.solve(solver=solver)
 
     # Operation ends at 42, so the makespan is 42.
     assert_equal(result.status.value, "Optimal")
     assert_equal(result.objective, 42)
 
 
-def test_operation_fixed_duration_infeasible_with_timing_constraints():
+def test_operation_fixed_duration_infeasible_with_timing_constraints(solver):
     """
     Tests that an operation with fixed duration cannot be feasibly scheduled
     in combination with tight timing constraints.
@@ -539,11 +539,11 @@ def test_operation_fixed_duration_infeasible_with_timing_constraints():
     # Because of the latest start and earliest end constraints, we cannot
     # schedule the operation with fixed duration, since its processing time
     # is 1.
-    result = model.solve()
+    result = model.solve(solver=solver)
     assert_equal(result.status.value, "Infeasible")
 
 
-def test_operation_non_fixed_duration():
+def test_operation_non_fixed_duration(solver):
     """
     Tests that an operation with non-fixed duration is scheduled correctly.
     """
@@ -560,7 +560,7 @@ def test_operation_non_fixed_duration():
     # Since the operation's duration is not fixed, it can be scheduled in a
     # feasible way. In this case, it starts at 0 and ends at 10, which includes
     # the processing time (1) and respects the timing constraints.
-    result = model.solve()
+    result = model.solve(solver=solver)
     assert_equal(result.status.value, "Optimal")
     assert_equal(result.objective, 10)
     assert_equal(result.best.schedule, [Task(0, 0, 0, 10)])
@@ -587,7 +587,9 @@ def test_operation_non_fixed_duration():
         (Constraint.END_BEFORE_END, 2),
     ],
 )
-def test_timing_precedence(prec_type: Constraint, expected_makespan: int):
+def test_timing_precedence(
+    solver, prec_type: Constraint, expected_makespan: int
+):
     """
     Tests that timing precedence constraints are respected. This example
     uses two operations and two machines with processing times of 2.
@@ -604,12 +606,12 @@ def test_timing_precedence(prec_type: Constraint, expected_makespan: int):
 
     model.add_constraint(operations[0], operations[1], prec_type)
 
-    result = model.solve()
+    result = model.solve(solver=solver)
 
     assert_equal(result.objective, expected_makespan)
 
 
-def test_previous_constraint():
+def test_previous_constraint(solver):
     """
     Tests that the previous constraint is respected.
     """
@@ -625,7 +627,7 @@ def test_previous_constraint():
     model.add_setup_time(machine, operations[1], operations[0], duration=100)
     model.add_constraint(operations[1], operations[0], Constraint.PREVIOUS)
 
-    result = model.solve()
+    result = model.solve(solver=solver)
 
     # Operation 1 must be scheduled before operation 0, but the setup time
     # between them is 100, so the makespan is 1 + 100 + 1 = 102.
@@ -639,7 +641,9 @@ def test_previous_constraint():
         (Constraint.DIFFERENT_UNIT, 2),
     ],
 )
-def test_assignment_constraint(prec_type: Constraint, expected_makespan: int):
+def test_assignment_constraint(
+    solver, prec_type: Constraint, expected_makespan: int
+):
     """
     Tests that assignment constraints are respected. This example
     uses two operations and two machines with processing times of 2.
@@ -656,12 +660,12 @@ def test_assignment_constraint(prec_type: Constraint, expected_makespan: int):
 
     model.add_constraint(operations[0], operations[1], prec_type)
 
-    result = model.solve()
+    result = model.solve(solver=solver)
 
     assert_equal(result.objective, expected_makespan)
 
 
-def test_tight_planning_horizon_results_in_infeasiblity():
+def test_tight_planning_horizon_results_in_infeasiblity(solver):
     """
     Tests that a tight planning horizon results in an infeasible instance.
     """
@@ -674,13 +678,13 @@ def test_tight_planning_horizon_results_in_infeasiblity():
     model.add_processing_time(machine, operation, duration=2)
     model.set_planning_horizon(1)
 
-    result = model.solve()
+    result = model.solve(solver=solver)
 
     # Processing time is 2, but planning horizon is 1, so this is infeasible.
     assert_equal(result.status.value, "Infeasible")
 
 
-def test_makespan_objective():
+def test_makespan_objective(solver):
     """
     Tests that the makespan objective is correctly optimized.
     """
@@ -693,13 +697,13 @@ def test_makespan_objective():
     for operation in operations:
         model.add_processing_time(machine, operation, duration=2)
 
-    result = model.solve()
+    result = model.solve(solver=solver)
 
     assert_equal(result.objective, 4)
     assert_equal(result.status.value, "Optimal")
 
 
-def test_tardy_jobs():
+def test_tardy_jobs(solver):
     """
     Tests that the (number of) tardy jobs objective is correctly optimized.
     """
@@ -714,7 +718,7 @@ def test_tardy_jobs():
 
     model.set_objective(Objective.TARDY_JOBS)
 
-    result = model.solve()
+    result = model.solve(solver=solver)
 
     # Only the last job/operation can be scheduled on time. The other two
     # are tardy.
@@ -722,7 +726,7 @@ def test_tardy_jobs():
     assert_equal(result.status.value, "Optimal")
 
 
-def test_total_completion_time():
+def test_total_completion_time(solver):
     """
     Tests that the total completion time objective is correctly optimized.
     """
@@ -739,7 +743,7 @@ def test_total_completion_time():
 
     model.set_objective(Objective.TOTAL_COMPLETION_TIME)
 
-    result = model.solve()
+    result = model.solve(solver=solver)
 
     # We have three jobs (A, B, C) with processing times of 1, 2, 3 on either
     # machine. The optimal schedule is [A, C] and [B] with total completion
@@ -749,7 +753,7 @@ def test_total_completion_time():
     assert_equal(result.status.value, "Optimal")
 
 
-def test_total_weighted_completion_time():
+def test_total_weighted_completion_time(solver):
     """
     Tests that the weights are taken into account when using the total
     completion time objective function.
@@ -766,7 +770,7 @@ def test_total_weighted_completion_time():
 
     model.set_objective(Objective.TOTAL_COMPLETION_TIME)
 
-    result = model.solve()
+    result = model.solve(solver=solver)
 
     # One machine and two jobs (A, B) with processing times (1, 2) and weights
     # (2, 10). Because of these weights, it's optimal to schedule B for A with
@@ -775,7 +779,7 @@ def test_total_weighted_completion_time():
     assert_equal(result.status.value, "Optimal")
 
 
-def test_total_tardiness():
+def test_total_tardiness(solver):
     """
     Tests that the total tardiness objective function is correctly optimized.
     """
@@ -793,7 +797,7 @@ def test_total_tardiness():
 
     model.set_objective(Objective.TOTAL_TARDINESS)
 
-    result = model.solve()
+    result = model.solve(solver=solver)
 
     # We have three jobs (A, B, C) with processing times of 1, 2, 3 on either
     # machine and due dates 1, 2, 3. We schedule A and B first on both machines
@@ -803,7 +807,7 @@ def test_total_tardiness():
     assert_equal(result.status.value, "Optimal")
 
 
-def test_total_weighted_tardiness():
+def test_total_weighted_tardiness(solver):
     """
     Tests that the weights are taken into account when using the total
     tardiness objective function.
@@ -824,7 +828,7 @@ def test_total_weighted_tardiness():
 
     model.set_objective(Objective.TOTAL_TARDINESS)
 
-    result = model.solve()
+    result = model.solve(solver=solver)
 
     # We have an instance with one machine and two jobs (A, B) with processing
     # times (2, 4), due dates (2, 2), and weights (2, 10). Because of the
@@ -837,7 +841,7 @@ def test_total_weighted_tardiness():
 # --- Small classical examples. ---
 
 
-def test_jobshop():
+def test_jobshop(solver):
     """
     Tests a simple job shop problem with 3 machines and 6 jobs.
 
@@ -873,7 +877,7 @@ def test_jobshop():
             op1, op2 = operations[op_idx - 1], operations[op_idx]
             model.add_constraint(op1, op2, Constraint.END_BEFORE_START)
 
-    result = model.solve()
+    result = model.solve(solver=solver)
 
     assert_equal(result.status.value, "Optimal")
     assert_equal(result.objective, 20)
