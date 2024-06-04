@@ -15,3 +15,18 @@ def small():
         model.add_processing_time(machine, operation, duration)
 
     return model.data()
+
+
+def pytest_addoption(parser):
+    parser.addoption(
+        "--solvers",
+        nargs="+",
+        default=["ortools"],
+        choices=["ortools", "cpoptimizer"],
+        help="Solvers to test.",
+    )
+
+
+def pytest_generate_tests(metafunc):
+    if "solver" in metafunc.fixturenames:
+        metafunc.parametrize("solver", metafunc.config.getoption("solvers"))
