@@ -5,12 +5,12 @@ from pyjobshop.ProblemData import ProblemData
 from .variables import JobVar, OperationVar
 
 
-def makespan(model: CpModel, data: ProblemData, ops: list[OperationVar]):
+def makespan(model: CpModel, data: ProblemData, op_vars: list[OperationVar]):
     """
-    Minimizes the makespan of the schedule.
+    Minimizes the makespan.
     """
     makespan = model.new_int_var(0, data.planning_horizon, "makespan")
-    completion_times = [ops[op].end for op in range(data.num_operations)]
+    completion_times = [var.end for var in op_vars]
 
     model.add_max_equality(makespan, completion_times)
     model.minimize(makespan)
@@ -22,11 +22,12 @@ def tardy_jobs(m: CpModel, data: ProblemData, job_vars: list[JobVar]):
     """
     exprs = []
 
-    for job_data, job_var in zip(data.jobs, job_vars):
-        is_tardy = m.new_bool_var(f"is_tardy_{job_data}")
-        m.add(job_var.end > job_data.due_date).only_enforce_if(is_tardy)
-        m.add(job_var.end <= job_data.due_date).only_enforce_if(~is_tardy)
+    for job, job_var in zip(data.jobs, job_vars):
+        is_tardy = m.new_bool_var(f"is_tardy_{job}")
         exprs.append(is_tardy)
+
+        m.add(job_var.end > job.due_date).only_enforce_if(is_tardy)
+        m.add(job_var.end <= job.due_date).only_enforce_if(~is_tardy)
 
     m.minimize(LinearExpr.sum(exprs))
 
@@ -35,7 +36,7 @@ def total_completion_time(
     m: CpModel, data: ProblemData, job_vars: list[JobVar]
 ):
     """
-    Minimizes the sum of the completion times of each job.
+    Minimizes the weighted sum of the completion times of each job.
     """
     exprs = [job_var.end for job_var in job_vars]
     weights = [job_data.weight for job_data in data.jobs]
@@ -45,18 +46,15 @@ def total_completion_time(
 
 def total_tardiness(m: CpModel, data: ProblemData, job_vars: list[JobVar]):
     """
-    Minimizes the sum of the tardiness of each job. A job's tardiness is
-    defined as the maximum of 0 and its completion time minus the job's
-    due date.
+    Minimizes the weighted sum of the tardiness of each job.
     """
     exprs = []
-    weights = [job_data.weight for job_data in data.jobs]
 
-    for job_data, job_var in zip(data.jobs, job_vars):
-        tardiness = m.new_int_var(
-            0, data.planning_horizon, f"tardiness_{job_data}"
-        )
-        m.add_max_equality(tardiness, [0, job_var.end - job_data.due_date])
+    for job, job_var in zip(data.jobs, job_vars):
+        tardiness = m.new_int_var(0, data.planning_horizon, f"tardiness_{job}")
         exprs.append(tardiness)
 
+        m.add_max_equality(tardiness, [0, job_var.end - job.due_date])
+
+    weights = [job.weight for job in data.jobs]
     m.minimize(LinearExpr.weighted_sum(exprs, weights))
