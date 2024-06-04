@@ -284,7 +284,7 @@ def test_problem_data_tardy_objective_without_job_due_dates(
 # --- Tests that involve checking solver correctness of problem data. ---
 
 
-def test_job_release_date(solver):
+def test_job_release_date(solver: str):
     """
     Tests that the operations belonging to a job start no earlier than
     the job's release date.
@@ -304,7 +304,7 @@ def test_job_release_date(solver):
     assert_equal(result.objective, 2)
 
 
-def test_job_deadline(solver):
+def test_job_deadline(solver: str):
     """
     Tests that the operations beloning to a job end no later than the
     job's deadline.
@@ -334,7 +334,7 @@ def test_job_deadline(solver):
     assert_equal(result.objective, 14)
 
 
-def test_job_deadline_infeasible(solver):
+def test_job_deadline_infeasible(solver: str):
     """
     Tests that a too restrictive job deadline results in an infeasible model.
     """
@@ -352,7 +352,7 @@ def test_job_deadline_infeasible(solver):
     assert_equal(result.status.value, "Infeasible")
 
 
-def test_machine_allow_overlap(solver):
+def test_machine_allow_overlap(solver: str):
     """
     Tests that allowing overlap results in a shorter makespan.
     """
@@ -388,7 +388,7 @@ def test_machine_allow_overlap(solver):
     assert_equal(result.objective, 2)
 
 
-def test_operation_earliest_start(solver):
+def test_operation_earliest_start(solver: str):
     """
     Tests that an operation starts no earlier than its earliest start time.
     """
@@ -407,7 +407,7 @@ def test_operation_earliest_start(solver):
     assert_equal(result.objective, 2)
 
 
-def test_operation_latest_start(solver):
+def test_operation_latest_start(solver: str):
     """
     Tests that an operation starts no later than its latest start time.
     """
@@ -435,7 +435,7 @@ def test_operation_latest_start(solver):
     assert_equal(result.objective, 14)
 
 
-def test_operation_fixed_start(solver):
+def test_operation_fixed_start(solver: str):
     """
     Tests that an operation starts at its fixed start time when earliest
     and latest start times are equal.
@@ -457,7 +457,7 @@ def test_operation_fixed_start(solver):
     assert_equal(result.objective, 43)
 
 
-def test_operation_earliest_end(solver):
+def test_operation_earliest_end(solver: str):
     """
     Tests that an operation end no earlier than its earliest end time.
     """
@@ -477,7 +477,7 @@ def test_operation_earliest_end(solver):
     assert_equal(result.objective, 2)
 
 
-def test_operation_latest_end(solver):
+def test_operation_latest_end(solver: str):
     """
     Tests that an operation ends no later than its latest end time.
     """
@@ -505,7 +505,7 @@ def test_operation_latest_end(solver):
     assert_equal(result.objective, 14)
 
 
-def test_operation_fixed_end(solver):
+def test_operation_fixed_end(solver: str):
     """
     Tests that an operation ends at its fixed end time when earliest
     and latest end times are equal.
@@ -525,7 +525,9 @@ def test_operation_fixed_end(solver):
     assert_equal(result.objective, 42)
 
 
-def test_operation_fixed_duration_infeasible_with_timing_constraints(solver):
+def test_operation_fixed_duration_infeasible_with_timing_constraints(
+    solver: str,
+):
     """
     Tests that an operation with fixed duration cannot be feasibly scheduled
     in combination with tight timing constraints.
@@ -543,7 +545,7 @@ def test_operation_fixed_duration_infeasible_with_timing_constraints(solver):
     assert_equal(result.status.value, "Infeasible")
 
 
-def test_operation_non_fixed_duration(solver):
+def test_operation_non_fixed_duration(solver: str):
     """
     Tests that an operation with non-fixed duration is scheduled correctly.
     """
@@ -611,7 +613,7 @@ def test_timing_precedence(
     assert_equal(result.objective, expected_makespan)
 
 
-def test_previous_constraint(solver):
+def test_previous_constraint(solver: str):
     """
     Tests that the previous constraint is respected.
     """
@@ -665,7 +667,7 @@ def test_assignment_constraint(
     assert_equal(result.objective, expected_makespan)
 
 
-def test_tight_planning_horizon_results_in_infeasiblity(solver):
+def test_tight_planning_horizon_results_in_infeasiblity(solver: str):
     """
     Tests that a tight planning horizon results in an infeasible instance.
     """
@@ -684,7 +686,7 @@ def test_tight_planning_horizon_results_in_infeasiblity(solver):
     assert_equal(result.status.value, "Infeasible")
 
 
-def test_makespan_objective(solver):
+def test_makespan_objective(solver: str):
     """
     Tests that the makespan objective is correctly optimized.
     """
@@ -703,7 +705,7 @@ def test_makespan_objective(solver):
     assert_equal(result.status.value, "Optimal")
 
 
-def test_tardy_jobs(solver):
+def test_tardy_jobs(solver: str):
     """
     Tests that the (number of) tardy jobs objective is correctly optimized.
     """
@@ -726,7 +728,7 @@ def test_tardy_jobs(solver):
     assert_equal(result.status.value, "Optimal")
 
 
-def test_total_completion_time(solver):
+def test_total_completion_time(solver: str):
     """
     Tests that the total completion time objective is correctly optimized.
     """
@@ -753,7 +755,7 @@ def test_total_completion_time(solver):
     assert_equal(result.status.value, "Optimal")
 
 
-def test_total_weighted_completion_time(solver):
+def test_total_weighted_completion_time(solver: str):
     """
     Tests that the weights are taken into account when using the total
     completion time objective function.
@@ -779,7 +781,7 @@ def test_total_weighted_completion_time(solver):
     assert_equal(result.status.value, "Optimal")
 
 
-def test_total_tardiness(solver):
+def test_total_tardiness(solver: str):
     """
     Tests that the total tardiness objective function is correctly optimized.
     """
@@ -807,7 +809,7 @@ def test_total_tardiness(solver):
     assert_equal(result.status.value, "Optimal")
 
 
-def test_total_weighted_tardiness(solver):
+def test_total_weighted_tardiness(solver: str):
     """
     Tests that the weights are taken into account when using the total
     tardiness objective function.
@@ -841,7 +843,7 @@ def test_total_weighted_tardiness(solver):
 # --- Small classical examples. ---
 
 
-def test_jobshop(solver):
+def test_jobshop(solver: str):
     """
     Tests a simple job shop problem with 3 machines and 6 jobs.
 

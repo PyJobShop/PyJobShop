@@ -162,7 +162,7 @@ def test_model_set_objective():
     assert_equal(model.objective, Objective.TOTAL_TARDINESS)
 
 
-def test_solve(solver):
+def test_solve(solver: str):
     """
     Tests the solve method of the Model class.
     """
