@@ -311,7 +311,7 @@ class Model:
 
     def solve(
         self,
-        solver: str = "cpoptimizer",
+        solver: str = "ortools",
         time_limit: float = float("inf"),
         log: bool = True,
         num_workers: Optional[int] = None,
