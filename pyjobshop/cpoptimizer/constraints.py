@@ -57,7 +57,7 @@ def job_operation_constraints(
 
     for job in range(data.num_jobs):
         job_var = job_vars[job]
-        related_op_vars = [op_vars[op] for op in data.job2ops[job]]
+        related_op_vars = [op_vars[op] for op in data.job2tasks[job]]
 
         constraints.append(m.span(job_var, related_op_vars))
 
@@ -84,7 +84,7 @@ def no_overlap_and_setup_time_constraints(
         if data.machines[machine].allow_overlap:
             continue  # Overlap is allowed for this machine.
 
-        if not (ops := data.machine2ops[machine]):
+        if not (ops := data.machine2tasks[machine]):
             continue  # There no operations for this machine.
 
         setups = data.setup_times[machine, :, :][np.ix_(ops, ops)]
@@ -197,7 +197,7 @@ def operation_graph_constraints(
             constraints.append(expr)
 
     # Separately handle assignment related constraints for efficiency.
-    for machine, ops in enumerate(data.machine2ops):
+    for machine, ops in enumerate(data.machine2tasks):
         seq_var = seq_vars[machine]
 
         for op1, op2 in product(ops, repeat=2):

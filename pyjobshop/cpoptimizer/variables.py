@@ -46,7 +46,7 @@ def sequence_variables(
     """
     variables = []
 
-    for machine, operations in enumerate(data.machine2ops):
+    for machine, operations in enumerate(data.machine2tasks):
         intervals = [assign[op, machine] for op in operations]
         variables.append(m.sequence_var(name=f"S{machine}", vars=intervals))
 

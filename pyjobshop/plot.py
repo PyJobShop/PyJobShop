@@ -53,7 +53,7 @@ def plot(
         )
 
         # Operations belonging to the same job get the same unique color.
-        job = [job for job, ops in enumerate(data.job2ops) if op in ops][0]
+        job = [job for job, ops in enumerate(data.job2tasks) if op in ops][0]
         kwargs = {
             "color": colors[job % len(colors)],
             "linewidth": 1,

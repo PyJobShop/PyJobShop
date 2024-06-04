@@ -34,7 +34,7 @@ def job_operation_constraints(
     """
     for job in range(data.num_jobs):
         job_var = job_vars[job]
-        related_vars = [op_vars[op] for op in data.job2ops[job]]
+        related_vars = [op_vars[op] for op in data.job2tasks[job]]
 
         m.add_min_equality(job_var.start, [var.start for var in related_vars])
         m.add_max_equality(job_var.end, [var.end for var in related_vars])
@@ -101,7 +101,7 @@ def operation_graph_constraints(
             m.add(expr)
 
     # Separately handle assignment related constraints for efficiency.
-    for machine, ops in enumerate(data.machine2ops):
+    for machine, ops in enumerate(data.machine2tasks):
         for op1, op2 in product(ops, repeat=2):
             if op1 == op2 or (op1, op2) not in data.constraints:
                 continue

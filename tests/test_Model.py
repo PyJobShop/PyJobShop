@@ -13,7 +13,7 @@ def test_model_to_data():
 
     job = model.add_job()
     machines = [model.add_machine() for _ in range(2)]
-    operations = [model.add_operation(job=job) for _ in range(2)]
+    operations = [model.add_task(job=job) for _ in range(2)]
 
     mach1, mach2 = machines
     op1, op2 = operations
@@ -37,7 +37,7 @@ def test_model_to_data():
     assert_equal(data.jobs, [job])
     assert_equal(data.machines, machines)
     assert_equal(data.tasks, operations)
-    assert_equal(data.job2ops, [[0, 1]])
+    assert_equal(data.job2tasks, [[0, 1]])
     assert_equal(data.processing_times, {(0, 0): 1, (1, 1): 2})
     assert_equal(
         data.constraints,
@@ -65,14 +65,14 @@ def test_model_to_data_default_values():
 
     job = model.add_job()
     machine = model.add_machine()
-    operation = model.add_operation(job=job)
+    operation = model.add_task(job=job)
 
     data = model.data()
 
     assert_equal(data.jobs, [job])
     assert_equal(data.machines, [machine])
     assert_equal(data.tasks, [operation])
-    assert_equal(data.job2ops, [[0]])
+    assert_equal(data.job2tasks, [[0]])
     assert_equal(data.processing_times, {})
     assert_equal(data.constraints, {})
     assert_equal(data.setup_times, [[[0]]])
@@ -115,7 +115,7 @@ def test_add_operation_attributes():
     """
     model = Model()
 
-    operation = model.add_operation(
+    operation = model.add_task(
         earliest_start=1,
         latest_start=2,
         earliest_end=3,
@@ -140,11 +140,11 @@ def test_model_attributes():
 
     jobs = [model.add_job() for _ in range(10)]
     machines = [model.add_machine() for _ in range(20)]
-    operations = [model.add_operation() for _ in range(30)]
+    operations = [model.add_task() for _ in range(30)]
 
     assert_equal(model.jobs, jobs)
     assert_equal(model.machines, machines)
-    assert_equal(model.operations, operations)
+    assert_equal(model.tasks, operations)
 
 
 def test_model_set_objective():
@@ -170,7 +170,7 @@ def test_solve(solver: str):
 
     job = model.add_job()
     machine = model.add_machine()
-    operations = [model.add_operation(job=job) for _ in range(2)]
+    operations = [model.add_task(job=job) for _ in range(2)]
 
     for operation, duration in zip(operations, [1, 2]):
         model.add_processing_time(machine, operation, duration)

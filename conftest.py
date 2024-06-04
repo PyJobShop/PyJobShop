@@ -9,7 +9,7 @@ def small():
 
     job = model.add_job()
     machine = model.add_machine()
-    operations = [model.add_operation(job=job) for _ in range(2)]
+    operations = [model.add_task(job=job) for _ in range(2)]
 
     for operation, duration in zip(operations, [1, 2]):
         model.add_processing_time(machine, operation, duration)
