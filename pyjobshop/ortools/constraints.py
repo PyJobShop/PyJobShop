@@ -152,9 +152,9 @@ def alternative_constraints(
             presences.append(is_present)
 
             # Link each optional interval variable with the main variable.
-            m.add(main.start == assign.start).OnlyEnforceIf(is_present)
-            m.add(main.duration == assign.duration).OnlyEnforceIf(is_present)
-            m.add(main.end == assign.end).OnlyEnforceIf(is_present)
+            m.add(main.start == assign.start).only_enforce_if(is_present)
+            m.add(main.duration == assign.duration).only_enforce_if(is_present)
+            m.add(main.end == assign.end).only_enforce_if(is_present)
 
         # Select exactly one machine for the operation.
         m.add_exactly_one(presences)
@@ -239,11 +239,11 @@ def circuit_constraints(
             arcs.append([idx1 + 1, 0, end_lit])
 
             # If this task is the first, set rank.
-            m.add(var1.rank == 0).OnlyEnforceIf(start_lit)
+            m.add(var1.rank == 0).only_enforce_if(start_lit)
 
             # Self arc if the task is not present on this machine.
             arcs.append([idx1 + 1, idx1 + 1, ~var1.is_present])
-            m.add(var1.rank == -1).OnlyEnforceIf(~var1.is_present)
+            m.add(var1.rank == -1).only_enforce_if(~var1.is_present)
 
             for idx2, var2 in enumerate(assigns):
                 if idx1 == idx2:
@@ -256,12 +256,12 @@ def circuit_constraints(
                 m.add_implication(arc_lit, var2.is_present)
 
                 # Maintain rank incrementally.
-                m.add(var1.rank + 1 == var2.rank).OnlyEnforceIf(arc_lit)
+                m.add(var1.rank + 1 == var2.rank).only_enforce_if(arc_lit)
 
                 # TODO Validate that this cannot be combined with overlap.
                 op1, op2 = var1.task_idx, var2.task_idx
                 setup = data.setup_times[machine][op1, op2]
-                m.add(var1.end + setup <= var2.start).OnlyEnforceIf(arc_lit)
+                m.add(var1.end + setup <= var2.start).only_enforce_if(arc_lit)
 
         if arcs:
             m.add_circuit(arcs)
