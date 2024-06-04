@@ -9,6 +9,8 @@ from pyjobshop.constants import MAX_VALUE
 
 _CONSTRAINTS_TYPE = dict[tuple[int, int], list["Constraint"]]
 
+# TODO
+
 
 class Job:
     """
