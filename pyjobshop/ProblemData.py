@@ -455,7 +455,7 @@ class ProblemData:
         return self._machine2tasks
 
     @property
-    def op2machines(self) -> list[list[int]]:
+    def task2machines(self) -> list[list[int]]:
         """
         List of eligible machine indices for each task. These are inferred
         from the (machine, task) pairs in the processing times dict.

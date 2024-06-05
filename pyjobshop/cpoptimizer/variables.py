@@ -33,7 +33,7 @@ def task_variables(m: CpoModel, data: ProblemData) -> AssignVars:
     return {
         (op, machine): m.interval_var(name=f"A{op}_{machine}", optional=True)
         for op in range(data.num_tasks)
-        for machine in data.op2machines[op]
+        for machine in data.task2machines[op]
     }
 
 

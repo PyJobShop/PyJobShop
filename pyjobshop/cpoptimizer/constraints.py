@@ -22,7 +22,7 @@ def alternative_constraints(
     constraints = []
 
     for op in range(data.num_tasks):
-        machines = data.op2machines[op]
+        machines = data.task2machines[op]
         optional = [task_vars[op, machine] for machine in machines]
         constraints.append(m.alternative(op_vars[op], optional))
 

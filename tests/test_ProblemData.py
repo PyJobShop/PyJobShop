@@ -198,7 +198,7 @@ def test_problem_data_non_input_parameter_attributes():
     machine2ops = [[1], [2], [0, 1]]
     op2machines = [[2], [0, 2], [1]]
     assert_equal(data.machine2tasks, machine2ops)
-    assert_equal(data.op2machines, op2machines)
+    assert_equal(data.task2machines, op2machines)
 
     assert_equal(data.num_jobs, 1)
     assert_equal(data.num_machines, 3)

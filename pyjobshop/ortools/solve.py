@@ -2,12 +2,12 @@ from typing import Optional
 
 from ortools.sat.python.cp_model import CpSolver
 
+from pyjobshop.ortools.variables import AssignmentVar
 from pyjobshop.ProblemData import ProblemData
 from pyjobshop.Result import Result, SolveStatus
-from pyjobshop.Solution import Solution
+from pyjobshop.Solution import Solution, Task
 
-from .default_model import default_model
-from .result2solution import result2solution
+from .model import model
 
 
 def solve(
@@ -37,7 +37,7 @@ def solve(
         A Result object containing the best found solution and additional
         information about the solver run.
     """
-    cp_model, _, assign_vars = default_model(data)
+    cp_model, assign_vars = model(data)
 
     cp_solver = CpSolver()
     cp_solver.parameters.max_time_in_seconds = time_limit
@@ -51,7 +51,7 @@ def solve(
     objective = cp_solver.ObjectiveValue()
 
     if status in ["OPTIMAL", "FEASIBLE"]:
-        solution = result2solution(data, cp_solver, assign_vars)
+        solution = _result2solution(data, cp_solver, assign_vars)
     else:
         # No feasible solution found due to infeasible instance or time limit.
         solution = Solution(data, [])
@@ -74,3 +74,36 @@ def _get_solve_status(status):
         return SolveStatus.INFEASIBLE
     else:
         return SolveStatus.TIME_LIMIT
+
+
+def _result2solution(
+    data: ProblemData,
+    cp_solver: CpSolver,
+    assign_vars: dict[tuple[int, int], AssignmentVar],
+) -> Solution:
+    """
+    Converts a result from the OR-Tools CP solver to a Solution object.
+
+    Parameters
+    ----------
+    data
+        The problem data instance.
+    cp_solver
+        The CP solver.
+    assign_vars
+        The assignment variables.
+
+    Returns
+    -------
+    Solution
+        The solution.
+    """
+    tasks = []
+
+    for (task, machine), var in assign_vars.items():
+        if cp_solver.Value(var.is_present):
+            start = cp_solver.Value(var.start)
+            duration = cp_solver.Value(var.duration)
+            tasks.append(Task(task, machine, start, duration))
+
+    return Solution(data, tasks)

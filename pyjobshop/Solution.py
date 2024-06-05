@@ -51,6 +51,6 @@ class Solution:
             op = task.operation
             assigned = task.machine
 
-            if assigned not in data.op2machines[op]:
+            if assigned not in data.task2machines[op]:
                 msg = f"Operation {op} not allowed on machine {assigned}."
                 raise ValueError(msg)

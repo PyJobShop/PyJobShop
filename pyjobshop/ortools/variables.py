@@ -15,7 +15,7 @@ class JobVar:
 
 
 @dataclass
-class OperationVar:
+class TaskVar:
     interval: IntervalVar
     start: IntVar
     duration: IntVar
@@ -111,24 +111,23 @@ def job_variables(m: CpModel, data: ProblemData) -> list[JobVar]:
     return jobs
 
 
-def operation_variables(m: CpModel, data: ProblemData) -> list[OperationVar]:
+def task_variables(m: CpModel, data: ProblemData) -> list[TaskVar]:
     """
-    Creates an interval variable for each operation.
+    Creates an interval variable for each task.
     """
     tasks = []
 
-    for op in data.tasks:
-        name = f"O{op}"
+    for task in data.tasks:
+        name = f"T{task}"
         start_var = m.new_int_var(0, data.planning_horizon, f"{name}_start")
         duration_var = m.new_int_var(
             0, data.planning_horizon, f"{name}_duration"
         )
         end_var = m.new_int_var(0, data.planning_horizon, f"{name}_end")
         interval_var = m.NewIntervalVar(
-            start_var, duration_var, end_var, f"interval_{op}"
+            start_var, duration_var, end_var, f"interval_{task}"
         )
-        op_var = OperationVar(interval_var, start_var, duration_var, end_var)
-        tasks.append(op_var)
+        tasks.append(TaskVar(interval_var, start_var, duration_var, end_var))
 
     return tasks
 
@@ -137,12 +136,12 @@ def assignment_variables(
     m: CpModel, data: ProblemData
 ) -> dict[tuple[int, int], AssignmentVar]:
     """
-    Creates an interval variable for each operation and eligible machine pair.
+    Creates an interval variable for each task and eligible machine pair.
     """
     variables = {}
 
-    for (machine, op), duration in data.processing_times.items():
-        name = f"A{op}_{machine}"
+    for (machine, task), duration in data.processing_times.items():
+        name = f"A{task}_{machine}"
         start_var = m.new_int_var(0, data.planning_horizon, f"{name}_start")
         duration_var = m.new_int_var(
             0, data.planning_horizon, f"{name}_duration"
@@ -157,8 +156,8 @@ def assignment_variables(
             f"{name}_interval",
         )
         rank_var = m.new_int_var(-1, data.num_jobs, f"{name}_rank")
-        variables[op, machine] = AssignmentVar(
-            task_idx=op,
+        variables[task, machine] = AssignmentVar(
+            task_idx=task,
             interval=interval_var,
             start=start_var,
             duration=duration_var,
