@@ -8,6 +8,21 @@ from pyjobshop.ProblemData import ProblemData
 
 @dataclass
 class JobVar:
+    """
+    Variables that represent a job in the problem.
+
+    Parameters
+    ----------
+    interval
+        The interval variable representing the job.
+    start
+        The start variable time of the interval.
+    duration
+        The duration variable of the interval.
+    end
+        The end variable time of the interval.
+    """
+
     interval: IntervalVar
     start: IntVar
     duration: IntVar
@@ -16,6 +31,21 @@ class JobVar:
 
 @dataclass
 class TaskVar:
+    """
+    Variables that represent a task in the problem.
+
+    Parameters
+    ----------
+    interval
+        The interval variable representing the task.
+    start
+        The start variable time of the interval.
+    duration
+        The duration variable of the interval.
+    end
+        The end variable time of the interval.
+    """
+
     interval: IntervalVar
     start: IntVar
     duration: IntVar
