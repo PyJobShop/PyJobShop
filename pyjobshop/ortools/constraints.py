@@ -81,9 +81,9 @@ def task_graph(
                 if constraint == "previous":
                     sequence.activate()
 
-                    rank1 = sequence.tasks.index(var1)
-                    rank2 = sequence.tasks.index(var2)
-                    arc_lit = sequence.arcs[rank1, rank2]
+                    idx1 = sequence.tasks.index(var1)
+                    idx2 = sequence.tasks.index(var2)
+                    arc_lit = sequence.arcs[idx1, idx2]
 
                     # Equivalent: arc_lit <=> var1.is_present & var2.is_present
                     m.add_bool_or(
@@ -188,6 +188,7 @@ def circuit_constraints(m: CpModel, data: ProblemData, seq_vars: SequenceVars):
         assign_vars = sequence.tasks
         starts = sequence.starts
         ends = sequence.ends
+        ranks = sequence.ranks
         arc_lits = sequence.arcs
         arcs = []
 
@@ -195,16 +196,17 @@ def circuit_constraints(m: CpModel, data: ProblemData, seq_vars: SequenceVars):
             # Set initial arcs from the dummy node (0) to/from a task.
             start_lit = starts[idx1]
             end_lit = ends[idx1]
+            rank = ranks[idx1]
 
             arcs.append([0, idx1 + 1, start_lit])
             arcs.append([idx1 + 1, 0, end_lit])
 
             # If this task is the first, set rank.
-            m.add(var1.rank == 0).only_enforce_if(start_lit)
+            m.add(rank == 0).only_enforce_if(start_lit)
 
             # Self arc if the task is not present on this machine.
             arcs.append([idx1 + 1, idx1 + 1, ~var1.is_present])
-            m.add(var1.rank == -1).only_enforce_if(~var1.is_present)
+            m.add(rank == -1).only_enforce_if(~var1.is_present)
 
             for idx2, var2 in enumerate(assign_vars):
                 if idx1 == idx2:
@@ -217,7 +219,7 @@ def circuit_constraints(m: CpModel, data: ProblemData, seq_vars: SequenceVars):
                 m.add_implication(arc_lit, var2.is_present)
 
                 # Maintain rank incrementally.
-                m.add(var1.rank + 1 == var2.rank).only_enforce_if(arc_lit)
+                m.add(rank + 1 == ranks[idx2]).only_enforce_if(arc_lit)
 
                 # TODO Validate that this cannot be combined with overlap.
                 task1, task2 = var1.task_idx, var2.task_idx

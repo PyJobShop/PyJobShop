@@ -71,9 +71,6 @@ class AssignmentVar:
         The end variable time of the interval.
     is_present
         The boolean variable indicating whether the interval is present.
-    rank
-        The rank variable of the interval on the machine. Used to order the
-        intervals in the sequence variable of the machine.
     """
 
     task_idx: int
@@ -82,7 +79,6 @@ class AssignmentVar:
     duration: IntVar
     end: IntVar
     is_present: IntVar
-    rank: IntVar  # the rank of the task on machine
 
 
 @dataclass
@@ -98,6 +94,9 @@ class SequenceVar:
         The start literals for each task.
     ends
         The end literals for each task.
+    ranks
+        The rank variables of each interval on the machine. Used to define the
+        ordering of the intervals in the machine sequence.
     arcs
         The arc literals between each pair of tasks. Keys are tuples of
         indices.
@@ -109,6 +108,7 @@ class SequenceVar:
     tasks: list[AssignmentVar]
     starts: list[BoolVarT]
     ends: list[BoolVarT]
+    ranks: list[IntVar]
     arcs: dict[tuple[int, int], BoolVarT]
     is_active: bool = False
 
@@ -206,7 +206,6 @@ def assignment_variables(
             is_present_var,
             f"{name}_interval",
         )
-        rank_var = m.new_int_var(-1, data.num_jobs, f"{name}_rank")
         variables[task, machine] = AssignmentVar(
             task_idx=task,
             interval=interval_var,
@@ -214,7 +213,6 @@ def assignment_variables(
             duration=duration_var,
             end=end_var,
             is_present=is_present_var,
-            rank=rank_var,
         )
 
         m.add(duration_var >= duration)
@@ -247,6 +245,9 @@ def sequence_variables(
         starts = [m.new_bool_var("") for _ in range(num_tasks)]
         ends = [m.new_bool_var("") for _ in range(num_tasks)]
 
+        # Rank variables define the position of the task in the sequence.
+        ranks = [m.new_int_var(-1, num_tasks, "") for _ in range(num_tasks)]
+
         # Arc literals indicate if two intervals are scheduled consecutively.
         arcs = {
             (i, j): m.new_bool_var(f"{i}->{j}")
@@ -254,6 +255,6 @@ def sequence_variables(
             for j in range(num_tasks)
         }
 
-        variables.append(SequenceVar(tasks, starts, ends, arcs))
+        variables.append(SequenceVar(tasks, starts, ends, ranks, arcs))
 
     return variables
