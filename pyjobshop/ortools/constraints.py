@@ -83,14 +83,12 @@ def task_graph(
 
                     idx1 = sequence.tasks.index(var1)
                     idx2 = sequence.tasks.index(var2)
-                    arc_lit = sequence.arcs[idx1, idx2]
+                    arc = sequence.arcs[idx1, idx2]
 
-                    # Equivalent: arc_lit <=> var1.is_present & var2.is_present
-                    m.add_bool_or(
-                        [arc_lit, ~var1.is_present, ~var2.is_present]
-                    )
-                    m.add_implication(arc_lit, var1.is_present)
-                    m.add_implication(arc_lit, var2.is_present)
+                    # Equivalent: arc <=> var1.is_present & var2.is_present.
+                    m.add_bool_or([arc, ~var1.is_present, ~var2.is_present])
+                    m.add_implication(arc, var1.is_present)
+                    m.add_implication(arc, var2.is_present)
                 elif constraint == "same_unit":
                     expr = var1.is_present == var2.is_present
                     m.add(expr)
@@ -169,42 +167,42 @@ def enforce_circuit(m: CpModel, data: ProblemData, seq_vars: SequenceVars):
         starts = sequence.starts
         ends = sequence.ends
         ranks = sequence.ranks
-        arc_lits = sequence.arcs
-        arcs = []
+        arcs = sequence.arcs
+        circuit = []
 
         for idx1, var1 in enumerate(assign_vars):
             # Set initial arcs from the dummy node (0) to/from a task.
-            start_lit = starts[idx1]
-            end_lit = ends[idx1]
+            start = starts[idx1]
+            end = ends[idx1]
             rank = ranks[idx1]
 
-            arcs.append([0, idx1 + 1, start_lit])
-            arcs.append([idx1 + 1, 0, end_lit])
+            circuit.append([0, idx1 + 1, start])
+            circuit.append([idx1 + 1, 0, end])
 
             # If this task is the first, set rank.
-            m.add(rank == 0).only_enforce_if(start_lit)
+            m.add(rank == 0).only_enforce_if(start)
 
             # Self arc if the task is not present on this machine.
-            arcs.append([idx1 + 1, idx1 + 1, ~var1.is_present])
+            circuit.append([idx1 + 1, idx1 + 1, ~var1.is_present])
             m.add(rank == -1).only_enforce_if(~var1.is_present)
 
             for idx2, var2 in enumerate(assign_vars):
                 if idx1 == idx2:
                     continue
 
-                arc_lit = arc_lits[idx1, idx2]
-                arcs.append([idx1 + 1, idx2 + 1, arc_lit])
+                arc = arcs[idx1, idx2]
+                circuit.append([idx1 + 1, idx2 + 1, arc])
 
-                m.add_implication(arc_lit, var1.is_present)
-                m.add_implication(arc_lit, var2.is_present)
+                m.add_implication(arc, var1.is_present)
+                m.add_implication(arc, var2.is_present)
 
                 # Maintain rank incrementally.
-                m.add(rank + 1 == ranks[idx2]).only_enforce_if(arc_lit)
+                m.add(rank + 1 == ranks[idx2]).only_enforce_if(arc)
 
                 # TODO Validate that this cannot be combined with overlap.
                 task1, task2 = var1.task_idx, var2.task_idx
                 setup = data.setup_times[machine][task1, task2]
-                m.add(var1.end + setup <= var2.start).only_enforce_if(arc_lit)
+                m.add(var1.end + setup <= var2.start).only_enforce_if(arc)
 
-        if arcs:
-            m.add_circuit(arcs)
+        if circuit:
+            m.add_circuit(circuit)
