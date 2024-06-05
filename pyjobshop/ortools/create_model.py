@@ -3,11 +3,11 @@ from ortools.sat.python.cp_model import CpModel
 from pyjobshop.ProblemData import ProblemData
 
 from .constraints import (
-    circuit_constraints,
+    activate_setup_times,
+    enforce_circuit,
     job_spans_tasks,
-    no_overlap_constraints,
+    no_overlap_machines,
     select_one_task_alternative,
-    setup_time_constraints,
     task_graph,
 )
 from .objectives import (
@@ -61,11 +61,11 @@ def create_model(
 
     job_spans_tasks(model, data, job_vars, task_vars)
     select_one_task_alternative(model, data, task_vars, assign_vars)
-    no_overlap_constraints(model, data, seq_vars)
-    setup_time_constraints(model, data, seq_vars)
+    no_overlap_machines(model, data, seq_vars)
+    activate_setup_times(model, data, seq_vars)
     task_graph(model, data, task_vars, assign_vars, seq_vars)
 
     # Must be called last to ensure that sequence constriants are enforced!
-    circuit_constraints(model, data, seq_vars)
+    enforce_circuit(model, data, seq_vars)
 
     return model, assign_vars

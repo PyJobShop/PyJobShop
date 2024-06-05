@@ -127,9 +127,7 @@ def select_one_task_alternative(
         m.add_exactly_one(presences)
 
 
-def no_overlap_constraints(
-    m: CpModel, data: ProblemData, seq_vars: SequenceVars
-):
+def no_overlap_machines(m: CpModel, data: ProblemData, seq_vars: SequenceVars):
     """
     Creates the no overlap constraints for machines, ensuring that no two
     intervals in a sequence variable are overlapping.
@@ -139,12 +137,12 @@ def no_overlap_constraints(
             m.add_no_overlap([var.interval for var in seq_vars[machine].tasks])
 
 
-def setup_time_constraints(
+def activate_setup_times(
     m: CpModel, data: ProblemData, seq_vars: SequenceVars
 ):
     """
-    Actives the sequence variables for machines that have setup times. The
-    ``circuit_constraints`` function will in turn add the constraints to the
+    Activates the sequence variables for machines that have setup times. The
+    ``circuit_constraints`` function will in turn add constraints to the
     CP-SAT model to enforce setup times.
     """
     for machine in range(data.num_machines):
@@ -154,9 +152,9 @@ def setup_time_constraints(
             seq_vars[machine].activate()
 
 
-def circuit_constraints(m: CpModel, data: ProblemData, seq_vars: SequenceVars):
+def enforce_circuit(m: CpModel, data: ProblemData, seq_vars: SequenceVars):
     """
-    Creates the circuit constraints for each machine, ensuring that the
+    Enforce the circuit constraints for each machine, ensuring that the
     sequencing constraints are respected.
     """
     for machine in range(data.num_machines):
