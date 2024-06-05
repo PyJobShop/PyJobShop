@@ -36,8 +36,8 @@ def test_job_default_attributes():
 
     assert_equal(job.weight, 1)
     assert_equal(job.release_date, 0)
+    assert_equal(job.deadline, MAX_VALUE)
     assert_equal(job.due_date, None)
-    assert_equal(job.deadline, None)
     assert_equal(job.name, "")
 
 
@@ -46,13 +46,13 @@ def test_job_default_attributes():
     [
         (-1, 0, 0, 0, ""),  # weight < 0
         (0, -1, 0, 0, ""),  # release_date < 0
-        (0, 0, -1, 0, ""),  # due_date < 0
-        (0, 0, 0, -1, ""),  # deadline < 0
+        (0, 0, -1, 0, ""),  # deadline < 0
         (0, 10, 0, 0, ""),  # release_date > deadline
+        (0, 0, 0, -1, ""),  # due_date < 0
     ],
 )
 def test_job_attributes_raises_invalid_parameters(
-    weight: int, release_date: int, due_date: int, deadline: int, name: str
+    weight: int, release_date: int, deadline: int, due_date: int, name: str
 ):
     """
     Tests that a ValueError is raised when invalid parameters are passed to
@@ -62,8 +62,8 @@ def test_job_attributes_raises_invalid_parameters(
         Job(
             weight=weight,
             release_date=release_date,
-            due_date=due_date,
             deadline=deadline,
+            due_date=due_date,
             name=name,
         )
 

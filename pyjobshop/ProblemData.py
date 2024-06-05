@@ -20,16 +20,16 @@ class Job:
     ----------
     weight
         The job importance weight, used as multiplicative factor in the
-        objective function.
+        objective function. Default 1.
     release_date
-        The earliest time that the job can start processing. Default is zero.
+        The earliest time that the job may start. Default 0.
+    deadline
+        The latest time by which the job must be completed. Note that a
+        deadline is different from a due date; the latter does not restrict
+        the latest completion time. Default ``MAX_VALUE``.
     due_date
         The latest time that the job should be completed before incurring
         penalties. Default is None, meaning that there is no due date.
-    deadline
-        The latest time that the job must be completed. Note that a deadline
-        is different from a due date; the latter does not constrain the latest
-        completion time. Default is None, meaning that there is no deadline.
     name
         Name of the job.
     """
@@ -38,8 +38,8 @@ class Job:
         self,
         weight: int = 1,
         release_date: int = 0,
+        deadline: int = MAX_VALUE,
         due_date: Optional[int] = None,
-        deadline: Optional[int] = None,
         name: str = "",
     ):
         if weight < 0:
@@ -48,19 +48,19 @@ class Job:
         if release_date < 0:
             raise ValueError("Release date must be non-negative.")
 
+        if deadline < 0:
+            raise ValueError("Deadline must be non-negative.")
+
+        if release_date > deadline:
+            raise ValueError("Must have release_date <= deadline.")
+
         if due_date is not None and due_date < 0:
             raise ValueError("Due date must be non-negative.")
 
-        if deadline is not None and deadline < 0:
-            raise ValueError("Deadline must be non-negative.")
-
-        if deadline is not None and release_date > deadline:
-            raise ValueError("Must have release_date <= deadline.")
-
         self._weight = weight
         self._release_date = release_date
-        self._due_date = due_date
         self._deadline = deadline
+        self._due_date = due_date
         self._name = name
 
     @property
@@ -72,12 +72,12 @@ class Job:
         return self._release_date
 
     @property
-    def due_date(self) -> Optional[int]:
-        return self._due_date
+    def deadline(self) -> int:
+        return self._deadline
 
     @property
-    def deadline(self) -> Optional[int]:
-        return self._deadline
+    def due_date(self) -> Optional[int]:
+        return self._due_date
 
     @property
     def name(self) -> str:

@@ -98,8 +98,8 @@ class Model:
         self,
         weight: int = 1,
         release_date: int = 0,
+        deadline: int = MAX_VALUE,
         due_date: Optional[int] = None,
-        deadline: Optional[int] = None,
         name: str = "",
     ) -> Job:
         """
@@ -109,17 +109,16 @@ class Model:
         ----------
         weight
             The job importance weight, used as multiplicative factor in the
-            objective function.
+            objective function. Default 1.
         release_date
-            The earliest time that the job may start. Default is zero.
-        due_date
-            The latest time that the job should be completed before incurring
-            penalties. Default is None, meaning that there is no due date.
+            The earliest time that the job may start. Default 0.
         deadline
             The latest time by which the job must be completed. Note that a
             deadline is different from a due date; the latter does not restrict
-            the latest completion time. Default is None, meaning that there is
-            no deadline.
+            the latest completion time. Default ``MAX_VALUE``.
+        due_date
+            The latest time that the job should be completed before incurring
+            penalties. Default is None, meaning that there is no due date.
         name
             Name of the job.
 
@@ -128,7 +127,7 @@ class Model:
         Job
             The created job.
         """
-        job = Job(weight, release_date, due_date, deadline, name)
+        job = Job(weight, release_date, deadline, due_date, name)
 
         self._id2job[id(job)] = len(self.jobs)
         self._jobs.append(job)
