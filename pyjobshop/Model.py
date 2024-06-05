@@ -37,7 +37,7 @@ class Model:
 
         self._id2job: dict[int, int] = {}
         self._id2machine: dict[int, int] = {}
-        self._id2op: dict[int, int] = {}
+        self._id2task: dict[int, int] = {}
 
     @property
     def jobs(self) -> list[Job]:
@@ -206,7 +206,7 @@ class Model:
         )
 
         task_idx = len(self.tasks)
-        self._id2op[id(task)] = task_idx
+        self._id2task[id(task)] = task_idx
         self._tasks.append(task)
 
         if job is not None:
@@ -232,7 +232,7 @@ class Model:
             raise ValueError("Processing time must be non-negative.")
 
         machine_idx = self._id2machine[id(machine)]
-        task_idx = self._id2op[id(task)]
+        task_idx = self._id2task[id(task)]
         self._processing_times[machine_idx, task_idx] = duration
 
     def add_constraint(
@@ -250,9 +250,9 @@ class Model:
         constraint
             Constraint between the first and the second task.
         """
-        op1 = self._id2op[id(first)]
-        op2 = self._id2op[id(second)]
-        self._constraints[op1, op2].append(constraint)
+        task1 = self._id2task[id(first)]
+        task2 = self._id2task[id(second)]
+        self._constraints[task1, task2].append(constraint)
 
     def add_setup_time(
         self, machine: Machine, task1: Task, task2: Task, duration: int
@@ -273,8 +273,8 @@ class Model:
             to the second task on the machine.
         """
         machine_idx = self._id2machine[id(machine)]
-        task_idx1 = self._id2op[id(task1)]
-        task_idx2 = self._id2op[id(task2)]
+        task_idx1 = self._id2task[id(task1)]
+        task_idx2 = self._id2task[id(task2)]
 
         self._setup_times[machine_idx, task_idx1, task_idx2] = duration
 

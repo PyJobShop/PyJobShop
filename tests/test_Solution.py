@@ -9,10 +9,10 @@ def test_task_eq():
     """
     Tests the equality comparison of tasks.
     """
-    op1 = Task(0, 1, 2, 3)
+    task1 = Task(0, 1, 2, 3)
 
-    assert_equal(op1, Task(0, 1, 2, 3))
-    assert_(op1 != Task(0, 1, 2, 4))
+    assert_equal(task1, Task(0, 1, 2, 3))
+    assert_(task1 != Task(0, 1, 2, 4))
 
 
 def test_solution_eq(small):
@@ -30,21 +30,21 @@ def test_solution_eq(small):
 def test_solution_raises_invalid_schedule():
     """
     Tests that a ``ValueError`` is raised when a solution is created with an
-    invalid schedule. In this case, it only checks whether operations are
+    invalid schedule. In this case, it only checks whether tasks are
     assigned to eligible machines.
     """
     model = Model()
 
     job = model.add_job()
     machines = [model.add_machine() for _ in range(2)]
-    operations = [model.add_task(job=job) for _ in range(2)]
+    tasks = [model.add_task(job=job) for _ in range(2)]
 
-    for duration, (machine, op) in enumerate(zip(machines, operations), 1):
-        model.add_processing_time(machine, op, duration)
+    for duration, (machine, ask) in enumerate(zip(machines, tasks), 1):
+        model.add_processing_time(machine, ask, duration)
 
     data = model.data()
 
-    # Invalid schedule: operation 0 is scheduled on machine 1.
+    # Invalid schedule: task 0 is scheduled on machine 1.
     schedule = [Task(0, 1, 0, 1), Task(1, 1, 1, 2)]
 
     with assert_raises(ValueError):
