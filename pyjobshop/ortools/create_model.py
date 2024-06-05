@@ -5,7 +5,7 @@ from pyjobshop.ProblemData import ProblemData
 from .constraints import (
     alternative_constraints,
     circuit_constraints,
-    job_task_constraints,
+    job_spans_tasks,
     no_overlap_constraints,
     processing_time_constraints,
     setup_time_constraints,
@@ -60,7 +60,7 @@ def create_model(
     else:
         raise ValueError(f"Unknown objective: {data.objective}")
 
-    job_task_constraints(model, data, job_vars, task_vars)
+    job_spans_tasks(model, data, job_vars, task_vars)
     alternative_constraints(model, data, task_vars, assign_vars)
     no_overlap_constraints(model, data, seq_vars)
     processing_time_constraints(model, data, assign_vars)

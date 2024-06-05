@@ -13,12 +13,11 @@ AssignmentVars = dict[tuple[int, int], AssignmentVar]
 SequenceVars = list[SequenceVar]
 
 
-def job_task_constraints(
+def job_spans_tasks(
     m: CpModel, data: ProblemData, job_vars: JobVars, task_vars: TaskVars
 ):
     """
-    Creates the constraints that ensure that the job variables govern the
-    related task variables.
+    Ensures that the job variables span the related task variables.
     """
     for job in range(data.num_jobs):
         job_var = job_vars[job]
