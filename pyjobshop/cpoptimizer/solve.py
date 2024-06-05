@@ -5,9 +5,9 @@ from docplex.cp.solution import CpoSolveResult
 from pyjobshop.ProblemData import ProblemData
 from pyjobshop.Result import Result, SolveStatus
 from pyjobshop.Solution import Solution
+from pyjobshop.Solution import Task as Task_
 
-from .default_model import default_model
-from .result2solution import result2solution
+from .create_model import create_model
 
 
 def solve(
@@ -37,7 +37,7 @@ def solve(
         A Result object containing the best found solution and additional
         information about the solver run.
     """
-    cp_model = default_model(data)
+    cp_model = create_model(data)
 
     log_verbosity = "Terse" if log else "Quiet"
     params = {
@@ -49,7 +49,7 @@ def solve(
     status = cp_result.get_solve_status()
 
     if status in ["Optimal", "Feasible"]:
-        solution = result2solution(data, cp_result)
+        solution = _result2solution(data, cp_result)
         objective: float = cp_result.get_objective_value()  # type: ignore
     else:
         # No feasible solution found due to infeasible instance or time limit.
@@ -73,3 +73,24 @@ def _get_solve_status(status):
         return SolveStatus.INFEASIBLE
     else:
         return SolveStatus.TIME_LIMIT
+
+
+def _result2solution(data: ProblemData, result: CpoSolveResult) -> Solution:
+    """
+    Converts an CpoSolveResult object to a solution.
+    """
+    schedule = []
+
+    for var in result.get_all_var_solutions():  # type: ignore
+        name = var.get_name()
+
+        # Scheduled tasks are inferred from variables start with an "A"
+        # (assignment) and that are present in the solution.
+        if name.startswith("A") and var.is_present():
+            task, machine = [int(num) for num in name[1:].split("_")]
+            start = var.start
+            duration = var.size
+
+            schedule.append(Task_(task, machine, start, duration))
+
+    return Solution(data, schedule)

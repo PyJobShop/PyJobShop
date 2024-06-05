@@ -11,10 +11,10 @@ from pyjobshop.ProblemData import (
     Job,
     Machine,
     Objective,
-    Operation,
     ProblemData,
+    Task,
 )
-from pyjobshop.Solution import Task
+from pyjobshop.Solution import Task as Task_
 
 
 def test_job_attributes():
@@ -87,35 +87,35 @@ def test_machine_attributes():
     assert_equal(machine.name, "TestMachine")
 
 
-def test_operation_attributes():
+def test_task_attributes():
     """
-    Tests that the attributes of the Operation class are set correctly.
+    Tests that the attributes of the Task class are set correctly.
     """
-    operation = Operation(
+    task = Task(
         earliest_start=1,
         latest_start=2,
         earliest_end=3,
         latest_end=4,
         fixed_duration=False,
-        name="TestOperation",
+        name="TestTask",
     )
 
-    assert_equal(operation.earliest_start, 1)
-    assert_equal(operation.latest_start, 2)
-    assert_equal(operation.earliest_end, 3)
-    assert_equal(operation.latest_end, 4)
-    assert_equal(operation.fixed_duration, False)
-    assert_equal(operation.name, "TestOperation")
+    assert_equal(task.earliest_start, 1)
+    assert_equal(task.latest_start, 2)
+    assert_equal(task.earliest_end, 3)
+    assert_equal(task.latest_end, 4)
+    assert_equal(task.fixed_duration, False)
+    assert_equal(task.name, "TestTask")
 
     # Also test that default values are set correctly.
-    operation = Operation()
+    task = Task()
 
-    assert_equal(operation.earliest_start, None)
-    assert_equal(operation.latest_start, None)
-    assert_equal(operation.earliest_end, None)
-    assert_equal(operation.latest_end, None)
-    assert_equal(operation.fixed_duration, True)
-    assert_equal(operation.name, "")
+    assert_equal(task.earliest_start, None)
+    assert_equal(task.latest_start, None)
+    assert_equal(task.earliest_end, None)
+    assert_equal(task.latest_end, None)
+    assert_equal(task.fixed_duration, True)
+    assert_equal(task.name, "")
 
 
 @pytest.mark.parametrize(
@@ -125,7 +125,7 @@ def test_operation_attributes():
         (None, None, 1, 0),  # earliest_end > latest_end
     ],
 )
-def test_operation_attributes_raises_invalid_parameters(
+def test_task_attributes_raises_invalid_parameters(
     earliest_start: Optional[int],
     latest_start: Optional[int],
     earliest_end: Optional[int],
@@ -133,10 +133,10 @@ def test_operation_attributes_raises_invalid_parameters(
 ):
     """
     Tests that an error is raised when invalid parameters are passed to the
-    Operation class.
+    Task class.
     """
     with assert_raises(ValueError):
-        Operation(earliest_start, latest_start, earliest_end, latest_end)
+        Task(earliest_start, latest_start, earliest_end, latest_end)
 
 
 def test_problem_data_input_parameter_attributes():
@@ -146,8 +146,8 @@ def test_problem_data_input_parameter_attributes():
     """
     jobs = [Job() for _ in range(5)]
     machines = [Machine() for _ in range(5)]
-    operations = [Operation() for _ in range(5)]
-    job2ops = [[0], [1], [2], [3], [4]]
+    tasks = [Task() for _ in range(5)]
+    job2tasks = [[0], [1], [2], [3], [4]]
     processing_times = {(i, j): 1 for i in range(5) for j in range(5)}
     constraints = {
         key: [Constraint.END_BEFORE_START] for key in ((0, 1), (2, 3), (4, 5))
@@ -159,8 +159,8 @@ def test_problem_data_input_parameter_attributes():
     data = ProblemData(
         jobs,
         machines,
-        operations,
-        job2ops,
+        tasks,
+        job2tasks,
         processing_times,
         constraints,
         setup_times,
@@ -170,8 +170,8 @@ def test_problem_data_input_parameter_attributes():
 
     assert_equal(data.jobs, jobs)
     assert_equal(data.machines, machines)
-    assert_equal(data.operations, operations)
-    assert_equal(data.job2ops, job2ops)
+    assert_equal(data.tasks, tasks)
+    assert_equal(data.job2tasks, job2tasks)
     assert_equal(data.processing_times, processing_times)
     assert_equal(data.constraints, constraints)
     assert_allclose(data.setup_times, setup_times)
@@ -186,23 +186,21 @@ def test_problem_data_non_input_parameter_attributes():
     """
     jobs = [Job() for _ in range(1)]
     machines = [Machine() for _ in range(3)]
-    operations = [Operation() for _ in range(3)]
-    job2ops = [[0, 1, 2]]
+    tasks = [Task() for _ in range(3)]
+    job2tasks = [[0, 1, 2]]
     processing_times = {(1, 2): 1, (2, 1): 1, (0, 1): 1, (2, 0): 1}
 
-    data = ProblemData(
-        jobs, machines, operations, job2ops, processing_times, {}
-    )
+    data = ProblemData(jobs, machines, tasks, job2tasks, processing_times, {})
 
-    # The lists in machine2ops and op2machines are sorted.
-    machine2ops = [[1], [2], [0, 1]]
-    op2machines = [[2], [0, 2], [1]]
-    assert_equal(data.machine2ops, machine2ops)
-    assert_equal(data.op2machines, op2machines)
+    # The lists in machine2tasks and task2machines are sorted.
+    machine2tasks = [[1], [2], [0, 1]]
+    task2machines = [[2], [0, 2], [1]]
+    assert_equal(data.machine2tasks, machine2tasks)
+    assert_equal(data.task2machines, task2machines)
 
     assert_equal(data.num_jobs, 1)
     assert_equal(data.num_machines, 3)
-    assert_equal(data.num_operations, 3)
+    assert_equal(data.num_tasks, 3)
 
 
 def test_problem_data_default_values():
@@ -211,12 +209,12 @@ def test_problem_data_default_values():
     """
     jobs = [Job() for _ in range(1)]
     machines = [Machine() for _ in range(1)]
-    operations = [Operation() for _ in range(1)]
-    job2ops = [[0]]
+    tasks = [Task() for _ in range(1)]
+    job2tasks = [[0]]
     constraints = {(0, 1): [Constraint.END_BEFORE_START]}
     processing_times = {(0, 0): 1}
     data = ProblemData(
-        jobs, machines, operations, job2ops, processing_times, constraints
+        jobs, machines, tasks, job2tasks, processing_times, constraints
     )
 
     assert_allclose(data.setup_times, np.zeros((1, 1, 1), dtype=int))
@@ -250,7 +248,7 @@ def test_problem_data_raises_when_invalid_arguments(
         ProblemData(
             [Job()],
             [Machine()],
-            [Operation()],
+            [Task()],
             [[0]],
             processing_times,
             {},
@@ -273,7 +271,7 @@ def test_problem_data_tardy_objective_without_job_due_dates(
         ProblemData(
             [Job()],
             [Machine()],
-            [Operation()],
+            [Task()],
             [[0]],
             {},
             {},
@@ -286,27 +284,27 @@ def test_problem_data_tardy_objective_without_job_due_dates(
 
 def test_job_release_date(solver: str):
     """
-    Tests that the operations belonging to a job start no earlier than
+    Tests that the tasks belonging to a job start no earlier than
     the job's release date.
     """
     model = Model()
 
     job = model.add_job(release_date=1)
     machine = model.add_machine()
-    operation = model.add_operation(job=job)
+    task = model.add_task(job=job)
 
-    model.add_processing_time(machine, operation, duration=1)
+    model.add_processing_time(machine, task, duration=1)
 
     result = model.solve(solver=solver)
 
-    # Job's release date is one, so the operation starts at one.
+    # Job's release date is one, so the task starts at one.
     assert_equal(result.status.value, "Optimal")
     assert_equal(result.objective, 2)
 
 
 def test_job_deadline(solver: str):
     """
-    Tests that the operations beloning to a job end no later than the
+    Tests that the tasks beloning to a job end no later than the
     job's deadline.
     """
     model = Model()
@@ -314,22 +312,22 @@ def test_job_deadline(solver: str):
     machine = model.add_machine()
 
     job1 = model.add_job()
-    operation1 = model.add_operation(job=job1)
+    task1 = model.add_task(job=job1)
 
     job2 = model.add_job(deadline=2)
-    operation2 = model.add_operation(job=job2)
+    task2 = model.add_task(job=job2)
 
-    for operation in [operation1, operation2]:
-        model.add_processing_time(machine, operation, duration=2)
+    for task in [task1, task2]:
+        model.add_processing_time(machine, task, duration=2)
 
-    model.add_setup_time(machine, operation2, operation1, 10)
+    model.add_setup_time(machine, task2, task1, 10)
 
     result = model.solve(solver=solver)
 
-    # Operation 1 (processing time of 2) cannot start before operation 2,
-    # otherwise operation 2 cannot start before time 1. So operation 2 is
+    # Task 1 (processing time of 2) cannot start before task 2,
+    # otherwise task 2 cannot start before time 1. So task 2 is
     # scheduled first and is processed from 0 to 2. Then a setup time of 10
-    # is added and operation 1 is processed from 12 to 14.
+    # is added and task 1 is processed from 12 to 14.
     assert_equal(result.status.value, "Optimal")
     assert_equal(result.objective, 14)
 
@@ -342,13 +340,13 @@ def test_job_deadline_infeasible(solver: str):
 
     job = model.add_job(deadline=1)
     machine = model.add_machine()
-    operation = model.add_operation(job=job)
+    task = model.add_task(job=job)
 
-    model.add_processing_time(machine, operation, duration=2)
+    model.add_processing_time(machine, task, duration=2)
 
     result = model.solve(solver=solver)
 
-    # Operation's processing time is 2, but job deadline is 1.
+    # Task's processing time is 2, but job deadline is 1.
     assert_equal(result.status.value, "Infeasible")
 
 
@@ -359,14 +357,14 @@ def test_machine_allow_overlap(solver: str):
     model = Model()
     job = model.add_job()
     machine = model.add_machine(allow_overlap=False)  # no overlap
-    operations = [model.add_operation(job=job) for _ in range(2)]
+    tasks = [model.add_task(job=job) for _ in range(2)]
 
-    for operation in operations:
-        model.add_processing_time(machine, operation, duration=2)
+    for task in tasks:
+        model.add_processing_time(machine, task, duration=2)
 
     result = model.solve(solver=solver)
 
-    # No overlap, so we schedule the two operations consecutively with
+    # No overlap, so we schedule the two tasks consecutively with
     # final makespan of four.
     assert_equal(result.status.value, "Optimal")
     assert_equal(result.objective, 4)
@@ -375,197 +373,195 @@ def test_machine_allow_overlap(solver: str):
     model = Model()
     job = model.add_job()
     machine = model.add_machine(allow_overlap=True)
-    operations = [model.add_operation(job=job) for _ in range(2)]
+    tasks = [model.add_task(job=job) for _ in range(2)]
 
-    for operation in operations:
-        model.add_processing_time(machine, operation, duration=2)
+    for task in tasks:
+        model.add_processing_time(machine, task, duration=2)
 
     result = model.solve(solver=solver)
 
-    # With overlap we can schedule both operations simultaneously on the
+    # With overlap we can schedule both tasks simultaneously on the
     # machine, resulting in a makespan of two.
     assert_equal(result.status.value, "Optimal")
     assert_equal(result.objective, 2)
 
 
-def test_operation_earliest_start(solver: str):
+def test_task_earliest_start(solver: str):
     """
-    Tests that an operation starts no earlier than its earliest start time.
+    Tests that an task starts no earlier than its earliest start time.
     """
     model = Model()
 
     job = model.add_job()
     machine = model.add_machine()
-    operation = model.add_operation(job=job, earliest_start=1)
+    task = model.add_task(job=job, earliest_start=1)
 
-    model.add_processing_time(machine, operation, duration=1)
+    model.add_processing_time(machine, task, duration=1)
 
     result = model.solve(solver=solver)
 
-    # Operation starts at time 1 and takes 1 time unit, so the makespan is 2.
+    # Task starts at time 1 and takes 1 time unit, so the makespan is 2.
     assert_equal(result.status.value, "Optimal")
     assert_equal(result.objective, 2)
 
 
-def test_operation_latest_start(solver: str):
+def test_task_latest_start(solver: str):
     """
-    Tests that an operation starts no later than its latest start time.
+    Tests that an task starts no later than its latest start time.
     """
     model = Model()
 
     job = model.add_job()
     machine = model.add_machine()
-    operations = [
-        model.add_operation(job=job),
-        model.add_operation(job=job, latest_start=1),
+    tasks = [
+        model.add_task(job=job),
+        model.add_task(job=job, latest_start=1),
     ]
 
-    for operation in operations:
-        model.add_processing_time(machine, operation, duration=2)
+    for task in tasks:
+        model.add_processing_time(machine, task, duration=2)
 
-    model.add_setup_time(machine, operations[1], operations[0], 10)
+    model.add_setup_time(machine, tasks[1], tasks[0], 10)
 
     result = model.solve(solver=solver)
 
-    # Operation 1 (processing time of 2) cannot start before operation 2,
-    # otherwise operation 2 cannot start before time 1. So operation 2 is
+    # Task 1 (processing time of 2) cannot start before task 2,
+    # otherwise task 2 cannot start before time 1. So task 2 is
     # scheduled first and is processed from 0 to 2. Then a setup time of 10
-    # is added and operation 1 is processed from 12 to 14.
+    # is added and task 1 is processed from 12 to 14.
     assert_equal(result.status.value, "Optimal")
     assert_equal(result.objective, 14)
 
 
-def test_operation_fixed_start(solver: str):
+def test_task_fixed_start(solver: str):
     """
-    Tests that an operation starts at its fixed start time when earliest
+    Tests that an task starts at its fixed start time when earliest
     and latest start times are equal.
     """
     model = Model()
 
     job = model.add_job()
     machine = model.add_machine()
-    operation = model.add_operation(
-        job=job, earliest_start=42, latest_start=42
-    )
+    task = model.add_task(job=job, earliest_start=42, latest_start=42)
 
-    model.add_processing_time(machine, operation, duration=1)
+    model.add_processing_time(machine, task, duration=1)
 
     result = model.solve(solver=solver)
 
-    # Operation starts at time 42 and takes 1 time unit, so the makespan is 43.
+    # Task starts at time 42 and takes 1 time unit, so the makespan is 43.
     assert_equal(result.status.value, "Optimal")
     assert_equal(result.objective, 43)
 
 
-def test_operation_earliest_end(solver: str):
+def test_task_earliest_end(solver: str):
     """
-    Tests that an operation end no earlier than its earliest end time.
+    Tests that an task end no earlier than its earliest end time.
     """
     model = Model()
 
     job = model.add_job()
     machine = model.add_machine()
-    operation = model.add_operation(job=job, earliest_end=2)
+    task = model.add_task(job=job, earliest_end=2)
 
-    model.add_processing_time(machine, operation, duration=1)
+    model.add_processing_time(machine, task, duration=1)
 
     result = model.solve(solver=solver)
 
-    # Operation cannot end before time 2, so it starts at time 1 with
+    # Task cannot end before time 2, so it starts at time 1 with
     # duration 1, thus the makespan is 2.
     assert_equal(result.status.value, "Optimal")
     assert_equal(result.objective, 2)
 
 
-def test_operation_latest_end(solver: str):
+def test_task_latest_end(solver: str):
     """
-    Tests that an operation ends no later than its latest end time.
+    Tests that an task ends no later than its latest end time.
     """
     model = Model()
 
     job = model.add_job()
     machine = model.add_machine()
-    operations = [
-        model.add_operation(job=job),
-        model.add_operation(job=job, latest_end=2),
+    tasks = [
+        model.add_task(job=job),
+        model.add_task(job=job, latest_end=2),
     ]
 
-    for operation in operations:
-        model.add_processing_time(machine, operation, duration=2)
+    for task in tasks:
+        model.add_processing_time(machine, task, duration=2)
 
-    model.add_setup_time(machine, operations[1], operations[0], 10)
+    model.add_setup_time(machine, tasks[1], tasks[0], 10)
 
     result = model.solve(solver=solver)
 
-    # Operation 1 (processing time of 2) cannot start before operation 2,
-    # otherwise operation 2 cannot end before time 2. So operation 2 is
+    # Task 1 (processing time of 2) cannot start before task 2,
+    # otherwise task 2 cannot end before time 2. So task 2 is
     # scheduled first and is processed from 0 to 2. Then a setup time of 10
-    # is added and operation 1 is processed from 12 to 14.
+    # is added and task 1 is processed from 12 to 14.
     assert_equal(result.status.value, "Optimal")
     assert_equal(result.objective, 14)
 
 
-def test_operation_fixed_end(solver: str):
+def test_task_fixed_end(solver: str):
     """
-    Tests that an operation ends at its fixed end time when earliest
+    Tests that an task ends at its fixed end time when earliest
     and latest end times are equal.
     """
     model = Model()
 
     job = model.add_job()
     machine = model.add_machine()
-    operation = model.add_operation(job=job, earliest_end=42, latest_end=42)
+    task = model.add_task(job=job, earliest_end=42, latest_end=42)
 
-    model.add_processing_time(machine, operation, duration=1)
+    model.add_processing_time(machine, task, duration=1)
 
     result = model.solve(solver=solver)
 
-    # Operation ends at 42, so the makespan is 42.
+    # Task ends at 42, so the makespan is 42.
     assert_equal(result.status.value, "Optimal")
     assert_equal(result.objective, 42)
 
 
-def test_operation_fixed_duration_infeasible_with_timing_constraints(
+def test_task_fixed_duration_infeasible_with_timing_constraints(
     solver: str,
 ):
     """
-    Tests that an operation with fixed duration cannot be feasibly scheduled
+    Tests that an task with fixed duration cannot be feasibly scheduled
     in combination with tight timing constraints.
     """
     model = Model()
 
     machine = model.add_machine()
-    operation = model.add_operation(latest_start=0, earliest_end=10)
-    model.add_processing_time(machine, operation, duration=1)
+    task = model.add_task(latest_start=0, earliest_end=10)
+    model.add_processing_time(machine, task, duration=1)
 
     # Because of the latest start and earliest end constraints, we cannot
-    # schedule the operation with fixed duration, since its processing time
+    # schedule the task with fixed duration, since its processing time
     # is 1.
     result = model.solve(solver=solver)
     assert_equal(result.status.value, "Infeasible")
 
 
-def test_operation_non_fixed_duration(solver: str):
+def test_task_non_fixed_duration(solver: str):
     """
-    Tests that an operation with non-fixed duration is scheduled correctly.
+    Tests that an task with non-fixed duration is scheduled correctly.
     """
     model = Model()
 
     machine = model.add_machine()
-    operation = model.add_operation(
+    task = model.add_task(
         latest_start=0,
         earliest_end=10,
         fixed_duration=False,
     )
-    model.add_processing_time(machine, operation, duration=1)
+    model.add_processing_time(machine, task, duration=1)
 
-    # Since the operation's duration is not fixed, it can be scheduled in a
+    # Since the task's duration is not fixed, it can be scheduled in a
     # feasible way. In this case, it starts at 0 and ends at 10, which includes
     # the processing time (1) and respects the timing constraints.
     result = model.solve(solver=solver)
     assert_equal(result.status.value, "Optimal")
     assert_equal(result.objective, 10)
-    assert_equal(result.best.schedule, [Task(0, 0, 0, 10)])
+    assert_equal(result.best.schedule, [Task_(0, 0, 0, 10)])
 
 
 @pytest.mark.parametrize(
@@ -594,19 +590,19 @@ def test_timing_precedence(
 ):
     """
     Tests that timing precedence constraints are respected. This example
-    uses two operations and two machines with processing times of 2.
+    uses two tasks and two machines with processing times of 2.
     """
     model = Model()
 
     job = model.add_job()
     machines = [model.add_machine(), model.add_machine()]
-    operations = [model.add_operation(job=job) for _ in range(2)]
+    tasks = [model.add_task(job=job) for _ in range(2)]
 
     for machine in machines:
-        for operation in operations:
-            model.add_processing_time(machine, operation, duration=2)
+        for task in tasks:
+            model.add_processing_time(machine, task, duration=2)
 
-    model.add_constraint(operations[0], operations[1], prec_type)
+    model.add_constraint(tasks[0], tasks[1], prec_type)
 
     result = model.solve(solver=solver)
 
@@ -621,17 +617,17 @@ def test_previous_constraint(solver: str):
 
     job = model.add_job()
     machine = model.add_machine()
-    operations = [model.add_operation(job=job) for _ in range(2)]
+    tasks = [model.add_task(job=job) for _ in range(2)]
 
-    model.add_processing_time(machine, operations[0], duration=1)
-    model.add_processing_time(machine, operations[1], duration=1)
+    model.add_processing_time(machine, tasks[0], duration=1)
+    model.add_processing_time(machine, tasks[1], duration=1)
 
-    model.add_setup_time(machine, operations[1], operations[0], duration=100)
-    model.add_constraint(operations[1], operations[0], Constraint.PREVIOUS)
+    model.add_setup_time(machine, tasks[1], tasks[0], duration=100)
+    model.add_constraint(tasks[1], tasks[0], Constraint.PREVIOUS)
 
     result = model.solve(solver=solver)
 
-    # Operation 1 must be scheduled before operation 0, but the setup time
+    # Task 1 must be scheduled before task 0, but the setup time
     # between them is 100, so the makespan is 1 + 100 + 1 = 102.
     assert_equal(result.objective, 102)
 
@@ -648,19 +644,19 @@ def test_assignment_constraint(
 ):
     """
     Tests that assignment constraints are respected. This example
-    uses two operations and two machines with processing times of 2.
+    uses two tasks and two machines with processing times of 2.
     """
     model = Model()
 
     job = model.add_job()
     machines = [model.add_machine(), model.add_machine()]
-    operations = [model.add_operation(job=job) for _ in range(2)]
+    tasks = [model.add_task(job=job) for _ in range(2)]
 
     for machine in machines:
-        for operation in operations:
-            model.add_processing_time(machine, operation, duration=2)
+        for task in tasks:
+            model.add_processing_time(machine, task, duration=2)
 
-    model.add_constraint(operations[0], operations[1], prec_type)
+    model.add_constraint(tasks[0], tasks[1], prec_type)
 
     result = model.solve(solver=solver)
 
@@ -675,9 +671,9 @@ def test_tight_planning_horizon_results_in_infeasiblity(solver: str):
 
     job = model.add_job()
     machine = model.add_machine()
-    operation = model.add_operation(job=job)
+    task = model.add_task(job=job)
 
-    model.add_processing_time(machine, operation, duration=2)
+    model.add_processing_time(machine, task, duration=2)
     model.set_planning_horizon(1)
 
     result = model.solve(solver=solver)
@@ -694,10 +690,10 @@ def test_makespan_objective(solver: str):
 
     job = model.add_job()
     machine = model.add_machine()
-    operations = [model.add_operation(job=job) for _ in range(2)]
+    tasks = [model.add_task(job=job) for _ in range(2)]
 
-    for operation in operations:
-        model.add_processing_time(machine, operation, duration=2)
+    for task in tasks:
+        model.add_processing_time(machine, task, duration=2)
 
     result = model.solve(solver=solver)
 
@@ -715,14 +711,14 @@ def test_tardy_jobs(solver: str):
 
     for idx in range(3):
         job = model.add_job(due_date=idx + 1)
-        operation = model.add_operation(job=job)
-        model.add_processing_time(machine, operation, duration=3)
+        task = model.add_task(job=job)
+        model.add_processing_time(machine, task, duration=3)
 
     model.set_objective(Objective.TARDY_JOBS)
 
     result = model.solve(solver=solver)
 
-    # Only the last job/operation can be scheduled on time. The other two
+    # Only the last job/task can be scheduled on time. The other two
     # are tardy.
     assert_equal(result.objective, 2)
     assert_equal(result.status.value, "Optimal")
@@ -738,10 +734,10 @@ def test_total_completion_time(solver: str):
 
     for idx in range(3):
         job = model.add_job()
-        operation = model.add_operation(job=job)
+        task = model.add_task(job=job)
 
         for machine in machines:
-            model.add_processing_time(machine, operation, duration=idx + 1)
+            model.add_processing_time(machine, task, duration=idx + 1)
 
     model.set_objective(Objective.TOTAL_COMPLETION_TIME)
 
@@ -767,8 +763,8 @@ def test_total_weighted_completion_time(solver: str):
 
     for idx in range(2):
         job = model.add_job(weight=weights[idx])
-        operation = model.add_operation(job=job)
-        model.add_processing_time(machine, operation, duration=idx + 1)
+        task = model.add_task(job=job)
+        model.add_processing_time(machine, task, duration=idx + 1)
 
     model.set_objective(Objective.TOTAL_COMPLETION_TIME)
 
@@ -792,10 +788,10 @@ def test_total_tardiness(solver: str):
 
     for idx in range(3):
         job = model.add_job(due_date=due_dates[idx])
-        operation = model.add_operation(job=job)
+        task = model.add_task(job=job)
 
         for machine in machines:
-            model.add_processing_time(machine, operation, duration=idx + 1)
+            model.add_processing_time(machine, task, duration=idx + 1)
 
     model.set_objective(Objective.TOTAL_TARDINESS)
 
@@ -823,10 +819,8 @@ def test_total_weighted_tardiness(solver: str):
 
     for idx in range(2):
         job = model.add_job(weight=weights[idx], due_date=due_dates[idx])
-        operation = model.add_operation(job=job)
-        model.add_processing_time(
-            machine, operation, duration=processing_times[idx]
-        )
+        task = model.add_task(job=job)
+        model.add_processing_time(machine, task, processing_times[idx])
 
     model.set_objective(Objective.TOTAL_TARDINESS)
 
@@ -865,19 +859,19 @@ def test_jobshop(solver: str):
     jobs = [model.add_job() for _ in range(num_jobs)]
     machines = [model.add_machine() for _ in range(3)]
 
-    for job_idx, tasks in enumerate(jobs_data):
-        operations = [model.add_operation(job=jobs[job_idx]) for _ in tasks]
+    for job_idx, tasks_ in enumerate(jobs_data):
+        tasks = [model.add_task(job=jobs[job_idx]) for _ in tasks_]
 
         # Add processing times.
-        for idx, (machine_idx, duration) in enumerate(tasks):
+        for idx, (machine_idx, duration) in enumerate(tasks_):
             model.add_processing_time(
-                machines[machine_idx], operations[idx], duration
+                machines[machine_idx], tasks[idx], duration
             )
 
         # Impose linear routing precedence constraints.
-        for op_idx in range(1, len(operations)):
-            op1, op2 = operations[op_idx - 1], operations[op_idx]
-            model.add_constraint(op1, op2, Constraint.END_BEFORE_START)
+        for task_idx in range(1, len(tasks)):
+            task1, task2 = tasks[task_idx - 1], tasks[task_idx]
+            model.add_constraint(task1, task2, Constraint.END_BEFORE_START)
 
     result = model.solve(solver=solver)
 

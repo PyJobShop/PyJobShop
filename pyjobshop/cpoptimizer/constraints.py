@@ -7,24 +7,27 @@ from docplex.cp.model import CpoModel
 from pyjobshop.ProblemData import ProblemData
 
 JobVars = list[CpoIntervalVar]
-OpVars = list[CpoIntervalVar]
-TaskVars = dict[tuple[int, int], CpoIntervalVar]
+TaskVars = list[CpoIntervalVar]
+AssignmentVars = dict[tuple[int, int], CpoIntervalVar]
 SeqVars = list[CpoSequenceVar]
 
 
 def alternative_constraints(
-    m: CpoModel, data: ProblemData, op_vars: OpVars, task_vars: TaskVars
+    m: CpoModel,
+    data: ProblemData,
+    task_vars: TaskVars,
+    assign_vars: AssignmentVars,
 ) -> list[CpoExpr]:
     """
-    Creates the alternative constraints for the operations, ensuring that each
-    operation is scheduled on exactly one machine.
+    Creates the alternative constraints for the tasks, ensuring that each
+    task is scheduled on exactly one machine.
     """
     constraints = []
 
-    for op in range(data.num_operations):
-        machines = data.op2machines[op]
-        optional = [task_vars[op, machine] for machine in machines]
-        constraints.append(m.alternative(op_vars[op], optional))
+    for task in range(data.num_tasks):
+        machines = data.task2machines[task]
+        optional = [assign_vars[task, machine] for machine in machines]
+        constraints.append(m.alternative(task_vars[task], optional))
 
     return constraints
 
@@ -46,24 +49,24 @@ def job_data_constraints(
     return constraints
 
 
-def job_operation_constraints(
-    m: CpoModel, data: ProblemData, job_vars: JobVars, op_vars: OpVars
+def job_task_constraints(
+    m: CpoModel, data: ProblemData, job_vars: JobVars, task_vars: TaskVars
 ) -> list[CpoExpr]:
     """
     Creates the constraints that ensure that the job variables govern the
-    related operation variables.
+    related task variables.
     """
     constraints = []
 
     for job in range(data.num_jobs):
         job_var = job_vars[job]
-        related_op_vars = [op_vars[op] for op in data.job2ops[job]]
+        related_task_vars = [task_vars[task] for task in data.job2tasks[job]]
 
-        constraints.append(m.span(job_var, related_op_vars))
+        constraints.append(m.span(job_var, related_task_vars))
 
-        for op_var in related_op_vars:
+        for task_var in related_task_vars:
             constraints.append(
-                m.start_of(op_var) >= data.jobs[job].release_date
+                m.start_of(task_var) >= data.jobs[job].release_date
             )
 
     return constraints
@@ -79,15 +82,15 @@ def no_overlap_and_setup_time_constraints(
     constraints = []
 
     # Assumption: the interval variables in the sequence variable
-    # are ordered in the same way as the operations in machine2ops.
+    # are ordered in the same way as the tasks in machine2tasks.
     for machine in range(data.num_machines):
         if data.machines[machine].allow_overlap:
             continue  # Overlap is allowed for this machine.
 
-        if not (ops := data.machine2ops[machine]):
-            continue  # There no operations for this machine.
+        if not (tasks := data.machine2tasks[machine]):
+            continue  # There no tasks for this machine.
 
-        setups = data.setup_times[machine, :, :][np.ix_(ops, ops)]
+        setups = data.setup_times[machine, :, :][np.ix_(tasks, tasks)]
 
         if np.all(setups == 0):  # No setup times for this machine.
             constraints.append(m.no_overlap(seq_vars[machine]))
@@ -97,24 +100,24 @@ def no_overlap_and_setup_time_constraints(
     return constraints
 
 
-def operation_constraints(
-    m: CpoModel, data: ProblemData, op_vars: OpVars
+def task_constraints(
+    m: CpoModel, data: ProblemData, task_vars: TaskVars
 ) -> list[CpoExpr]:
     """
-    Creates constraints on the operation variables.
+    Creates constraints on the task variables.
     """
-    for op_data, var in zip(data.operations, op_vars):
-        if op_data.earliest_start is not None:
-            var.set_start_min(op_data.earliest_start)
+    for task_data, var in zip(data.tasks, task_vars):
+        if task_data.earliest_start is not None:
+            var.set_start_min(task_data.earliest_start)
 
-        if op_data.latest_start is not None:
-            var.set_start_max(op_data.latest_start)
+        if task_data.latest_start is not None:
+            var.set_start_max(task_data.latest_start)
 
-        if op_data.earliest_end is not None:
-            var.set_end_min(op_data.earliest_end)
+        if task_data.earliest_end is not None:
+            var.set_end_min(task_data.earliest_end)
 
-        if op_data.latest_end is not None:
-            var.set_end_max(op_data.latest_end)
+        if task_data.latest_end is not None:
+            var.set_end_max(task_data.latest_end)
 
     return []  # no constraints because we use setters
 
@@ -123,8 +126,8 @@ def planning_horizon_constraints(
     m: CpoModel,
     data: ProblemData,
     job_vars: JobVars,
+    assign_vars: AssignmentVars,
     task_vars: TaskVars,
-    op_vars: OpVars,
 ) -> list[CpoExpr]:
     """
     Creates the planning horizon constraints for the interval variables,
@@ -135,25 +138,25 @@ def planning_horizon_constraints(
 
     constraints = []
 
-    for vars in [job_vars, task_vars.values(), op_vars]:
+    for vars in [job_vars, assign_vars.values(), task_vars]:
         constraints += [m.end_of(var) <= data.planning_horizon for var in vars]
 
     return constraints
 
 
 def processing_time_constraints(
-    m: CpoModel, data: ProblemData, task_vars: TaskVars
+    m: CpoModel, data: ProblemData, assign_vars: AssignmentVars
 ) -> list[CpoExpr]:
     """
     Creates the processing time constraints for the task variables, ensuring
-    that the duration of the operation on the machine is the processing time.
-    If the operation allows for variable duration, the duration could be longer
+    that the duration of the task on the machine is the processing time.
+    If the task allows for variable duration, the duration could be longer
     than the processing time due to blocking.
     """
-    for (op, machine), var in task_vars.items():
-        duration = data.processing_times[machine, op]
+    for (task, machine), var in assign_vars.items():
+        duration = data.processing_times[machine, task]
 
-        if data.operations[op].fixed_duration:
+        if data.tasks[task].fixed_duration:
             var.set_size(duration)
         else:
             var.set_size_min(duration)  # at least duration
@@ -161,53 +164,53 @@ def processing_time_constraints(
     return []  # no constraints because we use setters
 
 
-def operation_graph_constraints(
+def task_graph_constraints(
     m: CpoModel,
     data: ProblemData,
-    op_vars: OpVars,
     task_vars: TaskVars,
+    assign_vars: AssignmentVars,
     seq_vars: SeqVars,
 ) -> list[CpoExpr]:
     constraints = []
 
-    for (idx1, idx2), op_constraints in data.constraints.items():
-        op1 = op_vars[idx1]
-        op2 = op_vars[idx2]
+    for (idx1, idx2), constraints_ in data.constraints.items():
+        task1 = task_vars[idx1]
+        task2 = task_vars[idx2]
 
-        for constraint in op_constraints:
+        for constraint in constraints_:
             if constraint == "start_at_start":
-                expr = m.start_at_start(op1, op2)
+                expr = m.start_at_start(task1, task2)
             elif constraint == "start_at_end":
-                expr = m.start_at_end(op1, op2)
+                expr = m.start_at_end(task1, task2)
             elif constraint == "start_before_start":
-                expr = m.start_before_start(op1, op2)
+                expr = m.start_before_start(task1, task2)
             elif constraint == "start_before_end":
-                expr = m.start_before_end(op1, op2)
+                expr = m.start_before_end(task1, task2)
             elif constraint == "end_at_start":
-                expr = m.end_at_start(op1, op2)
+                expr = m.end_at_start(task1, task2)
             elif constraint == "end_at_end":
-                expr = m.end_at_end(op1, op2)
+                expr = m.end_at_end(task1, task2)
             elif constraint == "end_before_start":
-                expr = m.end_before_start(op1, op2)
+                expr = m.end_before_start(task1, task2)
             elif constraint == "end_before_end":
-                expr = m.end_before_end(op1, op2)
+                expr = m.end_before_end(task1, task2)
             else:
                 continue
 
             constraints.append(expr)
 
     # Separately handle assignment related constraints for efficiency.
-    for machine, ops in enumerate(data.machine2ops):
+    for machine, tasks in enumerate(data.machine2tasks):
         seq_var = seq_vars[machine]
 
-        for op1, op2 in product(ops, repeat=2):
-            if op1 == op2 or (op1, op2) not in data.constraints:
+        for task1, task2 in product(tasks, repeat=2):
+            if task1 == task2 or (task1, task2) not in data.constraints:
                 continue
 
-            var1 = task_vars[op1, machine]
-            var2 = task_vars[op2, machine]
+            var1 = assign_vars[task1, machine]
+            var2 = assign_vars[task2, machine]
 
-            for constraint in data.constraints[op1, op2]:
+            for constraint in data.constraints[task1, task2]:
                 if constraint == "previous":
                     expr = m.previous(seq_var, var1, var2)
                 elif constraint == "same_unit":

@@ -3,24 +3,25 @@ from dataclasses import dataclass
 from .ProblemData import ProblemData
 
 
+# TODO rename Task
 @dataclass
 class Task:
     """
-    The Task class stores data related to scheduled operations.
+    The Task class stores data related to scheduled tasks.
 
     Parameters
     ----------
-    operation
-        The operation index.
+    task
+        The task index.
     machine
-        The machine index to which the operation is assigned.
+        The machine index to which the task is assigned.
     start
-        The start time of the operation.
+        The start time of the task.
     duration
-        The duration of the operation.
+        The duration of the task.
     """
 
-    operation: int
+    task: int
     machine: int
     start: int
     duration: int
@@ -39,7 +40,7 @@ class Solution:
     """
 
     def __init__(self, data: ProblemData, schedule: list[Task]):
-        self.schedule = schedule
+        self.schedule = schedule  # TODO rename schedule
         self._validate(data)
 
     def __eq__(self, other) -> bool:
@@ -47,9 +48,9 @@ class Solution:
 
     def _validate(self, data: ProblemData):
         for task in self.schedule:
-            op = task.operation
+            task_ = task.task
             assigned = task.machine
 
-            if assigned not in data.op2machines[op]:
-                msg = f"Operation {op} not allowed on machine {assigned}."
+            if assigned not in data.task2machines[task_]:
+                msg = f"Task {task_} not allowed on machine {assigned}."
                 raise ValueError(msg)

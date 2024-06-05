@@ -2,15 +2,15 @@ from ortools.sat.python.cp_model import CpModel, LinearExpr
 
 from pyjobshop.ProblemData import ProblemData
 
-from .variables import JobVar, OperationVar
+from .variables import JobVar, TaskVar
 
 
-def makespan(model: CpModel, data: ProblemData, op_vars: list[OperationVar]):
+def makespan(model: CpModel, data: ProblemData, task_vars: list[TaskVar]):
     """
     Minimizes the makespan.
     """
     makespan = model.new_int_var(0, data.planning_horizon, "makespan")
-    completion_times = [var.end for var in op_vars]
+    completion_times = [var.end for var in task_vars]
 
     model.add_max_equality(makespan, completion_times)
     model.minimize(makespan)

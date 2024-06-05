@@ -9,8 +9,8 @@ from pyjobshop.ProblemData import (
     Job,
     Machine,
     Objective,
-    Operation,
     ProblemData,
+    Task,
 )
 from pyjobshop.Result import Result
 from pyjobshop.solve import solve
@@ -24,8 +24,8 @@ class Model:
     def __init__(self):
         self._jobs: list[Job] = []
         self._machines: list[Machine] = []
-        self._operations: list[Operation] = []
-        self._job2ops: dict[int, list[int]] = defaultdict(list)
+        self._tasks: list[Task] = []
+        self._job2tasks: dict[int, list[int]] = defaultdict(list)
         self._processing_times: dict[tuple[int, int], int] = {}
         self._constraints: dict[tuple[int, int], list[Constraint]] = (
             defaultdict(list)
@@ -37,7 +37,7 @@ class Model:
 
         self._id2job: dict[int, int] = {}
         self._id2machine: dict[int, int] = {}
-        self._id2op: dict[int, int] = {}
+        self._id2task: dict[int, int] = {}
 
     @property
     def jobs(self) -> list[Job]:
@@ -54,11 +54,11 @@ class Model:
         return self._machines
 
     @property
-    def operations(self) -> list[Operation]:
+    def tasks(self) -> list[Task]:
         """
-        Returns the list of operations in the model.
+        Returns the list of tasks in the model.
         """
-        return self._operations
+        return self._tasks
 
     @property
     def objective(self) -> Objective:
@@ -72,21 +72,21 @@ class Model:
         Returns a ProblemData object containing the problem instance.
         """
         num_jobs = len(self.jobs)
-        num_ops = len(self.operations)
+        num_tasks = len(self.tasks)
         num_machines = len(self.machines)
 
-        job2ops = [self._job2ops[idx] for idx in range(num_jobs)]
+        job2tasks = [self._job2tasks[idx] for idx in range(num_jobs)]
 
         # Convert setup times into a 3D array with zero as default.
-        setup_times = np.zeros((num_machines, num_ops, num_ops), dtype=int)
-        for (machine, op1, op2), duration in self._setup_times.items():
-            setup_times[machine, op1, op2] = duration
+        setup_times = np.zeros((num_machines, num_tasks, num_tasks), dtype=int)
+        for (machine, task1, task2), duration in self._setup_times.items():
+            setup_times[machine, task1, task2] = duration
 
         return ProblemData(
             jobs=self.jobs,
             machines=self.machines,
-            operations=self.operations,
-            job2ops=job2ops,
+            tasks=self.tasks,
+            job2tasks=job2tasks,
             processing_times=self._processing_times,
             constraints=self._constraints,
             setup_times=setup_times,
@@ -144,7 +144,7 @@ class Model:
         Parameters
         ----------
         allow_overlap
-            Whether it is allowed to schedule multiple operations on the
+            Whether it is allowed to schedule multiple tasks on the
             machine at the same time. Default ``False``.
         name
             Name of the machine.
@@ -161,7 +161,7 @@ class Model:
 
         return machine
 
-    def add_operation(
+    def add_task(
         self,
         job: Optional[Job] = None,
         earliest_start: Optional[int] = None,
@@ -170,33 +170,33 @@ class Model:
         latest_end: Optional[int] = None,
         fixed_duration: bool = True,
         name: str = "",
-    ) -> Operation:
+    ) -> Task:
         """
-        Adds an operation to the model.
+        Adds a task to the model.
 
         Parameters
         ----------
         job
-            The job that the operation belongs to.
+            The job that the task belongs to.
         earliest_start
-            Earliest start time of the operation.
+            Earliest start time of the task.
         latest_start
-            Latest start time of the operation.
+            Latest start time of the task.
         earliest_end
-            Earliest end time of the operation.
+            Earliest end time of the task.
         latest_end
-            Latest end time of the operation.
+            Latest end time of the task.
         fixed_duration
-            Whether the duration of the operation is fixed. Defaults to True.
+            Whether the duration of the task is fixed. Defaults to True.
         name
-            Name of the operation.
+            Name of the task.
 
         Returns
         -------
-        Operation
-            The created operation.
+        Task
+            The created task.
         """
-        operation = Operation(
+        task = Task(
             earliest_start,
             latest_start,
             earliest_end,
@@ -205,87 +205,78 @@ class Model:
             name,
         )
 
-        op_idx = len(self.operations)
-        self._id2op[id(operation)] = op_idx
-        self._operations.append(operation)
+        task_idx = len(self.tasks)
+        self._id2task[id(task)] = task_idx
+        self._tasks.append(task)
 
         if job is not None:
             job_idx = self._id2job[id(job)]
-            self._job2ops[job_idx].append(op_idx)
+            self._job2tasks[job_idx].append(task_idx)
 
-        return operation
+        return task
 
-    def add_processing_time(
-        self, machine: Machine, operation: Operation, duration: int
-    ):
+    def add_processing_time(self, machine: Machine, task: Task, duration: int):
         """
-        Adds a processing time for a machine and operation combination.
+        Adds a processing time for a machine and task combination.
 
         Parameters
         ----------
         machine
-            The machine on which the operation is processed.
-        operation
-            An operation.
+            The machine on which the task is processed.
+        task
+            The task.
         duration
-            Processing time of the operation on the machine.
+            Processing time of the task on the machine.
         """
         if duration < 0:
             raise ValueError("Processing time must be non-negative.")
 
         machine_idx = self._id2machine[id(machine)]
-        op_idx = self._id2op[id(operation)]
-        self._processing_times[machine_idx, op_idx] = duration
+        task_idx = self._id2task[id(task)]
+        self._processing_times[machine_idx, task_idx] = duration
 
     def add_constraint(
-        self,
-        first: Operation,
-        second: Operation,
-        constraint: Constraint,
+        self, first: Task, second: Task, constraint: Constraint
     ):
         """
-        Adds a precedence constraint between two operations.
+        Adds a precedence constraint between two tasks.
 
         Parameters
         ----------
         first
-            First operation.
+            First task.
         second
-            Second operation.
+            Second task.
         constraint
-            Constraint between the first and the second operation.
+            Constraint between the first and the second task.
         """
-        op1 = self._id2op[id(first)]
-        op2 = self._id2op[id(second)]
-        self._constraints[op1, op2].append(constraint)
+        task1 = self._id2task[id(first)]
+        task2 = self._id2task[id(second)]
+        self._constraints[task1, task2].append(constraint)
 
     def add_setup_time(
-        self,
-        machine: Machine,
-        operation1: Operation,
-        operation2: Operation,
-        duration: int,
+        self, machine: Machine, task1: Task, task2: Task, duration: int
     ):
         """
-        Adds a setup time between two operations on a machine.
+        Adds a setup time between two tasks on a machine.
 
         Parameters
         ----------
         machine
             Machine on which the setup time occurs.
-        operation1
-            First operation.
-        operation2
-            Second operation.
+        task1
+            First task.
+        task2
+            Second task.
         duration
-            Duration of the setup time when switching from the first operation
-            to the second operation on the machine.
+            Duration of the setup time when switching from the first task
+            to the second task on the machine.
         """
         machine_idx = self._id2machine[id(machine)]
-        op_idx1 = self._id2op[id(operation1)]
-        op_idx2 = self._id2op[id(operation2)]
+        task_idx1 = self._id2task[id(task1)]
+        task_idx2 = self._id2task[id(task2)]
 
-        self._setup_times[machine_idx, op_idx1, op_idx2] = duration
+        self._setup_times[machine_idx, task_idx1, task_idx2] = duration
 
     def set_planning_horizon(self, horizon: int):
         """

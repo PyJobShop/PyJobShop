@@ -15,7 +15,7 @@ PyJobShop
     .. autoclass:: ProblemData
        :members:
 
-    .. autoclass:: Operation
+    .. autoclass:: Task
        :members:
 
     .. autoclass:: Machine

@@ -5,12 +5,12 @@ from pyjobshop.ProblemData import ProblemData
 from .constraints import (
     alternative_constraints,
     job_data_constraints,
-    job_operation_constraints,
+    job_task_constraints,
     no_overlap_and_setup_time_constraints,
-    operation_constraints,
-    operation_graph_constraints,
     planning_horizon_constraints,
     processing_time_constraints,
+    task_constraints,
+    task_graph_constraints,
 )
 from .objectives import (
     makespan,
@@ -19,16 +19,16 @@ from .objectives import (
     total_tardiness,
 )
 from .variables import (
+    assignment_variables,
     job_variables,
-    operation_variables,
     sequence_variables,
     task_variables,
 )
 
 
-def default_model(data: ProblemData) -> CpoModel:
+def create_model(data: ProblemData) -> CpoModel:
     """
-    Creates a CP model for the given problem data.
+    Creates a CP Optimizer model for the given problem data.
 
     Parameters
     ----------
@@ -38,17 +38,17 @@ def default_model(data: ProblemData) -> CpoModel:
     Returns
     -------
     CpoModel
-        The CP model for the given problem data.
+        The constraint programming model for the given problem data.
     """
     model = CpoModel()
 
     job_vars = job_variables(model, data)
-    op_vars = operation_variables(model, data)
     task_vars = task_variables(model, data)
-    seq_vars = sequence_variables(model, data, task_vars)
+    assign_vars = assignment_variables(model, data)
+    seq_vars = sequence_variables(model, data, assign_vars)
 
     if data.objective == "makespan":
-        model.add(makespan(model, data, op_vars))
+        model.add(makespan(model, data, task_vars))
     elif data.objective == "tardy_jobs":
         model.add(tardy_jobs(model, data, job_vars))
     elif data.objective == "total_tardiness":
@@ -59,16 +59,18 @@ def default_model(data: ProblemData) -> CpoModel:
         raise ValueError(f"Unknown objective: {data.objective}")
 
     model.add(job_data_constraints(model, data, job_vars))
-    model.add(job_operation_constraints(model, data, job_vars, op_vars))
-    model.add(operation_constraints(model, data, op_vars))
-    model.add(alternative_constraints(model, data, op_vars, task_vars))
+    model.add(job_task_constraints(model, data, job_vars, task_vars))
+    model.add(task_constraints(model, data, task_vars))
+    model.add(alternative_constraints(model, data, task_vars, assign_vars))
     model.add(no_overlap_and_setup_time_constraints(model, data, seq_vars))
     model.add(
-        planning_horizon_constraints(model, data, job_vars, task_vars, op_vars)
+        planning_horizon_constraints(
+            model, data, job_vars, assign_vars, task_vars
+        )
     )
-    model.add(processing_time_constraints(model, data, task_vars))
+    model.add(processing_time_constraints(model, data, assign_vars))
     model.add(
-        operation_graph_constraints(model, data, op_vars, task_vars, seq_vars)
+        task_graph_constraints(model, data, task_vars, assign_vars, seq_vars)
     )
 
     return model

@@ -9,6 +9,8 @@ from pyjobshop.constants import MAX_VALUE
 
 _CONSTRAINTS_TYPE = dict[tuple[int, int], list["Constraint"]]
 
+# TODO
+
 
 class Job:
     """
@@ -89,7 +91,7 @@ class Machine:
     Parameters
     ----------
     allow_overlap
-        Whether it is allowed to schedule multiple operations on the machine
+        Whether it is allowed to schedule multiple tasks on the machine
         at the same time. Default is False.
     name
         Name of the machine.
@@ -108,28 +110,28 @@ class Machine:
         return self._name
 
 
-class Operation:
+class Task:
     """
-    Simple dataclass for storing all operation-related data.
+    Simple dataclass for storing all task related data.
 
     Parameters
     ----------
     earliest_start
-        Earliest start time of the operation.
+        Earliest start time of the task.
     latest_start
-        Latest start time of the operation.
+        Latest start time of the task.
     earliest_end
-        Earliest end time of the operation.
+        Earliest end time of the task.
     latest_end
-        Latest end time of the operation.
+        Latest end time of the task.
     fixed_duration
-        Whether the operation has a fixed duration. A fixed duration means that
-        the operation duration is precisely the processing time (on a given
-        machine). If the duration is not fixed, then the operation duration
+        Whether the task has a fixed duration. A fixed duration means that
+        the task duration is precisely the processing time (on a given
+        machine). If the duration is not fixed, then the task duration
         can take longer than the processing time, e.g., due to blocking.
         Default is True.
     name
-        Name of the operation.
+        Name of the task.
     """
 
     def __init__(
@@ -209,40 +211,40 @@ class Objective(str, Enum):
 @enum_tools.documentation.document_enum
 class Constraint(str, Enum):
     """
-    Operation constraints between two operations :math:`i` and :math:`j`.
+    Task constraints between two tasks :math:`i` and :math:`j`.
     """
 
-    #: Operation :math:`i` must start when operation :math:`j` starts.
+    #: Task :math:`i` must start when task :math:`j` starts.
     START_AT_START = "start_at_start"
 
-    #: Operation :math:`i` must at start when operation :math:`j` ends.
+    #: Task :math:`i` must at start when task :math:`j` ends.
     START_AT_END = "start_at_end"
 
-    #: Operation :math:`i` must start before operation :math:`j` starts.
+    #: Task :math:`i` must start before task :math:`j` starts.
     START_BEFORE_START = "start_before_start"
 
-    #: Operation :math:`i` must start before operation :math:`j` ends.
+    #: Task :math:`i` must start before task :math:`j` ends.
     START_BEFORE_END = "start_before_end"
 
-    #: Operation :math:`i` must end when operation :math:`j` starts.
+    #: Task :math:`i` must end when task :math:`j` starts.
     END_AT_START = "end_at_start"
 
-    #: Operation :math:`i` must end when operation :math:`j` ends.
+    #: Task :math:`i` must end when task :math:`j` ends.
     END_AT_END = "end_at_end"
 
-    #: Operation :math:`i` must end before operation :math:`j` starts.
+    #: Task :math:`i` must end before task :math:`j` starts.
     END_BEFORE_START = "end_before_start"
 
-    #: Operation :math:`i` must end before operation :math:`j` ends.
+    #: Task :math:`i` must end before task :math:`j` ends.
     END_BEFORE_END = "end_before_end"
 
     #: Sequence :math:`i` right before :math:`j` (if assigned to same machine).
     PREVIOUS = "previous"
 
-    #: Assign operations :math:`i` and :math:`j` to the same machine.
+    #: Assign tasks :math:`i` and :math:`j` to the same machine.
     SAME_UNIT = "same_unit"
 
-    #: Assign operations :math:`i` and :math:`j` to different machine.
+    #: Assign tasks :math:`i` and :math:`j` to different machine.
     DIFFERENT_UNIT = "different_unit"
 
 
@@ -257,19 +259,19 @@ class ProblemData:
         List of jobs.
     machines
         List of machines.
-    operations
-        List of operations.
-    job2ops
-        List of operation indices for each job.
+    tasks
+        List of tasks.
+    job2tasks
+        List of task indices for each job.
     processing_times
-        Processing times of operations on machines. First index is the machine
-        index, second index is the operation index.
+        Processing times of tasks on machines. First index is the machine
+        index, second index is the task index.
     constraints
-        Dict indexed by operation pairs with a list of constraints as values.
+        Dict indexed by task pairs with a list of constraints as values.
     setup_times
-        Sequence-dependent setup times between operations on a given machine.
+        Sequence-dependent setup times between tasks on a given machine.
         The first dimension of the array is indexed by the machine index. The
-        last two dimensions of the array are indexed by operation indices.
+        last two dimensions of the array are indexed by task indices.
     planning_horizon
         The planning horizon value. Default is None, meaning that the planning
         horizon is unbounded.
@@ -281,8 +283,8 @@ class ProblemData:
         self,
         jobs: list[Job],
         machines: list[Machine],
-        operations: list[Operation],
-        job2ops: list[list[int]],
+        tasks: list[Task],
+        job2tasks: list[list[int]],
         processing_times: dict[tuple[int, int], int],
         constraints: _CONSTRAINTS_TYPE,
         setup_times: Optional[np.ndarray] = None,
@@ -291,28 +293,28 @@ class ProblemData:
     ):
         self._jobs = jobs
         self._machines = machines
-        self._operations = operations
-        self._job2ops = job2ops
+        self._tasks = tasks
+        self._job2tasks = job2tasks
         self._processing_times = processing_times
         self._constraints = constraints
 
         num_mach = self.num_machines
-        num_ops = self.num_operations
+        num_tasks = self.num_tasks
 
         self._setup_times = (
             setup_times
             if setup_times is not None
-            else np.zeros((num_mach, num_ops, num_ops), dtype=int)
+            else np.zeros((num_mach, num_tasks, num_tasks), dtype=int)
         )
         self._planning_horizon = planning_horizon
         self._objective = objective
 
-        self._machine2ops: list[list[int]] = [[] for _ in range(num_mach)]
-        self._op2machines: list[list[int]] = [[] for _ in range(num_ops)]
+        self._machine2tasks: list[list[int]] = [[] for _ in range(num_mach)]
+        self._task2machines: list[list[int]] = [[] for _ in range(num_tasks)]
 
-        for machine, operation in self.processing_times.keys():
-            bisect.insort(self._machine2ops[machine], operation)
-            bisect.insort(self._op2machines[operation], machine)
+        for machine, task in self.processing_times.keys():
+            bisect.insort(self._machine2tasks[machine], task)
+            bisect.insort(self._task2machines[task], machine)
 
         self._validate_parameters()
 
@@ -321,7 +323,7 @@ class ProblemData:
         Validates the problem data parameters.
         """
         num_mach = self.num_machines
-        num_ops = self.num_operations
+        num_tasks = self.num_tasks
 
         if any(duration < 0 for duration in self.processing_times.values()):
             raise ValueError("Processing times must be non-negative.")
@@ -329,8 +331,8 @@ class ProblemData:
         if np.any(self.setup_times < 0):
             raise ValueError("Setup times must be non-negative.")
 
-        if self.setup_times.shape != (num_mach, num_ops, num_ops):
-            msg = "Setup times shape must be (num_machines, num_ops, num_ops)."
+        if self.setup_times.shape != (num_mach, num_tasks, num_tasks):
+            msg = "Setup times shape not (num_machines, num_tasks, num_tasks)."
             raise ValueError(msg)
 
         if self.planning_horizon is not None and self.planning_horizon < 0:
@@ -356,46 +358,46 @@ class ProblemData:
         return self._machines
 
     @property
-    def operations(self) -> list[Operation]:
+    def tasks(self) -> list[Task]:
         """
-        Returns the operation data of this problem instance.
+        Returns the task data of this problem instance.
         """
-        return self._operations
+        return self._tasks
 
     @property
-    def job2ops(self) -> list[list[int]]:
+    def job2tasks(self) -> list[list[int]]:
         """
-        List of operation indices for each job.
+        List of task indices for each job.
 
         Returns
         -------
         list[list[int]]
-            List of operation indices for each job.
+            List of task indices for each job.
         """
-        return self._job2ops
+        return self._job2tasks
 
     @property
     def processing_times(self) -> dict[tuple[int, int], int]:
         """
-        Processing times of operations on machines.
+        Processing times of tasks on machines.
 
         Returns
         -------
         dict[tuple[int, int], int]
-            Processing times of operations on machines. First index is
-            the machine index, second index is the operation index.
+            Processing times of tasks on machines. First index is
+            the machine index, second index is the task index.
         """
         return self._processing_times
 
     @property
     def constraints(self) -> _CONSTRAINTS_TYPE:
         """
-        Constraints between operations.
+        Constraints between tasks.
 
         Returns
         -------
         dict[tuple[int, int], list[Constraint]]
-            The dictionary is indexed by operation pairs with a list of
+            The dictionary is indexed by task pairs with a list of
             constraints.
         """
         return self._constraints
@@ -403,15 +405,15 @@ class ProblemData:
     @property
     def setup_times(self) -> np.ndarray:
         """
-        Sequence-dependent setup times between operations on a given machine.
+        Sequence-dependent setup times between tasks on a given machine.
 
         Returns
         -------
         np.ndarray
-            Sequence-dependent setup times between operations on a given
+            Sequence-dependent setup times between tasks on a given
             machine. The first dimension of the array is indexed by the machine
             index. The last two dimensions of the array are indexed by
-            operation indices.
+            task indices.
         """
         return self._setup_times
 
@@ -440,30 +442,30 @@ class ProblemData:
         return self._objective
 
     @property
-    def machine2ops(self) -> list[list[int]]:
+    def machine2tasks(self) -> list[list[int]]:
         """
-        List of operation indices for each machine. These are inferred from
-        the (machine, operation) pairs in the processing times dict.
+        List of task indices for each machine. These are inferred from
+        the (machine, task) pairs in the processing times dict.
 
         Returns
         -------
         list[list[int]]
-            List of operation indices for each machine.
+            List of task indices for each machine.
         """
-        return self._machine2ops
+        return self._machine2tasks
 
     @property
-    def op2machines(self) -> list[list[int]]:
+    def task2machines(self) -> list[list[int]]:
         """
-        List of eligible machine indices for each operation. These are inferred
-        from the (machine, operation) pairs in the processing times dict.
+        List of eligible machine indices for each task. These are inferred
+        from the (machine, task) pairs in the processing times dict.
 
         Returns
         -------
         list[list[int]]
-            List of eligible machine indices for each operation.
+            List of eligible machine indices for each task.
         """
-        return self._op2machines
+        return self._task2machines
 
     @property
     def num_jobs(self) -> int:
@@ -480,8 +482,8 @@ class ProblemData:
         return len(self._machines)
 
     @property
-    def num_operations(self) -> int:
+    def num_tasks(self) -> int:
         """
-        Returns the number of operations in this instance.
+        Returns the number of tasks in this instance.
         """
-        return len(self._operations)
+        return len(self._tasks)

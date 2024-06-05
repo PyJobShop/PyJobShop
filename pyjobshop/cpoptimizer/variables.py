@@ -10,30 +10,27 @@ def job_variables(m: CpoModel, data: ProblemData) -> list[CpoIntervalVar]:
     """
     Creates an interval variable for each job in the problem.
     """
-    return [m.interval_var(name=f"J{job}") for job in range(data.num_jobs)]
+    return [m.interval_var(name=f"J{idx}") for idx in range(data.num_jobs)]
 
 
-def operation_variables(
-    m: CpoModel, data: ProblemData
-) -> list[CpoIntervalVar]:
+def task_variables(m: CpoModel, data: ProblemData) -> list[CpoIntervalVar]:
     """
-    Creates an interval variable for each operation in the problem.
+    Creates an interval variable for each task in the problem.
     """
-    return [
-        m.interval_var(name=f"O{idx}")
-        for idx, operation in enumerate(data.operations)
-    ]
+    return [m.interval_var(name=f"O{idx}") for idx in range(data.num_tasks)]
 
 
-def task_variables(m: CpoModel, data: ProblemData) -> AssignVars:
+def assignment_variables(m: CpoModel, data: ProblemData) -> AssignVars:
     """
-    Creates an optional interval variable for each operation and eligible
+    Creates an optional interval variable for each task and eligible
     machine pair, i.e., a task.
     """
     return {
-        (op, machine): m.interval_var(name=f"A{op}_{machine}", optional=True)
-        for op in range(data.num_operations)
-        for machine in data.op2machines[op]
+        (task, machine): m.interval_var(
+            name=f"A{task}_{machine}", optional=True
+        )
+        for task in range(data.num_tasks)
+        for machine in data.task2machines[task]
     }
 
 
@@ -46,8 +43,8 @@ def sequence_variables(
     """
     variables = []
 
-    for machine, operations in enumerate(data.machine2ops):
-        intervals = [assign[op, machine] for op in operations]
+    for machine, tasks in enumerate(data.machine2tasks):
+        intervals = [assign[task, machine] for task in tasks]
         variables.append(m.sequence_var(name=f"S{machine}", vars=intervals))
 
     return variables
