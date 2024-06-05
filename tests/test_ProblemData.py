@@ -147,7 +147,7 @@ def test_problem_data_input_parameter_attributes():
     jobs = [Job() for _ in range(5)]
     machines = [Machine() for _ in range(5)]
     tasks = [Task() for _ in range(5)]
-    job2ops = [[0], [1], [2], [3], [4]]
+    job2tasks = [[0], [1], [2], [3], [4]]
     processing_times = {(i, j): 1 for i in range(5) for j in range(5)}
     constraints = {
         key: [Constraint.END_BEFORE_START] for key in ((0, 1), (2, 3), (4, 5))
@@ -160,7 +160,7 @@ def test_problem_data_input_parameter_attributes():
         jobs,
         machines,
         tasks,
-        job2ops,
+        job2tasks,
         processing_times,
         constraints,
         setup_times,
@@ -171,7 +171,7 @@ def test_problem_data_input_parameter_attributes():
     assert_equal(data.jobs, jobs)
     assert_equal(data.machines, machines)
     assert_equal(data.tasks, tasks)
-    assert_equal(data.job2tasks, job2ops)
+    assert_equal(data.job2tasks, job2tasks)
     assert_equal(data.processing_times, processing_times)
     assert_equal(data.constraints, constraints)
     assert_allclose(data.setup_times, setup_times)
@@ -187,15 +187,15 @@ def test_problem_data_non_input_parameter_attributes():
     jobs = [Job() for _ in range(1)]
     machines = [Machine() for _ in range(3)]
     tasks = [Task() for _ in range(3)]
-    job2ops = [[0, 1, 2]]
+    job2tasks = [[0, 1, 2]]
     processing_times = {(1, 2): 1, (2, 1): 1, (0, 1): 1, (2, 0): 1}
 
-    data = ProblemData(jobs, machines, tasks, job2ops, processing_times, {})
+    data = ProblemData(jobs, machines, tasks, job2tasks, processing_times, {})
 
-    # The lists in machine2ops and task2machines are sorted.
-    machine2ops = [[1], [2], [0, 1]]
+    # The lists in machine2tasks and task2machines are sorted.
+    machine2tasks = [[1], [2], [0, 1]]
     task2machines = [[2], [0, 2], [1]]
-    assert_equal(data.machine2tasks, machine2ops)
+    assert_equal(data.machine2tasks, machine2tasks)
     assert_equal(data.task2machines, task2machines)
 
     assert_equal(data.num_jobs, 1)
@@ -210,11 +210,11 @@ def test_problem_data_default_values():
     jobs = [Job() for _ in range(1)]
     machines = [Machine() for _ in range(1)]
     tasks = [Task() for _ in range(1)]
-    job2ops = [[0]]
+    job2tasks = [[0]]
     constraints = {(0, 1): [Constraint.END_BEFORE_START]}
     processing_times = {(0, 0): 1}
     data = ProblemData(
-        jobs, machines, tasks, job2ops, processing_times, constraints
+        jobs, machines, tasks, job2tasks, processing_times, constraints
     )
 
     assert_allclose(data.setup_times, np.zeros((1, 1, 1), dtype=int))
