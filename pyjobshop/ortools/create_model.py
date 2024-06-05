@@ -6,7 +6,6 @@ from .constraints import (
     circuit_constraints,
     job_spans_tasks,
     no_overlap_constraints,
-    processing_time_constraints,
     select_one_task_alternative,
     setup_time_constraints,
     task_graph,
@@ -63,7 +62,6 @@ def create_model(
     job_spans_tasks(model, data, job_vars, task_vars)
     select_one_task_alternative(model, data, task_vars, assign_vars)
     no_overlap_constraints(model, data, seq_vars)
-    processing_time_constraints(model, data, assign_vars)
     setup_time_constraints(model, data, seq_vars)
     task_graph(model, data, task_vars, assign_vars, seq_vars)
 

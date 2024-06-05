@@ -194,9 +194,12 @@ def assignment_variables(
     for (machine, task), duration in data.processing_times.items():
         name = f"A{task}_{machine}"
         start_var = m.new_int_var(0, data.planning_horizon, f"{name}_start")
-        duration_var = m.new_int_var(
-            0, data.planning_horizon, f"{name}_duration"
-        )
+
+        duration = data.processing_times[machine, task]
+        lb = duration
+        ub = lb if data.tasks[task].fixed_duration else data.planning_horizon
+        duration_var = m.new_int_var(lb, ub, f"{name}_duration")
+
         end_var = m.new_int_var(0, data.planning_horizon, f"{name}_start")
         is_present_var = m.new_bool_var(f"{name}_is_present")
         interval_var = m.new_optional_interval_var(
@@ -214,8 +217,6 @@ def assignment_variables(
             end=end_var,
             is_present=is_present_var,
         )
-
-        m.add(duration_var >= duration)
 
     return variables
 

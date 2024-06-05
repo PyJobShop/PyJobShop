@@ -139,24 +139,6 @@ def no_overlap_constraints(
             m.add_no_overlap([var.interval for var in seq_vars[machine].tasks])
 
 
-def processing_time_constraints(
-    m: CpModel, data: ProblemData, assign_vars: AssignmentVars
-):
-    """
-    Creates the processing time constraints for the task variables, ensuring
-    that the duration of the task on the machine is the processing time.
-    If the task allows for variable duration, the duration could be longer
-    than the processing time due to blocking.
-    """
-    for (task, machine), var in assign_vars.items():
-        duration = data.processing_times[machine, task]
-
-        if data.tasks[task].fixed_duration:
-            m.add(var.duration == duration)
-        else:
-            m.add(var.duration >= duration)
-
-
 def setup_time_constraints(
     m: CpModel, data: ProblemData, seq_vars: SequenceVars
 ):
