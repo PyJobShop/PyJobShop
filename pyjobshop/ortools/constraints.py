@@ -13,18 +13,6 @@ AssignmentVars = dict[tuple[int, int], AssignmentVar]
 SequenceVars = list[SequenceVar]
 
 
-def job_data_constraints(m: CpModel, data: ProblemData, job_vars: JobVars):
-    """
-    Creates the constraints that ensure that the job variables are consistent
-    with the job data.
-    """
-    for job_data, job_var in zip(data.jobs, job_vars):
-        m.add(job_var.start >= job_data.release_date)
-
-        if job_data.deadline is not None:
-            m.add(job_var.end <= job_data.deadline)
-
-
 def job_task_constraints(
     m: CpModel, data: ProblemData, job_vars: JobVars, task_vars: TaskVars
 ):

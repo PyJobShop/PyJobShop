@@ -106,7 +106,14 @@ def job_variables(m: CpModel, data: ProblemData) -> list[JobVar]:
         interval_var = m.NewIntervalVar(
             start_var, duration_var, end_var, f"interval_{job}"
         )
-        jobs.append(JobVar(interval_var, start_var, duration_var, end_var))
+        job_var = JobVar(interval_var, start_var, duration_var, end_var)
+        jobs.append(job_var)
+
+        # Impose job data constraints.
+        m.add(job_var.start >= job.release_date)
+
+        if job.deadline is not None:
+            m.add(job_var.end <= job.deadline)
 
     return jobs
 
