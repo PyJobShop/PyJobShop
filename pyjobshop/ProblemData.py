@@ -368,18 +368,6 @@ class ProblemData:
         return self._tasks
 
     @property
-    def job2tasks(self) -> list[list[int]]:
-        """
-        List of task indices for each job.
-
-        Returns
-        -------
-        list[list[int]]
-            List of task indices for each job.
-        """
-        return [job.tasks for job in self.jobs]
-
-    @property
     def processing_times(self) -> dict[tuple[int, int], int]:
         """
         Processing times of tasks on machines.

@@ -32,15 +32,15 @@ def job_task_constraints(
     Creates the constraints that ensure that the job variables govern the
     related task variables.
     """
-    for job in range(data.num_jobs):
-        job_var = job_vars[job]
-        related_vars = [task_vars[task] for task in data.job2tasks[job]]
+    for idx, job in enumerate(data.jobs):
+        job_var = job_vars[idx]
+        related_vars = [task_vars[task_idx] for task_idx in job.tasks]
 
         m.add_min_equality(job_var.start, [var.start for var in related_vars])
         m.add_max_equality(job_var.end, [var.end for var in related_vars])
 
         for var in related_vars:
-            m.add(var.start >= data.jobs[job].release_date)
+            m.add(var.start >= data.jobs[idx].release_date)
 
 
 def task_constraints(m: CpModel, data: ProblemData, task_vars: TaskVars):

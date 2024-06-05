@@ -54,9 +54,10 @@ def plot(
         )
 
         # Tasks belonging to the same job get the same unique color.
-        job = [
-            job for job, tasks in enumerate(data.job2tasks) if task in tasks
-        ][0]
+        # TODO simplify
+        job = [idx for idx, job in enumerate(data.jobs) if task in job.tasks][
+            0
+        ]
         kwargs = {
             "color": colors[job % len(colors)],
             "linewidth": 1,

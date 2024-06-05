@@ -58,15 +58,15 @@ def job_task_constraints(
     """
     constraints = []
 
-    for job in range(data.num_jobs):
-        job_var = job_vars[job]
-        related_task_vars = [task_vars[task] for task in data.job2tasks[job]]
+    for idx, job in enumerate(data.jobs):
+        job_var = job_vars[idx]
+        related_task_vars = [task_vars[task_idx] for task_idx in job.tasks]
 
         constraints.append(m.span(job_var, related_task_vars))
 
         for task_var in related_task_vars:
             constraints.append(
-                m.start_of(task_var) >= data.jobs[job].release_date
+                m.start_of(task_var) >= data.jobs[idx].release_date
             )
 
     return constraints
