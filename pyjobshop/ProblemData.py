@@ -117,44 +117,36 @@ class Task:
     Parameters
     ----------
     earliest_start
-        Earliest start time of the task.
+        Earliest start time of the task. Default 0.
     latest_start
-        Latest start time of the task.
+        Latest start time of the task. Default ``MAX_VALUE``.
     earliest_end
-        Earliest end time of the task.
+        Earliest end time of the task. Default 0.
     latest_end
-        Latest end time of the task.
+        Latest end time of the task. Default ``MAX_VALUE``.
     fixed_duration
         Whether the task has a fixed duration. A fixed duration means that
         the task duration is precisely the processing time (on a given
         machine). If the duration is not fixed, then the task duration
         can take longer than the processing time, e.g., due to blocking.
-        Default is True.
+        Default ``True``.
     name
         Name of the task.
     """
 
     def __init__(
         self,
-        earliest_start: Optional[int] = None,
-        latest_start: Optional[int] = None,
-        earliest_end: Optional[int] = None,
-        latest_end: Optional[int] = None,
+        earliest_start: int = 0,
+        latest_start: int = MAX_VALUE,
+        earliest_end: int = 0,
+        latest_end: int = MAX_VALUE,
         fixed_duration: bool = True,
         name: str = "",
     ):
-        if (
-            earliest_start is not None
-            and latest_start is not None
-            and earliest_start > latest_start
-        ):
+        if earliest_start > latest_start:
             raise ValueError("earliest_start must be <= latest_start.")
 
-        if (
-            earliest_end is not None
-            and latest_end is not None
-            and earliest_end > latest_end
-        ):
+        if earliest_end > latest_end:
             raise ValueError("earliest_end must be <= latest_end.")
 
         self._earliest_start = earliest_start
@@ -165,19 +157,19 @@ class Task:
         self._name = name
 
     @property
-    def earliest_start(self) -> Optional[int]:
+    def earliest_start(self) -> int:
         return self._earliest_start
 
     @property
-    def latest_start(self) -> Optional[int]:
+    def latest_start(self) -> int:
         return self._latest_start
 
     @property
-    def earliest_end(self) -> Optional[int]:
+    def earliest_end(self) -> int:
         return self._earliest_end
 
     @property
-    def latest_end(self) -> Optional[int]:
+    def latest_end(self) -> int:
         return self._latest_end
 
     @property

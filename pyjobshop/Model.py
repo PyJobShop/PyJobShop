@@ -164,10 +164,10 @@ class Model:
     def add_task(
         self,
         job: Optional[Job] = None,
-        earliest_start: Optional[int] = None,
-        latest_start: Optional[int] = None,
-        earliest_end: Optional[int] = None,
-        latest_end: Optional[int] = None,
+        earliest_start: int = 0,
+        latest_start: int = MAX_VALUE,
+        earliest_end: int = 0,
+        latest_end: int = MAX_VALUE,
         fixed_duration: bool = True,
         name: str = "",
     ) -> Task:
@@ -177,17 +177,17 @@ class Model:
         Parameters
         ----------
         job
-            The job that the task belongs to.
+            The job that the task belongs to. Default None.
         earliest_start
-            Earliest start time of the task.
+            Earliest start time of the task. Default 0.
         latest_start
-            Latest start time of the task.
+            Latest start time of the task. Default ``MAX_VALUE``.
         earliest_end
-            Earliest end time of the task.
+            Earliest end time of the task. Default 0.
         latest_end
-            Latest end time of the task.
+            Latest end time of the task. Default ``MAX_VALUE``.
         fixed_duration
-            Whether the duration of the task is fixed. Defaults to True.
+            Whether the duration of the task is fixed. Default True.
         name
             Name of the task.
 

@@ -168,17 +168,13 @@ def task_variables(m: CpModel, data: ProblemData) -> list[TaskVar]:
         tasks.append(task_var)
 
         # Impose task data constraints.
-        if task.earliest_start is not None:
-            m.add(task_var.start >= task.earliest_start)
+        m.add(task_var.start >= task.earliest_start)
 
-        if task.latest_start is not None:
-            m.add(task_var.start <= task.latest_start)
+        m.add(task_var.start <= task.latest_start)
 
-        if task.earliest_end is not None:
-            m.add(task_var.end >= task.earliest_end)
+        m.add(task_var.end >= task.earliest_end)
 
-        if task.latest_end is not None:
-            m.add(task_var.end <= task.latest_end)
+        m.add(task_var.end <= task.latest_end)
 
     return tasks
 
