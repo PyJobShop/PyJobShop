@@ -99,31 +99,31 @@ def task_graph(
                     m.add(expr)
 
 
-def alternative_constraints(
+def select_one_task_alternative(
     m: CpModel,
     data: ProblemData,
     task_vars: TaskVars,
     assign_vars: AssignmentVars,
 ):
     """
-    Creates the alternative constraints for the tasks, ensuring that each
-    task is scheduled on exactly one machine.
+    Selects one optional (assignment) interval for each task, ensuring that
+    each task is scheduled on exactly one machine.
     """
     for task in range(data.num_tasks):
         presences = []
 
         for machine in data.task2machines[task]:
             main = task_vars[task]
-            assign = assign_vars[task, machine]
-            is_present = assign.is_present
+            opt = assign_vars[task, machine]
+            is_present = opt.is_present
             presences.append(is_present)
 
-            # Link each optional interval variable with the main variable.
-            m.add(main.start == assign.start).only_enforce_if(is_present)
-            m.add(main.duration == assign.duration).only_enforce_if(is_present)
-            m.add(main.end == assign.end).only_enforce_if(is_present)
+            # Sync each optional interval variable with the main variable.
+            m.add(main.start == opt.start).only_enforce_if(is_present)
+            m.add(main.duration == opt.duration).only_enforce_if(is_present)
+            m.add(main.end == opt.end).only_enforce_if(is_present)
 
-        # Select exactly one machine for the task.
+        # Select exactly one optional interval variable for each task.
         m.add_exactly_one(presences)
 
 
