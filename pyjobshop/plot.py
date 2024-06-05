@@ -47,7 +47,7 @@ def plot(
 
     for task_ in solution.schedule:
         task, machine, start, duration = (
-            task_.operation,
+            task_.task,
             task_.machine,
             task_.start,
             task_.duration,
