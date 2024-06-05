@@ -7,7 +7,7 @@ from pyjobshop.ProblemData import ProblemData
 from pyjobshop.Result import Result, SolveStatus
 from pyjobshop.Solution import Solution, Task
 
-from .model import model
+from .create_model import create_model
 
 
 def solve(
@@ -37,7 +37,7 @@ def solve(
         A Result object containing the best found solution and additional
         information about the solver run.
     """
-    cp_model, assign_vars = model(data)
+    cp_model, assign_vars = create_model(data)
 
     cp_solver = CpSolver()
     cp_solver.parameters.max_time_in_seconds = time_limit

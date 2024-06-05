@@ -28,11 +28,11 @@ from .variables import (
 )
 
 
-def model(
+def create_model(
     data: ProblemData,
 ) -> tuple[CpModel, dict[tuple[int, int], AssignmentVar]]:
     """
-    Creates an OR-Tools CP model for the given problem.
+    Creates an OR-Tools model for the given problem.
 
     Parameters
     ----------
@@ -42,7 +42,7 @@ def model(
     Returns
     -------
     tuple[CpModel, dict[tuple[int, int], AssignmentVar]]
-        The CP model and the assignment variables.
+        The constraint programming model and the assignment variables.
     """
     model = CpModel()
 

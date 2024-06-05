@@ -28,7 +28,7 @@ from .variables import (
 
 def create_model(data: ProblemData) -> CpoModel:
     """
-    Creates a CP model for the given problem data.
+    Creates a CP Optimizer model for the given problem data.
 
     Parameters
     ----------
@@ -38,7 +38,7 @@ def create_model(data: ProblemData) -> CpoModel:
     Returns
     -------
     CpoModel
-        The CP model for the given problem data.
+        The constraint programming model for the given problem data.
     """
     model = CpoModel()
 
