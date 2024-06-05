@@ -10,7 +10,6 @@ from .constraints import (
     no_overlap_constraints,
     processing_time_constraints,
     setup_time_constraints,
-    task_constraints,
     task_graph,
 )
 from .objectives import (
@@ -64,7 +63,6 @@ def create_model(
 
     job_data_constraints(model, data, job_vars)
     job_task_constraints(model, data, job_vars, task_vars)
-    task_constraints(model, data, task_vars)
     alternative_constraints(model, data, task_vars, assign_vars)
     no_overlap_constraints(model, data, seq_vars)
     processing_time_constraints(model, data, assign_vars)

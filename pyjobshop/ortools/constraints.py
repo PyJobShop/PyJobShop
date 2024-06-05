@@ -43,24 +43,6 @@ def job_task_constraints(
             m.add(var.start >= data.jobs[job].release_date)
 
 
-def task_constraints(m: CpModel, data: ProblemData, task_vars: TaskVars):
-    """
-    Creates constraints on the task variables.
-    """
-    for task_data, var in zip(data.tasks, task_vars):
-        if task_data.earliest_start is not None:
-            m.add(var.start >= task_data.earliest_start)
-
-        if task_data.latest_start is not None:
-            m.add(var.start <= task_data.latest_start)
-
-        if task_data.earliest_end is not None:
-            m.add(var.end >= task_data.earliest_end)
-
-        if task_data.latest_end is not None:
-            m.add(var.end <= task_data.latest_end)
-
-
 def task_graph(
     m: CpModel,
     data: ProblemData,

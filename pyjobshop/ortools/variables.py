@@ -127,7 +127,21 @@ def task_variables(m: CpModel, data: ProblemData) -> list[TaskVar]:
         interval_var = m.NewIntervalVar(
             start_var, duration_var, end_var, f"interval_{task}"
         )
-        tasks.append(TaskVar(interval_var, start_var, duration_var, end_var))
+        task_var = TaskVar(interval_var, start_var, duration_var, end_var)
+        tasks.append(task_var)
+
+        # Impose task data constraints.
+        if task.earliest_start is not None:
+            m.add(task_var.start >= task.earliest_start)
+
+        if task.latest_start is not None:
+            m.add(task_var.start <= task.latest_start)
+
+        if task.earliest_end is not None:
+            m.add(task_var.end >= task.earliest_end)
+
+        if task.latest_end is not None:
+            m.add(task_var.end <= task.latest_end)
 
     return tasks
 
