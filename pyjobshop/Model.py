@@ -79,8 +79,8 @@ class Model:
 
         # Convert setup times into a 3D array with zero as default.
         setup_times = np.zeros((num_machines, num_tasks, num_tasks), dtype=int)
-        for (machine, op1, op2), duration in self._setup_times.items():
-            setup_times[machine, op1, op2] = duration
+        for (machine, task1, task2), duration in self._setup_times.items():
+            setup_times[machine, task1, task2] = duration
 
         return ProblemData(
             jobs=self.jobs,
