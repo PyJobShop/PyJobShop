@@ -25,7 +25,6 @@ class Model:
         self._jobs: list[Job] = []
         self._machines: list[Machine] = []
         self._tasks: list[Task] = []
-        self._job2tasks: dict[int, list[int]] = defaultdict(list)
         self._processing_times: dict[tuple[int, int], int] = {}
         self._constraints: dict[tuple[int, int], list[Constraint]] = (
             defaultdict(list)
@@ -71,11 +70,8 @@ class Model:
         """
         Returns a ProblemData object containing the problem instance.
         """
-        num_jobs = len(self.jobs)
         num_tasks = len(self.tasks)
         num_machines = len(self.machines)
-
-        job2tasks = [self._job2tasks[idx] for idx in range(num_jobs)]
 
         # Convert setup times into a 3D array with zero as default.
         setup_times = np.zeros((num_machines, num_tasks, num_tasks), dtype=int)
@@ -86,7 +82,6 @@ class Model:
             jobs=self.jobs,
             machines=self.machines,
             tasks=self.tasks,
-            job2tasks=job2tasks,
             processing_times=self._processing_times,
             constraints=self._constraints,
             setup_times=setup_times,
@@ -211,7 +206,9 @@ class Model:
 
         if job is not None:
             job_idx = self._id2job[id(job)]
-            self._job2tasks[job_idx].append(task_idx)
+            self._jobs[job_idx].add_task(task_idx)
+            print(task_idx)
+            print(self._jobs[job_idx].tasks)
 
         return task
 

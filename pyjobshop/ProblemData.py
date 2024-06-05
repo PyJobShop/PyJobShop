@@ -9,8 +9,6 @@ from pyjobshop.constants import MAX_VALUE
 
 _CONSTRAINTS_TYPE = dict[tuple[int, int], list["Constraint"]]
 
-# TODO
-
 
 class Job:
     """
@@ -41,6 +39,7 @@ class Job:
         due_date: Optional[int] = None,
         deadline: Optional[int] = None,
         name: str = "",
+        tasks: Optional[list[int]] = None,
     ):
         if weight < 0:
             raise ValueError("Weight must be non-negative.")
@@ -62,6 +61,11 @@ class Job:
         self._due_date = due_date
         self._deadline = deadline
         self._name = name
+        self._tasks = [] if tasks is None else tasks
+
+    @property
+    def tasks(self) -> list[int]:
+        return self._tasks
 
     @property
     def weight(self) -> int:
@@ -82,6 +86,9 @@ class Job:
     @property
     def name(self) -> str:
         return self._name
+
+    def add_task(self, idx: int):
+        self._tasks.append(idx)
 
 
 class Machine:
@@ -261,8 +268,6 @@ class ProblemData:
         List of machines.
     tasks
         List of tasks.
-    job2tasks
-        List of task indices for each job.
     processing_times
         Processing times of tasks on machines. First index is the machine
         index, second index is the task index.
@@ -284,7 +289,6 @@ class ProblemData:
         jobs: list[Job],
         machines: list[Machine],
         tasks: list[Task],
-        job2tasks: list[list[int]],
         processing_times: dict[tuple[int, int], int],
         constraints: _CONSTRAINTS_TYPE,
         setup_times: Optional[np.ndarray] = None,
@@ -294,7 +298,6 @@ class ProblemData:
         self._jobs = jobs
         self._machines = machines
         self._tasks = tasks
-        self._job2tasks = job2tasks
         self._processing_times = processing_times
         self._constraints = constraints
 
@@ -374,7 +377,7 @@ class ProblemData:
         list[list[int]]
             List of task indices for each job.
         """
-        return self._job2tasks
+        return [job.tasks for job in self.jobs]
 
     @property
     def processing_times(self) -> dict[tuple[int, int], int]:
