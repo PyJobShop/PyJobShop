@@ -61,7 +61,7 @@ def instance2data(instance: fjsplib.Instance) -> pyjobshop.ProblemData:
     return m.data()
 
 
-def main(
+def benchmark(
     instance_loc: Path,
     solver: str,
     time_limit: float,
@@ -74,5 +74,9 @@ def main(
     print(result)
 
 
+def main():
+    benchmark(**vars(parse_args()))
+
+
 if __name__ == "__main__":
-    main(**vars(parse_args()))
+    main()
