@@ -24,7 +24,9 @@ def parse_args():
     )
 
     msg = "Time limit for solving the instance, in seconds."
-    parser.add_argument("--time_limit", type=float, default=10, help=msg)
+    parser.add_argument(
+        "--time_limit", type=float, default=float("inf"), help=msg
+    )
 
     msg = "Whether to log the solver output."
     parser.add_argument("--log", action="store_true", help=msg)
