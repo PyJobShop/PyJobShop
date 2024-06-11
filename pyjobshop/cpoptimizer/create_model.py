@@ -44,13 +44,13 @@ def create_model(data: ProblemData) -> CpoModel:
     seq_vars = sequence_variables(model, data, assign_vars)
 
     if data.objective == "makespan":
-        model.add(makespan(model, data, task_vars))
+        makespan(model, data, task_vars)
     elif data.objective == "tardy_jobs":
-        model.add(tardy_jobs(model, data, job_vars))
+        tardy_jobs(model, data, job_vars)
     elif data.objective == "total_tardiness":
-        model.add(total_tardiness(model, data, job_vars))
+        total_tardiness(model, data, job_vars)
     elif data.objective == "total_completion_time":
-        model.add(total_completion_time(model, data, job_vars))
+        total_completion_time(model, data, job_vars)
     else:
         raise ValueError(f"Unknown objective: {data.objective}")
 
