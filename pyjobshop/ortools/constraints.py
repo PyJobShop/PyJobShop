@@ -30,6 +30,59 @@ def job_spans_tasks(
             m.add(var.start >= data.jobs[job].release_date)
 
 
+def select_one_task_alternative(
+    m: CpModel,
+    data: ProblemData,
+    task_vars: TaskVars,
+    assign_vars: AssignmentVars,
+):
+    """
+    Selects one optional (assignment) interval for each task, ensuring that
+    each task is scheduled on exactly one machine.
+    """
+    for task in range(data.num_tasks):
+        presences = []
+
+        for machine in data.task2machines[task]:
+            main = task_vars[task]
+            opt = assign_vars[task, machine]
+            is_present = opt.is_present
+            presences.append(is_present)
+
+            # Sync each optional interval variable with the main variable.
+            m.add(main.start == opt.start).only_enforce_if(is_present)
+            m.add(main.duration == opt.duration).only_enforce_if(is_present)
+            m.add(main.end == opt.end).only_enforce_if(is_present)
+
+        # Select exactly one optional interval variable for each task.
+        m.add_exactly_one(presences)
+
+
+def no_overlap_machines(m: CpModel, data: ProblemData, seq_vars: SequenceVars):
+    """
+    Creates the no overlap constraints for machines, ensuring that no two
+    intervals in a sequence variable are overlapping.
+    """
+    for machine in range(data.num_machines):
+        if not data.machines[machine].allow_overlap:
+            m.add_no_overlap([var.interval for var in seq_vars[machine].tasks])
+
+
+def activate_setup_times(
+    m: CpModel, data: ProblemData, seq_vars: SequenceVars
+):
+    """
+    Activates the sequence variables for machines that have setup times. The
+    ``circuit_constraints`` function will in turn add constraints to the
+    CP-SAT model to enforce setup times.
+    """
+    for machine in range(data.num_machines):
+        setup_times = data.setup_times[machine]
+
+        if np.any(setup_times != 0):
+            seq_vars[machine].activate()
+
+
 def task_graph(
     m: CpModel,
     data: ProblemData,
@@ -95,59 +148,6 @@ def task_graph(
                 elif constraint == "different_unit":
                     expr = var1.is_present != var2.is_present
                     m.add(expr)
-
-
-def select_one_task_alternative(
-    m: CpModel,
-    data: ProblemData,
-    task_vars: TaskVars,
-    assign_vars: AssignmentVars,
-):
-    """
-    Selects one optional (assignment) interval for each task, ensuring that
-    each task is scheduled on exactly one machine.
-    """
-    for task in range(data.num_tasks):
-        presences = []
-
-        for machine in data.task2machines[task]:
-            main = task_vars[task]
-            opt = assign_vars[task, machine]
-            is_present = opt.is_present
-            presences.append(is_present)
-
-            # Sync each optional interval variable with the main variable.
-            m.add(main.start == opt.start).only_enforce_if(is_present)
-            m.add(main.duration == opt.duration).only_enforce_if(is_present)
-            m.add(main.end == opt.end).only_enforce_if(is_present)
-
-        # Select exactly one optional interval variable for each task.
-        m.add_exactly_one(presences)
-
-
-def no_overlap_machines(m: CpModel, data: ProblemData, seq_vars: SequenceVars):
-    """
-    Creates the no overlap constraints for machines, ensuring that no two
-    intervals in a sequence variable are overlapping.
-    """
-    for machine in range(data.num_machines):
-        if not data.machines[machine].allow_overlap:
-            m.add_no_overlap([var.interval for var in seq_vars[machine].tasks])
-
-
-def activate_setup_times(
-    m: CpModel, data: ProblemData, seq_vars: SequenceVars
-):
-    """
-    Activates the sequence variables for machines that have setup times. The
-    ``circuit_constraints`` function will in turn add constraints to the
-    CP-SAT model to enforce setup times.
-    """
-    for machine in range(data.num_machines):
-        setup_times = data.setup_times[machine]
-
-        if np.any(setup_times != 0):
-            seq_vars[machine].activate()
 
 
 def enforce_circuit(m: CpModel, data: ProblemData, seq_vars: SequenceVars):
