@@ -2,7 +2,7 @@ import fjsplib
 from fjsplib import read
 
 import pyjobshop
-from pyjobshop import Model
+from pyjobshop import Constraint, Model
 
 
 def instance2model(instance: fjsplib.Instance) -> pyjobshop.Model:
@@ -20,7 +20,11 @@ def instance2model(instance: fjsplib.Instance) -> pyjobshop.Model:
                 m.add_processing_time(machines[machine_idx], task, duration)
 
     for frm, to in instance.precedences:
-        m.add_constraint(m.tasks[frm], m.tasks[to], "end_before_start")
+        m.add_constraint(
+            m.tasks[frm],
+            m.tasks[to],
+            Constraint.END_BEFORE_START,
+        )
 
     return m
 
