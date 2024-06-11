@@ -4,7 +4,7 @@ from pyjobshop.ProblemData import ProblemData
 
 from .constraints import (
     job_spans_tasks,
-    no_overlap_and_setup_time_constraints,
+    no_overlap_and_setup_times,
     select_one_task_alternative,
     task_graph,
 )
@@ -56,7 +56,7 @@ def create_model(data: ProblemData) -> CpoModel:
 
     select_one_task_alternative(model, data, task_vars, assign_vars)
     job_spans_tasks(model, data, job_vars, task_vars)
-    no_overlap_and_setup_time_constraints(model, data, seq_vars)
+    no_overlap_and_setup_times(model, data, seq_vars)
     task_graph(model, data, task_vars, assign_vars, seq_vars)
 
     return model

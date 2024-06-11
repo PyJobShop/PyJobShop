@@ -41,12 +41,13 @@ def job_spans_tasks(
         m.add(m.span(job_var, related_task_vars))
 
 
-def no_overlap_and_setup_time_constraints(
+def no_overlap_and_setup_times(
     m: CpoModel, data: ProblemData, seq_vars: SeqVars
 ):
     """
     Creates the no-overlap constraints for machines, ensuring that no two
-    intervals in a sequence variable are overlapping.
+    intervals in a sequence variable are overlapping. If setup times are
+    available, the setup times are enforced as well.
     """
     # Assumption: the interval variables in the sequence variable
     # are ordered in the same way as the tasks in machine2tasks.
