@@ -8,6 +8,21 @@ from pyjobshop.ProblemData import ProblemData
 
 @dataclass
 class JobVar:
+    """
+    Variables that represent a job in the problem.
+
+    Parameters
+    ----------
+    interval
+        The interval variable representing the job.
+    start
+        The start time variable of the interval.
+    duration
+        The duration variable of the interval.
+    end
+        The end time variable of the interval.
+    """
+
     interval: IntervalVar
     start: IntVar
     duration: IntVar
@@ -16,6 +31,21 @@ class JobVar:
 
 @dataclass
 class TaskVar:
+    """
+    Variables that represent a task in the problem.
+
+    Parameters
+    ----------
+    interval
+        The interval variable representing the task.
+    start
+        The start time variable of the interval.
+    duration
+        The duration variable of the interval.
+    end
+        The end time variable of the interval.
+    """
+
     interval: IntervalVar
     start: IntVar
     duration: IntVar
@@ -34,16 +64,13 @@ class AssignmentVar:
     interval
         The interval variable representing the assignment of the task.
     start
-        The start variable time of the interval.
+        The start time variable of the interval.
     duration
         The duration variable of the interval.
     end
-        The end variable time of the interval.
+        The end time variable of the interval.
     is_present
         The boolean variable indicating whether the interval is present.
-    rank
-        The rank variable of the interval on the machine. Used to order the
-        intervals in the sequence variable of the machine.
     """
 
     task_idx: int
@@ -52,7 +79,6 @@ class AssignmentVar:
     duration: IntVar
     end: IntVar
     is_present: IntVar
-    rank: IntVar  # the rank of the task on machine
 
 
 @dataclass
@@ -68,6 +94,9 @@ class SequenceVar:
         The start literals for each task.
     ends
         The end literals for each task.
+    ranks
+        The rank variables of each interval on the machine. Used to define the
+        ordering of the intervals in the machine sequence.
     arcs
         The arc literals between each pair of tasks. Keys are tuples of
         indices.
@@ -79,6 +108,7 @@ class SequenceVar:
     tasks: list[AssignmentVar]
     starts: list[BoolVarT]
     ends: list[BoolVarT]
+    ranks: list[IntVar]
     arcs: dict[tuple[int, int], BoolVarT]
     is_active: bool = False
 
@@ -94,42 +124,68 @@ def job_variables(m: CpModel, data: ProblemData) -> list[JobVar]:
     """
     Creates an interval variable for each job.
     """
-    jobs = []
+    variables = []
 
     for job in data.jobs:
         name = f"J{job}"
-        start_var = m.new_int_var(0, data.planning_horizon, f"{name}_start")
-        duration_var = m.new_int_var(
-            0, data.planning_horizon, f"{name}_duration"
+        start = m.new_int_var(
+            lb=job.release_date,
+            ub=data.planning_horizon,
+            name=f"{name}_start",
         )
-        end_var = m.new_int_var(0, data.planning_horizon, f"{name}_end")
-        interval_var = m.NewIntervalVar(
-            start_var, duration_var, end_var, f"interval_{job}"
+        duration = m.new_int_var(
+            lb=0,
+            ub=min(job.deadline - job.release_date, data.planning_horizon),
+            name=f"{name}_duration",
         )
-        jobs.append(JobVar(interval_var, start_var, duration_var, end_var))
+        end = m.new_int_var(
+            lb=0,
+            ub=min(job.deadline, data.planning_horizon),
+            name=f"{name}_end",
+        )
+        interval = m.NewIntervalVar(start, duration, end, f"{name}_interval")
+        variables.append(JobVar(interval, start, duration, end))
 
-    return jobs
+    return variables
 
 
 def task_variables(m: CpModel, data: ProblemData) -> list[TaskVar]:
     """
     Creates an interval variable for each task.
     """
-    tasks = []
+    variables = []
 
-    for task in data.tasks:
+    # Improve duration bounds using processing times.
+    min_durations: dict[int, int] = defaultdict(lambda: data.planning_horizon)
+    max_durations: dict[int, int] = defaultdict(lambda: 0)
+
+    for (_, task_idx), duration in data.processing_times.items():
+        min_durations[task_idx] = min(min_durations[task_idx], duration)
+        max_durations[task_idx] = max(max_durations[task_idx], duration)
+
+    for idx, task in enumerate(data.tasks):
         name = f"T{task}"
-        start_var = m.new_int_var(0, data.planning_horizon, f"{name}_start")
-        duration_var = m.new_int_var(
-            0, data.planning_horizon, f"{name}_duration"
+        start = m.new_int_var(
+            lb=task.earliest_start,
+            ub=min(task.latest_start, data.planning_horizon),
+            name=f"{name}_start",
         )
-        end_var = m.new_int_var(0, data.planning_horizon, f"{name}_end")
-        interval_var = m.NewIntervalVar(
-            start_var, duration_var, end_var, f"interval_{task}"
+        duration = m.new_int_var(
+            lb=min_durations[idx],
+            ub=max_durations[idx]
+            if task.fixed_duration
+            else data.planning_horizon,  # unbounded if variable duration
+            name=f"{name}_duration",
         )
-        tasks.append(TaskVar(interval_var, start_var, duration_var, end_var))
+        end = m.new_int_var(
+            lb=task.earliest_end,
+            ub=min(task.latest_end, data.planning_horizon),
+            name=f"{name}_end",
+        )
+        interval = m.NewIntervalVar(start, duration, end, f"interval_{task}")
+        variables.append(TaskVar(interval, start, duration, end))
 
-    return tasks
+    return variables
 
 
 def assignment_variables(
@@ -140,33 +196,37 @@ def assignment_variables(
     """
     variables = {}
 
-    for (machine, task), duration in data.processing_times.items():
+    for (machine_idx, task_idx), proc_time in data.processing_times.items():
+        task = data.tasks[task_idx]
+        machine = data.machines[machine_idx]
         name = f"A{task}_{machine}"
-        start_var = m.new_int_var(0, data.planning_horizon, f"{name}_start")
-        duration_var = m.new_int_var(
-            0, data.planning_horizon, f"{name}_duration"
+        start = m.new_int_var(
+            lb=task.earliest_start,
+            ub=min(task.latest_start, data.planning_horizon),
+            name=f"{name}_start",
         )
-        end_var = m.new_int_var(0, data.planning_horizon, f"{name}_start")
-        is_present_var = m.new_bool_var(f"{name}_is_present")
-        interval_var = m.new_optional_interval_var(
-            start_var,
-            duration_var,
-            end_var,
-            is_present_var,
-            f"{name}_interval",
+        duration = m.new_int_var(
+            lb=proc_time,
+            ub=proc_time if task.fixed_duration else data.planning_horizon,
+            name=f"{name}_duration",
         )
-        rank_var = m.new_int_var(-1, data.num_jobs, f"{name}_rank")
-        variables[task, machine] = AssignmentVar(
-            task_idx=task,
-            interval=interval_var,
-            start=start_var,
-            duration=duration_var,
-            end=end_var,
-            is_present=is_present_var,
-            rank=rank_var,
+        end = m.new_int_var(
+            lb=task.earliest_end,
+            ub=min(task.latest_end, data.planning_horizon),
+            name=f"{name}_start",
         )
-
-        m.add(duration_var >= duration)
+        is_present = m.new_bool_var(f"{name}_is_present")
+        interval = m.new_optional_interval_var(
+            start, duration, end, is_present, f"{name}_interval"
+        )
+        variables[task_idx, machine_idx] = AssignmentVar(
+            task_idx=task_idx,
+            interval=interval,
+            start=start,
+            duration=duration,
+            end=end,
+            is_present=is_present,
+        )
 
     return variables
 
@@ -182,19 +242,18 @@ def sequence_variables(
     """
     variables = []
 
-    # Group the assignment variables by machine.
-    machine2tasks = defaultdict(list)
-    for (_, machine), var in assign.items():
-        machine2tasks[machine].append(var)
-
     for machine in range(data.num_machines):
-        tasks = machine2tasks[machine]
-        num_tasks = len(tasks)
+        tasks = data.machine2tasks[machine]
+        assign_vars = [assign[task, machine] for task in tasks]
+        num_tasks = len(assign_vars)
 
         # Start and end literals define whether the corresponding interval
         # is first or last in the sequence, respectively.
         starts = [m.new_bool_var("") for _ in range(num_tasks)]
         ends = [m.new_bool_var("") for _ in range(num_tasks)]
+
+        # Rank variables define the position of the task in the sequence.
+        ranks = [m.new_int_var(-1, num_tasks, "") for _ in range(num_tasks)]
 
         # Arc literals indicate if two intervals are scheduled consecutively.
         arcs = {
@@ -203,6 +262,6 @@ def sequence_variables(
             for j in range(num_tasks)
         }
 
-        variables.append(SequenceVar(tasks, starts, ends, arcs))
+        variables.append(SequenceVar(assign_vars, starts, ends, ranks, arcs))
 
     return variables

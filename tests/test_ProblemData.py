@@ -1,5 +1,3 @@
-from typing import Optional
-
 import numpy as np
 import pytest
 from numpy.testing import assert_allclose, assert_equal, assert_raises
@@ -38,8 +36,8 @@ def test_job_default_attributes():
 
     assert_equal(job.weight, 1)
     assert_equal(job.release_date, 0)
+    assert_equal(job.deadline, MAX_VALUE)
     assert_equal(job.due_date, None)
-    assert_equal(job.deadline, None)
     assert_equal(job.name, "")
 
 
@@ -48,13 +46,13 @@ def test_job_default_attributes():
     [
         (-1, 0, 0, 0, ""),  # weight < 0
         (0, -1, 0, 0, ""),  # release_date < 0
-        (0, 0, -1, 0, ""),  # due_date < 0
-        (0, 0, 0, -1, ""),  # deadline < 0
+        (0, 0, -1, 0, ""),  # deadline < 0
         (0, 10, 0, 0, ""),  # release_date > deadline
+        (0, 0, 0, -1, ""),  # due_date < 0
     ],
 )
 def test_job_attributes_raises_invalid_parameters(
-    weight: int, release_date: int, due_date: int, deadline: int, name: str
+    weight: int, release_date: int, deadline: int, due_date: int, name: str
 ):
     """
     Tests that a ValueError is raised when invalid parameters are passed to
@@ -64,8 +62,8 @@ def test_job_attributes_raises_invalid_parameters(
         Job(
             weight=weight,
             release_date=release_date,
-            due_date=due_date,
             deadline=deadline,
+            due_date=due_date,
             name=name,
         )
 
@@ -110,10 +108,10 @@ def test_task_attributes():
     # Also test that default values are set correctly.
     task = Task()
 
-    assert_equal(task.earliest_start, None)
-    assert_equal(task.latest_start, None)
-    assert_equal(task.earliest_end, None)
-    assert_equal(task.latest_end, None)
+    assert_equal(task.earliest_start, 0)
+    assert_equal(task.latest_start, MAX_VALUE)
+    assert_equal(task.earliest_end, 0)
+    assert_equal(task.latest_end, MAX_VALUE)
     assert_equal(task.fixed_duration, True)
     assert_equal(task.name, "")
 
@@ -121,15 +119,15 @@ def test_task_attributes():
 @pytest.mark.parametrize(
     "earliest_start, latest_start, earliest_end, latest_end",
     [
-        (1, 0, None, None),  # earliest_start > latest_start
-        (None, None, 1, 0),  # earliest_end > latest_end
+        (1, 0, 0, 0),  # earliest_start > latest_start
+        (0, 0, 1, 0),  # earliest_end > latest_end
     ],
 )
 def test_task_attributes_raises_invalid_parameters(
-    earliest_start: Optional[int],
-    latest_start: Optional[int],
-    earliest_end: Optional[int],
-    latest_end: Optional[int],
+    earliest_start: int,
+    latest_start: int,
+    earliest_end: int,
+    latest_end: int,
 ):
     """
     Tests that an error is raised when invalid parameters are passed to the

@@ -13,24 +13,11 @@ AssignmentVars = dict[tuple[int, int], AssignmentVar]
 SequenceVars = list[SequenceVar]
 
 
-def job_data_constraints(m: CpModel, data: ProblemData, job_vars: JobVars):
-    """
-    Creates the constraints that ensure that the job variables are consistent
-    with the job data.
-    """
-    for job_data, job_var in zip(data.jobs, job_vars):
-        m.add(job_var.start >= job_data.release_date)
-
-        if job_data.deadline is not None:
-            m.add(job_var.end <= job_data.deadline)
-
-
-def job_task_constraints(
+def job_spans_tasks(
     m: CpModel, data: ProblemData, job_vars: JobVars, task_vars: TaskVars
 ):
     """
-    Creates the constraints that ensure that the job variables govern the
-    related task variables.
+    Ensures that the job variables span the related task variables.
     """
     for job in range(data.num_jobs):
         job_var = job_vars[job]
@@ -41,24 +28,6 @@ def job_task_constraints(
 
         for var in related_vars:
             m.add(var.start >= data.jobs[job].release_date)
-
-
-def task_constraints(m: CpModel, data: ProblemData, task_vars: TaskVars):
-    """
-    Creates constraints on the task variables.
-    """
-    for task_data, var in zip(data.tasks, task_vars):
-        if task_data.earliest_start is not None:
-            m.add(var.start >= task_data.earliest_start)
-
-        if task_data.latest_start is not None:
-            m.add(var.start <= task_data.latest_start)
-
-        if task_data.earliest_end is not None:
-            m.add(var.end >= task_data.earliest_end)
-
-        if task_data.latest_end is not None:
-            m.add(var.end <= task_data.latest_end)
 
 
 def task_graph(
@@ -112,16 +81,14 @@ def task_graph(
                 if constraint == "previous":
                     sequence.activate()
 
-                    rank1 = sequence.tasks.index(var1)
-                    rank2 = sequence.tasks.index(var2)
-                    arc_lit = sequence.arcs[rank1, rank2]
+                    idx1 = sequence.tasks.index(var1)
+                    idx2 = sequence.tasks.index(var2)
+                    arc = sequence.arcs[idx1, idx2]
 
-                    # Equivalent: arc_lit <=> var1.is_present & var2.is_present
-                    m.add_bool_or(
-                        [arc_lit, ~var1.is_present, ~var2.is_present]
-                    )
-                    m.add_implication(arc_lit, var1.is_present)
-                    m.add_implication(arc_lit, var2.is_present)
+                    # Equivalent: arc <=> var1.is_present & var2.is_present.
+                    m.add_bool_or([arc, ~var1.is_present, ~var2.is_present])
+                    m.add_implication(arc, var1.is_present)
+                    m.add_implication(arc, var2.is_present)
                 elif constraint == "same_unit":
                     expr = var1.is_present == var2.is_present
                     m.add(expr)
@@ -130,37 +97,35 @@ def task_graph(
                     m.add(expr)
 
 
-def alternative_constraints(
+def select_one_task_alternative(
     m: CpModel,
     data: ProblemData,
     task_vars: TaskVars,
     assign_vars: AssignmentVars,
 ):
     """
-    Creates the alternative constraints for the tasks, ensuring that each
-    task is scheduled on exactly one machine.
+    Selects one optional (assignment) interval for each task, ensuring that
+    each task is scheduled on exactly one machine.
     """
     for task in range(data.num_tasks):
         presences = []
 
         for machine in data.task2machines[task]:
             main = task_vars[task]
-            assign = assign_vars[task, machine]
-            is_present = assign.is_present
+            opt = assign_vars[task, machine]
+            is_present = opt.is_present
             presences.append(is_present)
 
-            # Link each optional interval variable with the main variable.
-            m.add(main.start == assign.start).only_enforce_if(is_present)
-            m.add(main.duration == assign.duration).only_enforce_if(is_present)
-            m.add(main.end == assign.end).only_enforce_if(is_present)
+            # Sync each optional interval variable with the main variable.
+            m.add(main.start == opt.start).only_enforce_if(is_present)
+            m.add(main.duration == opt.duration).only_enforce_if(is_present)
+            m.add(main.end == opt.end).only_enforce_if(is_present)
 
-        # Select exactly one machine for the task.
+        # Select exactly one optional interval variable for each task.
         m.add_exactly_one(presences)
 
 
-def no_overlap_constraints(
-    m: CpModel, data: ProblemData, seq_vars: SequenceVars
-):
+def no_overlap_machines(m: CpModel, data: ProblemData, seq_vars: SequenceVars):
     """
     Creates the no overlap constraints for machines, ensuring that no two
     intervals in a sequence variable are overlapping.
@@ -170,30 +135,12 @@ def no_overlap_constraints(
             m.add_no_overlap([var.interval for var in seq_vars[machine].tasks])
 
 
-def processing_time_constraints(
-    m: CpModel, data: ProblemData, assign_vars: AssignmentVars
-):
-    """
-    Creates the processing time constraints for the task variables, ensuring
-    that the duration of the task on the machine is the processing time.
-    If the task allows for variable duration, the duration could be longer
-    than the processing time due to blocking.
-    """
-    for (task, machine), var in assign_vars.items():
-        duration = data.processing_times[machine, task]
-
-        if data.tasks[task].fixed_duration:
-            m.add(var.duration == duration)
-        else:
-            m.add(var.duration >= duration)
-
-
-def setup_time_constraints(
+def activate_setup_times(
     m: CpModel, data: ProblemData, seq_vars: SequenceVars
 ):
     """
-    Actives the sequence variables for machines that have setup times. The
-    ``circuit_constraints`` function will in turn add the constraints to the
+    Activates the sequence variables for machines that have setup times. The
+    ``circuit_constraints`` function will in turn add constraints to the
     CP-SAT model to enforce setup times.
     """
     for machine in range(data.num_machines):
@@ -203,9 +150,9 @@ def setup_time_constraints(
             seq_vars[machine].activate()
 
 
-def circuit_constraints(m: CpModel, data: ProblemData, seq_vars: SequenceVars):
+def enforce_circuit(m: CpModel, data: ProblemData, seq_vars: SequenceVars):
     """
-    Creates the circuit constraints for each machine, ensuring that the
+    Enforce the circuit constraints for each machine, ensuring that the
     sequencing constraints are respected.
     """
     for machine in range(data.num_machines):
@@ -219,41 +166,43 @@ def circuit_constraints(m: CpModel, data: ProblemData, seq_vars: SequenceVars):
         assign_vars = sequence.tasks
         starts = sequence.starts
         ends = sequence.ends
-        arc_lits = sequence.arcs
-        arcs = []
+        ranks = sequence.ranks
+        arcs = sequence.arcs
+        circuit = []
 
         for idx1, var1 in enumerate(assign_vars):
             # Set initial arcs from the dummy node (0) to/from a task.
-            start_lit = starts[idx1]
-            end_lit = ends[idx1]
+            start = starts[idx1]
+            end = ends[idx1]
+            rank = ranks[idx1]
 
-            arcs.append([0, idx1 + 1, start_lit])
-            arcs.append([idx1 + 1, 0, end_lit])
+            circuit.append([0, idx1 + 1, start])
+            circuit.append([idx1 + 1, 0, end])
 
             # If this task is the first, set rank.
-            m.add(var1.rank == 0).only_enforce_if(start_lit)
+            m.add(rank == 0).only_enforce_if(start)
 
             # Self arc if the task is not present on this machine.
-            arcs.append([idx1 + 1, idx1 + 1, ~var1.is_present])
-            m.add(var1.rank == -1).only_enforce_if(~var1.is_present)
+            circuit.append([idx1 + 1, idx1 + 1, ~var1.is_present])
+            m.add(rank == -1).only_enforce_if(~var1.is_present)
 
             for idx2, var2 in enumerate(assign_vars):
                 if idx1 == idx2:
                     continue
 
-                arc_lit = arc_lits[idx1, idx2]
-                arcs.append([idx1 + 1, idx2 + 1, arc_lit])
+                arc = arcs[idx1, idx2]
+                circuit.append([idx1 + 1, idx2 + 1, arc])
 
-                m.add_implication(arc_lit, var1.is_present)
-                m.add_implication(arc_lit, var2.is_present)
+                m.add_implication(arc, var1.is_present)
+                m.add_implication(arc, var2.is_present)
 
                 # Maintain rank incrementally.
-                m.add(var1.rank + 1 == var2.rank).only_enforce_if(arc_lit)
+                m.add(rank + 1 == ranks[idx2]).only_enforce_if(arc)
 
                 # TODO Validate that this cannot be combined with overlap.
                 task1, task2 = var1.task_idx, var2.task_idx
                 setup = data.setup_times[machine][task1, task2]
-                m.add(var1.end + setup <= var2.start).only_enforce_if(arc_lit)
+                m.add(var1.end + setup <= var2.start).only_enforce_if(arc)
 
-        if arcs:
-            m.add_circuit(arcs)
+        if circuit:
+            m.add_circuit(circuit)
