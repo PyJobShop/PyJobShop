@@ -54,9 +54,9 @@ def create_model(data: ProblemData) -> CpoModel:
     else:
         raise ValueError(f"Unknown objective: {data.objective}")
 
-    select_one_task_alternative(model, data, task_vars, assign_vars)
     job_spans_tasks(model, data, job_vars, task_vars)
     no_overlap_and_setup_times(model, data, seq_vars)
+    select_one_task_alternative(model, data, task_vars, assign_vars)
     task_graph(model, data, task_vars, assign_vars, seq_vars)
 
     return model

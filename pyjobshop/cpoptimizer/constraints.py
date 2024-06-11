@@ -12,22 +12,6 @@ AssignmentVars = dict[tuple[int, int], CpoIntervalVar]
 SeqVars = list[CpoSequenceVar]
 
 
-def select_one_task_alternative(
-    m: CpoModel,
-    data: ProblemData,
-    task_vars: TaskVars,
-    assign_vars: AssignmentVars,
-):
-    """
-    Selects one optional (assignment) interval for each task, ensuring that
-    each task is scheduled on exactly one machine.
-    """
-    for task in range(data.num_tasks):
-        machines = data.task2machines[task]
-        optional = [assign_vars[task, machine] for machine in machines]
-        m.add(m.alternative(task_vars[task], optional))
-
-
 def job_spans_tasks(
     m: CpoModel, data: ProblemData, job_vars: JobVars, task_vars: TaskVars
 ):
@@ -64,6 +48,22 @@ def no_overlap_and_setup_times(
             m.add(m.no_overlap(seq_vars[machine]))
         else:
             m.add(m.no_overlap(seq_vars[machine], setups))
+
+
+def select_one_task_alternative(
+    m: CpoModel,
+    data: ProblemData,
+    task_vars: TaskVars,
+    assign_vars: AssignmentVars,
+):
+    """
+    Selects one optional (assignment) interval for each task, ensuring that
+    each task is scheduled on exactly one machine.
+    """
+    for task in range(data.num_tasks):
+        machines = data.task2machines[task]
+        optional = [assign_vars[task, machine] for machine in machines]
+        m.add(m.alternative(task_vars[task], optional))
 
 
 def task_graph(
