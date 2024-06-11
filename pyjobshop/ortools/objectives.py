@@ -5,15 +5,15 @@ from pyjobshop.ProblemData import ProblemData
 from .variables import JobVar, TaskVar
 
 
-def makespan(model: CpModel, data: ProblemData, task_vars: list[TaskVar]):
+def makespan(m: CpModel, data: ProblemData, task_vars: list[TaskVar]):
     """
     Minimizes the makespan.
     """
-    makespan = model.new_int_var(0, data.planning_horizon, "makespan")
+    makespan = m.new_int_var(0, data.planning_horizon, "makespan")
     completion_times = [var.end for var in task_vars]
 
-    model.add_max_equality(makespan, completion_times)
-    model.minimize(makespan)
+    m.add_max_equality(makespan, completion_times)
+    m.minimize(makespan)
 
 
 def tardy_jobs(m: CpModel, data: ProblemData, job_vars: list[JobVar]):

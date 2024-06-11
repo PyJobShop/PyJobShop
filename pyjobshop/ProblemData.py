@@ -18,16 +18,16 @@ class Job:
     ----------
     weight
         The job importance weight, used as multiplicative factor in the
-        objective function.
+        objective function. Default 1.
     release_date
-        The earliest time that the job can start processing. Default is zero.
+        The earliest time that the job may start. Default 0.
+    deadline
+        The latest time by which the job must be completed. Note that a
+        deadline is different from a due date; the latter does not restrict
+        the latest completion time. Default ``MAX_VALUE``.
     due_date
         The latest time that the job should be completed before incurring
         penalties. Default is None, meaning that there is no due date.
-    deadline
-        The latest time that the job must be completed. Note that a deadline
-        is different from a due date; the latter does not constrain the latest
-        completion time. Default is None, meaning that there is no deadline.
     name
         Name of the job.
     """
@@ -36,8 +36,8 @@ class Job:
         self,
         weight: int = 1,
         release_date: int = 0,
+        deadline: int = MAX_VALUE,
         due_date: Optional[int] = None,
-        deadline: Optional[int] = None,
         name: str = "",
         tasks: Optional[list[int]] = None,
     ):
@@ -47,19 +47,19 @@ class Job:
         if release_date < 0:
             raise ValueError("Release date must be non-negative.")
 
+        if deadline < 0:
+            raise ValueError("Deadline must be non-negative.")
+
+        if release_date > deadline:
+            raise ValueError("Must have release_date <= deadline.")
+
         if due_date is not None and due_date < 0:
             raise ValueError("Due date must be non-negative.")
 
-        if deadline is not None and deadline < 0:
-            raise ValueError("Deadline must be non-negative.")
-
-        if deadline is not None and release_date > deadline:
-            raise ValueError("Must have release_date <= deadline.")
-
         self._weight = weight
         self._release_date = release_date
-        self._due_date = due_date
         self._deadline = deadline
+        self._due_date = due_date
         self._name = name
         self._tasks = [] if tasks is None else tasks
 
@@ -76,12 +76,12 @@ class Job:
         return self._release_date
 
     @property
-    def due_date(self) -> Optional[int]:
-        return self._due_date
+    def deadline(self) -> int:
+        return self._deadline
 
     @property
-    def deadline(self) -> Optional[int]:
-        return self._deadline
+    def due_date(self) -> Optional[int]:
+        return self._due_date
 
     @property
     def name(self) -> str:
@@ -124,44 +124,36 @@ class Task:
     Parameters
     ----------
     earliest_start
-        Earliest start time of the task.
+        Earliest start time of the task. Default 0.
     latest_start
-        Latest start time of the task.
+        Latest start time of the task. Default ``MAX_VALUE``.
     earliest_end
-        Earliest end time of the task.
+        Earliest end time of the task. Default 0.
     latest_end
-        Latest end time of the task.
+        Latest end time of the task. Default ``MAX_VALUE``.
     fixed_duration
         Whether the task has a fixed duration. A fixed duration means that
         the task duration is precisely the processing time (on a given
         machine). If the duration is not fixed, then the task duration
         can take longer than the processing time, e.g., due to blocking.
-        Default is True.
+        Default ``True``.
     name
         Name of the task.
     """
 
     def __init__(
         self,
-        earliest_start: Optional[int] = None,
-        latest_start: Optional[int] = None,
-        earliest_end: Optional[int] = None,
-        latest_end: Optional[int] = None,
+        earliest_start: int = 0,
+        latest_start: int = MAX_VALUE,
+        earliest_end: int = 0,
+        latest_end: int = MAX_VALUE,
         fixed_duration: bool = True,
         name: str = "",
     ):
-        if (
-            earliest_start is not None
-            and latest_start is not None
-            and earliest_start > latest_start
-        ):
+        if earliest_start > latest_start:
             raise ValueError("earliest_start must be <= latest_start.")
 
-        if (
-            earliest_end is not None
-            and latest_end is not None
-            and earliest_end > latest_end
-        ):
+        if earliest_end > latest_end:
             raise ValueError("earliest_end must be <= latest_end.")
 
         self._earliest_start = earliest_start
@@ -172,19 +164,19 @@ class Task:
         self._name = name
 
     @property
-    def earliest_start(self) -> Optional[int]:
+    def earliest_start(self) -> int:
         return self._earliest_start
 
     @property
-    def latest_start(self) -> Optional[int]:
+    def latest_start(self) -> int:
         return self._latest_start
 
     @property
-    def earliest_end(self) -> Optional[int]:
+    def earliest_end(self) -> int:
         return self._earliest_end
 
     @property
-    def latest_end(self) -> Optional[int]:
+    def latest_end(self) -> int:
         return self._latest_end
 
     @property
@@ -278,8 +270,7 @@ class ProblemData:
         The first dimension of the array is indexed by the machine index. The
         last two dimensions of the array are indexed by task indices.
     planning_horizon
-        The planning horizon value. Default is None, meaning that the planning
-        horizon is unbounded.
+        The planning horizon value. Default ``MAX_VALUE``.
     objective
         The objective function to be minimized. Default is the makespan.
     """
@@ -338,7 +329,7 @@ class ProblemData:
             msg = "Setup times shape not (num_machines, num_tasks, num_tasks)."
             raise ValueError(msg)
 
-        if self.planning_horizon is not None and self.planning_horizon < 0:
+        if self.planning_horizon < 0:
             raise ValueError("Planning horizon must be non-negative.")
 
         if self.objective in [Objective.TARDY_JOBS, Objective.TOTAL_TARDINESS]:

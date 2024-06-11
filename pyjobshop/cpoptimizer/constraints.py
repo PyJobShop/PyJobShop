@@ -1,7 +1,7 @@
 from itertools import product
 
 import numpy as np
-from docplex.cp.expression import CpoExpr, CpoIntervalVar, CpoSequenceVar
+from docplex.cp.expression import CpoIntervalVar, CpoSequenceVar
 from docplex.cp.model import CpoModel
 
 from pyjobshop.ProblemData import ProblemData
@@ -12,49 +12,11 @@ AssignmentVars = dict[tuple[int, int], CpoIntervalVar]
 SeqVars = list[CpoSequenceVar]
 
 
-def alternative_constraints(
-    m: CpoModel,
-    data: ProblemData,
-    task_vars: TaskVars,
-    assign_vars: AssignmentVars,
-) -> list[CpoExpr]:
-    """
-    Creates the alternative constraints for the tasks, ensuring that each
-    task is scheduled on exactly one machine.
-    """
-    constraints = []
-
-    for task in range(data.num_tasks):
-        machines = data.task2machines[task]
-        optional = [assign_vars[task, machine] for machine in machines]
-        constraints.append(m.alternative(task_vars[task], optional))
-
-    return constraints
-
-
-def job_data_constraints(
-    m: CpoModel, data: ProblemData, job_vars: JobVars
-) -> list[CpoExpr]:
-    """
-    Creates constraints related to the job data.
-    """
-    constraints = []
-
-    for job_data, job_var in zip(data.jobs, job_vars):
-        constraints.append(m.start_of(job_var) >= job_data.release_date)
-
-        if job_data.deadline is not None:
-            constraints.append(m.end_of(job_var) <= job_data.deadline)
-
-    return constraints
-
-
-def job_task_constraints(
+def job_spans_tasks(
     m: CpoModel, data: ProblemData, job_vars: JobVars, task_vars: TaskVars
-) -> list[CpoExpr]:
+):
     """
-    Creates the constraints that ensure that the job variables govern the
-    related task variables.
+    Ensures that the job variables span the related task variables.
     """
     constraints = []
 
@@ -65,22 +27,19 @@ def job_task_constraints(
         constraints.append(m.span(job_var, related_task_vars))
 
         for task_var in related_task_vars:
-            constraints.append(
-                m.start_of(task_var) >= data.jobs[idx].release_date
-            )
+            constraints.append(m.start_of(task_var) >= job.release_date)
 
     return constraints
 
 
-def no_overlap_and_setup_time_constraints(
+def no_overlap_and_setup_times(
     m: CpoModel, data: ProblemData, seq_vars: SeqVars
-) -> list[CpoExpr]:
+):
     """
     Creates the no-overlap constraints for machines, ensuring that no two
-    intervals in a sequence variable are overlapping.
+    intervals in a sequence variable are overlapping. If setup times are
+    available, the setup times are enforced as well.
     """
-    constraints = []
-
     # Assumption: the interval variables in the sequence variable
     # are ordered in the same way as the tasks in machine2tasks.
     for machine in range(data.num_machines):
@@ -93,91 +52,43 @@ def no_overlap_and_setup_time_constraints(
         setups = data.setup_times[machine, :, :][np.ix_(tasks, tasks)]
 
         if np.all(setups == 0):  # No setup times for this machine.
-            constraints.append(m.no_overlap(seq_vars[machine]))
+            m.add(m.no_overlap(seq_vars[machine]))
         else:
-            constraints.append(m.no_overlap(seq_vars[machine], setups))
-
-    return constraints
+            m.add(m.no_overlap(seq_vars[machine], setups))
 
 
-def task_constraints(
-    m: CpoModel, data: ProblemData, task_vars: TaskVars
-) -> list[CpoExpr]:
-    """
-    Creates constraints on the task variables.
-    """
-    for task_data, var in zip(data.tasks, task_vars):
-        if task_data.earliest_start is not None:
-            var.set_start_min(task_data.earliest_start)
-
-        if task_data.latest_start is not None:
-            var.set_start_max(task_data.latest_start)
-
-        if task_data.earliest_end is not None:
-            var.set_end_min(task_data.earliest_end)
-
-        if task_data.latest_end is not None:
-            var.set_end_max(task_data.latest_end)
-
-    return []  # no constraints because we use setters
-
-
-def planning_horizon_constraints(
+def select_one_task_alternative(
     m: CpoModel,
     data: ProblemData,
-    job_vars: JobVars,
-    assign_vars: AssignmentVars,
     task_vars: TaskVars,
-) -> list[CpoExpr]:
+    assign_vars: AssignmentVars,
+):
     """
-    Creates the planning horizon constraints for the interval variables,
-    ensuring that the end of each interval is within the planning horizon.
+    Selects one optional (assignment) interval for each task, ensuring that
+    each task is scheduled on exactly one machine.
     """
-    if data.planning_horizon is None:
-        return []  # unbounded planning horizon
-
-    constraints = []
-
-    for vars in [job_vars, assign_vars.values(), task_vars]:
-        constraints += [m.end_of(var) <= data.planning_horizon for var in vars]
-
-    return constraints
+    for task in range(data.num_tasks):
+        machines = data.task2machines[task]
+        optional = [assign_vars[task, machine] for machine in machines]
+        m.add(m.alternative(task_vars[task], optional))
 
 
-def processing_time_constraints(
-    m: CpoModel, data: ProblemData, assign_vars: AssignmentVars
-) -> list[CpoExpr]:
-    """
-    Creates the processing time constraints for the task variables, ensuring
-    that the duration of the task on the machine is the processing time.
-    If the task allows for variable duration, the duration could be longer
-    than the processing time due to blocking.
-    """
-    for (task, machine), var in assign_vars.items():
-        duration = data.processing_times[machine, task]
-
-        if data.tasks[task].fixed_duration:
-            var.set_size(duration)
-        else:
-            var.set_size_min(duration)  # at least duration
-
-    return []  # no constraints because we use setters
-
-
-def task_graph_constraints(
+def task_graph(
     m: CpoModel,
     data: ProblemData,
     task_vars: TaskVars,
     assign_vars: AssignmentVars,
     seq_vars: SeqVars,
-) -> list[CpoExpr]:
-    constraints = []
-
-    for (idx1, idx2), constraints_ in data.constraints.items():
+):
+    """
+    Creates constraints based on the task graph, ensuring that the
+    tasks are scheduled according to the graph.
+    """
+    for (idx1, idx2), constraints in data.constraints.items():
         task1 = task_vars[idx1]
         task2 = task_vars[idx2]
 
-        for constraint in constraints_:
+        for constraint in constraints:
             if constraint == "start_at_start":
                 expr = m.start_at_start(task1, task2)
             elif constraint == "start_at_end":
@@ -197,7 +108,7 @@ def task_graph_constraints(
             else:
                 continue
 
-            constraints.append(expr)
+            m.add(expr)
 
     # Separately handle assignment related constraints for efficiency.
     for machine, tasks in enumerate(data.machine2tasks):
@@ -218,6 +129,4 @@ def task_graph_constraints(
                 elif constraint == "different_unit":
                     expr = m.presence_of(var1) != m.presence_of(var2)
 
-                constraints.append(expr)
-
-    return constraints
+                m.add(expr)
