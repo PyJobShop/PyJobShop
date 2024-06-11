@@ -18,18 +18,14 @@ def job_spans_tasks(
     """
     Ensures that the job variables span the related task variables.
     """
-    constraints = []
-
     for idx, job in enumerate(data.jobs):
         job_var = job_vars[idx]
         related_task_vars = [task_vars[task_idx] for task_idx in job.tasks]
 
-        constraints.append(m.span(job_var, related_task_vars))
+        m.add(m.span(job_var, related_task_vars))
 
         for task_var in related_task_vars:
-            constraints.append(m.start_of(task_var) >= job.release_date)
-
-    return constraints
+            m.add(m.start_of(task_var) >= job.release_date)
 
 
 def no_overlap_and_setup_times(

@@ -12,9 +12,8 @@ def test_compute_min_max_durations():
         [Job()],
         [Machine(), Machine()],
         [Task(), Task()],
-        [[0, 0]],
-        {(0, 0): 1, (1, 0): 10},
-        {},
+        processing_times={(0, 0): 1, (1, 0): 10},
+        constraints={},
     )
 
     min_durations, max_durations = compute_min_max_durations(data)

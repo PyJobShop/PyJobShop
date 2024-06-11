@@ -206,8 +206,6 @@ class Model:
         if job is not None:
             job_idx = self._id2job[id(job)]
             self._jobs[job_idx].add_task(task_idx)
-            print(task_idx)
-            print(self._jobs[job_idx].tasks)
 
         return task
 
