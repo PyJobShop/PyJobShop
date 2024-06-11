@@ -65,24 +65,6 @@ def no_overlap_and_setup_time_constraints(
             m.add(m.no_overlap(seq_vars[machine], setups))
 
 
-def planning_horizon_constraints(
-    m: CpoModel,
-    data: ProblemData,
-    job_vars: JobVars,
-    assign_vars: AssignmentVars,
-    task_vars: TaskVars,
-):
-    """
-    Creates the planning horizon constraints for the interval variables,
-    ensuring that the end of each interval is within the planning horizon.
-    """
-    if data.planning_horizon is None:
-        return []  # unbounded planning horizon
-
-    for vars in [job_vars, assign_vars.values(), task_vars]:
-        m.add([m.end_of(var) <= data.planning_horizon for var in vars])
-
-
 def task_graph(
     m: CpoModel,
     data: ProblemData,
