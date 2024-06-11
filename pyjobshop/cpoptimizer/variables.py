@@ -1,9 +1,8 @@
-from collections import defaultdict
-
 from docplex.cp.expression import CpoIntervalVar, CpoSequenceVar
 from docplex.cp.model import CpoModel
 
 from pyjobshop.ProblemData import ProblemData
+from pyjobshop.utils import compute_min_max_durations
 
 AssignVars = dict[tuple[int, int], CpoIntervalVar]
 
@@ -30,14 +29,7 @@ def task_variables(m: CpoModel, data: ProblemData) -> list[CpoIntervalVar]:
     Creates an interval variable for each task in the problem.
     """
     variables = []
-
-    # Improve duration bounds using processing times.
-    min_durations: dict[int, int] = defaultdict(lambda: data.planning_horizon)
-    max_durations: dict[int, int] = defaultdict(lambda: 0)
-
-    for (_, task_idx), duration in data.processing_times.items():
-        min_durations[task_idx] = min(min_durations[task_idx], duration)
-        max_durations[task_idx] = max(max_durations[task_idx], duration)
+    min_durations, max_durations = compute_min_max_durations(data)
 
     for idx, task in enumerate(data.tasks):
         var = m.interval_var(name=f"T{task}")
