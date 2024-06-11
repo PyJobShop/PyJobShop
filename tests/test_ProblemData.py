@@ -344,7 +344,7 @@ def test_job_deadline_infeasible(solver: str):
 
     result = model.solve(solver=solver)
 
-    # Task's processing time is 2, but job deadline is 1.
+    # The processing time of the task is 2, but job deadline is 1.
     assert_equal(result.status.value, "Infeasible")
 
 

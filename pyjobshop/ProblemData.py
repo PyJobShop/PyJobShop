@@ -265,8 +265,7 @@ class ProblemData:
         The first dimension of the array is indexed by the machine index. The
         last two dimensions of the array are indexed by task indices.
     planning_horizon
-        The planning horizon value. Default is None, meaning that the planning
-        horizon is unbounded.
+        The planning horizon value. Default ``MAX_VALUE``.
     objective
         The objective function to be minimized. Default is the makespan.
     """
@@ -327,7 +326,7 @@ class ProblemData:
             msg = "Setup times shape not (num_machines, num_tasks, num_tasks)."
             raise ValueError(msg)
 
-        if self.planning_horizon is not None and self.planning_horizon < 0:
+        if self.planning_horizon < 0:
             raise ValueError("Planning horizon must be non-negative.")
 
         if self.objective in [Objective.TARDY_JOBS, Objective.TOTAL_TARDINESS]:

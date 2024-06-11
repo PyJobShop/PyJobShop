@@ -3,14 +3,10 @@ from docplex.cp.model import CpoModel
 from pyjobshop.ProblemData import ProblemData
 
 from .constraints import (
-    alternative_constraints,
-    job_data_constraints,
-    job_task_constraints,
+    job_spans_tasks,
     no_overlap_and_setup_time_constraints,
-    planning_horizon_constraints,
-    processing_time_constraints,
-    task_constraints,
-    task_graph_constraints,
+    select_one_task_alternative,
+    task_graph,
 )
 from .objectives import (
     makespan,
@@ -58,19 +54,9 @@ def create_model(data: ProblemData) -> CpoModel:
     else:
         raise ValueError(f"Unknown objective: {data.objective}")
 
-    model.add(job_data_constraints(model, data, job_vars))
-    model.add(job_task_constraints(model, data, job_vars, task_vars))
-    model.add(task_constraints(model, data, task_vars))
-    model.add(alternative_constraints(model, data, task_vars, assign_vars))
-    model.add(no_overlap_and_setup_time_constraints(model, data, seq_vars))
-    model.add(
-        planning_horizon_constraints(
-            model, data, job_vars, assign_vars, task_vars
-        )
-    )
-    model.add(processing_time_constraints(model, data, assign_vars))
-    model.add(
-        task_graph_constraints(model, data, task_vars, assign_vars, seq_vars)
-    )
+    select_one_task_alternative(model, data, task_vars, assign_vars)
+    job_spans_tasks(model, data, job_vars, task_vars)
+    no_overlap_and_setup_time_constraints(model, data, seq_vars)
+    task_graph(model, data, task_vars, assign_vars, seq_vars)
 
     return model
