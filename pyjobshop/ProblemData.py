@@ -322,6 +322,10 @@ class ProblemData:
         num_mach = self.num_machines
         num_tasks = self.num_tasks
 
+        for job in self.jobs:
+            if any(task >= num_tasks for task in job.tasks):
+                raise ValueError("Job references to unknown task.")
+
         if any(duration < 0 for duration in self.processing_times.values()):
             raise ValueError("Processing times must be non-negative.")
 

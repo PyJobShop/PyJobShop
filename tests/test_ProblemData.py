@@ -228,8 +228,22 @@ def test_problem_data_default_values():
     assert_equal(data.objective, Objective.MAKESPAN)
 
 
+def test_problem_data_job_references_invalid_task():
+    """
+    Tests that an error is raised when a job references an unknown task.
+    """
+    with assert_raises(ValueError):
+        ProblemData(
+            [Job(tasks=[42])],
+            [Machine()],
+            [Task()],
+            {},
+            {},
+        )
+
+
 @pytest.mark.parametrize(
-    "processing_times,  setup_times, planning_horizon",
+    "processing_times, setup_times, planning_horizon",
     [
         # Negative processing times.
         ({(0, 0): -1}, np.ones((1, 1, 1)), 1),
