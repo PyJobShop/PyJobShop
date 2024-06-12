@@ -18,9 +18,9 @@ def job_spans_tasks(
     """
     Ensures that the job variables span the related task variables.
     """
-    for job in range(data.num_jobs):
-        job_var = job_vars[job]
-        related_task_vars = [task_vars[task] for task in data.job2tasks[job]]
+    for idx, job in enumerate(data.jobs):
+        job_var = job_vars[idx]
+        related_task_vars = [task_vars[task_idx] for task_idx in job.tasks]
 
         m.add(m.span(job_var, related_task_vars))
 

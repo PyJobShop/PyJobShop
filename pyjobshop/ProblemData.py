@@ -9,8 +9,6 @@ from pyjobshop.constants import MAX_VALUE
 
 _CONSTRAINTS_TYPE = dict[tuple[int, int], list["Constraint"]]
 
-# TODO
-
 
 class Job:
     """
@@ -30,6 +28,9 @@ class Job:
     due_date
         The latest time that the job should be completed before incurring
         penalties. Default is None, meaning that there is no due date.
+    tasks
+        List of task indices that belong to this job. Default is None,
+        which initializes an empty list.
     name
         Name of the job.
     """
@@ -40,6 +41,7 @@ class Job:
         release_date: int = 0,
         deadline: int = MAX_VALUE,
         due_date: Optional[int] = None,
+        tasks: Optional[list[int]] = None,
         name: str = "",
     ):
         if weight < 0:
@@ -61,6 +63,7 @@ class Job:
         self._release_date = release_date
         self._deadline = deadline
         self._due_date = due_date
+        self._tasks = [] if tasks is None else tasks
         self._name = name
 
     @property
@@ -80,8 +83,15 @@ class Job:
         return self._due_date
 
     @property
+    def tasks(self) -> list[int]:
+        return self._tasks
+
+    @property
     def name(self) -> str:
         return self._name
+
+    def add_task(self, idx: int):
+        self._tasks.append(idx)
 
 
 class Machine:
@@ -253,8 +263,6 @@ class ProblemData:
         List of machines.
     tasks
         List of tasks.
-    job2tasks
-        List of task indices for each job.
     processing_times
         Processing times of tasks on machines. First index is the machine
         index, second index is the task index.
@@ -275,7 +283,6 @@ class ProblemData:
         jobs: list[Job],
         machines: list[Machine],
         tasks: list[Task],
-        job2tasks: list[list[int]],
         processing_times: dict[tuple[int, int], int],
         constraints: _CONSTRAINTS_TYPE,
         setup_times: Optional[np.ndarray] = None,
@@ -285,7 +292,6 @@ class ProblemData:
         self._jobs = jobs
         self._machines = machines
         self._tasks = tasks
-        self._job2tasks = job2tasks
         self._processing_times = processing_times
         self._constraints = constraints
 
@@ -315,6 +321,10 @@ class ProblemData:
         """
         num_mach = self.num_machines
         num_tasks = self.num_tasks
+
+        for job in self.jobs:
+            if any(task >= num_tasks for task in job.tasks):
+                raise ValueError("Job references to unknown task.")
 
         if any(duration < 0 for duration in self.processing_times.values()):
             raise ValueError("Processing times must be non-negative.")
@@ -354,18 +364,6 @@ class ProblemData:
         Returns the task data of this problem instance.
         """
         return self._tasks
-
-    @property
-    def job2tasks(self) -> list[list[int]]:
-        """
-        List of task indices for each job.
-
-        Returns
-        -------
-        list[list[int]]
-            List of task indices for each job.
-        """
-        return self._job2tasks
 
     @property
     def processing_times(self) -> dict[tuple[int, int], int]:

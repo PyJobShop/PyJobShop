@@ -19,15 +19,13 @@ def job_spans_tasks(
     """
     Ensures that the job variables span the related task variables.
     """
-    for job in range(data.num_jobs):
-        job_var = job_vars[job]
-        related_vars = [task_vars[task] for task in data.job2tasks[job]]
+    for idx, job in enumerate(data.jobs):
+        job_var = job_vars[idx]
+        task_start_vars = [task_vars[task_idx].start for task_idx in job.tasks]
+        task_end_vars = [task_vars[task_idx].end for task_idx in job.tasks]
 
-        m.add_min_equality(job_var.start, [var.start for var in related_vars])
-        m.add_max_equality(job_var.end, [var.end for var in related_vars])
-
-        for var in related_vars:
-            m.add(var.start >= data.jobs[job].release_date)
+        m.add_min_equality(job_var.start, task_start_vars)
+        m.add_max_equality(job_var.end, task_end_vars)
 
 
 def select_one_task_alternative(

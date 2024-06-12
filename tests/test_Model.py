@@ -37,7 +37,6 @@ def test_model_to_data():
     assert_equal(data.jobs, [job])
     assert_equal(data.machines, machines)
     assert_equal(data.tasks, tasks)
-    assert_equal(data.job2tasks, [[0, 1]])
     assert_equal(data.processing_times, {(0, 0): 1, (1, 1): 2})
     assert_equal(
         data.constraints,
@@ -72,7 +71,6 @@ def test_model_to_data_default_values():
     assert_equal(data.jobs, [job])
     assert_equal(data.machines, [machine])
     assert_equal(data.tasks, [task])
-    assert_equal(data.job2tasks, [[0]])
     assert_equal(data.processing_times, {})
     assert_equal(data.constraints, {})
     assert_equal(data.setup_times, [[[0]]])

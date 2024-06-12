@@ -19,12 +19,20 @@ def test_job_attributes():
     """
     Tests that the attributes of the Job class are set correctly.
     """
-    job = Job(weight=0, release_date=1, due_date=2, deadline=3, name="test")
+    job = Job(
+        weight=0,
+        release_date=1,
+        due_date=2,
+        deadline=3,
+        tasks=[0],
+        name="test",
+    )
 
     assert_equal(job.weight, 0)
     assert_equal(job.release_date, 1)
     assert_equal(job.due_date, 2)
     assert_equal(job.deadline, 3)
+    assert_equal(job.tasks, [0])
     assert_equal(job.name, "test")
 
 
@@ -38,21 +46,27 @@ def test_job_default_attributes():
     assert_equal(job.release_date, 0)
     assert_equal(job.deadline, MAX_VALUE)
     assert_equal(job.due_date, None)
+    assert_equal(job.tasks, [])
     assert_equal(job.name, "")
 
 
 @pytest.mark.parametrize(
-    "weight, release_date, due_date, deadline, name",
+    "weight, release_date, due_date, deadline, tasks, name",
     [
-        (-1, 0, 0, 0, ""),  # weight < 0
-        (0, -1, 0, 0, ""),  # release_date < 0
-        (0, 0, -1, 0, ""),  # deadline < 0
-        (0, 10, 0, 0, ""),  # release_date > deadline
-        (0, 0, 0, -1, ""),  # due_date < 0
+        (-1, 0, 0, 0, [], ""),  # weight < 0
+        (0, -1, 0, 0, [], ""),  # release_date < 0
+        (0, 0, -1, 0, [], ""),  # deadline < 0
+        (0, 10, 0, 0, [], ""),  # release_date > deadline
+        (0, 0, 0, -1, [], ""),  # due_date < 0
     ],
 )
 def test_job_attributes_raises_invalid_parameters(
-    weight: int, release_date: int, deadline: int, due_date: int, name: str
+    weight: int,
+    release_date: int,
+    deadline: int,
+    due_date: int,
+    tasks: list[int],
+    name: str,
 ):
     """
     Tests that a ValueError is raised when invalid parameters are passed to
@@ -64,6 +78,7 @@ def test_job_attributes_raises_invalid_parameters(
             release_date=release_date,
             deadline=deadline,
             due_date=due_date,
+            tasks=tasks,
             name=name,
         )
 
@@ -142,10 +157,9 @@ def test_problem_data_input_parameter_attributes():
     Tests that the input parameters of the ProblemData class are set correctly
     as attributes.
     """
-    jobs = [Job() for _ in range(5)]
+    jobs = [Job(tasks=[idx]) for idx in range(5)]
     machines = [Machine() for _ in range(5)]
     tasks = [Task() for _ in range(5)]
-    job2tasks = [[0], [1], [2], [3], [4]]
     processing_times = {(i, j): 1 for i in range(5) for j in range(5)}
     constraints = {
         key: [Constraint.END_BEFORE_START] for key in ((0, 1), (2, 3), (4, 5))
@@ -158,7 +172,6 @@ def test_problem_data_input_parameter_attributes():
         jobs,
         machines,
         tasks,
-        job2tasks,
         processing_times,
         constraints,
         setup_times,
@@ -169,7 +182,6 @@ def test_problem_data_input_parameter_attributes():
     assert_equal(data.jobs, jobs)
     assert_equal(data.machines, machines)
     assert_equal(data.tasks, tasks)
-    assert_equal(data.job2tasks, job2tasks)
     assert_equal(data.processing_times, processing_times)
     assert_equal(data.constraints, constraints)
     assert_allclose(data.setup_times, setup_times)
@@ -182,13 +194,12 @@ def test_problem_data_non_input_parameter_attributes():
     Tests that attributes that are not input parameters of the ProblemData
     class are set correctly.
     """
-    jobs = [Job() for _ in range(1)]
+    jobs = [Job(tasks=[0, 1, 2])]
     machines = [Machine() for _ in range(3)]
     tasks = [Task() for _ in range(3)]
-    job2tasks = [[0, 1, 2]]
     processing_times = {(1, 2): 1, (2, 1): 1, (0, 1): 1, (2, 0): 1}
 
-    data = ProblemData(jobs, machines, tasks, job2tasks, processing_times, {})
+    data = ProblemData(jobs, machines, tasks, processing_times, {})
 
     # The lists in machine2tasks and task2machines are sorted.
     machine2tasks = [[1], [2], [0, 1]]
@@ -205,23 +216,34 @@ def test_problem_data_default_values():
     """
     Tests that the default values of the ProblemData class are set correctly.
     """
-    jobs = [Job() for _ in range(1)]
-    machines = [Machine() for _ in range(1)]
-    tasks = [Task() for _ in range(1)]
-    job2tasks = [[0]]
+    jobs = [Job(tasks=[0])]
+    machines = [Machine()]
+    tasks = [Task()]
     constraints = {(0, 1): [Constraint.END_BEFORE_START]}
     processing_times = {(0, 0): 1}
-    data = ProblemData(
-        jobs, machines, tasks, job2tasks, processing_times, constraints
-    )
+    data = ProblemData(jobs, machines, tasks, processing_times, constraints)
 
     assert_allclose(data.setup_times, np.zeros((1, 1, 1), dtype=int))
     assert_equal(data.planning_horizon, MAX_VALUE)
     assert_equal(data.objective, Objective.MAKESPAN)
 
 
+def test_problem_data_job_references_invalid_task():
+    """
+    Tests that an error is raised when a job references an unknown task.
+    """
+    with assert_raises(ValueError):
+        ProblemData(
+            [Job(tasks=[42])],
+            [Machine()],
+            [Task()],
+            {},
+            {},
+        )
+
+
 @pytest.mark.parametrize(
-    "processing_times,  setup_times, planning_horizon",
+    "processing_times, setup_times, planning_horizon",
     [
         # Negative processing times.
         ({(0, 0): -1}, np.ones((1, 1, 1)), 1),
@@ -247,7 +269,6 @@ def test_problem_data_raises_when_invalid_arguments(
             [Job()],
             [Machine()],
             [Task()],
-            [[0]],
             processing_times,
             {},
             setup_times.astype(int),
@@ -270,7 +291,6 @@ def test_problem_data_tardy_objective_without_job_due_dates(
             [Job()],
             [Machine()],
             [Task()],
-            [[0]],
             {},
             {},
             objective=objective,
