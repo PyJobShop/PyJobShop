@@ -1,3 +1,4 @@
+from collections import defaultdict
 from typing import Optional
 
 import matplotlib
@@ -7,7 +8,6 @@ from .ProblemData import ProblemData
 from .Solution import Solution
 
 
-# TODO
 def plot(
     data: ProblemData,
     solution: Solution,
@@ -43,7 +43,14 @@ def plot(
     else:
         order = {idx: idx for idx in range(len(data.machines))}
 
+    # Tasks belonging to the same job get the same color. Task that do not
+    # belong to a job are colored grey.
     colors = _get_colors()
+    task2color = defaultdict(lambda: "grey")
+
+    for job_idx, job in enumerate(data.jobs):
+        for task in job.tasks:
+            task2color[task] = colors[job_idx % len(colors)]
 
     for task_ in solution.schedule:
         task, machine, start, duration = (
@@ -53,13 +60,8 @@ def plot(
             task_.duration,
         )
 
-        # Tasks belonging to the same job get the same unique color.
-        # TODO simplify
-        job = [idx for idx, job in enumerate(data.jobs) if task in job.tasks][
-            0
-        ]
         kwargs = {
-            "color": colors[job % len(colors)],
+            "color": task2color[task],
             "linewidth": 1,
             "edgecolor": "black",
             "alpha": 0.75,
