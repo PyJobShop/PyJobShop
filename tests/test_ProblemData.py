@@ -620,6 +620,7 @@ def test_timing_precedence(
         for task in tasks:
             model.add_processing_time(machine, task, duration=2)
 
+    # TODO convert to add_<constraint_type> method
     model.add_constraint(tasks[0], tasks[1], prec_type)
 
     result = model.solve(solver=solver)
@@ -635,17 +636,18 @@ def test_previous_constraint(solver: str):
 
     job = model.add_job()
     machine = model.add_machine()
-    tasks = [model.add_task(job=job) for _ in range(2)]
+    task1 = model.add_task(job=job)
+    task2 = model.add_task(job=job)
 
-    model.add_processing_time(machine, tasks[0], duration=1)
-    model.add_processing_time(machine, tasks[1], duration=1)
+    model.add_processing_time(machine, task1, duration=1)
+    model.add_processing_time(machine, task2, duration=1)
 
-    model.add_setup_time(machine, tasks[1], tasks[0], duration=100)
-    model.add_constraint(tasks[1], tasks[0], Constraint.PREVIOUS)
+    model.add_setup_time(machine, task2, task1, duration=100)
+    model.add_previous(task2, task1)
 
     result = model.solve(solver=solver)
 
-    # Task 1 must be scheduled before task 0, but the setup time
+    # Task 2 must be scheduled before task 1, but the setup time
     # between them is 100, so the makespan is 1 + 100 + 1 = 102.
     assert_equal(result.objective, 102)
 
@@ -674,6 +676,7 @@ def test_assignment_constraint(
         for task in tasks:
             model.add_processing_time(machine, task, duration=2)
 
+    # TODO convert to add_<constraint_type> method
     model.add_constraint(tasks[0], tasks[1], prec_type)
 
     result = model.solve(solver=solver)
@@ -889,7 +892,7 @@ def test_jobshop(solver: str):
         # Impose linear routing precedence constraints.
         for task_idx in range(1, len(tasks)):
             task1, task2 = tasks[task_idx - 1], tasks[task_idx]
-            model.add_constraint(task1, task2, Constraint.END_BEFORE_START)
+            model.add_end_before_start(task1, task2)
 
     result = model.solve(solver=solver)
 

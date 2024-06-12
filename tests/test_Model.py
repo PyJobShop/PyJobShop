@@ -21,10 +21,10 @@ def test_model_to_data():
     model.add_processing_time(mach1, task1, 1)
     model.add_processing_time(mach2, task2, 2)
 
-    model.add_constraint(task1, task2, Constraint.END_BEFORE_START)
-    model.add_constraint(task1, task2, Constraint.START_BEFORE_END)
-    model.add_constraint(task2, task1, Constraint.SAME_UNIT)
-    model.add_constraint(task2, task1, Constraint.PREVIOUS)
+    model.add_end_before_start(task1, task2)
+    model.add_start_before_end(task1, task2)
+    model.add_same_unit(task2, task1)
+    model.add_previous(task2, task1)
 
     model.add_setup_time(mach1, task1, task2, 3)
     model.add_setup_time(mach2, task1, task2, 4)
