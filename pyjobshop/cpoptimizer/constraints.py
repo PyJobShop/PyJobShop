@@ -24,9 +24,6 @@ def job_spans_tasks(
 
         m.add(m.span(job_var, related_task_vars))
 
-        for task_var in related_task_vars:
-            m.add(m.start_of(task_var) >= job.release_date)
-
 
 def no_overlap_and_setup_times(
     m: CpoModel, data: ProblemData, seq_vars: SeqVars
