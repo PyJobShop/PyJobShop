@@ -28,6 +28,9 @@ class Job:
     due_date
         The latest time that the job should be completed before incurring
         penalties. Default is None, meaning that there is no due date.
+    tasks
+        List of task indices that belong to this job. Default is None,
+        which initializes an empty list.
     name
         Name of the job.
     """
@@ -38,8 +41,8 @@ class Job:
         release_date: int = 0,
         deadline: int = MAX_VALUE,
         due_date: Optional[int] = None,
-        name: str = "",
         tasks: Optional[list[int]] = None,
+        name: str = "",
     ):
         if weight < 0:
             raise ValueError("Weight must be non-negative.")
@@ -60,12 +63,8 @@ class Job:
         self._release_date = release_date
         self._deadline = deadline
         self._due_date = due_date
-        self._name = name
         self._tasks = [] if tasks is None else tasks
-
-    @property
-    def tasks(self) -> list[int]:
-        return self._tasks
+        self._name = name
 
     @property
     def weight(self) -> int:
@@ -82,6 +81,10 @@ class Job:
     @property
     def due_date(self) -> Optional[int]:
         return self._due_date
+
+    @property
+    def tasks(self) -> list[int]:
+        return self._tasks
 
     @property
     def name(self) -> str:

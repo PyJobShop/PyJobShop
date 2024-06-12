@@ -122,7 +122,7 @@ class Model:
         Job
             The created job.
         """
-        job = Job(weight, release_date, deadline, due_date, name)
+        job = Job(weight, release_date, deadline, due_date, name=name)
 
         self._id2job[id(job)] = len(self.jobs)
         self._jobs.append(job)

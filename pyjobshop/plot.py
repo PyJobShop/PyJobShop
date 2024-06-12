@@ -45,8 +45,8 @@ def plot(
 
     # Tasks belonging to the same job get the same color. Task that do not
     # belong to a job are colored grey.
-    colors = _get_colors()
     task2color = defaultdict(lambda: "grey")
+    colors = _get_colors()
 
     for job_idx, job in enumerate(data.jobs):
         for task in job.tasks:
