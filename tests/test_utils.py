@@ -21,4 +21,4 @@ def test_compute_min_max_durations():
     # First task has processing times 1 and 10, whereas the second task has
     # no processing times, so we expect the default values.
     assert_equal(min_durations, [1, 0])
-    assert_equal(max_durations, [10, data.planning_horizon])
+    assert_equal(max_durations, [10, data.horizon])

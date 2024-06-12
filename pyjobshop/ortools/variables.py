@@ -130,17 +130,17 @@ def job_variables(m: CpModel, data: ProblemData) -> list[JobVar]:
         name = f"J{job}"
         start = m.new_int_var(
             lb=job.release_date,
-            ub=data.planning_horizon,
+            ub=data.horizon,
             name=f"{name}_start",
         )
         duration = m.new_int_var(
             lb=0,
-            ub=min(job.deadline - job.release_date, data.planning_horizon),
+            ub=min(job.deadline - job.release_date, data.horizon),
             name=f"{name}_duration",
         )
         end = m.new_int_var(
             lb=0,
-            ub=min(job.deadline, data.planning_horizon),
+            ub=min(job.deadline, data.horizon),
             name=f"{name}_end",
         )
         interval = m.NewIntervalVar(start, duration, end, f"{name}_interval")
@@ -160,19 +160,19 @@ def task_variables(m: CpModel, data: ProblemData) -> list[TaskVar]:
         name = f"T{task}"
         start = m.new_int_var(
             lb=task.earliest_start,
-            ub=min(task.latest_start, data.planning_horizon),
+            ub=min(task.latest_start, data.horizon),
             name=f"{name}_start",
         )
         duration = m.new_int_var(
             lb=min_durations[idx],
             ub=max_durations[idx]
             if task.fixed_duration
-            else data.planning_horizon,  # unbounded if variable duration
+            else data.horizon,  # unbounded if variable duration
             name=f"{name}_duration",
         )
         end = m.new_int_var(
             lb=task.earliest_end,
-            ub=min(task.latest_end, data.planning_horizon),
+            ub=min(task.latest_end, data.horizon),
             name=f"{name}_end",
         )
         interval = m.NewIntervalVar(start, duration, end, f"interval_{task}")
@@ -195,17 +195,17 @@ def assignment_variables(
         name = f"A{task}_{machine}"
         start = m.new_int_var(
             lb=task.earliest_start,
-            ub=min(task.latest_start, data.planning_horizon),
+            ub=min(task.latest_start, data.horizon),
             name=f"{name}_start",
         )
         duration = m.new_int_var(
             lb=proc_time,
-            ub=proc_time if task.fixed_duration else data.planning_horizon,
+            ub=proc_time if task.fixed_duration else data.horizon,
             name=f"{name}_duration",
         )
         end = m.new_int_var(
             lb=task.earliest_end,
-            ub=min(task.latest_end, data.planning_horizon),
+            ub=min(task.latest_end, data.horizon),
             name=f"{name}_start",
         )
         is_present = m.new_bool_var(f"{name}_is_present")
