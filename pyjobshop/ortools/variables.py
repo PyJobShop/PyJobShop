@@ -165,9 +165,7 @@ def task_variables(m: CpModel, data: ProblemData) -> list[TaskVar]:
         )
         duration = m.new_int_var(
             lb=min_durations[idx],
-            ub=max_durations[idx]
-            if task.fixed_duration
-            else data.horizon,  # unbounded if variable duration
+            ub=max_durations[idx] if task.fixed_duration else data.horizon,
             name=f"{name}_duration",
         )
         end = m.new_int_var(
