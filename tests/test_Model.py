@@ -56,6 +56,7 @@ def test_model_to_data():
     assert_equal(data.objective, Objective.TOTAL_COMPLETION_TIME)
 
 
+# TODO test model.add_<constraints>
 def test_model_to_data_default_values():
     """
     Tests ``Model.data()`` uses the correct default values.

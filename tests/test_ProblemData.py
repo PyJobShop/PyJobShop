@@ -13,6 +13,7 @@ from pyjobshop.ProblemData import (
     Task,
 )
 from pyjobshop.Solution import Task as Task_
+from pyjobshop.solve import solve
 
 
 def test_job_attributes():
@@ -597,29 +598,28 @@ def test_task_non_fixed_duration(solver: str):
         (Constraint.END_BEFORE_START, 4),
         # end 2 <= end 2
         (Constraint.END_BEFORE_END, 2),
+        (Constraint.SAME_UNIT, 4),
+        (Constraint.DIFFERENT_UNIT, 2),
     ],
 )
-def test_timing_precedence(
-    solver, prec_type: Constraint, expected_makespan: int
-):
+def test_constraints(solver, prec_type: Constraint, expected_makespan: int):
     """
-    Tests that timing precedence constraints are respected. This example
-    uses two tasks and two machines with processing times of 2.
+    Tests that constraints are respected. This example uses two tasks and two
+    machines with processing times of 2.
     """
     model = Model()
 
     job = model.add_job()
-    machines = [model.add_machine(), model.add_machine()]
+    machines = [model.add_machine() for _ in range(2)]
     tasks = [model.add_task(job=job) for _ in range(2)]
+    processing_times = {
+        (m, t): 2 for m in range(len(machines)) for t in range(len(tasks))
+    }
 
-    for machine in machines:
-        for task in tasks:
-            model.add_processing_time(machine, task, duration=2)
-
-    # TODO convert to add_<constraint_type> method
-    model.add_constraint(tasks[0], tasks[1], prec_type)
-
-    result = model.solve(solver=solver)
+    data = ProblemData(
+        [job], machines, tasks, processing_times, {(0, 1): [prec_type]}
+    )
+    result = solve(data, solver=solver)
 
     assert_equal(result.objective, expected_makespan)
 
@@ -646,38 +646,6 @@ def test_previous_constraint(solver: str):
     # Task 2 must be scheduled before task 1, but the setup time
     # between them is 100, so the makespan is 1 + 100 + 1 = 102.
     assert_equal(result.objective, 102)
-
-
-@pytest.mark.parametrize(
-    "prec_type,expected_makespan",
-    [
-        (Constraint.SAME_UNIT, 4),
-        (Constraint.DIFFERENT_UNIT, 2),
-    ],
-)
-def test_assignment_constraint(
-    solver, prec_type: Constraint, expected_makespan: int
-):
-    """
-    Tests that assignment constraints are respected. This example
-    uses two tasks and two machines with processing times of 2.
-    """
-    model = Model()
-
-    job = model.add_job()
-    machines = [model.add_machine(), model.add_machine()]
-    tasks = [model.add_task(job=job) for _ in range(2)]
-
-    for machine in machines:
-        for task in tasks:
-            model.add_processing_time(machine, task, duration=2)
-
-    # TODO convert to add_<constraint_type> method
-    model.add_constraint(tasks[0], tasks[1], prec_type)
-
-    result = model.solve(solver=solver)
-
-    assert_equal(result.objective, expected_makespan)
 
 
 def test_tight_horizon_results_in_infeasiblity(solver: str):
