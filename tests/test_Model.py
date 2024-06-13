@@ -12,14 +12,11 @@ def test_model_to_data():
     model = Model()
 
     job = model.add_job()
-    machines = [model.add_machine() for _ in range(2)]
-    tasks = [model.add_task(job=job) for _ in range(2)]
+    machine1, machine2 = [model.add_machine() for _ in range(2)]
+    task1, task2 = [model.add_task(job=job) for _ in range(2)]
 
-    mach1, mach2 = machines
-    task1, task2 = tasks
-
-    model.add_processing_time(mach1, task1, 1)
-    model.add_processing_time(mach2, task2, 2)
+    model.add_processing_time(machine1, task1, 1)
+    model.add_processing_time(machine2, task2, 2)
 
     model.add_start_at_start(task1, task2)
     model.add_start_at_end(task1, task2)
@@ -33,8 +30,8 @@ def test_model_to_data():
     model.add_different_unit(task2, task1)
     model.add_previous(task2, task1)
 
-    model.add_setup_time(mach1, task1, task2, 3)
-    model.add_setup_time(mach2, task1, task2, 4)
+    model.add_setup_time(machine1, task1, task2, 3)
+    model.add_setup_time(machine2, task1, task2, 4)
 
     model.set_horizon(100)
     model.set_objective(Objective.TOTAL_COMPLETION_TIME)
@@ -42,8 +39,8 @@ def test_model_to_data():
     data = model.data()
 
     assert_equal(data.jobs, [job])
-    assert_equal(data.machines, machines)
-    assert_equal(data.tasks, tasks)
+    assert_equal(data.machines, [machine1, machine2])
+    assert_equal(data.tasks, [task1, task2])
     assert_equal(data.processing_times, {(0, 0): 1, (1, 1): 2})
     assert_equal(
         data.constraints,
