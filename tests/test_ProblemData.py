@@ -1,6 +1,6 @@
 import numpy as np
 import pytest
-from numpy.testing import assert_allclose, assert_equal, assert_raises
+from numpy.testing import assert_equal, assert_raises
 
 from pyjobshop.constants import MAX_VALUE
 from pyjobshop.Model import Model
@@ -184,7 +184,7 @@ def test_problem_data_input_parameter_attributes():
     assert_equal(data.tasks, tasks)
     assert_equal(data.processing_times, processing_times)
     assert_equal(data.constraints, constraints)
-    assert_allclose(data.setup_times, setup_times)
+    assert_equal(data.setup_times, setup_times)
     assert_equal(data.horizon, horizon)
     assert_equal(data.objective, objective)
 
@@ -199,7 +199,7 @@ def test_problem_data_non_input_parameter_attributes():
     tasks = [Task() for _ in range(3)]
     processing_times = {(1, 2): 1, (2, 1): 1, (0, 1): 1, (2, 0): 1}
 
-    data = ProblemData(jobs, machines, tasks, processing_times, {})
+    data = ProblemData(jobs, machines, tasks, processing_times)
 
     # The lists in machine2tasks and task2machines are sorted.
     machine2tasks = [[1], [2], [0, 1]]
@@ -219,11 +219,11 @@ def test_problem_data_default_values():
     jobs = [Job(tasks=[0])]
     machines = [Machine()]
     tasks = [Task()]
-    constraints = {(0, 1): [Constraint.END_BEFORE_START]}
     processing_times = {(0, 0): 1}
-    data = ProblemData(jobs, machines, tasks, processing_times, constraints)
+    data = ProblemData(jobs, machines, tasks, processing_times)
 
-    assert_allclose(data.setup_times, np.zeros((1, 1, 1), dtype=int))
+    assert_equal(data.constraints, {})
+    assert_equal(data.setup_times, np.zeros((1, 1, 1), dtype=int))
     assert_equal(data.horizon, MAX_VALUE)
     assert_equal(data.objective, Objective.MAKESPAN)
 
@@ -233,13 +233,7 @@ def test_problem_data_job_references_invalid_task():
     Tests that an error is raised when a job references an unknown task.
     """
     with assert_raises(ValueError):
-        ProblemData(
-            [Job(tasks=[42])],
-            [Machine()],
-            [Task()],
-            {},
-            {},
-        )
+        ProblemData([Job(tasks=[42])], [Machine()], [Task()], {})
 
 
 def test_problem_data_task_without_processing_times():
@@ -247,13 +241,7 @@ def test_problem_data_task_without_processing_times():
     Tests that an error is raised when a task has no processing times.
     """
     with assert_raises(ValueError):
-        ProblemData(
-            [Job(tasks=[0])],
-            [Machine()],
-            [Task()],
-            {},  # No processing times.
-            {},
-        )
+        ProblemData([Job()], [Machine()], [Task()], {})
 
 
 @pytest.mark.parametrize(
@@ -284,8 +272,7 @@ def test_problem_data_raises_when_invalid_arguments(
             [Machine()],
             [Task()],
             processing_times,
-            {},
-            setup_times.astype(int),
+            setup_times=setup_times.astype(int),
             horizon=horizon,
         )
 
@@ -302,12 +289,7 @@ def test_problem_data_tardy_objective_without_job_due_dates(
     """
     with assert_raises(ValueError):
         ProblemData(
-            [Job()],
-            [Machine()],
-            [Task()],
-            {},
-            {},
-            objective=objective,
+            [Job()], [Machine()], [Task()], {(0, 0): 0}, objective=objective
         )
 
 

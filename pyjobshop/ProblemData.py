@@ -268,6 +268,7 @@ class ProblemData:
         index, second index is the task index.
     constraints
         Dict indexed by task pairs with a list of constraints as values.
+        Default is None, which initializes an empty dict.
     setup_times
         Sequence-dependent setup times between tasks on a given machine.
         The first dimension of the array is indexed by the machine index. The
@@ -284,7 +285,7 @@ class ProblemData:
         machines: list[Machine],
         tasks: list[Task],
         processing_times: dict[tuple[int, int], int],
-        constraints: _CONSTRAINTS_TYPE,
+        constraints: Optional[_CONSTRAINTS_TYPE] = None,
         setup_times: Optional[np.ndarray] = None,
         horizon: int = MAX_VALUE,
         objective: Objective = Objective.MAKESPAN,
@@ -293,7 +294,7 @@ class ProblemData:
         self._machines = machines
         self._tasks = tasks
         self._processing_times = processing_times
-        self._constraints = constraints
+        self._constraints = constraints if constraints is not None else {}
 
         num_mach = self.num_machines
         num_tasks = self.num_tasks
@@ -318,6 +319,7 @@ class ProblemData:
     def _validate_parameters(self):
         """
         Validates the problem data parameters.
+
         """
         num_mach = self.num_machines
         num_tasks = self.num_tasks
