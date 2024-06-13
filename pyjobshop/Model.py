@@ -229,25 +229,6 @@ class Model:
         task_idx = self._id2task[id(task)]
         self._processing_times[machine_idx, task_idx] = duration
 
-    def add_constraint(
-        self, first: Task, second: Task, constraint: Constraint
-    ):
-        """
-        Adds a precedence constraint between two tasks.
-
-        Parameters
-        ----------
-        first
-            First task.
-        second
-            Second task.
-        constraint
-            Constraint between the first and the second task.
-        """
-        task1 = self._id2task[id(first)]
-        task2 = self._id2task[id(second)]
-        self._constraints[task1, task2].append(constraint)
-
     def add_start_at_start(self, first: Task, second: Task):
         """
         Adds a constraint that the first task must start at the same time as
