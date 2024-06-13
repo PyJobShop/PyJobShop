@@ -65,13 +65,14 @@ def test_model_to_data_default_values():
     job = model.add_job()
     machine = model.add_machine()
     task = model.add_task(job=job)
+    model.add_processing_time(machine, task, 1)
 
     data = model.data()
 
     assert_equal(data.jobs, [job])
     assert_equal(data.machines, [machine])
     assert_equal(data.tasks, [task])
-    assert_equal(data.processing_times, {})
+    assert_equal(data.processing_times, {(0, 0): 1})
     assert_equal(data.constraints, {})
     assert_equal(data.setup_times, [[[0]]])
     assert_equal(data.horizon, MAX_VALUE)

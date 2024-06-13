@@ -242,6 +242,20 @@ def test_problem_data_job_references_invalid_task():
         )
 
 
+def test_problem_data_task_without_processing_times():
+    """
+    Tests that an error is raised when a task has no processing times.
+    """
+    with assert_raises(ValueError):
+        ProblemData(
+            [Job(tasks=[0])],
+            [Machine()],
+            [Task()],
+            {},  # No processing times.
+            {},
+        )
+
+
 @pytest.mark.parametrize(
     "processing_times, setup_times, horizon",
     [
@@ -252,7 +266,7 @@ def test_problem_data_job_references_invalid_task():
         # Invalid setup times shape.
         ({(0, 0): 1}, np.ones((2, 2, 2)), 1),
         # Negative horizon.
-        ({(0, 0): 1}, np.ones((2, 2, 2)), -1),
+        ({(0, 0): 1}, np.ones((1, 1, 1)), -1),
     ],
 )
 def test_problem_data_raises_when_invalid_arguments(
