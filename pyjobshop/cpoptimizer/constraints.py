@@ -117,9 +117,9 @@ def task_graph(
             for constraint in data.constraints[task1, task2]:
                 if constraint == "previous":
                     expr = m.previous(seq_var, var1, var2)
-                elif constraint == "same_unit":
+                elif constraint == "same_machine":
                     expr = m.presence_of(var1) == m.presence_of(var2)
-                elif constraint == "different_unit":
+                elif constraint == "different_machine":
                     expr = m.presence_of(var1) != m.presence_of(var2)
 
                 m.add(expr)

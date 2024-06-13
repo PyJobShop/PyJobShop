@@ -229,24 +229,103 @@ class Model:
         task_idx = self._id2task[id(task)]
         self._processing_times[machine_idx, task_idx] = duration
 
-    def add_constraint(
-        self, first: Task, second: Task, constraint: Constraint
-    ):
+    def add_start_at_start(self, first: Task, second: Task):
         """
-        Adds a precedence constraint between two tasks.
-
-        Parameters
-        ----------
-        first
-            First task.
-        second
-            Second task.
-        constraint
-            Constraint between the first and the second task.
+        Adds a constraint that the first task must start at the same time as
+        the second task starts.
         """
         task1 = self._id2task[id(first)]
         task2 = self._id2task[id(second)]
-        self._constraints[task1, task2].append(constraint)
+        self._constraints[task1, task2].append(Constraint.START_AT_START)
+
+    def add_start_at_end(self, first: Task, second: Task):
+        """
+        Adds a constraint that the first task must start at the same time as
+        the second task ends.
+        """
+        task1 = self._id2task[id(first)]
+        task2 = self._id2task[id(second)]
+        self._constraints[task1, task2].append(Constraint.START_AT_END)
+
+    def add_start_before_start(self, first: Task, second: Task):
+        """
+        Adds a constraint that the first task must start before the second task
+        starts.
+        """
+        task1 = self._id2task[id(first)]
+        task2 = self._id2task[id(second)]
+        self._constraints[task1, task2].append(Constraint.START_BEFORE_START)
+
+    def add_start_before_end(self, first: Task, second: Task):
+        """
+        Adds a constraint that the first task must start before the second task
+        ends.
+        """
+        task1 = self._id2task[id(first)]
+        task2 = self._id2task[id(second)]
+        self._constraints[task1, task2].append(Constraint.START_BEFORE_END)
+
+    def add_end_at_end(self, first: Task, second: Task):
+        """
+        Adds a constraint that the first task must end at the same time as the
+        second task ends.
+        """
+        task1 = self._id2task[id(first)]
+        task2 = self._id2task[id(second)]
+        self._constraints[task1, task2].append(Constraint.END_AT_END)
+
+    def add_end_at_start(self, first: Task, second: Task):
+        """
+        Adds a constraint that the first task must end at the same time as the
+        second task starts.
+        """
+        task1 = self._id2task[id(first)]
+        task2 = self._id2task[id(second)]
+        self._constraints[task1, task2].append(Constraint.END_AT_START)
+
+    def add_end_before_start(self, first: Task, second: Task):
+        """
+        Adds a constraint that the first task must end before the second task
+        starts.
+        """
+        task1 = self._id2task[id(first)]
+        task2 = self._id2task[id(second)]
+        self._constraints[task1, task2].append(Constraint.END_BEFORE_START)
+
+    def add_end_before_end(self, first: Task, second: Task):
+        """
+        Adds a constraint that the first task must end before the second task
+        ends.
+        """
+        task1 = self._id2task[id(first)]
+        task2 = self._id2task[id(second)]
+        self._constraints[task1, task2].append(Constraint.END_BEFORE_END)
+
+    def add_previous(self, first: Task, second: Task):
+        """
+        Adds a constraint that the first task must be scheduled right before
+        the second task, if they are scheduled on the same machine.
+        """
+        task1 = self._id2task[id(first)]
+        task2 = self._id2task[id(second)]
+        self._constraints[task1, task2].append(Constraint.PREVIOUS)
+
+    def add_same_machine(self, first: Task, second: Task):
+        """
+        Adds a constraint that two tasks must be scheduled on the same machine.
+        """
+        task1 = self._id2task[id(first)]
+        task2 = self._id2task[id(second)]
+        self._constraints[task1, task2].append(Constraint.SAME_MACHINE)
+
+    def add_different_machine(self, first: Task, second: Task):
+        """
+        Adds a constraint that the two tasks must be scheduled on different
+        machines.
+        """
+        task1 = self._id2task[id(first)]
+        task2 = self._id2task[id(second)]
+        self._constraints[task1, task2].append(Constraint.DIFFERENT_MACHINE)
 
     def add_setup_time(
         self, machine: Machine, task1: Task, task2: Task, duration: int

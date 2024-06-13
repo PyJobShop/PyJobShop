@@ -140,10 +140,10 @@ def task_graph(
                     m.add_bool_or([arc, ~var1.is_present, ~var2.is_present])
                     m.add_implication(arc, var1.is_present)
                     m.add_implication(arc, var2.is_present)
-                elif constraint == "same_unit":
+                elif constraint == "same_machine":
                     expr = var1.is_present == var2.is_present
                     m.add(expr)
-                elif constraint == "different_unit":
+                elif constraint == "different_machine":
                     expr = var1.is_present != var2.is_present
                     m.add(expr)
 

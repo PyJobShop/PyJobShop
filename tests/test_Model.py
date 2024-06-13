@@ -12,22 +12,26 @@ def test_model_to_data():
     model = Model()
 
     job = model.add_job()
-    machines = [model.add_machine() for _ in range(2)]
-    tasks = [model.add_task(job=job) for _ in range(2)]
+    machine1, machine2 = [model.add_machine() for _ in range(2)]
+    task1, task2 = [model.add_task(job=job) for _ in range(2)]
 
-    mach1, mach2 = machines
-    task1, task2 = tasks
+    model.add_processing_time(machine1, task1, 1)
+    model.add_processing_time(machine2, task2, 2)
 
-    model.add_processing_time(mach1, task1, 1)
-    model.add_processing_time(mach2, task2, 2)
+    model.add_start_at_start(task1, task2)
+    model.add_start_at_end(task1, task2)
+    model.add_start_before_start(task1, task2)
+    model.add_start_before_end(task1, task2)
+    model.add_end_at_start(task1, task2)
+    model.add_end_at_end(task1, task2)
+    model.add_end_before_end(task1, task2)
+    model.add_end_before_start(task1, task2)
+    model.add_same_machine(task2, task1)
+    model.add_different_machine(task2, task1)
+    model.add_previous(task2, task1)
 
-    model.add_constraint(task1, task2, Constraint.END_BEFORE_START)
-    model.add_constraint(task1, task2, Constraint.START_BEFORE_END)
-    model.add_constraint(task2, task1, Constraint.SAME_UNIT)
-    model.add_constraint(task2, task1, Constraint.PREVIOUS)
-
-    model.add_setup_time(mach1, task1, task2, 3)
-    model.add_setup_time(mach2, task1, task2, 4)
+    model.add_setup_time(machine1, task1, task2, 3)
+    model.add_setup_time(machine2, task1, task2, 4)
 
     model.set_horizon(100)
     model.set_objective(Objective.TOTAL_COMPLETION_TIME)
@@ -35,18 +39,25 @@ def test_model_to_data():
     data = model.data()
 
     assert_equal(data.jobs, [job])
-    assert_equal(data.machines, machines)
-    assert_equal(data.tasks, tasks)
+    assert_equal(data.machines, [machine1, machine2])
+    assert_equal(data.tasks, [task1, task2])
     assert_equal(data.processing_times, {(0, 0): 1, (1, 1): 2})
     assert_equal(
         data.constraints,
         {
             (0, 1): [
-                Constraint.END_BEFORE_START,
+                Constraint.START_AT_START,
+                Constraint.START_AT_END,
+                Constraint.START_BEFORE_START,
                 Constraint.START_BEFORE_END,
+                Constraint.END_AT_START,
+                Constraint.END_AT_END,
+                Constraint.END_BEFORE_END,
+                Constraint.END_BEFORE_START,
             ],
             (1, 0): [
-                Constraint.SAME_UNIT,
+                Constraint.SAME_MACHINE,
+                Constraint.DIFFERENT_MACHINE,
                 Constraint.PREVIOUS,
             ],
         },
