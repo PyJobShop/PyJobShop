@@ -29,6 +29,6 @@ def compute_min_max_durations(
             max_durations.append(max(durations[task]))
         else:  # TODO This is a strange case, see #135.
             min_durations.append(0)
-            max_durations.append(data.planning_horizon)
+            max_durations.append(data.horizon)
 
     return min_durations, max_durations

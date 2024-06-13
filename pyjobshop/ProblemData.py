@@ -272,8 +272,8 @@ class ProblemData:
         Sequence-dependent setup times between tasks on a given machine.
         The first dimension of the array is indexed by the machine index. The
         last two dimensions of the array are indexed by task indices.
-    planning_horizon
-        The planning horizon value. Default ``MAX_VALUE``.
+    horizon
+        The horizon value. Default ``MAX_VALUE``.
     objective
         The objective function to be minimized. Default is the makespan.
     """
@@ -286,7 +286,7 @@ class ProblemData:
         processing_times: dict[tuple[int, int], int],
         constraints: _CONSTRAINTS_TYPE,
         setup_times: Optional[np.ndarray] = None,
-        planning_horizon: int = MAX_VALUE,
+        horizon: int = MAX_VALUE,
         objective: Objective = Objective.MAKESPAN,
     ):
         self._jobs = jobs
@@ -303,7 +303,7 @@ class ProblemData:
             if setup_times is not None
             else np.zeros((num_mach, num_tasks, num_tasks), dtype=int)
         )
-        self._planning_horizon = planning_horizon
+        self._horizon = horizon
         self._objective = objective
 
         self._machine2tasks: list[list[int]] = [[] for _ in range(num_mach)]
@@ -336,8 +336,8 @@ class ProblemData:
             msg = "Setup times shape not (num_machines, num_tasks, num_tasks)."
             raise ValueError(msg)
 
-        if self.planning_horizon < 0:
-            raise ValueError("Planning horizon must be non-negative.")
+        if self.horizon < 0:
+            raise ValueError("Horizon must be non-negative.")
 
         if self.objective in [Objective.TARDY_JOBS, Objective.TOTAL_TARDINESS]:
             if any(job.due_date is None for job in self.jobs):
@@ -407,16 +407,17 @@ class ProblemData:
         return self._setup_times
 
     @property
-    def planning_horizon(self) -> int:
+    def horizon(self) -> int:
         """
-        The planning horizon of this instance.
+        The time horizon of this instance. This is an upper bound on the
+        completion time of all tasks.
 
         Returns
         -------
         int
-            The planning horizon value.
+            The horizon value.
         """
-        return self._planning_horizon
+        return self._horizon
 
     @property
     def objective(self) -> Objective:

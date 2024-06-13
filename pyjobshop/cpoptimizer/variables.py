@@ -17,7 +17,7 @@ def job_variables(m: CpoModel, data: ProblemData) -> list[CpoIntervalVar]:
         var = m.interval_var(name=f"J{job}")
 
         var.set_start_min(job.release_date)
-        var.set_end_max(min(job.deadline, data.planning_horizon))
+        var.set_end_max(min(job.deadline, data.horizon))
 
         variables.append(var)
 
@@ -35,14 +35,15 @@ def task_variables(m: CpoModel, data: ProblemData) -> list[CpoIntervalVar]:
         var = m.interval_var(name=f"T{task}")
 
         var.set_start_min(task.earliest_start)
-        var.set_start_max(task.latest_start)
+        var.set_start_max(min(task.latest_start, data.horizon))
 
         var.set_end_min(task.earliest_end)
-        var.set_end_max(min(task.latest_end, data.planning_horizon))
+        var.set_end_max(min(task.latest_end, data.horizon))
 
         var.set_size_min(min_durations[idx])
-        if task.fixed_duration:
-            var.set_size_max(max_durations[idx])
+        var.set_size_max(
+            max_durations[idx] if task.fixed_duration else data.horizon
+        )
 
         variables.append(var)
 
@@ -62,16 +63,17 @@ def assignment_variables(m: CpoModel, data: ProblemData) -> AssignVars:
             task = data.tasks[task_idx]
 
             var.set_start_min(task.earliest_start)
-            var.set_start_max(task.latest_start)
+            var.set_start_max(min(task.latest_start, data.horizon))
 
             var.set_end_min(task.earliest_end)
-            var.set_end_max(min(task.latest_end, data.planning_horizon))
+            var.set_end_max(min(task.latest_end, data.horizon))
 
             duration = data.processing_times[machine, task_idx]
             if task.fixed_duration:
                 var.set_size(duration)
             else:
-                var.set_size_min(duration)  # at least duration
+                var.set_size_min(duration)
+                var.set_size_max(data.horizon)
 
             variables[task_idx, machine] = var
 
