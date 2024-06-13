@@ -319,7 +319,6 @@ class ProblemData:
     def _validate_parameters(self):
         """
         Validates the problem data parameters.
-
         """
         num_mach = self.num_machines
         num_tasks = self.num_tasks
