@@ -242,6 +242,20 @@ def test_problem_data_job_references_invalid_task():
         )
 
 
+def test_problem_data_task_without_processing_times():
+    """
+    Tests that an error is raised when a job references an unknown task.
+    """
+    with assert_raises(ValueError):
+        ProblemData(
+            [Job(tasks=[0])],
+            [Machine()],
+            [Task()],
+            {},
+            {},
+        )
+
+
 @pytest.mark.parametrize(
     "processing_times, setup_times, horizon",
     [
