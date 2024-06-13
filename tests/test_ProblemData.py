@@ -244,14 +244,14 @@ def test_problem_data_job_references_invalid_task():
 
 def test_problem_data_task_without_processing_times():
     """
-    Tests that an error is raised when a job references an unknown task.
+    Tests that an error is raised when a task has no processing times.
     """
     with assert_raises(ValueError):
         ProblemData(
             [Job(tasks=[0])],
             [Machine()],
             [Task()],
-            {},
+            {},  # No processing times.
             {},
         )
 
