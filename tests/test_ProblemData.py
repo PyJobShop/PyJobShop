@@ -90,14 +90,10 @@ def test_machine_attributes():
     """
     # Let's first test the default values.
     machine = Machine()
-
-    assert_equal(machine.allow_overlap, False)
     assert_equal(machine.name, "")
 
     # Now test with some values.
-    machine = Machine(allow_overlap=True, name="TestMachine")
-
-    assert_equal(machine.allow_overlap, True)
+    machine = Machine(name="TestMachine")
     assert_equal(machine.name, "TestMachine")
 
 
@@ -363,42 +359,6 @@ def test_job_deadline_infeasible(solver: str):
 
     # The processing time of the task is 2, but job deadline is 1.
     assert_equal(result.status.value, "Infeasible")
-
-
-def test_machine_allow_overlap(solver: str):
-    """
-    Tests that allowing overlap results in a shorter makespan.
-    """
-    model = Model()
-    job = model.add_job()
-    machine = model.add_machine(allow_overlap=False)  # no overlap
-    tasks = [model.add_task(job=job) for _ in range(2)]
-
-    for task in tasks:
-        model.add_processing_time(machine, task, duration=2)
-
-    result = model.solve(solver=solver)
-
-    # No overlap, so we schedule the two tasks consecutively with
-    # final makespan of four.
-    assert_equal(result.status.value, "Optimal")
-    assert_equal(result.objective, 4)
-
-    # Let's now allow for overlap.
-    model = Model()
-    job = model.add_job()
-    machine = model.add_machine(allow_overlap=True)
-    tasks = [model.add_task(job=job) for _ in range(2)]
-
-    for task in tasks:
-        model.add_processing_time(machine, task, duration=2)
-
-    result = model.solve(solver=solver)
-
-    # With overlap we can schedule both tasks simultaneously on the
-    # machine, resulting in a makespan of two.
-    assert_equal(result.status.value, "Optimal")
-    assert_equal(result.objective, 2)
 
 
 def test_task_earliest_start(solver: str):

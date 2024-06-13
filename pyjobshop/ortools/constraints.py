@@ -62,8 +62,7 @@ def no_overlap_machines(m: CpModel, data: ProblemData, seq_vars: SequenceVars):
     intervals in a sequence variable are overlapping.
     """
     for machine in range(data.num_machines):
-        if not data.machines[machine].allow_overlap:
-            m.add_no_overlap([var.interval for var in seq_vars[machine].tasks])
+        m.add_no_overlap([var.interval for var in seq_vars[machine].tasks])
 
 
 def activate_setup_times(

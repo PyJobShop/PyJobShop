@@ -100,20 +100,12 @@ class Machine:
 
     Parameters
     ----------
-    allow_overlap
-        Whether it is allowed to schedule multiple tasks on the machine
-        at the same time. Default is False.
     name
         Name of the machine.
     """
 
-    def __init__(self, allow_overlap: bool = False, name: str = ""):
-        self._allow_overlap = allow_overlap
+    def __init__(self, name: str = ""):
         self._name = name
-
-    @property
-    def allow_overlap(self) -> bool:
-        return self._allow_overlap
 
     @property
     def name(self) -> str:

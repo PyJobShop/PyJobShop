@@ -36,9 +36,6 @@ def no_overlap_and_setup_times(
     # Assumption: the interval variables in the sequence variable
     # are ordered in the same way as the tasks in machine2tasks.
     for machine in range(data.num_machines):
-        if data.machines[machine].allow_overlap:
-            continue  # Overlap is allowed for this machine.
-
         if not (tasks := data.machine2tasks[machine]):
             continue  # There no tasks for this machine.
 

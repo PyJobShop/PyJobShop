@@ -129,17 +129,12 @@ class Model:
 
         return job
 
-    def add_machine(
-        self, allow_overlap: bool = False, name: str = ""
-    ) -> Machine:
+    def add_machine(self, name: str = "") -> Machine:
         """
         Adds a machine to the model.
 
         Parameters
         ----------
-        allow_overlap
-            Whether it is allowed to schedule multiple tasks on the
-            machine at the same time. Default ``False``.
         name
             Name of the machine.
 
@@ -148,7 +143,7 @@ class Model:
         Machine
             The created machine.
         """
-        machine = Machine(allow_overlap=allow_overlap, name=name)
+        machine = Machine(name=name)
 
         self._id2machine[id(machine)] = len(self.machines)
         self._machines.append(machine)
