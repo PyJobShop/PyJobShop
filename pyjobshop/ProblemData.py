@@ -409,7 +409,8 @@ class ProblemData:
     @property
     def horizon(self) -> int:
         """
-        The horizon of this instance.
+        The time horizon of this instance. This is an upper bound on the
+        completion time of all tasks.
 
         Returns
         -------
