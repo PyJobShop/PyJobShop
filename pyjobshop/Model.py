@@ -31,7 +31,7 @@ class Model:
         )
 
         self._setup_times: dict[tuple[int, int, int], int] = {}
-        self._planning_horizon: int = MAX_VALUE
+        self._horizon: int = MAX_VALUE
         self._objective: Objective = Objective.MAKESPAN
 
         self._id2job: dict[int, int] = {}
@@ -85,7 +85,7 @@ class Model:
             processing_times=self._processing_times,
             constraints=self._constraints,
             setup_times=setup_times,
-            planning_horizon=self._planning_horizon,
+            horizon=self._horizon,
             objective=self._objective,
         )
 
@@ -370,16 +370,16 @@ class Model:
 
         self._setup_times[machine_idx, task_idx1, task_idx2] = duration
 
-    def set_planning_horizon(self, horizon: int):
+    def set_horizon(self, horizon: int):
         """
-        Sets the planning horizon of the model.
+        Sets the horizon of the model.
 
         Parameters
         ----------
         horizon
-            The planning horizon.
+            The horizon.
         """
-        self._planning_horizon = horizon
+        self._horizon = horizon
 
     def set_objective(self, objective: Objective):
         """

@@ -29,7 +29,7 @@ def test_model_to_data():
     model.add_setup_time(mach1, task1, task2, 3)
     model.add_setup_time(mach2, task1, task2, 4)
 
-    model.set_planning_horizon(100)
+    model.set_horizon(100)
     model.set_objective(Objective.TOTAL_COMPLETION_TIME)
 
     data = model.data()
@@ -52,7 +52,7 @@ def test_model_to_data():
         },
     )
     assert_equal(data.setup_times, [[[0, 3], [0, 0]], [[0, 4], [0, 0]]])
-    assert_equal(data.planning_horizon, 100)
+    assert_equal(data.horizon, 100)
     assert_equal(data.objective, Objective.TOTAL_COMPLETION_TIME)
 
 
@@ -65,16 +65,17 @@ def test_model_to_data_default_values():
     job = model.add_job()
     machine = model.add_machine()
     task = model.add_task(job=job)
+    model.add_processing_time(machine, task, 1)
 
     data = model.data()
 
     assert_equal(data.jobs, [job])
     assert_equal(data.machines, [machine])
     assert_equal(data.tasks, [task])
-    assert_equal(data.processing_times, {})
+    assert_equal(data.processing_times, {(0, 0): 1})
     assert_equal(data.constraints, {})
     assert_equal(data.setup_times, [[[0]]])
-    assert_equal(data.planning_horizon, MAX_VALUE)
+    assert_equal(data.horizon, MAX_VALUE)
     assert_equal(data.objective, Objective.MAKESPAN)
 
 

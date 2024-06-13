@@ -165,7 +165,7 @@ def test_problem_data_input_parameter_attributes():
         key: [Constraint.END_BEFORE_START] for key in ((0, 1), (2, 3), (4, 5))
     }
     setup_times = np.ones((5, 5, 5), dtype=int)
-    planning_horizon = 100
+    horizon = 100
     objective = Objective.TOTAL_COMPLETION_TIME
 
     data = ProblemData(
@@ -175,7 +175,7 @@ def test_problem_data_input_parameter_attributes():
         processing_times,
         constraints,
         setup_times,
-        planning_horizon,
+        horizon,
         objective,
     )
 
@@ -185,7 +185,7 @@ def test_problem_data_input_parameter_attributes():
     assert_equal(data.processing_times, processing_times)
     assert_equal(data.constraints, constraints)
     assert_allclose(data.setup_times, setup_times)
-    assert_equal(data.planning_horizon, planning_horizon)
+    assert_equal(data.horizon, horizon)
     assert_equal(data.objective, objective)
 
 
@@ -224,7 +224,7 @@ def test_problem_data_default_values():
     data = ProblemData(jobs, machines, tasks, processing_times, constraints)
 
     assert_allclose(data.setup_times, np.zeros((1, 1, 1), dtype=int))
-    assert_equal(data.planning_horizon, MAX_VALUE)
+    assert_equal(data.horizon, MAX_VALUE)
     assert_equal(data.objective, Objective.MAKESPAN)
 
 
@@ -242,8 +242,22 @@ def test_problem_data_job_references_invalid_task():
         )
 
 
+def test_problem_data_task_without_processing_times():
+    """
+    Tests that an error is raised when a task has no processing times.
+    """
+    with assert_raises(ValueError):
+        ProblemData(
+            [Job(tasks=[0])],
+            [Machine()],
+            [Task()],
+            {},  # No processing times.
+            {},
+        )
+
+
 @pytest.mark.parametrize(
-    "processing_times, setup_times, planning_horizon",
+    "processing_times, setup_times, horizon",
     [
         # Negative processing times.
         ({(0, 0): -1}, np.ones((1, 1, 1)), 1),
@@ -251,14 +265,14 @@ def test_problem_data_job_references_invalid_task():
         ({(0, 0): 1}, np.ones((1, 1, 1)) * -1, 1),
         # Invalid setup times shape.
         ({(0, 0): 1}, np.ones((2, 2, 2)), 1),
-        # Negative planning horizon.
-        ({(0, 0): 1}, np.ones((2, 2, 2)), -1),
+        # Negative horizon.
+        ({(0, 0): 1}, np.ones((1, 1, 1)), -1),
     ],
 )
 def test_problem_data_raises_when_invalid_arguments(
     processing_times: dict[tuple[int, int], int],
     setup_times: np.ndarray,
-    planning_horizon: int,
+    horizon: int,
 ):
     """
     Tests that the ProblemData class raises an error when invalid arguments are
@@ -272,7 +286,7 @@ def test_problem_data_raises_when_invalid_arguments(
             processing_times,
             {},
             setup_times.astype(int),
-            planning_horizon=planning_horizon,
+            horizon=horizon,
         )
 
 
@@ -684,9 +698,9 @@ def test_assignment_constraint(
     assert_equal(result.objective, expected_makespan)
 
 
-def test_tight_planning_horizon_results_in_infeasiblity(solver: str):
+def test_tight_horizon_results_in_infeasiblity(solver: str):
     """
-    Tests that a tight planning horizon results in an infeasible instance.
+    Tests that a tight horizon results in an infeasible instance.
     """
     model = Model()
 
@@ -695,11 +709,11 @@ def test_tight_planning_horizon_results_in_infeasiblity(solver: str):
     task = model.add_task(job=job)
 
     model.add_processing_time(machine, task, duration=2)
-    model.set_planning_horizon(1)
+    model.set_horizon(1)
 
     result = model.solve(solver=solver)
 
-    # Processing time is 2, but planning horizon is 1, so this is infeasible.
+    # Processing time is 2, but horizon is 1, so this is infeasible.
     assert_equal(result.status.value, "Infeasible")
 
 
