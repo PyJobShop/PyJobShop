@@ -12,7 +12,7 @@ def test_compute_min_max_durations():
         [Job()],
         [Machine(), Machine()],
         [Task(), Task()],
-        processing_times={(0, 0): 1, (1, 0): 10, (1, 1): 0},
+        processing_times={(0, 0): 1, (0, 1): 10, (1, 1): 0},
         constraints={},
     )
 

@@ -53,29 +53,27 @@ def task_variables(m: CpoModel, data: ProblemData) -> list[CpoIntervalVar]:
 def assignment_variables(m: CpoModel, data: ProblemData) -> AssignVars:
     """
     Creates an optional interval variable for each task and eligible
-    machine pair, i.e., a task.
+    machine pair.
     """
     variables = {}
 
-    for task_idx in range(data.num_tasks):
-        for machine in data.task2machines[task_idx]:
-            var = m.interval_var(optional=True, name=f"A{task_idx}_{machine}")
-            task = data.tasks[task_idx]
+    for (task_idx, machine), duration in data.processing_times.items():
+        var = m.interval_var(optional=True, name=f"A{task_idx}_{machine}")
+        task = data.tasks[task_idx]
 
-            var.set_start_min(task.earliest_start)
-            var.set_start_max(min(task.latest_start, data.horizon))
+        var.set_start_min(task.earliest_start)
+        var.set_start_max(min(task.latest_start, data.horizon))
 
-            var.set_end_min(task.earliest_end)
-            var.set_end_max(min(task.latest_end, data.horizon))
+        var.set_end_min(task.earliest_end)
+        var.set_end_max(min(task.latest_end, data.horizon))
 
-            duration = data.processing_times[machine, task_idx]
-            if task.fixed_duration:
-                var.set_size(duration)
-            else:
-                var.set_size_min(duration)
-                var.set_size_max(data.horizon)
+        if task.fixed_duration:
+            var.set_size(duration)
+        else:
+            var.set_size_min(duration)
+            var.set_size_max(data.horizon)
 
-            variables[task_idx, machine] = var
+        variables[task_idx, machine] = var
 
     return variables
 

@@ -15,8 +15,8 @@ def test_model_to_data():
     machine1, machine2 = [model.add_machine() for _ in range(2)]
     task1, task2 = [model.add_task(job=job) for _ in range(2)]
 
-    model.add_processing_time(machine1, task1, 1)
-    model.add_processing_time(machine2, task2, 2)
+    model.add_processing_time(task1, machine1, 1)
+    model.add_processing_time(task2, machine2, 2)
 
     model.add_start_at_start(task1, task2)
     model.add_start_at_end(task1, task2)
@@ -76,7 +76,7 @@ def test_model_to_data_default_values():
     job = model.add_job()
     machine = model.add_machine()
     task = model.add_task(job=job)
-    model.add_processing_time(machine, task, 1)
+    model.add_processing_time(task, machine, 1)
 
     data = model.data()
 
@@ -182,7 +182,7 @@ def test_solve(solver: str):
     tasks = [model.add_task(job=job) for _ in range(2)]
 
     for task, duration in zip(tasks, [1, 2]):
-        model.add_processing_time(machine, task, duration)
+        model.add_processing_time(task, machine, duration)
 
     result = model.solve(solver=solver)
 

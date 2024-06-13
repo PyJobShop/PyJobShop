@@ -194,7 +194,7 @@ def test_problem_data_non_input_parameter_attributes():
     jobs = [Job(tasks=[0, 1, 2])]
     machines = [Machine() for _ in range(3)]
     tasks = [Task() for _ in range(3)]
-    processing_times = {(1, 2): 1, (2, 1): 1, (0, 1): 1, (2, 0): 1}
+    processing_times = {(2, 1): 1, (1, 2): 1, (1, 0): 1, (0, 2): 1}
 
     data = ProblemData(jobs, machines, tasks, processing_times)
 
@@ -304,7 +304,7 @@ def test_job_release_date(solver: str):
     machine = model.add_machine()
     task = model.add_task(job=job)
 
-    model.add_processing_time(machine, task, duration=1)
+    model.add_processing_time(task, machine, duration=1)
 
     result = model.solve(solver=solver)
 
@@ -329,7 +329,7 @@ def test_job_deadline(solver: str):
     task2 = model.add_task(job=job2)
 
     for task in [task1, task2]:
-        model.add_processing_time(machine, task, duration=2)
+        model.add_processing_time(task, machine, duration=2)
 
     model.add_setup_time(machine, task2, task1, 10)
 
@@ -353,7 +353,7 @@ def test_job_deadline_infeasible(solver: str):
     machine = model.add_machine()
     task = model.add_task(job=job)
 
-    model.add_processing_time(machine, task, duration=2)
+    model.add_processing_time(task, machine, duration=2)
 
     result = model.solve(solver=solver)
 
@@ -371,7 +371,7 @@ def test_task_earliest_start(solver: str):
     machine = model.add_machine()
     task = model.add_task(job=job, earliest_start=1)
 
-    model.add_processing_time(machine, task, duration=1)
+    model.add_processing_time(task, machine, duration=1)
 
     result = model.solve(solver=solver)
 
@@ -394,7 +394,7 @@ def test_task_latest_start(solver: str):
     ]
 
     for task in tasks:
-        model.add_processing_time(machine, task, duration=2)
+        model.add_processing_time(task, machine, duration=2)
 
     model.add_setup_time(machine, tasks[1], tasks[0], 10)
 
@@ -419,7 +419,7 @@ def test_task_fixed_start(solver: str):
     machine = model.add_machine()
     task = model.add_task(job=job, earliest_start=42, latest_start=42)
 
-    model.add_processing_time(machine, task, duration=1)
+    model.add_processing_time(task, machine, duration=1)
 
     result = model.solve(solver=solver)
 
@@ -438,7 +438,7 @@ def test_task_earliest_end(solver: str):
     machine = model.add_machine()
     task = model.add_task(job=job, earliest_end=2)
 
-    model.add_processing_time(machine, task, duration=1)
+    model.add_processing_time(task, machine, duration=1)
 
     result = model.solve(solver=solver)
 
@@ -462,7 +462,7 @@ def test_task_latest_end(solver: str):
     ]
 
     for task in tasks:
-        model.add_processing_time(machine, task, duration=2)
+        model.add_processing_time(task, machine, duration=2)
 
     model.add_setup_time(machine, tasks[1], tasks[0], 10)
 
@@ -487,7 +487,7 @@ def test_task_fixed_end(solver: str):
     machine = model.add_machine()
     task = model.add_task(job=job, earliest_end=42, latest_end=42)
 
-    model.add_processing_time(machine, task, duration=1)
+    model.add_processing_time(task, machine, duration=1)
 
     result = model.solve(solver=solver)
 
@@ -507,7 +507,7 @@ def test_task_fixed_duration_infeasible_with_timing_constraints(
 
     machine = model.add_machine()
     task = model.add_task(latest_start=0, earliest_end=10)
-    model.add_processing_time(machine, task, duration=1)
+    model.add_processing_time(task, machine, duration=1)
 
     # Because of the latest start and earliest end constraints, we cannot
     # schedule the task with fixed duration, since its processing time
@@ -528,7 +528,7 @@ def test_task_non_fixed_duration(solver: str):
         earliest_end=10,
         fixed_duration=False,
     )
-    model.add_processing_time(machine, task, duration=1)
+    model.add_processing_time(task, machine, duration=1)
 
     # Since the task's duration is not fixed, it can be scheduled in a
     # feasible way. In this case, it starts at 0 and ends at 10, which includes
@@ -595,8 +595,8 @@ def test_previous_constraint(solver: str):
     task1 = model.add_task(job=job)
     task2 = model.add_task(job=job)
 
-    model.add_processing_time(machine, task1, duration=1)
-    model.add_processing_time(machine, task2, duration=1)
+    model.add_processing_time(task1, machine, duration=1)
+    model.add_processing_time(task2, machine, duration=1)
 
     model.add_setup_time(machine, task2, task1, duration=100)
     model.add_previous(task2, task1)
@@ -618,7 +618,7 @@ def test_tight_horizon_results_in_infeasiblity(solver: str):
     machine = model.add_machine()
     task = model.add_task(job=job)
 
-    model.add_processing_time(machine, task, duration=2)
+    model.add_processing_time(task, machine, duration=2)
     model.set_horizon(1)
 
     result = model.solve(solver=solver)
@@ -638,7 +638,7 @@ def test_makespan_objective(solver: str):
     tasks = [model.add_task(job=job) for _ in range(2)]
 
     for task in tasks:
-        model.add_processing_time(machine, task, duration=2)
+        model.add_processing_time(task, machine, duration=2)
 
     result = model.solve(solver=solver)
 
@@ -657,7 +657,7 @@ def test_tardy_jobs(solver: str):
     for idx in range(3):
         job = model.add_job(due_date=idx + 1)
         task = model.add_task(job=job)
-        model.add_processing_time(machine, task, duration=3)
+        model.add_processing_time(task, machine, duration=3)
 
     model.set_objective(Objective.TARDY_JOBS)
 
@@ -682,7 +682,7 @@ def test_total_completion_time(solver: str):
         task = model.add_task(job=job)
 
         for machine in machines:
-            model.add_processing_time(machine, task, duration=idx + 1)
+            model.add_processing_time(task, machine, duration=idx + 1)
 
     model.set_objective(Objective.TOTAL_COMPLETION_TIME)
 
@@ -709,7 +709,7 @@ def test_total_weighted_completion_time(solver: str):
     for idx in range(2):
         job = model.add_job(weight=weights[idx])
         task = model.add_task(job=job)
-        model.add_processing_time(machine, task, duration=idx + 1)
+        model.add_processing_time(task, machine, duration=idx + 1)
 
     model.set_objective(Objective.TOTAL_COMPLETION_TIME)
 
@@ -736,7 +736,7 @@ def test_total_tardiness(solver: str):
         task = model.add_task(job=job)
 
         for machine in machines:
-            model.add_processing_time(machine, task, duration=idx + 1)
+            model.add_processing_time(task, machine, duration=idx + 1)
 
     model.set_objective(Objective.TOTAL_TARDINESS)
 
@@ -765,7 +765,7 @@ def test_total_weighted_tardiness(solver: str):
     for idx in range(2):
         job = model.add_job(weight=weights[idx], due_date=due_dates[idx])
         task = model.add_task(job=job)
-        model.add_processing_time(machine, task, processing_times[idx])
+        model.add_processing_time(task, machine, processing_times[idx])
 
     model.set_objective(Objective.TOTAL_TARDINESS)
 
@@ -810,7 +810,7 @@ def test_jobshop(solver: str):
         # Add processing times.
         for idx, (machine_idx, duration) in enumerate(tasks_):
             model.add_processing_time(
-                machines[machine_idx], tasks[idx], duration
+                tasks[idx], machines[machine_idx], duration
             )
 
         # Impose linear routing precedence constraints.

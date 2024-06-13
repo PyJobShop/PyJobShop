@@ -302,7 +302,7 @@ class ProblemData:
         self._machine2tasks: list[list[int]] = [[] for _ in range(num_mach)]
         self._task2machines: list[list[int]] = [[] for _ in range(num_tasks)]
 
-        for machine, task in self.processing_times.keys():
+        for task, machine in self.processing_times.keys():
             bisect.insort(self._machine2tasks[machine], task)
             bisect.insort(self._task2machines[task], machine)
 

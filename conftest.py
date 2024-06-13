@@ -12,7 +12,7 @@ def small():
     tasks = [model.add_task(job=job) for _ in range(2)]
 
     for task, duration in zip(tasks, [1, 2]):
-        model.add_processing_time(machine, task, duration)
+        model.add_processing_time(task, machine, duration)
 
     return model.data()
 

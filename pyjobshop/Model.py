@@ -204,25 +204,25 @@ class Model:
 
         return task
 
-    def add_processing_time(self, machine: Machine, task: Task, duration: int):
+    def add_processing_time(self, task: Task, machine: Machine, duration: int):
         """
-        Adds a processing time for a machine and task combination.
+        Adds a processing time for a given task on a machine.
 
         Parameters
         ----------
+        task
+            The task to be processed.
         machine
             The machine on which the task is processed.
-        task
-            The task.
         duration
             Processing time of the task on the machine.
         """
         if duration < 0:
             raise ValueError("Processing time must be non-negative.")
 
-        machine_idx = self._id2machine[id(machine)]
         task_idx = self._id2task[id(task)]
-        self._processing_times[machine_idx, task_idx] = duration
+        machine_idx = self._id2machine[id(machine)]
+        self._processing_times[task_idx, machine_idx] = duration
 
     def add_start_at_start(self, first: Task, second: Task):
         """
