@@ -310,22 +310,22 @@ class Model:
         task2 = self._id2task[id(second)]
         self._constraints[task1, task2].append(Constraint.PREVIOUS)
 
-    def add_same_unit(self, first: Task, second: Task):
+    def add_same_machine(self, first: Task, second: Task):
         """
         Adds a constraint that two tasks must be scheduled on the same machine.
         """
         task1 = self._id2task[id(first)]
         task2 = self._id2task[id(second)]
-        self._constraints[task1, task2].append(Constraint.SAME_UNIT)
+        self._constraints[task1, task2].append(Constraint.SAME_MACHINE)
 
-    def add_different_unit(self, first: Task, second: Task):
+    def add_different_machine(self, first: Task, second: Task):
         """
-        Adds a constraint that the two tasks cannot be scheduled on the same
-        machine.
+        Adds a constraint that the two tasks must be scheduled on different
+        machines.
         """
         task1 = self._id2task[id(first)]
         task2 = self._id2task[id(second)]
-        self._constraints[task1, task2].append(Constraint.DIFFERENT_UNIT)
+        self._constraints[task1, task2].append(Constraint.DIFFERENT_MACHINE)
 
     def add_setup_time(
         self, machine: Machine, task1: Task, task2: Task, duration: int

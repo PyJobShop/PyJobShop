@@ -244,10 +244,10 @@ class Constraint(str, Enum):
     PREVIOUS = "previous"
 
     #: Assign tasks :math:`i` and :math:`j` to the same machine.
-    SAME_UNIT = "same_unit"
+    SAME_MACHINE = "same_machine"
 
-    #: Assign tasks :math:`i` and :math:`j` to different machine.
-    DIFFERENT_UNIT = "different_unit"
+    #: Assign tasks :math:`i` and :math:`j` to different machines.
+    DIFFERENT_MACHINE = "different_machine"
 
 
 class ProblemData:

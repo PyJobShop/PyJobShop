@@ -598,8 +598,8 @@ def test_task_non_fixed_duration(solver: str):
         (Constraint.END_BEFORE_START, 4),
         # end 2 <= end 2
         (Constraint.END_BEFORE_END, 2),
-        (Constraint.SAME_UNIT, 4),
-        (Constraint.DIFFERENT_UNIT, 2),
+        (Constraint.SAME_MACHINE, 4),
+        (Constraint.DIFFERENT_MACHINE, 2),
     ],
 )
 def test_constraints(solver, prec_type: Constraint, expected_makespan: int):
