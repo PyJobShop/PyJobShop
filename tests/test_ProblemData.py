@@ -266,7 +266,7 @@ def test_problem_data_task_without_processing_times():
         # Invalid setup times shape.
         ({(0, 0): 1}, np.ones((2, 2, 2)), 1),
         # Negative horizon.
-        ({(0, 0): 1}, np.ones((2, 2, 2)), -1),
+        ({(0, 0): 1}, np.ones((1, 1, 1)), -1),
     ],
 )
 def test_problem_data_raises_when_invalid_arguments(
