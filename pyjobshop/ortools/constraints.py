@@ -135,25 +135,27 @@ def task_graph(
                     idx2 = sequence.tasks.index(var2)
                     arc = sequence.arcs[idx1, idx2]
 
-                    # Equivalent: arc <=> var1.is_present & var2.is_present
+                    # arc <=> var1.is_present & var2.is_present
                     m.add_bool_or([arc, ~var1.is_present, ~var2.is_present])
                     m.add_implication(arc, var1.is_present)
                     m.add_implication(arc, var2.is_present)
                 if constraint == "before":
                     sequence.activate()
-
-                    idx1 = sequence.tasks.index(var1)
-                    idx2 = sequence.tasks.index(var2)
-                    rank1 = sequence.ranks[idx1]
-                    rank2 = sequence.ranks[idx2]
                     both_present = m.new_bool_var("")
 
-                    # Equiv: both_present <=> var1.is_present & var2.is_present
+                    # both_present <=> var1.is_present & var2.is_present
                     m.add_bool_or(
                         [both_present, ~var1.is_present, ~var2.is_present]
                     )
                     m.add_implication(both_present, var1.is_present)
                     m.add_implication(both_present, var2.is_present)
+
+                    # Schedule var1 before var2 when both are present.
+                    idx1 = sequence.tasks.index(var1)
+                    idx2 = sequence.tasks.index(var2)
+                    rank1 = sequence.ranks[idx1]
+                    rank2 = sequence.ranks[idx2]
+
                     m.add(rank1 <= rank2).only_enforce_if(both_present)
                 elif constraint == "same_machine":
                     expr = var1.is_present == var2.is_present
