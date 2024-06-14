@@ -29,6 +29,7 @@ def test_model_to_data():
     model.add_same_machine(task2, task1)
     model.add_different_machine(task2, task1)
     model.add_previous(task2, task1)
+    model.add_before(task2, task1)
 
     model.add_setup_time(machine1, task1, task2, 3)
     model.add_setup_time(machine2, task1, task2, 4)
@@ -59,6 +60,7 @@ def test_model_to_data():
                 Constraint.SAME_MACHINE,
                 Constraint.DIFFERENT_MACHINE,
                 Constraint.PREVIOUS,
+                Constraint.BEFORE,
             ],
         },
     )
