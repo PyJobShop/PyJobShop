@@ -235,6 +235,9 @@ class Constraint(str, Enum):
     #: Sequence :math:`i` right before :math:`j` (if assigned to same machine).
     PREVIOUS = "previous"
 
+    #: Sequence :math:`i` before :math:`j` (if assigned to same machines).
+    BEFORE = "before"
+
     #: Assign tasks :math:`i` and :math:`j` to the same machine.
     SAME_MACHINE = "same_machine"
 
