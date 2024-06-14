@@ -804,14 +804,13 @@ def test_jobshop(solver: str):
     jobs = [model.add_job() for _ in range(num_jobs)]
     machines = [model.add_machine() for _ in range(3)]
 
-    for job_idx, tasks_ in enumerate(jobs_data):
-        tasks = [model.add_task(job=jobs[job_idx]) for _ in tasks_]
+    for job_idx, job_data in enumerate(jobs_data):
+        num_tasks = len(job_data)
+        tasks = [model.add_task(job=jobs[job_idx]) for _ in range(num_tasks)]
 
         # Add processing times.
-        for idx, (machine_idx, duration) in enumerate(tasks_):
-            model.add_processing_time(
-                tasks[idx], machines[machine_idx], duration
-            )
+        for t_idx, (m_idx, duration) in enumerate(job_data):
+            model.add_processing_time(tasks[t_idx], machines[m_idx], duration)
 
         # Impose linear routing precedence constraints.
         for task_idx in range(1, len(tasks)):

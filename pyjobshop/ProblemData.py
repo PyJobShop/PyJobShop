@@ -322,7 +322,7 @@ class ProblemData:
         if any(duration < 0 for duration in self.processing_times.values()):
             raise ValueError("Processing times must be non-negative.")
 
-        tasks_with_processing = {t for _, t in self.processing_times.keys()}
+        tasks_with_processing = {t for t, _ in self.processing_times.keys()}
         if set(range(num_tasks)) != tasks_with_processing:
             raise ValueError("Processing times missing for some tasks.")
 
