@@ -302,7 +302,7 @@ class ProblemData:
         self._machine2tasks: list[list[int]] = [[] for _ in range(num_mach)]
         self._task2machines: list[list[int]] = [[] for _ in range(num_tasks)]
 
-        for machine, task in self.processing_times.keys():
+        for task, machine in self.processing_times.keys():
             bisect.insort(self._machine2tasks[machine], task)
             bisect.insort(self._task2machines[task], machine)
 
@@ -322,7 +322,7 @@ class ProblemData:
         if any(duration < 0 for duration in self.processing_times.values()):
             raise ValueError("Processing times must be non-negative.")
 
-        tasks_with_processing = {t for _, t in self.processing_times.keys()}
+        tasks_with_processing = {t for t, _ in self.processing_times.keys()}
         if set(range(num_tasks)) != tasks_with_processing:
             raise ValueError("Processing times missing for some tasks.")
 
