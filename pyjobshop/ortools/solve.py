@@ -100,7 +100,7 @@ def _result2solution(
     """
     tasks = {}
 
-    for (task, machine), var in sorted(assign_vars.items()):
+    for (task, machine), var in assign_vars.items():
         if cp_solver.Value(var.is_present):
             start = cp_solver.Value(var.start)
             duration = cp_solver.Value(var.duration)

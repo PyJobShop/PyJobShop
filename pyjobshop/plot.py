@@ -70,7 +70,7 @@ def plot(
 
         if plot_labels:
             ax.text(
-                (task_data.end - task_data.start) / 2,
+                task_data.start + task_data.duration / 2,
                 order[task_data.machine],
                 data.tasks[idx].name,
                 ha="center",
