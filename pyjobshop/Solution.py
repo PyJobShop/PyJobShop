@@ -35,7 +35,14 @@ class Solution:
     """
 
     def __init__(self, tasks: list[TaskData]):
-        self.tasks = tasks
+        self._tasks = tasks
+
+    @property
+    def tasks(self) -> list[TaskData]:
+        """
+        Returns the list of tasks and its scheduling data.
+        """
+        return self._tasks
 
     def __eq__(self, other) -> bool:
         return self.tasks == other.tasks
