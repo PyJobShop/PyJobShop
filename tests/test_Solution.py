@@ -17,9 +17,9 @@ def test_solution_eq():
     """
     Tests the equality comparison of solutions.
     """
-    schedule = [TaskData(0, 0, 0, 1), TaskData(1, 0, 1, 2)]
-    sol1 = Solution(schedule)
+    tasks = [TaskData(0, 0, 0, 1), TaskData(1, 0, 1, 2)]
+    sol1 = Solution(tasks)
 
-    assert_equal(sol1, Solution(schedule))
+    assert_equal(sol1, Solution(tasks))
     other = [TaskData(0, 0, 0, 1), TaskData(0, 0, 3, 2)]
     assert_(sol1 != Solution(other))

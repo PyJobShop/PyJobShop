@@ -187,7 +187,7 @@ def assignment_variables(
     """
     variables = {}
 
-    for (machine_idx, task_idx), proc_time in data.processing_times.items():
+    for (task_idx, machine_idx), proc_time in data.processing_times.items():
         task = data.tasks[task_idx]
         machine = data.machines[machine_idx]
         name = f"A{task}_{machine}"
