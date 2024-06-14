@@ -52,29 +52,27 @@ def plot(
         for task in job.tasks:
             task2color[task] = colors[job_idx % len(colors)]
 
-    for task_ in solution.schedule:
-        task, machine, start, duration = (
-            task_.task,
-            task_.machine,
-            task_.start,
-            task_.duration,
-        )
-
+    for idx, task_data in enumerate(solution.tasks):
         kwargs = {
-            "color": task2color[task],
+            "color": task2color[idx],
             "linewidth": 1,
             "edgecolor": "black",
             "alpha": 0.75,
         }
 
-        if machine in order:
-            ax.barh(order[machine], duration, left=start, **kwargs)
+        if task_data.machine in order:
+            ax.barh(
+                order[task_data.machine],
+                task_data.duration,
+                left=task_data.start,
+                **kwargs,
+            )
 
         if plot_labels:
             ax.text(
-                start + duration / 2,
-                order[machine],
-                data.tasks[task].name,
+                task_data.start + task_data.duration / 2,
+                order[task_data.machine],
+                data.tasks[idx].name,
                 ha="center",
                 va="center",
             )

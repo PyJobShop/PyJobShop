@@ -4,8 +4,7 @@ from docplex.cp.solution import CpoSolveResult
 
 from pyjobshop.ProblemData import ProblemData
 from pyjobshop.Result import Result, SolveStatus
-from pyjobshop.Solution import Solution
-from pyjobshop.Solution import Task as Task_
+from pyjobshop.Solution import Solution, TaskData
 
 from .create_model import create_model
 
@@ -53,7 +52,7 @@ def solve(
         objective: float = cp_result.get_objective_value()  # type: ignore
     else:
         # No feasible solution found due to infeasible instance or time limit.
-        solution = Solution(data, [])
+        solution = Solution([])
         objective = float("inf")
 
     return Result(
@@ -79,7 +78,7 @@ def _result2solution(data: ProblemData, result: CpoSolveResult) -> Solution:
     """
     Converts an CpoSolveResult object to a solution.
     """
-    schedule = []
+    tasks = {}
 
     for var in result.get_all_var_solutions():  # type: ignore
         name = var.get_name()
@@ -90,7 +89,7 @@ def _result2solution(data: ProblemData, result: CpoSolveResult) -> Solution:
             task, machine = [int(num) for num in name[1:].split("_")]
             start = var.start
             duration = var.size
+            end = var.end
+            tasks[task] = TaskData(machine, start, duration, end)
 
-            schedule.append(Task_(task, machine, start, duration))
-
-    return Solution(data, schedule)
+    return Solution([tasks[idx] for idx in range(data.num_tasks)])

@@ -1,30 +1,27 @@
 from dataclasses import dataclass
 
-from .ProblemData import ProblemData
 
-
-# TODO rename Task
 @dataclass
-class Task:
+class TaskData:
     """
-    The Task class stores data related to scheduled tasks.
+    Stores scheduling data related to a task.
 
     Parameters
     ----------
-    task
-        The task index.
     machine
-        The machine index to which the task is assigned.
+        The assigned machine index.
     start
-        The start time of the task.
+        The start time.
     duration
-        The duration of the task.
+        The duration.
+    end
+        The end time.
     """
 
-    task: int
     machine: int
     start: int
     duration: int
+    end: int
 
 
 class Solution:
@@ -33,24 +30,19 @@ class Solution:
 
     Parameters
     ----------
-    data
-        The problem data instance.
-    schedule
-        A list of tasks.
+    tasks
+        The list of scheduled tasks.
     """
 
-    def __init__(self, data: ProblemData, schedule: list[Task]):
-        self.schedule = schedule  # TODO rename schedule
-        self._validate(data)
+    def __init__(self, tasks: list[TaskData]):
+        self._tasks = tasks
+
+    @property
+    def tasks(self) -> list[TaskData]:
+        """
+        Returns the list of tasks and its scheduling data.
+        """
+        return self._tasks
 
     def __eq__(self, other) -> bool:
-        return self.schedule == other.schedule
-
-    def _validate(self, data: ProblemData):
-        for task in self.schedule:
-            task_ = task.task
-            assigned = task.machine
-
-            if assigned not in data.task2machines[task_]:
-                msg = f"Task {task_} not allowed on machine {assigned}."
-                raise ValueError(msg)
+        return self.tasks == other.tasks

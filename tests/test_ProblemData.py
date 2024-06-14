@@ -12,7 +12,7 @@ from pyjobshop.ProblemData import (
     ProblemData,
     Task,
 )
-from pyjobshop.Solution import Task as Task_
+from pyjobshop.Solution import TaskData as TaskData
 from pyjobshop.solve import solve
 
 
@@ -536,7 +536,7 @@ def test_task_non_fixed_duration(solver: str):
     result = model.solve(solver=solver)
     assert_equal(result.status.value, "Optimal")
     assert_equal(result.objective, 10)
-    assert_equal(result.best.schedule, [Task_(0, 0, 0, 10)])
+    assert_equal(result.best.tasks, [TaskData(0, 0, 10, 10)])
 
 
 @pytest.mark.parametrize(
