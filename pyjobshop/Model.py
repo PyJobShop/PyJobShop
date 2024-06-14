@@ -299,11 +299,21 @@ class Model:
     def add_previous(self, first: Task, second: Task):
         """
         Adds a constraint that the first task must be scheduled right before
-        the second task, if they are scheduled on the same machine.
+        the second task, meaning that no task is allowed to schedule between,
+        if they are scheduled on the same machine.
         """
         task1 = self._id2task[id(first)]
         task2 = self._id2task[id(second)]
         self._constraints[task1, task2].append(Constraint.PREVIOUS)
+
+    def add_before(self, first: Task, second: Task):
+        """
+        Adds a constraint that the first task must be scheduled before the
+        second task, if they are scheduled on the same machine.
+        """
+        task1 = self._id2task[id(first)]
+        task2 = self._id2task[id(second)]
+        self._constraints[task1, task2].append(Constraint.BEFORE)
 
     def add_same_machine(self, first: Task, second: Task):
         """
