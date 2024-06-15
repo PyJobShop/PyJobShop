@@ -9,8 +9,6 @@ from pyjobshop.constants import MAX_VALUE
 
 _CONSTRAINTS_TYPE = dict[tuple[int, int], list["Constraint"]]
 
-# TODO
-
 
 class Job:
     """
@@ -30,6 +28,9 @@ class Job:
     due_date
         The latest time that the job should be completed before incurring
         penalties. Default is None, meaning that there is no due date.
+    tasks
+        List of task indices that belong to this job. Default is None,
+        which initializes an empty list.
     name
         Name of the job.
     """
@@ -40,6 +41,7 @@ class Job:
         release_date: int = 0,
         deadline: int = MAX_VALUE,
         due_date: Optional[int] = None,
+        tasks: Optional[list[int]] = None,
         name: str = "",
     ):
         if weight < 0:
@@ -61,6 +63,7 @@ class Job:
         self._release_date = release_date
         self._deadline = deadline
         self._due_date = due_date
+        self._tasks = [] if tasks is None else tasks
         self._name = name
 
     @property
@@ -80,8 +83,15 @@ class Job:
         return self._due_date
 
     @property
+    def tasks(self) -> list[int]:
+        return self._tasks
+
+    @property
     def name(self) -> str:
         return self._name
+
+    def add_task(self, idx: int):
+        self._tasks.append(idx)
 
 
 class Machine:
@@ -90,20 +100,12 @@ class Machine:
 
     Parameters
     ----------
-    allow_overlap
-        Whether it is allowed to schedule multiple tasks on the machine
-        at the same time. Default is False.
     name
         Name of the machine.
     """
 
-    def __init__(self, allow_overlap: bool = False, name: str = ""):
-        self._allow_overlap = allow_overlap
+    def __init__(self, name: str = ""):
         self._name = name
-
-    @property
-    def allow_overlap(self) -> bool:
-        return self._allow_overlap
 
     @property
     def name(self) -> str:
@@ -233,11 +235,14 @@ class Constraint(str, Enum):
     #: Sequence :math:`i` right before :math:`j` (if assigned to same machine).
     PREVIOUS = "previous"
 
-    #: Assign tasks :math:`i` and :math:`j` to the same machine.
-    SAME_UNIT = "same_unit"
+    #: Sequence :math:`i` before :math:`j` (if assigned to same machines).
+    BEFORE = "before"
 
-    #: Assign tasks :math:`i` and :math:`j` to different machine.
-    DIFFERENT_UNIT = "different_unit"
+    #: Assign tasks :math:`i` and :math:`j` to the same machine.
+    SAME_MACHINE = "same_machine"
+
+    #: Assign tasks :math:`i` and :math:`j` to different machines.
+    DIFFERENT_MACHINE = "different_machine"
 
 
 class ProblemData:
@@ -253,19 +258,18 @@ class ProblemData:
         List of machines.
     tasks
         List of tasks.
-    job2tasks
-        List of task indices for each job.
     processing_times
         Processing times of tasks on machines. First index is the machine
         index, second index is the task index.
     constraints
         Dict indexed by task pairs with a list of constraints as values.
+        Default is None, which initializes an empty dict.
     setup_times
         Sequence-dependent setup times between tasks on a given machine.
         The first dimension of the array is indexed by the machine index. The
         last two dimensions of the array are indexed by task indices.
-    planning_horizon
-        The planning horizon value. Default ``MAX_VALUE``.
+    horizon
+        The horizon value. Default ``MAX_VALUE``.
     objective
         The objective function to be minimized. Default is the makespan.
     """
@@ -275,19 +279,17 @@ class ProblemData:
         jobs: list[Job],
         machines: list[Machine],
         tasks: list[Task],
-        job2tasks: list[list[int]],
         processing_times: dict[tuple[int, int], int],
-        constraints: _CONSTRAINTS_TYPE,
+        constraints: Optional[_CONSTRAINTS_TYPE] = None,
         setup_times: Optional[np.ndarray] = None,
-        planning_horizon: int = MAX_VALUE,
+        horizon: int = MAX_VALUE,
         objective: Objective = Objective.MAKESPAN,
     ):
         self._jobs = jobs
         self._machines = machines
         self._tasks = tasks
-        self._job2tasks = job2tasks
         self._processing_times = processing_times
-        self._constraints = constraints
+        self._constraints = constraints if constraints is not None else {}
 
         num_mach = self.num_machines
         num_tasks = self.num_tasks
@@ -297,13 +299,13 @@ class ProblemData:
             if setup_times is not None
             else np.zeros((num_mach, num_tasks, num_tasks), dtype=int)
         )
-        self._planning_horizon = planning_horizon
+        self._horizon = horizon
         self._objective = objective
 
         self._machine2tasks: list[list[int]] = [[] for _ in range(num_mach)]
         self._task2machines: list[list[int]] = [[] for _ in range(num_tasks)]
 
-        for machine, task in self.processing_times.keys():
+        for task, machine in self.processing_times.keys():
             bisect.insort(self._machine2tasks[machine], task)
             bisect.insort(self._task2machines[task], machine)
 
@@ -316,8 +318,16 @@ class ProblemData:
         num_mach = self.num_machines
         num_tasks = self.num_tasks
 
+        for job in self.jobs:
+            if any(task >= num_tasks for task in job.tasks):
+                raise ValueError("Job references to unknown task.")
+
         if any(duration < 0 for duration in self.processing_times.values()):
             raise ValueError("Processing times must be non-negative.")
+
+        tasks_with_processing = {t for t, _ in self.processing_times.keys()}
+        if set(range(num_tasks)) != tasks_with_processing:
+            raise ValueError("Processing times missing for some tasks.")
 
         if np.any(self.setup_times < 0):
             raise ValueError("Setup times must be non-negative.")
@@ -326,8 +336,8 @@ class ProblemData:
             msg = "Setup times shape not (num_machines, num_tasks, num_tasks)."
             raise ValueError(msg)
 
-        if self.planning_horizon < 0:
-            raise ValueError("Planning horizon must be non-negative.")
+        if self.horizon < 0:
+            raise ValueError("Horizon must be non-negative.")
 
         if self.objective in [Objective.TARDY_JOBS, Objective.TOTAL_TARDINESS]:
             if any(job.due_date is None for job in self.jobs):
@@ -354,18 +364,6 @@ class ProblemData:
         Returns the task data of this problem instance.
         """
         return self._tasks
-
-    @property
-    def job2tasks(self) -> list[list[int]]:
-        """
-        List of task indices for each job.
-
-        Returns
-        -------
-        list[list[int]]
-            List of task indices for each job.
-        """
-        return self._job2tasks
 
     @property
     def processing_times(self) -> dict[tuple[int, int], int]:
@@ -409,16 +407,17 @@ class ProblemData:
         return self._setup_times
 
     @property
-    def planning_horizon(self) -> int:
+    def horizon(self) -> int:
         """
-        The planning horizon of this instance.
+        The time horizon of this instance. This is an upper bound on the
+        completion time of all tasks.
 
         Returns
         -------
         int
-            The planning horizon value.
+            The horizon value.
         """
-        return self._planning_horizon
+        return self._horizon
 
     @property
     def objective(self) -> Objective:

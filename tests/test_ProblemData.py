@@ -1,6 +1,6 @@
 import numpy as np
 import pytest
-from numpy.testing import assert_allclose, assert_equal, assert_raises
+from numpy.testing import assert_equal, assert_raises
 
 from pyjobshop.constants import MAX_VALUE
 from pyjobshop.Model import Model
@@ -12,19 +12,28 @@ from pyjobshop.ProblemData import (
     ProblemData,
     Task,
 )
-from pyjobshop.Solution import Task as Task_
+from pyjobshop.Solution import TaskData as TaskData
+from pyjobshop.solve import solve
 
 
 def test_job_attributes():
     """
     Tests that the attributes of the Job class are set correctly.
     """
-    job = Job(weight=0, release_date=1, due_date=2, deadline=3, name="test")
+    job = Job(
+        weight=0,
+        release_date=1,
+        due_date=2,
+        deadline=3,
+        tasks=[0],
+        name="test",
+    )
 
     assert_equal(job.weight, 0)
     assert_equal(job.release_date, 1)
     assert_equal(job.due_date, 2)
     assert_equal(job.deadline, 3)
+    assert_equal(job.tasks, [0])
     assert_equal(job.name, "test")
 
 
@@ -38,21 +47,27 @@ def test_job_default_attributes():
     assert_equal(job.release_date, 0)
     assert_equal(job.deadline, MAX_VALUE)
     assert_equal(job.due_date, None)
+    assert_equal(job.tasks, [])
     assert_equal(job.name, "")
 
 
 @pytest.mark.parametrize(
-    "weight, release_date, due_date, deadline, name",
+    "weight, release_date, due_date, deadline, tasks, name",
     [
-        (-1, 0, 0, 0, ""),  # weight < 0
-        (0, -1, 0, 0, ""),  # release_date < 0
-        (0, 0, -1, 0, ""),  # deadline < 0
-        (0, 10, 0, 0, ""),  # release_date > deadline
-        (0, 0, 0, -1, ""),  # due_date < 0
+        (-1, 0, 0, 0, [], ""),  # weight < 0
+        (0, -1, 0, 0, [], ""),  # release_date < 0
+        (0, 0, -1, 0, [], ""),  # deadline < 0
+        (0, 10, 0, 0, [], ""),  # release_date > deadline
+        (0, 0, 0, -1, [], ""),  # due_date < 0
     ],
 )
 def test_job_attributes_raises_invalid_parameters(
-    weight: int, release_date: int, deadline: int, due_date: int, name: str
+    weight: int,
+    release_date: int,
+    deadline: int,
+    due_date: int,
+    tasks: list[int],
+    name: str,
 ):
     """
     Tests that a ValueError is raised when invalid parameters are passed to
@@ -64,6 +79,7 @@ def test_job_attributes_raises_invalid_parameters(
             release_date=release_date,
             deadline=deadline,
             due_date=due_date,
+            tasks=tasks,
             name=name,
         )
 
@@ -74,14 +90,10 @@ def test_machine_attributes():
     """
     # Let's first test the default values.
     machine = Machine()
-
-    assert_equal(machine.allow_overlap, False)
     assert_equal(machine.name, "")
 
     # Now test with some values.
-    machine = Machine(allow_overlap=True, name="TestMachine")
-
-    assert_equal(machine.allow_overlap, True)
+    machine = Machine(name="TestMachine")
     assert_equal(machine.name, "TestMachine")
 
 
@@ -142,38 +154,35 @@ def test_problem_data_input_parameter_attributes():
     Tests that the input parameters of the ProblemData class are set correctly
     as attributes.
     """
-    jobs = [Job() for _ in range(5)]
+    jobs = [Job(tasks=[idx]) for idx in range(5)]
     machines = [Machine() for _ in range(5)]
     tasks = [Task() for _ in range(5)]
-    job2tasks = [[0], [1], [2], [3], [4]]
     processing_times = {(i, j): 1 for i in range(5) for j in range(5)}
     constraints = {
         key: [Constraint.END_BEFORE_START] for key in ((0, 1), (2, 3), (4, 5))
     }
     setup_times = np.ones((5, 5, 5), dtype=int)
-    planning_horizon = 100
+    horizon = 100
     objective = Objective.TOTAL_COMPLETION_TIME
 
     data = ProblemData(
         jobs,
         machines,
         tasks,
-        job2tasks,
         processing_times,
         constraints,
         setup_times,
-        planning_horizon,
+        horizon,
         objective,
     )
 
     assert_equal(data.jobs, jobs)
     assert_equal(data.machines, machines)
     assert_equal(data.tasks, tasks)
-    assert_equal(data.job2tasks, job2tasks)
     assert_equal(data.processing_times, processing_times)
     assert_equal(data.constraints, constraints)
-    assert_allclose(data.setup_times, setup_times)
-    assert_equal(data.planning_horizon, planning_horizon)
+    assert_equal(data.setup_times, setup_times)
+    assert_equal(data.horizon, horizon)
     assert_equal(data.objective, objective)
 
 
@@ -182,13 +191,12 @@ def test_problem_data_non_input_parameter_attributes():
     Tests that attributes that are not input parameters of the ProblemData
     class are set correctly.
     """
-    jobs = [Job() for _ in range(1)]
+    jobs = [Job(tasks=[0, 1, 2])]
     machines = [Machine() for _ in range(3)]
     tasks = [Task() for _ in range(3)]
-    job2tasks = [[0, 1, 2]]
-    processing_times = {(1, 2): 1, (2, 1): 1, (0, 1): 1, (2, 0): 1}
+    processing_times = {(2, 1): 1, (1, 2): 1, (1, 0): 1, (0, 2): 1}
 
-    data = ProblemData(jobs, machines, tasks, job2tasks, processing_times, {})
+    data = ProblemData(jobs, machines, tasks, processing_times)
 
     # The lists in machine2tasks and task2machines are sorted.
     machine2tasks = [[1], [2], [0, 1]]
@@ -205,23 +213,36 @@ def test_problem_data_default_values():
     """
     Tests that the default values of the ProblemData class are set correctly.
     """
-    jobs = [Job() for _ in range(1)]
-    machines = [Machine() for _ in range(1)]
-    tasks = [Task() for _ in range(1)]
-    job2tasks = [[0]]
-    constraints = {(0, 1): [Constraint.END_BEFORE_START]}
+    jobs = [Job(tasks=[0])]
+    machines = [Machine()]
+    tasks = [Task()]
     processing_times = {(0, 0): 1}
-    data = ProblemData(
-        jobs, machines, tasks, job2tasks, processing_times, constraints
-    )
+    data = ProblemData(jobs, machines, tasks, processing_times)
 
-    assert_allclose(data.setup_times, np.zeros((1, 1, 1), dtype=int))
-    assert_equal(data.planning_horizon, MAX_VALUE)
+    assert_equal(data.constraints, {})
+    assert_equal(data.setup_times, np.zeros((1, 1, 1), dtype=int))
+    assert_equal(data.horizon, MAX_VALUE)
     assert_equal(data.objective, Objective.MAKESPAN)
 
 
+def test_problem_data_job_references_invalid_task():
+    """
+    Tests that an error is raised when a job references an unknown task.
+    """
+    with assert_raises(ValueError):
+        ProblemData([Job(tasks=[42])], [Machine()], [Task()], {})
+
+
+def test_problem_data_task_without_processing_times():
+    """
+    Tests that an error is raised when a task has no processing times.
+    """
+    with assert_raises(ValueError):
+        ProblemData([Job()], [Machine()], [Task()], {})
+
+
 @pytest.mark.parametrize(
-    "processing_times,  setup_times, planning_horizon",
+    "processing_times, setup_times, horizon",
     [
         # Negative processing times.
         ({(0, 0): -1}, np.ones((1, 1, 1)), 1),
@@ -229,14 +250,14 @@ def test_problem_data_default_values():
         ({(0, 0): 1}, np.ones((1, 1, 1)) * -1, 1),
         # Invalid setup times shape.
         ({(0, 0): 1}, np.ones((2, 2, 2)), 1),
-        # Negative planning horizon.
-        ({(0, 0): 1}, np.ones((2, 2, 2)), -1),
+        # Negative horizon.
+        ({(0, 0): 1}, np.ones((1, 1, 1)), -1),
     ],
 )
 def test_problem_data_raises_when_invalid_arguments(
     processing_times: dict[tuple[int, int], int],
     setup_times: np.ndarray,
-    planning_horizon: int,
+    horizon: int,
 ):
     """
     Tests that the ProblemData class raises an error when invalid arguments are
@@ -247,11 +268,9 @@ def test_problem_data_raises_when_invalid_arguments(
             [Job()],
             [Machine()],
             [Task()],
-            [[0]],
             processing_times,
-            {},
-            setup_times.astype(int),
-            planning_horizon=planning_horizon,
+            setup_times=setup_times.astype(int),
+            horizon=horizon,
         )
 
 
@@ -267,13 +286,7 @@ def test_problem_data_tardy_objective_without_job_due_dates(
     """
     with assert_raises(ValueError):
         ProblemData(
-            [Job()],
-            [Machine()],
-            [Task()],
-            [[0]],
-            {},
-            {},
-            objective=objective,
+            [Job()], [Machine()], [Task()], {(0, 0): 0}, objective=objective
         )
 
 
@@ -291,7 +304,7 @@ def test_job_release_date(solver: str):
     machine = model.add_machine()
     task = model.add_task(job=job)
 
-    model.add_processing_time(machine, task, duration=1)
+    model.add_processing_time(task, machine, duration=1)
 
     result = model.solve(solver=solver)
 
@@ -316,7 +329,7 @@ def test_job_deadline(solver: str):
     task2 = model.add_task(job=job2)
 
     for task in [task1, task2]:
-        model.add_processing_time(machine, task, duration=2)
+        model.add_processing_time(task, machine, duration=2)
 
     model.add_setup_time(machine, task2, task1, 10)
 
@@ -340,48 +353,12 @@ def test_job_deadline_infeasible(solver: str):
     machine = model.add_machine()
     task = model.add_task(job=job)
 
-    model.add_processing_time(machine, task, duration=2)
+    model.add_processing_time(task, machine, duration=2)
 
     result = model.solve(solver=solver)
 
     # The processing time of the task is 2, but job deadline is 1.
     assert_equal(result.status.value, "Infeasible")
-
-
-def test_machine_allow_overlap(solver: str):
-    """
-    Tests that allowing overlap results in a shorter makespan.
-    """
-    model = Model()
-    job = model.add_job()
-    machine = model.add_machine(allow_overlap=False)  # no overlap
-    tasks = [model.add_task(job=job) for _ in range(2)]
-
-    for task in tasks:
-        model.add_processing_time(machine, task, duration=2)
-
-    result = model.solve(solver=solver)
-
-    # No overlap, so we schedule the two tasks consecutively with
-    # final makespan of four.
-    assert_equal(result.status.value, "Optimal")
-    assert_equal(result.objective, 4)
-
-    # Let's now allow for overlap.
-    model = Model()
-    job = model.add_job()
-    machine = model.add_machine(allow_overlap=True)
-    tasks = [model.add_task(job=job) for _ in range(2)]
-
-    for task in tasks:
-        model.add_processing_time(machine, task, duration=2)
-
-    result = model.solve(solver=solver)
-
-    # With overlap we can schedule both tasks simultaneously on the
-    # machine, resulting in a makespan of two.
-    assert_equal(result.status.value, "Optimal")
-    assert_equal(result.objective, 2)
 
 
 def test_task_earliest_start(solver: str):
@@ -394,7 +371,7 @@ def test_task_earliest_start(solver: str):
     machine = model.add_machine()
     task = model.add_task(job=job, earliest_start=1)
 
-    model.add_processing_time(machine, task, duration=1)
+    model.add_processing_time(task, machine, duration=1)
 
     result = model.solve(solver=solver)
 
@@ -417,7 +394,7 @@ def test_task_latest_start(solver: str):
     ]
 
     for task in tasks:
-        model.add_processing_time(machine, task, duration=2)
+        model.add_processing_time(task, machine, duration=2)
 
     model.add_setup_time(machine, tasks[1], tasks[0], 10)
 
@@ -442,7 +419,7 @@ def test_task_fixed_start(solver: str):
     machine = model.add_machine()
     task = model.add_task(job=job, earliest_start=42, latest_start=42)
 
-    model.add_processing_time(machine, task, duration=1)
+    model.add_processing_time(task, machine, duration=1)
 
     result = model.solve(solver=solver)
 
@@ -461,7 +438,7 @@ def test_task_earliest_end(solver: str):
     machine = model.add_machine()
     task = model.add_task(job=job, earliest_end=2)
 
-    model.add_processing_time(machine, task, duration=1)
+    model.add_processing_time(task, machine, duration=1)
 
     result = model.solve(solver=solver)
 
@@ -485,7 +462,7 @@ def test_task_latest_end(solver: str):
     ]
 
     for task in tasks:
-        model.add_processing_time(machine, task, duration=2)
+        model.add_processing_time(task, machine, duration=2)
 
     model.add_setup_time(machine, tasks[1], tasks[0], 10)
 
@@ -510,7 +487,7 @@ def test_task_fixed_end(solver: str):
     machine = model.add_machine()
     task = model.add_task(job=job, earliest_end=42, latest_end=42)
 
-    model.add_processing_time(machine, task, duration=1)
+    model.add_processing_time(task, machine, duration=1)
 
     result = model.solve(solver=solver)
 
@@ -530,7 +507,7 @@ def test_task_fixed_duration_infeasible_with_timing_constraints(
 
     machine = model.add_machine()
     task = model.add_task(latest_start=0, earliest_end=10)
-    model.add_processing_time(machine, task, duration=1)
+    model.add_processing_time(task, machine, duration=1)
 
     # Because of the latest start and earliest end constraints, we cannot
     # schedule the task with fixed duration, since its processing time
@@ -551,7 +528,7 @@ def test_task_non_fixed_duration(solver: str):
         earliest_end=10,
         fixed_duration=False,
     )
-    model.add_processing_time(machine, task, duration=1)
+    model.add_processing_time(task, machine, duration=1)
 
     # Since the task's duration is not fixed, it can be scheduled in a
     # feasible way. In this case, it starts at 0 and ends at 10, which includes
@@ -559,7 +536,7 @@ def test_task_non_fixed_duration(solver: str):
     result = model.solve(solver=solver)
     assert_equal(result.status.value, "Optimal")
     assert_equal(result.objective, 10)
-    assert_equal(result.best.schedule, [Task_(0, 0, 0, 10)])
+    assert_equal(result.best.tasks, [TaskData(0, 0, 10, 10)])
 
 
 @pytest.mark.parametrize(
@@ -581,28 +558,28 @@ def test_task_non_fixed_duration(solver: str):
         (Constraint.END_BEFORE_START, 4),
         # end 2 <= end 2
         (Constraint.END_BEFORE_END, 2),
+        (Constraint.SAME_MACHINE, 4),
+        (Constraint.DIFFERENT_MACHINE, 2),
     ],
 )
-def test_timing_precedence(
-    solver, prec_type: Constraint, expected_makespan: int
-):
+def test_constraints(solver, prec_type: Constraint, expected_makespan: int):
     """
-    Tests that timing precedence constraints are respected. This example
-    uses two tasks and two machines with processing times of 2.
+    Tests that constraints are respected. This example uses two tasks and two
+    machines with processing times of 2.
     """
     model = Model()
 
     job = model.add_job()
-    machines = [model.add_machine(), model.add_machine()]
+    machines = [model.add_machine() for _ in range(2)]
     tasks = [model.add_task(job=job) for _ in range(2)]
+    processing_times = {
+        (m, t): 2 for m in range(len(machines)) for t in range(len(tasks))
+    }
 
-    for machine in machines:
-        for task in tasks:
-            model.add_processing_time(machine, task, duration=2)
-
-    model.add_constraint(tasks[0], tasks[1], prec_type)
-
-    result = model.solve(solver=solver)
+    data = ProblemData(
+        [job], machines, tasks, processing_times, {(0, 1): [prec_type]}
+    )
+    result = solve(data, solver=solver)
 
     assert_equal(result.objective, expected_makespan)
 
@@ -615,55 +592,59 @@ def test_previous_constraint(solver: str):
 
     job = model.add_job()
     machine = model.add_machine()
-    tasks = [model.add_task(job=job) for _ in range(2)]
+    task1 = model.add_task(job=job)
+    task2 = model.add_task(job=job)
 
-    model.add_processing_time(machine, tasks[0], duration=1)
-    model.add_processing_time(machine, tasks[1], duration=1)
+    model.add_processing_time(task1, machine, duration=1)
+    model.add_processing_time(task2, machine, duration=1)
 
-    model.add_setup_time(machine, tasks[1], tasks[0], duration=100)
-    model.add_constraint(tasks[1], tasks[0], Constraint.PREVIOUS)
+    model.add_setup_time(machine, task2, task1, duration=100)
+    model.add_previous(task2, task1)
 
     result = model.solve(solver=solver)
 
-    # Task 1 must be scheduled before task 0, but the setup time
+    # Task 2 must be scheduled before task 1, but the setup time
     # between them is 100, so the makespan is 1 + 100 + 1 = 102.
     assert_equal(result.objective, 102)
 
 
-@pytest.mark.parametrize(
-    "prec_type,expected_makespan",
-    [
-        (Constraint.SAME_UNIT, 4),
-        (Constraint.DIFFERENT_UNIT, 2),
-    ],
-)
-def test_assignment_constraint(
-    solver, prec_type: Constraint, expected_makespan: int
-):
+def test_before_constraint(solver: str):
     """
-    Tests that assignment constraints are respected. This example
-    uses two tasks and two machines with processing times of 2.
+    Tests that the before constraint is respected.
     """
     model = Model()
 
     job = model.add_job()
-    machines = [model.add_machine(), model.add_machine()]
-    tasks = [model.add_task(job=job) for _ in range(2)]
+    machine = model.add_machine()
+    task1 = model.add_task(job=job)
+    task2 = model.add_task(job=job)
+    task3 = model.add_task(job=job)
 
-    for machine in machines:
-        for task in tasks:
-            model.add_processing_time(machine, task, duration=2)
+    for task in [task1, task2, task3]:
+        model.add_processing_time(task, machine, duration=1)
 
-    model.add_constraint(tasks[0], tasks[1], prec_type)
+    model.add_setup_time(machine, task1, task2, 100)
+    model.add_setup_time(machine, task2, task3, 100)
 
     result = model.solve(solver=solver)
 
-    assert_equal(result.objective, expected_makespan)
+    # No constraints, so the makespan is 1 + 1 + 1 = 3.
+    assert_equal(result.objective, 3)
+
+    # Let's now add that task 1 must be scheduled before task 2 and task 2
+    # before task 3.
+    model.add_before(task1, task2)
+    model.add_before(task2, task3)
+
+    result = model.solve(solver=solver)
+
+    # The setup times are 100, so the makespan is 1 + 100 + 1 + 100 + 1 = 203.
+    assert_equal(result.objective, 203)
 
 
-def test_tight_planning_horizon_results_in_infeasiblity(solver: str):
+def test_tight_horizon_results_in_infeasiblity(solver: str):
     """
-    Tests that a tight planning horizon results in an infeasible instance.
+    Tests that a tight horizon results in an infeasible instance.
     """
     model = Model()
 
@@ -671,12 +652,12 @@ def test_tight_planning_horizon_results_in_infeasiblity(solver: str):
     machine = model.add_machine()
     task = model.add_task(job=job)
 
-    model.add_processing_time(machine, task, duration=2)
-    model.set_planning_horizon(1)
+    model.add_processing_time(task, machine, duration=2)
+    model.set_horizon(1)
 
     result = model.solve(solver=solver)
 
-    # Processing time is 2, but planning horizon is 1, so this is infeasible.
+    # Processing time is 2, but horizon is 1, so this is infeasible.
     assert_equal(result.status.value, "Infeasible")
 
 
@@ -691,7 +672,7 @@ def test_makespan_objective(solver: str):
     tasks = [model.add_task(job=job) for _ in range(2)]
 
     for task in tasks:
-        model.add_processing_time(machine, task, duration=2)
+        model.add_processing_time(task, machine, duration=2)
 
     result = model.solve(solver=solver)
 
@@ -710,7 +691,7 @@ def test_tardy_jobs(solver: str):
     for idx in range(3):
         job = model.add_job(due_date=idx + 1)
         task = model.add_task(job=job)
-        model.add_processing_time(machine, task, duration=3)
+        model.add_processing_time(task, machine, duration=3)
 
     model.set_objective(Objective.TARDY_JOBS)
 
@@ -735,7 +716,7 @@ def test_total_completion_time(solver: str):
         task = model.add_task(job=job)
 
         for machine in machines:
-            model.add_processing_time(machine, task, duration=idx + 1)
+            model.add_processing_time(task, machine, duration=idx + 1)
 
     model.set_objective(Objective.TOTAL_COMPLETION_TIME)
 
@@ -762,7 +743,7 @@ def test_total_weighted_completion_time(solver: str):
     for idx in range(2):
         job = model.add_job(weight=weights[idx])
         task = model.add_task(job=job)
-        model.add_processing_time(machine, task, duration=idx + 1)
+        model.add_processing_time(task, machine, duration=idx + 1)
 
     model.set_objective(Objective.TOTAL_COMPLETION_TIME)
 
@@ -789,7 +770,7 @@ def test_total_tardiness(solver: str):
         task = model.add_task(job=job)
 
         for machine in machines:
-            model.add_processing_time(machine, task, duration=idx + 1)
+            model.add_processing_time(task, machine, duration=idx + 1)
 
     model.set_objective(Objective.TOTAL_TARDINESS)
 
@@ -818,7 +799,7 @@ def test_total_weighted_tardiness(solver: str):
     for idx in range(2):
         job = model.add_job(weight=weights[idx], due_date=due_dates[idx])
         task = model.add_task(job=job)
-        model.add_processing_time(machine, task, processing_times[idx])
+        model.add_processing_time(task, machine, processing_times[idx])
 
     model.set_objective(Objective.TOTAL_TARDINESS)
 
@@ -857,19 +838,18 @@ def test_jobshop(solver: str):
     jobs = [model.add_job() for _ in range(num_jobs)]
     machines = [model.add_machine() for _ in range(3)]
 
-    for job_idx, tasks_ in enumerate(jobs_data):
-        tasks = [model.add_task(job=jobs[job_idx]) for _ in tasks_]
+    for job_idx, job_data in enumerate(jobs_data):
+        num_tasks = len(job_data)
+        tasks = [model.add_task(job=jobs[job_idx]) for _ in range(num_tasks)]
 
         # Add processing times.
-        for idx, (machine_idx, duration) in enumerate(tasks_):
-            model.add_processing_time(
-                machines[machine_idx], tasks[idx], duration
-            )
+        for t_idx, (m_idx, duration) in enumerate(job_data):
+            model.add_processing_time(tasks[t_idx], machines[m_idx], duration)
 
         # Impose linear routing precedence constraints.
         for task_idx in range(1, len(tasks)):
             task1, task2 = tasks[task_idx - 1], tasks[task_idx]
-            model.add_constraint(task1, task2, Constraint.END_BEFORE_START)
+            model.add_end_before_start(task1, task2)
 
     result = model.solve(solver=solver)
 

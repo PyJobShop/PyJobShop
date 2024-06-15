@@ -19,15 +19,13 @@ def job_spans_tasks(
     """
     Ensures that the job variables span the related task variables.
     """
-    for job in range(data.num_jobs):
-        job_var = job_vars[job]
-        related_vars = [task_vars[task] for task in data.job2tasks[job]]
+    for idx, job in enumerate(data.jobs):
+        job_var = job_vars[idx]
+        task_start_vars = [task_vars[task_idx].start for task_idx in job.tasks]
+        task_end_vars = [task_vars[task_idx].end for task_idx in job.tasks]
 
-        m.add_min_equality(job_var.start, [var.start for var in related_vars])
-        m.add_max_equality(job_var.end, [var.end for var in related_vars])
-
-        for var in related_vars:
-            m.add(var.start >= data.jobs[job].release_date)
+        m.add_min_equality(job_var.start, task_start_vars)
+        m.add_max_equality(job_var.end, task_end_vars)
 
 
 def select_one_task_alternative(
@@ -64,8 +62,7 @@ def no_overlap_machines(m: CpModel, data: ProblemData, seq_vars: SequenceVars):
     intervals in a sequence variable are overlapping.
     """
     for machine in range(data.num_machines):
-        if not data.machines[machine].allow_overlap:
-            m.add_no_overlap([var.interval for var in seq_vars[machine].tasks])
+        m.add_no_overlap([var.interval for var in seq_vars[machine].tasks])
 
 
 def activate_setup_times(
@@ -138,14 +135,32 @@ def task_graph(
                     idx2 = sequence.tasks.index(var2)
                     arc = sequence.arcs[idx1, idx2]
 
-                    # Equivalent: arc <=> var1.is_present & var2.is_present.
+                    # arc <=> var1.is_present & var2.is_present
                     m.add_bool_or([arc, ~var1.is_present, ~var2.is_present])
                     m.add_implication(arc, var1.is_present)
                     m.add_implication(arc, var2.is_present)
-                elif constraint == "same_unit":
+                if constraint == "before":
+                    sequence.activate()
+                    both_present = m.new_bool_var("")
+
+                    # both_present <=> var1.is_present & var2.is_present
+                    m.add_bool_or(
+                        [both_present, ~var1.is_present, ~var2.is_present]
+                    )
+                    m.add_implication(both_present, var1.is_present)
+                    m.add_implication(both_present, var2.is_present)
+
+                    # Schedule var1 before var2 when both are present.
+                    idx1 = sequence.tasks.index(var1)
+                    idx2 = sequence.tasks.index(var2)
+                    rank1 = sequence.ranks[idx1]
+                    rank2 = sequence.ranks[idx2]
+
+                    m.add(rank1 <= rank2).only_enforce_if(both_present)
+                elif constraint == "same_machine":
                     expr = var1.is_present == var2.is_present
                     m.add(expr)
-                elif constraint == "different_unit":
+                elif constraint == "different_machine":
                     expr = var1.is_present != var2.is_present
                     m.add(expr)
 

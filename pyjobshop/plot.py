@@ -1,3 +1,4 @@
+from collections import defaultdict
 from typing import Optional
 
 import matplotlib
@@ -7,7 +8,6 @@ from .ProblemData import ProblemData
 from .Solution import Solution
 
 
-# TODO
 def plot(
     data: ProblemData,
     solution: Solution,
@@ -43,35 +43,36 @@ def plot(
     else:
         order = {idx: idx for idx in range(len(data.machines))}
 
+    # Tasks belonging to the same job get the same color. Task that do not
+    # belong to a job are colored grey.
+    task2color = defaultdict(lambda: "grey")
     colors = _get_colors()
 
-    for task_ in solution.schedule:
-        task, machine, start, duration = (
-            task_.task,
-            task_.machine,
-            task_.start,
-            task_.duration,
-        )
+    for job_idx, job in enumerate(data.jobs):
+        for task in job.tasks:
+            task2color[task] = colors[job_idx % len(colors)]
 
-        # Tasks belonging to the same job get the same unique color.
-        job = [
-            job for job, tasks in enumerate(data.job2tasks) if task in tasks
-        ][0]
+    for idx, task_data in enumerate(solution.tasks):
         kwargs = {
-            "color": colors[job % len(colors)],
+            "color": task2color[idx],
             "linewidth": 1,
             "edgecolor": "black",
             "alpha": 0.75,
         }
 
-        if machine in order:
-            ax.barh(order[machine], duration, left=start, **kwargs)
+        if task_data.machine in order:
+            ax.barh(
+                order[task_data.machine],
+                task_data.duration,
+                left=task_data.start,
+                **kwargs,
+            )
 
         if plot_labels:
             ax.text(
-                start + duration / 2,
-                order[machine],
-                data.tasks[task].name,
+                task_data.start + task_data.duration / 2,
+                order[task_data.machine],
+                data.tasks[idx].name,
                 ha="center",
                 va="center",
             )

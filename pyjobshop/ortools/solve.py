@@ -5,7 +5,7 @@ from ortools.sat.python.cp_model import CpSolver
 from pyjobshop.ortools.variables import AssignmentVar
 from pyjobshop.ProblemData import ProblemData
 from pyjobshop.Result import Result, SolveStatus
-from pyjobshop.Solution import Solution, Task
+from pyjobshop.Solution import Solution, TaskData
 
 from .create_model import create_model
 
@@ -54,7 +54,7 @@ def solve(
         solution = _result2solution(data, cp_solver, assign_vars)
     else:
         # No feasible solution found due to infeasible instance or time limit.
-        solution = Solution(data, [])
+        solution = Solution([])
         objective = float("inf")
 
     return Result(
@@ -98,12 +98,13 @@ def _result2solution(
     Solution
         The solution.
     """
-    tasks = []
+    tasks = {}
 
     for (task, machine), var in assign_vars.items():
         if cp_solver.Value(var.is_present):
             start = cp_solver.Value(var.start)
             duration = cp_solver.Value(var.duration)
-            tasks.append(Task(task, machine, start, duration))
+            end = cp_solver.Value(var.end)
+            tasks[task] = TaskData(machine, start, duration, end)
 
-    return Solution(data, tasks)
+    return Solution([tasks[idx] for idx in range(data.num_tasks)])

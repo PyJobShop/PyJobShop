@@ -9,7 +9,7 @@ def makespan(m: CpModel, data: ProblemData, task_vars: list[TaskVar]):
     """
     Minimizes the makespan.
     """
-    makespan = m.new_int_var(0, data.planning_horizon, "makespan")
+    makespan = m.new_int_var(0, data.horizon, "makespan")
     completion_times = [var.end for var in task_vars]
 
     m.add_max_equality(makespan, completion_times)
@@ -51,7 +51,7 @@ def total_tardiness(m: CpModel, data: ProblemData, job_vars: list[JobVar]):
     exprs = []
 
     for job, var in zip(data.jobs, job_vars):
-        tardiness = m.new_int_var(0, data.planning_horizon, f"tardiness_{job}")
+        tardiness = m.new_int_var(0, data.horizon, f"tardiness_{job}")
         exprs.append(tardiness)
 
         m.add_max_equality(tardiness, [0, var.end - job.due_date])

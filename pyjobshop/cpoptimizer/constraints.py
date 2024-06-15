@@ -18,9 +18,9 @@ def job_spans_tasks(
     """
     Ensures that the job variables span the related task variables.
     """
-    for job in range(data.num_jobs):
-        job_var = job_vars[job]
-        related_task_vars = [task_vars[task] for task in data.job2tasks[job]]
+    for idx, job in enumerate(data.jobs):
+        job_var = job_vars[idx]
+        related_task_vars = [task_vars[task_idx] for task_idx in job.tasks]
 
         m.add(m.span(job_var, related_task_vars))
 
@@ -36,9 +36,6 @@ def no_overlap_and_setup_times(
     # Assumption: the interval variables in the sequence variable
     # are ordered in the same way as the tasks in machine2tasks.
     for machine in range(data.num_machines):
-        if data.machines[machine].allow_overlap:
-            continue  # Overlap is allowed for this machine.
-
         if not (tasks := data.machine2tasks[machine]):
             continue  # There no tasks for this machine.
 
@@ -117,9 +114,11 @@ def task_graph(
             for constraint in data.constraints[task1, task2]:
                 if constraint == "previous":
                     expr = m.previous(seq_var, var1, var2)
-                elif constraint == "same_unit":
+                elif constraint == "before":
+                    expr = m.before(seq_var, var1, var2)
+                elif constraint == "same_machine":
                     expr = m.presence_of(var1) == m.presence_of(var2)
-                elif constraint == "different_unit":
+                elif constraint == "different_machine":
                     expr = m.presence_of(var1) != m.presence_of(var2)
 
                 m.add(expr)

@@ -4,11 +4,11 @@ from pyjobshop.Result import Result, SolveStatus
 from pyjobshop.Solution import Solution
 
 
-def test_result_attributes(small):
+def test_result_attributes():
     """
     Test that the attributes of a Result object are set correctly.
     """
-    solution = Solution(small, [])
+    solution = Solution([])
     result = Result(SolveStatus.OPTIMAL, 123.45, solution, 100)
 
     assert_equal(result.status, SolveStatus.OPTIMAL)
