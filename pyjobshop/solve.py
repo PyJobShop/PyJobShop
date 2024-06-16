@@ -18,6 +18,7 @@ def solve(
     time_limit: float = float("inf"),
     log: bool = False,
     num_workers: Optional[int] = None,
+    **kwargs,
 ) -> Result:
     """
     Solves the given problem data instance.
@@ -46,8 +47,6 @@ def solve(
     if solver not in ["ortools", "cpoptimizer"]:
         raise ValueError(f"Unknown solver choice: {solver}.")
 
-    args = data, time_limit, log, num_workers
-
     if solver == "cpoptimizer":
         if not CPOPTIMIZER_AVAILABLE:
             msg = (
@@ -57,6 +56,10 @@ def solve(
             )
             raise ModuleNotFoundError(msg)
 
-        return pyjobshop.cpoptimizer.solve(*args)
+        return pyjobshop.cpoptimizer.solve(
+            data, time_limit, log, num_workers, **kwargs
+        )
 
-    return pyjobshop.ortools.solve(*args)
+    return pyjobshop.ortools.solve(
+        data, time_limit, log, num_workers, **kwargs
+    )
