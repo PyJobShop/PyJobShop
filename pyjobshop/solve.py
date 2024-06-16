@@ -28,21 +28,29 @@ def solve(
     data
         The problem data instance.
     solver
-        The solver to use. Either "ortools" or "cpoptimizer".
+        The solver to use. Either ``ortools`` or ``cpoptimizer``.
     time_limit
         The time limit for the solver in seconds. Default ``float('inf')``.
     log
         Whether to log the solver output. Default ``False``.
     num_workers
-        The number of workers to use for parallel solving. If not
-        specified, the default value of the selected solver is used, which
-        is typically the maximum number of available CPU cores.
+        The number of workers to use for parallel solving. If not specified,
+        the default of the selected solver is used, which is typically the
+        number of available CPU cores.
+    kwargs
+        Additional parameters passed to the solver.
 
     Returns
     -------
     Result
         A Result object containing the best found solution and additional
         information about the solver run.
+
+    Raises
+    ------
+    ModuleNotFoundError
+        If the CP Optimizer solver is chosen but the required dependencies are
+        not installed.
     """
     if solver == "ortools":
         return pyjobshop.ortools.solve(

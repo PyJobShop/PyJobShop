@@ -31,7 +31,7 @@ def solve(
         The number of workers to use for parallel solving. If not set, the
         maximum number of available CPU cores is used.
     kwargs
-        Additional keyword arguments for the solver.
+        Additional parameters passed to the solver.
 
     Returns
     -------
