@@ -46,9 +46,9 @@ def solve(
     if num_workers is not None:
         cp_solver.parameters.num_workers = num_workers
 
-    status_code = cp_solver.Solve(cp_model)
-    status = cp_solver.StatusName(status_code)
-    objective = cp_solver.ObjectiveValue()
+    status_code = cp_solver.solve(cp_model)
+    status = cp_solver.status_name(status_code)
+    objective = cp_solver.objective_value
 
     if status in ["OPTIMAL", "FEASIBLE"]:
         solution = _result2solution(data, cp_solver, assign_vars)
@@ -59,7 +59,7 @@ def solve(
 
     return Result(
         _get_solve_status(status),
-        cp_solver.WallTime(),
+        cp_solver.wall_time,
         solution,
         objective,
     )
@@ -101,10 +101,10 @@ def _result2solution(
     tasks = {}
 
     for (task, machine), var in assign_vars.items():
-        if cp_solver.Value(var.is_present):
-            start = cp_solver.Value(var.start)
-            duration = cp_solver.Value(var.duration)
-            end = cp_solver.Value(var.end)
+        if cp_solver.value(var.is_present):
+            start = cp_solver.value(var.start)
+            duration = cp_solver.value(var.duration)
+            end = cp_solver.value(var.end)
             tasks[task] = TaskData(machine, start, duration, end)
 
     return Solution([tasks[idx] for idx in range(data.num_tasks)])
