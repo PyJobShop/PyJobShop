@@ -44,22 +44,20 @@ def solve(
         A Result object containing the best found solution and additional
         information about the solver run.
     """
-    if solver not in ["ortools", "cpoptimizer"]:
-        raise ValueError(f"Unknown solver choice: {solver}.")
-
-    if solver == "cpoptimizer":
-        if not CPOPTIMIZER_AVAILABLE:
-            msg = (
-                "Using CP Optimizer requires the relevant dependencies to be "
-                "installed. You can install those using `pip install "
-                "pyjobshop[cpoptimizer]`."
-            )
-            raise ModuleNotFoundError(msg)
-
+    if solver == "ortools":
+        return pyjobshop.ortools.solve(
+            data, time_limit, log, num_workers, **kwargs
+        )
+    elif solver == "cpoptimizer" and CPOPTIMIZER_AVAILABLE:
         return pyjobshop.cpoptimizer.solve(
             data, time_limit, log, num_workers, **kwargs
         )
-
-    return pyjobshop.ortools.solve(
-        data, time_limit, log, num_workers, **kwargs
-    )
+    elif solver == "cpoptimizer" and not CPOPTIMIZER_AVAILABLE:
+        msg = (
+            "Using CP Optimizer requires the relevant dependencies to be "
+            "installed. You can install those using `pip install "
+            "pyjobshop[cpoptimizer]`."
+        )
+        raise ModuleNotFoundError(msg)
+    else:
+        raise ValueError(f"Unknown solver choice: {solver}.")
