@@ -14,7 +14,7 @@ except ModuleNotFoundError:
 
 def solve(
     data: ProblemData,
-    solver: str,
+    solver: str = "ortools",
     time_limit: float = float("inf"),
     log: bool = False,
     num_workers: Optional[int] = None,
