@@ -119,7 +119,7 @@ class SequenceVar:
         Activates the sequence variable by creating all relevant literals.
         """
         if self.is_active:
-            return  # already activated
+            return
 
         self.is_active = True
         num_tasks = len(self.tasks)
