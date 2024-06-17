@@ -109,4 +109,5 @@ omit = [
     "tests/*",
     "pyjobshop/cpoptimizer/*",
     "pyjobshop/ortools/*",
+    "pyjobshop/cli.py"
 ]
