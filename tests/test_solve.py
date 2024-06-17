@@ -11,20 +11,23 @@ def describe_solve_set_default_parameters():
 
     def log(small, solver, capsys):
         """
-        Set the log parameter.
+        Checks that setting the log flag correctly show solver output.
         """
-        if solver == "ortools":  # TODO fix cpoptiimzer
-            solve(small, solver, log=True)
-            printed = capsys.readouterr().out
-            assert_(printed != "")
+        if solver == "cpoptimizer":
+            return  # TODO fix this test for cpoptimizer
 
-            solve(small, solver, log=False)
-            printed = capsys.readouterr().out
-            assert_equal(printed, "")
+        solve(small, solver, log=True)
+        printed = capsys.readouterr().out
+        assert_(printed != "")
+
+        solve(small, solver, log=False)
+        printed = capsys.readouterr().out
+        assert_equal(printed, "")
 
     def time_limit(small, capsys):
         """
-        TODO Ignore CP Optimizer because it does not set it.
+        Checks the log that the time limit is set. No test for CP Optimizer
+        because it does not log this setting.
         """
         solve(small, "ortools", time_limit=1.2, log=True)
         printed = capsys.readouterr().out
@@ -32,17 +35,14 @@ def describe_solve_set_default_parameters():
 
     def num_workers(small, solver, capsys):
         """
-        Test that ``num_workers`` parameter is correctly set.
+        Checks the log that the ``num_workers`` parameter is correctly set.
         """
+        if solver == "cpoptimizer":
+            return
+
         solve(small, solver, num_workers=1, log=True)
-
-        # We test this by checking the solver log about num workers.
         printed = capsys.readouterr().out
-
-        if solver == "ortools":
-            assert_("num_workers: 1" in printed)
-        elif solver == "cpoptimizer":
-            pass  # TODO
+        assert_("num_workers: 1" in printed)
 
 
 @pytest.mark.parametrize(

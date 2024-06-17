@@ -49,8 +49,7 @@ def solve(
     Raises
     ------
     ModuleNotFoundError
-        If the CP Optimizer solver is chosen but the required dependencies are
-        not installed.
+        If CP Optimizer is chosen but its dependencies are not installed.
     """
     if solver == "ortools":
         return pyjobshop.ortools.solve(
