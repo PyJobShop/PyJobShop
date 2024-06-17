@@ -21,7 +21,7 @@ def pytest_addoption(parser):
     parser.addoption(
         "--solvers",
         nargs="+",
-        default=["ortools"],
+        default=["ortools", "cpoptimizer"],
         choices=["ortools", "cpoptimizer"],
         help="Solvers to test.",
     )
