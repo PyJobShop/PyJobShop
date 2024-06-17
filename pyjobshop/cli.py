@@ -5,7 +5,7 @@ import fjsplib
 import numpy as np
 
 import pyjobshop
-from pyjobshop import Constraint, Model, solve
+from pyjobshop import Model, solve
 
 
 def parse_args():
@@ -74,16 +74,11 @@ def instance2data(instance: fjsplib.Instance) -> pyjobshop.ProblemData:
             task = m.add_task(job=jobs[job_idx])
 
             for machine_idx, duration in task_data:
-                m.add_processing_time(machines[machine_idx], task, duration)
+                m.add_processing_time(task, machines[machine_idx], duration)
 
     for frm, to in instance.precedences:
-        m.add_constraint(
-            m.tasks[frm],
-            m.tasks[to],
-            Constraint.END_BEFORE_START,
-        )
+        m.add_end_before_start(m.tasks[frm], m.tasks[to])
 
-    m.set_planning_horizon(4500)
     return m.data()
 
 
