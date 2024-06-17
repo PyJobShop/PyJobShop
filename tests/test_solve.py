@@ -1,69 +1,69 @@
+import pytest
 from numpy.testing import assert_, assert_equal
 
 from pyjobshop import solve
 
 
-def test_solve_ortools_log(small, capsys):
+def describe_solve_set_default_parameters():
     """
-    Tests the solve method with the log parameter set to True displays output.
+    Tests `solve` when setting the default parameters.
     """
-    solve(small, "ortools", time_limit=1, log=True)
-    printed = capsys.readouterr().out
-    assert_(printed != "")
 
-    solve(small, "ortools", time_limit=1, log=False)
-    printed = capsys.readouterr().out
-    assert_equal(printed, "")
+    def log(small, solver, capsys):
+        """
+        Set the log parameter.
+        """
+        if solver == "ortools":  # TODO fix cpoptiimzer
+            solve(small, solver, log=True)
+            printed = capsys.readouterr().out
+            assert_(printed != "")
 
+            solve(small, solver, log=False)
+            printed = capsys.readouterr().out
+            assert_equal(printed, "")
 
-def test_solve_cpoptimizer_log(small, capsys):
-    """
-    Tests the solve method with the log parameter set to True displays output.
-    """
-    solve(small, "cpoptimizer", time_limit=1, log=True)
-    printed = capsys.readouterr().out
-    # assert_(printed != "") # TODO doesn't work
+    def time_limit(small, capsys):
+        """
+        TODO Ignore CP Optimizer because it does not set it.
+        """
+        solve(small, "ortools", time_limit=1.2, log=True)
+        printed = capsys.readouterr().out
+        assert_("max_time_in_seconds: 1.2" in printed)
 
-    solve(small, "cpoptimizer", time_limit=1, log=False)
-    printed = capsys.readouterr().out
-    assert_equal(printed, "")
+    def num_workers(small, solver, capsys):
+        """
+        Test that ``num_workers`` parameter is correctly set.
+        """
+        solve(small, solver, num_workers=1, log=True)
 
+        # We test this by checking the solver log about num workers.
+        printed = capsys.readouterr().out
 
-def test_solve_ortools_num_workers(small, capsys):
-    """
-    Tests the solve method with the num_workers parameter set.
-    """
-    solve(small, "ortools", time_limit=1, num_workers=1, log=True)
-    printed = capsys.readouterr().out
-
-    assert_("num_workers: 1" in printed)
-    # TODO Test OR Tools and CP Optimizer separately.
-
-
-def test_solve_additional_params(small, capsys):
-    """
-    Tests the solve method with additional parameters.
-    """
-    pass  # TODO
+        if solver == "ortools":
+            assert_("num_workers: 1" in printed)
+        elif solver == "cpoptimizer":
+            pass  # TODO
 
 
-def test_solve_ortools_additional_params_override(small, capsys):
+@pytest.mark.parametrize(
+    "solver_, param, value",
+    [
+        ("ortools", "log_search_progress", True),
+        # ("cpoptimizer", "LogVerbosity", "Quiet"), # TODO
+    ],
+)
+def test_solve_additional_params(small, capsys, solver_, param, value):
     """
     Tests the solve method with additional parameters can override the
     parameters supported by ``solve``.
     """
     # Let's test that setting log to False will not print anything.
-    solve(small, "ortools", time_limit=1, log=False)
+    solve(small, solver_, log=False)
     printed = capsys.readouterr().out
     assert_equal(printed, "")
 
-    # Now we set log_search_progress to True, which overrides the earlier
-    # setting of log being False. The explicit solve parameters are
-    # overriden by the addiitonal parameters.
-    solve(small, "ortools", time_limit=1, log=False, log_search_progress=True)
+    # Now we set the corresponding log parameter using the additional keyword
+    # argument, which will override the earlier setting of log being False.
+    solve(small, solver_, log=False, **{param: value})
     printed = capsys.readouterr().out
     assert_(printed != "")
-
-
-def test_solve_cpoptimizer_additional_params_override(small, capsys):
-    pass  # TODO

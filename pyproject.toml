@@ -33,6 +33,7 @@ cpoptimizer = ["cplex", "docplex"]
 pre-commit = "^3.2.2"
 pytest = "^7.4.2"
 pytest-cov = "^4.1.0"
+pytest-describe = "^2.2.0"
 codecov = "^2.1.13"
 
 
