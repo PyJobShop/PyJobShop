@@ -1,1 +1,1 @@
-MAX_VALUE = 2**51
+MAX_VALUE = 2**48
