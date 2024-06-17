@@ -4,6 +4,17 @@ from numpy.testing import assert_, assert_equal
 from pyjobshop import solve
 
 
+def test_solve(small, solver):
+    """
+    Tests that solve returns the expected result.
+    """
+    result = solve(small, solver)
+
+    assert_equal(result.status.value, "Optimal")
+    assert_(result.runtime < 1)
+    assert_equal(result.objective, 3)
+
+
 def describe_solve_set_default_parameters():
     """
     Tests `solve` when setting the default parameters.
