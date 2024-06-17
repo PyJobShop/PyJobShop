@@ -1,5 +1,4 @@
-from dataclasses import dataclass
-from typing import Optional
+from dataclasses import dataclass, field
 
 from ortools.sat.python.cp_model import BoolVarT, CpModel, IntervalVar, IntVar
 
@@ -85,7 +84,9 @@ class AssignmentVar:
 @dataclass
 class SequenceVar:
     """
-    Represents a sequence of tasks assigned to a machine.
+    Represents a sequence of tasks assigned to a machine. Relevant sequence
+    variables are lazily generated when activated by constraints that call
+    the ``activate`` method.
 
     Parameters
     ----------
@@ -104,28 +105,38 @@ class SequenceVar:
     """
 
     tasks: list[AssignmentVar]
-    starts: list[BoolVarT]
-    ends: list[BoolVarT]
-    ranks: list[IntVar]
-    arcs: Optional[dict[tuple[int, int], BoolVarT]] = None
+    starts: list[BoolVarT] = field(default_factory=list)
+    ends: list[BoolVarT] = field(default_factory=list)
+    ranks: list[IntVar] = field(default_factory=list)
+    arcs: dict[tuple[int, int], BoolVarT] = field(default_factory=dict)
     is_active: bool = False
 
-    def activate(self, model):
+    def activate(self, m: CpModel):
         """
-        Activates the sequence variable, meaning that a circuit constraint
-        must be added for this machine.
+        Activates the sequence variable by creating all relevant literals.
         """
+        if self.is_active:
+            return  # already activated
+
         self.is_active = True
+        num_tasks = len(self.tasks)
 
-        if self.arcs is None:
-            num_tasks = len(self.tasks)
+        # Start and end literals define whether the corresponding interval
+        # is first or last in the sequence, respectively.
+        self.starts = [m.new_bool_var("") for _ in range(num_tasks)]
+        self.ends = [m.new_bool_var("") for _ in range(num_tasks)]
 
-            # Arcs indicate if two intervals are scheduled consecutively.
-            self.arcs = {
-                (i, j): model.new_bool_var(f"{i}->{j}")
-                for i in range(num_tasks)
-                for j in range(num_tasks)
-            }
+        # Rank variables define the position of the task in the sequence.
+        self.ranks = [
+            m.new_int_var(-1, num_tasks, "") for _ in range(num_tasks)
+        ]
+
+        # Arcs indicate if two intervals are scheduled consecutively.
+        self.arcs = {
+            (i, j): m.new_bool_var(f"{i}->{j}")
+            for i in range(num_tasks)
+            for j in range(num_tasks)
+        }
 
 
 def job_variables(m: CpModel, data: ProblemData) -> list[JobVar]:
@@ -244,16 +255,6 @@ def sequence_variables(
     for machine in range(data.num_machines):
         tasks = data.machine2tasks[machine]
         assign_vars = [assign[task, machine] for task in tasks]
-        num_tasks = len(assign_vars)
-
-        # Start and end literals define whether the corresponding interval
-        # is first or last in the sequence, respectively.
-        starts = [m.new_bool_var("") for _ in range(num_tasks)]
-        ends = [m.new_bool_var("") for _ in range(num_tasks)]
-
-        # Rank variables define the position of the task in the sequence.
-        ranks = [m.new_int_var(-1, num_tasks, "") for _ in range(num_tasks)]
-
-        variables.append(SequenceVar(assign_vars, starts, ends, ranks))
+        variables.append(SequenceVar(assign_vars))
 
     return variables
