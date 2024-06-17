@@ -15,6 +15,14 @@ def test_solve(small, solver):
     assert_equal(result.objective, 3)
 
 
+def test_unknown_solver(small):
+    """
+    Tests that an unknown solver raises a ValueError.
+    """
+    with pytest.raises(ValueError):
+        solve(small, "unknown")
+
+
 def describe_solve_set_default_parameters():
     """
     Tests `solve` when setting the default parameters.
