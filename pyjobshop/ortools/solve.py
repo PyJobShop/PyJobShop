@@ -15,6 +15,7 @@ def solve(
     time_limit: float,
     log: bool,
     num_workers: Optional[int] = None,
+    **kwargs,
 ) -> Result:
     """
     Solves the given problem data instance with Google OR-Tools.
@@ -28,8 +29,10 @@ def solve(
     log
         Whether to log the solver output.
     num_workers
-        The number of workers to use for parallel solving. If not set, the
-        maximum number of available CPU cores is used.
+        The number of workers to use for parallel solving. If not set, all
+        available CPU cores are used.
+    kwargs
+        Additional parameters passed to the solver.
 
     Returns
     -------
@@ -38,13 +41,19 @@ def solve(
         information about the solver run.
     """
     cp_model, assign_vars = create_model(data)
-
     cp_solver = CpSolver()
-    cp_solver.parameters.max_time_in_seconds = time_limit
-    cp_solver.parameters.log_search_progress = log
+    cp_solver.log_callback = print  # TODO why is this needed? #152.
 
-    if num_workers is not None:
-        cp_solver.parameters.num_workers = num_workers
+    params = {
+        "max_time_in_seconds": time_limit,
+        "log_search_progress": log,
+        # 0 means using all available CPU cores.
+        "num_workers": num_workers if num_workers is not None else 0,
+    }
+    params.update(kwargs)  # this will override existing parameters!
+
+    for key, value in params.items():
+        setattr(cp_solver.parameters, key, value)
 
     status_code = cp_solver.solve(cp_model)
     status = cp_solver.status_name(status_code)

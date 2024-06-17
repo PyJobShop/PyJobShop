@@ -14,6 +14,7 @@ def solve(
     time_limit: float,
     log: bool,
     num_workers: Optional[int] = None,
+    **kwargs,
 ):
     """
     Solves the given problem data instance with IBM ILOG CP Optimizer.
@@ -29,6 +30,8 @@ def solve(
     num_workers
         The number of workers to use for parallel solving. If not set, the
         maximum number of available CPU cores is used.
+    kwargs
+        Additional parameters passed to the solver.
 
     Returns
     -------
@@ -38,12 +41,13 @@ def solve(
     """
     cp_model = create_model(data)
 
-    log_verbosity = "Terse" if log else "Quiet"
     params = {
         "TimeLimit": time_limit,
-        "LogVerbosity": log_verbosity,
+        "LogVerbosity": "Terse" if log else "Quiet",
         "Workers": num_workers if num_workers is not None else "Auto",
     }
+    params.update(kwargs)  # this will override existing parameters!
+
     cp_result: CpoSolveResult = cp_model.solve(**params)  # type: ignore
     status = cp_result.get_solve_status()
 
