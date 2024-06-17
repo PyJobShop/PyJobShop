@@ -66,6 +66,91 @@ class Model:
         """
         return self._objective
 
+    @classmethod
+    def from_data(cls, data: ProblemData):
+        """
+        Creates a Model instance from a ProblemData instance.
+        """
+        model = cls()
+
+        for job in data.jobs:
+            model.add_job(
+                weight=job.weight,
+                release_date=job.release_date,
+                due_date=job.due_date,
+                deadline=job.deadline,
+                name=job.name,
+            )
+
+        for machine in data.machines:
+            model.add_machine(name=machine.name)
+
+        task2job = {}
+        for job_idx, job in enumerate(data.jobs):
+            for task_idx in job.tasks:
+                task2job[task_idx] = job_idx
+
+        for task in data.tasks:
+            model.add_task(
+                job=model.jobs[job_idx],
+                earliest_start=task.earliest_start,
+                latest_start=task.latest_start,
+                earliest_end=task.earliest_end,
+                latest_end=task.latest_end,
+                fixed_duration=task.fixed_duration,
+                name=task.name,
+            )
+
+        for (task_idx, mach_idx), duration in data.processing_times.items():
+            model.add_processing_time(
+                task=model.tasks[task_idx],
+                machine=model.machines[mach_idx],
+                duration=duration,
+            )
+
+        for (idx1, idx2), constraints in data.constraints.items():
+            task1, task2 = model.tasks[idx1], model.tasks[idx2]
+
+            for constraint in constraints:
+                if constraint == Constraint.START_AT_START:
+                    model.add_start_at_start(task1, task2)
+                elif constraint == Constraint.START_AT_END:
+                    model.add_start_at_end(task1, task2)
+                elif constraint == Constraint.START_BEFORE_START:
+                    model.add_start_before_start(task1, task2)
+                elif constraint == Constraint.START_BEFORE_END:
+                    model.add_start_before_end(task1, task2)
+                elif constraint == Constraint.END_AT_START:
+                    model.add_end_at_start(task1, task2)
+                elif constraint == Constraint.END_AT_END:
+                    model.add_end_at_end(task1, task2)
+                elif constraint == Constraint.END_BEFORE_START:
+                    model.add_end_before_start(task1, task2)
+                elif constraint == Constraint.END_BEFORE_END:
+                    model.add_end_before_end(task1, task2)
+                elif constraint == Constraint.PREVIOUS:
+                    model.add_previous(task1, task2)
+                elif constraint == Constraint.BEFORE:
+                    model.add_before(task1, task2)
+                elif constraint == Constraint.SAME_MACHINE:
+                    model.add_same_machine(task1, task2)
+                elif constraint == Constraint.DIFFERENT_MACHINE:
+                    model.add_different_machine(task1, task2)
+
+        for (mach, task1, task2), duration in np.ndenumerate(data.setup_times):
+            if duration != 0:
+                model.add_setup_time(
+                    machine=model.machines[mach],
+                    task1=model.tasks[task1],
+                    task2=model.tasks[task2],
+                    duration=duration,
+                )
+
+        model.set_horizon(data.horizon)
+        model.set_objective(data.objective)
+
+        return model
+
     def data(self) -> ProblemData:
         """
         Returns a ProblemData object containing the problem instance.

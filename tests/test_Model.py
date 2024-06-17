@@ -69,6 +69,16 @@ def test_model_to_data():
     assert_equal(data.objective, Objective.TOTAL_COMPLETION_TIME)
 
 
+def test_model_from_data_to_data(small):
+    """
+    Tests that calling ``Model.data()`` returns the same data as the input.
+    """
+    data = small
+    model = Model.from_data(data)
+
+    assert_equal(model.data(), data)
+
+
 def test_model_to_data_default_values():
     """
     Tests ``Model.data()`` uses the correct default values.
