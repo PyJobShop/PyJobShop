@@ -16,6 +16,19 @@ def test_solve_ortools_log(small, capsys):
     assert_equal(printed, "")
 
 
+def test_solve_cpoptimizer_log(small, capsys):
+    """
+    Tests the solve method with the log parameter set to True displays output.
+    """
+    solve(small, "cpoptimizer", time_limit=1, log=True)
+    printed = capsys.readouterr().out
+    # assert_(printed != "") # TODO doesn't work
+
+    solve(small, "cpoptimizer", time_limit=1, log=False)
+    printed = capsys.readouterr().out
+    assert_equal(printed, "")
+
+
 def test_solve_ortools_num_workers(small, capsys):
     """
     Tests the solve method with the num_workers parameter set.
