@@ -105,14 +105,17 @@ def _solve(
 
 
 def benchmark(instances: list[Path], **kwargs):
+    """
+    Solves the list of instances and prints a table of the results.
+    """
     results = [_solve(instance, **kwargs) for instance in instances]
+
     dtypes = [
         ("inst", "U37"),
         ("feas", "U1"),
         ("obj", float),
         ("time", float),
     ]
-
     data = np.asarray(results, dtype=dtypes)
     headers = ["Instance", "Feas.", "Obj.", "Time (s)"]
 
