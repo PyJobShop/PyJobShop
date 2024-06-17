@@ -186,19 +186,19 @@ def enforce_circuit(m: CpModel, data: ProblemData, seq_vars: SequenceVars):
         circuit = []
 
         for idx1, var1 in enumerate(assign_vars):
-            # Set initial arcs from the dummy node (0) to/from a task.
+            # Set initial arcs from the dummy node (-1) to/from a task.
             start = starts[idx1]
             end = ends[idx1]
             rank = ranks[idx1]
 
-            circuit.append([0, idx1 + 1, start])
-            circuit.append([idx1 + 1, 0, end])
+            circuit.append([-1, idx1, start])
+            circuit.append([idx1, -1, end])
 
-            # If this task is the first, set rank.
+            # If this task is first in the sequence, set its rank accordingly.
             m.add(rank == 0).only_enforce_if(start)
 
             # Self arc if the task is not present on this machine.
-            circuit.append([idx1 + 1, idx1 + 1, ~var1.is_present])
+            circuit.append([idx1, idx1, ~var1.is_present])
             m.add(rank == -1).only_enforce_if(~var1.is_present)
 
             for idx2, var2 in enumerate(assign_vars):
@@ -206,7 +206,7 @@ def enforce_circuit(m: CpModel, data: ProblemData, seq_vars: SequenceVars):
                     continue
 
                 arc = arcs[idx1, idx2]
-                circuit.append([idx1 + 1, idx2 + 1, arc])
+                circuit.append([idx1, idx2, arc])
 
                 m.add_implication(arc, var1.is_present)
                 m.add_implication(arc, var2.is_present)
