@@ -25,7 +25,7 @@ def describe_solve_set_default_parameters():
         Checks that setting the log flag correctly show solver output.
         """
         if solver == "cpoptimizer":
-            return  # TODO fix this test for cpoptimizer
+            return  # TODO See #152.
 
         solve(small, solver, log=True)
         printed = capsys.readouterr().out
@@ -49,7 +49,7 @@ def describe_solve_set_default_parameters():
         Checks the log that the ``num_workers`` parameter is correctly set.
         """
         if solver == "cpoptimizer":
-            return
+            return  # TODO See #152.
 
         solve(small, solver, num_workers=1, log=True)
         printed = capsys.readouterr().out
@@ -60,7 +60,7 @@ def describe_solve_set_default_parameters():
     "solver_, param, value",
     [
         ("ortools", "log_search_progress", True),
-        # ("cpoptimizer", "LogVerbosity", "Quiet"), # TODO
+        # ("cpoptimizer", "LogVerbosity", "Quiet"), # TODO See #152.
     ],
 )
 def test_solve_additional_params(small, capsys, solver_, param, value):

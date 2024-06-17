@@ -42,7 +42,7 @@ def solve(
     """
     cp_model, assign_vars = create_model(data)
     cp_solver = CpSolver()
-    cp_solver.log_callback = print  # TODO why is this needed?
+    cp_solver.log_callback = print  # TODO why is this needed? #152.
 
     params = {
         "max_time_in_seconds": time_limit,
