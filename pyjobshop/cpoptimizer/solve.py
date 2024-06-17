@@ -48,6 +48,7 @@ def solve(
     }
     params.update(kwargs)  # this will override existing parameters!
 
+    # TODO
     cp_result: CpoSolveResult = cp_model.solve(**params)  # type: ignore
     status = cp_result.get_solve_status()
 
