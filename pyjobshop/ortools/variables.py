@@ -99,6 +99,9 @@ class SequenceVar:
     ranks
         The rank variables of each interval on the machine. Used to define the
         ordering of the intervals in the machine sequence.
+    arcs
+        The arc literals between each pair of intervals in the sequence.
+        Keys are tuples of indices.
     is_active
         A boolean that indicates whether the sequence is active, meaning that a
         circuit constraint must be added for this machine. Default ``False``.
