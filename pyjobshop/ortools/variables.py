@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Optional
 
 from ortools.sat.python.cp_model import BoolVarT, CpModel, IntervalVar, IntVar
 
@@ -97,9 +98,6 @@ class SequenceVar:
     ranks
         The rank variables of each interval on the machine. Used to define the
         ordering of the intervals in the machine sequence.
-    arcs
-        The arc literals between each pair of tasks. Keys are tuples of
-        indices.
     is_active
         A boolean that indicates whether the sequence is active, meaning that a
         circuit constraint must be added for this machine. Default ``False``.
@@ -109,15 +107,25 @@ class SequenceVar:
     starts: list[BoolVarT]
     ends: list[BoolVarT]
     ranks: list[IntVar]
-    arcs: dict[tuple[int, int], BoolVarT]
+    arcs: Optional[dict[tuple[int, int], BoolVarT]] = None
     is_active: bool = False
 
-    def activate(self):
+    def activate(self, model):
         """
         Activates the sequence variable, meaning that a circuit constraint
         must be added for this machine.
         """
         self.is_active = True
+
+        if self.arcs is None:
+            num_tasks = len(self.tasks)
+
+            # Arcs indicate if two intervals are scheduled consecutively.
+            self.arcs = {
+                (i, j): model.new_bool_var(f"{i}->{j}")
+                for i in range(num_tasks)
+                for j in range(num_tasks)
+            }
 
 
 def job_variables(m: CpModel, data: ProblemData) -> list[JobVar]:
@@ -246,13 +254,6 @@ def sequence_variables(
         # Rank variables define the position of the task in the sequence.
         ranks = [m.new_int_var(-1, num_tasks, "") for _ in range(num_tasks)]
 
-        # Arc literals indicate if two intervals are scheduled consecutively.
-        arcs = {
-            (i, j): m.new_bool_var(f"{i}->{j}")
-            for i in range(num_tasks)
-            for j in range(num_tasks)
-        }
-
-        variables.append(SequenceVar(assign_vars, starts, ends, ranks, arcs))
+        variables.append(SequenceVar(assign_vars, starts, ends, ranks))
 
     return variables

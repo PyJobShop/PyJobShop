@@ -77,7 +77,7 @@ def activate_setup_times(
         setup_times = data.setup_times[machine]
 
         if np.any(setup_times != 0):
-            seq_vars[machine].activate()
+            seq_vars[machine].activate(m)
 
 
 def task_graph(
@@ -129,7 +129,7 @@ def task_graph(
 
             for constraint in data.constraints[task1, task2]:
                 if constraint == "previous":
-                    sequence.activate()
+                    sequence.activate(m)
 
                     idx1 = sequence.tasks.index(var1)
                     idx2 = sequence.tasks.index(var2)
@@ -140,7 +140,7 @@ def task_graph(
                     m.add_implication(arc, var1.is_present)
                     m.add_implication(arc, var2.is_present)
                 if constraint == "before":
-                    sequence.activate()
+                    sequence.activate(m)
                     both_present = m.new_bool_var("")
 
                     # both_present <=> var1.is_present & var2.is_present
