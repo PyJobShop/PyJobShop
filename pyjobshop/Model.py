@@ -137,12 +137,12 @@ class Model:
                 elif constraint == Constraint.DIFFERENT_MACHINE:
                     model.add_different_machine(task1, task2)
 
-        for (mach, task1, task2), duration in np.ndenumerate(data.setup_times):
+        for (mach, idx1, idx2), duration in np.ndenumerate(data.setup_times):
             if duration != 0:
                 model.add_setup_time(
                     machine=model.machines[mach],
-                    task1=model.tasks[task1],
-                    task2=model.tasks[task2],
+                    task1=model.tasks[idx1],
+                    task2=model.tasks[idx2],
                     duration=duration,
                 )
 
