@@ -88,7 +88,7 @@ def _solve(
     time_limit: float,
     log: bool,
     num_workers: int,
-) -> tuple[str, bool, float, float]:
+) -> tuple[str, str, float, float]:
     """
     Solves a single instance.
     """
@@ -98,7 +98,7 @@ def _solve(
 
     return (
         instance_loc.name,
-        result.status.value in ["Optimal", "Feasible"],
+        "Y" if result.status.value in ["Optimal", "Feasible"] else "N",
         result.objective,
         round(result.runtime, 2),
     )
@@ -119,7 +119,7 @@ def benchmark(instances: list[Path], **kwargs):
     print("\n", tabulate(headers, data), "\n", sep="")
     print(f"     Avg. objective: {data['obj'].mean():.0f}")
     print(f"      Avg. run-time: {data['time'].mean():.2f}s")
-    print(f"       Total infeas: {np.count_nonzero(~data['feas'])}")
+    print(f"       Total infeas: {np.count_nonzero(data['feas'] != 'Y')}")
 
 
 def main():
