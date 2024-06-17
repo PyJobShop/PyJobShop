@@ -119,7 +119,7 @@ def benchmark(instances: list[Path], **kwargs):
     print("\n", tabulate(headers, data), "\n", sep="")
     print(f"     Avg. objective: {data['obj'].mean():.0f}")
     print(f"      Avg. run-time: {data['time'].mean():.2f}s")
-    print(f"       Total infeas: {np.count_nonzero(data['feas'])}")
+    print(f"       Total infeas: {np.count_nonzero(~data['feas'])}")
 
 
 def main():
