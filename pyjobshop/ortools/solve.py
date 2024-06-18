@@ -15,6 +15,7 @@ def solve(
     time_limit: float,
     log: bool,
     num_workers: Optional[int] = None,
+    initial_solution: Optional[Solution] = None,
     **kwargs,
 ) -> Result:
     """
@@ -31,6 +32,8 @@ def solve(
     num_workers
         The number of workers to use for parallel solving. If not set, all
         available CPU cores are used.
+    initial_solution
+        An initial solution to start the solver from. Default is no solution.
     kwargs
         Additional parameters passed to the solver.
 
