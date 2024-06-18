@@ -43,7 +43,7 @@ def solve(
         A Result object containing the best found solution and additional
         information about the solver run.
     """
-    cp_model, assign_vars = create_model(data)
+    cp_model, assign_vars = create_model(data, initial_solution)
     cp_solver = CpSolver()
 
     params = {

@@ -1,6 +1,9 @@
+from typing import Optional
+
 from ortools.sat.python.cp_model import CpModel
 
 from pyjobshop.ProblemData import ProblemData
+from pyjobshop.Solution import Solution
 
 from .constraints import (
     activate_setup_times,
@@ -27,6 +30,7 @@ from .variables import (
 
 def create_model(
     data: ProblemData,
+    initial_solution: Optional[Solution] = None,
 ) -> tuple[CpModel, dict[tuple[int, int], AssignmentVar]]:
     """
     Creates an OR-Tools model for the given problem.
@@ -35,6 +39,8 @@ def create_model(
     ----------
     data
         The problem data instance.
+    initial_solution
+        An initial solution to start the solver from. Default is no solution.
 
     Returns
     -------

@@ -1,6 +1,9 @@
+from typing import Optional
+
 from docplex.cp.model import CpoModel
 
 from pyjobshop.ProblemData import ProblemData
+from pyjobshop.Solution import Solution
 
 from .constraints import (
     job_spans_tasks,
@@ -22,7 +25,10 @@ from .variables import (
 )
 
 
-def create_model(data: ProblemData) -> CpoModel:
+def create_model(
+    data: ProblemData,
+    initial_solution: Optional[Solution] = None,
+) -> CpoModel:
     """
     Creates a CP Optimizer model for the given problem data.
 
@@ -30,6 +36,8 @@ def create_model(data: ProblemData) -> CpoModel:
     ----------
     data
         The problem data instance.
+    initial_solution
+        An initial solution to start the solver from. Default is no solution.
 
     Returns
     -------

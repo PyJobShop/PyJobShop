@@ -42,7 +42,7 @@ def solve(
         A Result object containing the best found solution and additional
         information about the solver run.
     """
-    cp_model = create_model(data)
+    cp_model = create_model(data, initial_solution)
 
     params = {
         "TimeLimit": time_limit,
