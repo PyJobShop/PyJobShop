@@ -23,6 +23,13 @@ def test_unknown_solver(small):
         solve(small, "unknown")
 
 
+# TODO set initial solution
+def test_solve_initial_solution():
+    # OR Tools shows [hint]
+    # CP Optimizer? I don't know.
+    pass
+
+
 # def describe_solve_set_default_parameters():
 #     """
 #     Tests `solve` when setting the default parameters.
