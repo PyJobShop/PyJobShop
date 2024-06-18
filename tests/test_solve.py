@@ -1,7 +1,7 @@
 import pytest
 from numpy.testing import assert_, assert_equal
 
-from pyjobshop import solve
+from pyjobshop import Model, solve
 from pyjobshop.Solution import Solution, TaskData
 
 
@@ -40,6 +40,39 @@ def test_solve_initial_solution(small, capsys):
     # OR Tools shows [hint]
     # CP Optimizer? I don't know.
     pass
+
+
+def test_solve_initial_solution_setup(capsys):
+    init = Solution([TaskData(0, 0, 2, 2), TaskData(0, 6, 2, 8)])
+    model = Model()
+    job = model.add_job()
+    machine = model.add_machine()
+    task1 = model.add_task(job=job)
+    task2 = model.add_task(job=job)
+
+    model.add_processing_time(task1, machine, 2)
+    model.add_processing_time(task2, machine, 2)
+    model.add_setup_time(machine, task1, task2, 2)
+    model.add_previous(task1, task2)
+
+    result = solve(
+        model.data(),
+        "ortools",
+        log=True,
+        initial_solution=init,
+        fix_variables_to_their_hinted_value=True,
+    )
+    printed = capsys.readouterr().out
+
+    assert_("The solution hint is complete and is feasible." in printed)
+    assert_equal(result.objective, 8)
+
+    # Don't fix
+    result = solve(model.data(), "ortools", log=True, initial_solution=init)
+    printed = capsys.readouterr().out
+
+    assert_("The solution hint is complete and is feasible." in printed)
+    assert_equal(result.objective, 6)
 
 
 # def describe_solve_set_default_parameters():

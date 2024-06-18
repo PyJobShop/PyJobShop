@@ -1,6 +1,5 @@
 from dataclasses import dataclass, field
 
-import numpy as np
 from ortools.sat.python.cp_model import BoolVarT, CpModel, IntervalVar, IntVar
 
 from pyjobshop.ProblemData import ProblemData
@@ -305,23 +304,31 @@ def add_hint_to_vars(
         m.add_hint(var.end, sol_task.end)
         m.add_hint(var.is_present, machine == sol_task.machine)
 
+    # Compute solution sequences.
+    sequences_: list[list[tuple]] = [[] for _ in range(data.num_machines)]
+    for idx, task_ in enumerate(init.tasks):
+        sequences_[task_.machine].append((task_.start, idx))
+
+    sequences = [[idx for _, idx in seq] for seq in sequences_]
+
     for idx in range(data.num_machines):
-        seq_var = seq_vars[idx]
+        seq_var = seq_vars[idx]  # sequence variable for the machine
+        seq_tasks = seq_var.tasks  # assignment variables in the sequence
+        seq = sequences[idx]  # sequence of _scheduled_ task indices
 
         if not seq_var.is_active:
             continue
 
-        # set rank, start, end and arcs
-        seq_tasks = seq_var.tasks
-        sol_tasks = [init.tasks[task.task_idx] for task in seq_tasks]
+        for idx in range(len(seq_tasks)):
+            task_idx = seq_tasks[idx].task_idx
+            rank = seq.index(task_idx) if task_idx in seq else -1
 
-        starts = [
-            task.start if task.machine == idx else -1 for task in sol_tasks
-        ]
-        num_not_present = sum(start == -1 for start in starts)
-        ranks = np.argsort(starts) - num_not_present
-        ranks = np.where(ranks < 0, -1, ranks)
+            m.add_hint(seq_var.ranks[idx], rank)
+            m.add_hint(seq_var.starts[idx], rank == 0)
+            m.add_hint(seq_var.ends[idx], rank == len(seq) - 1)
 
-        # rank == -1 if not present on machine
-        # otherwise rank is the index of the task in the sequence
-        # TODO Add hints for sequence variables.
+        arcs = [(seq[idx], seq[idx + 1]) for idx in range(len(seq) - 1)]
+
+        for (i, j), var in seq_var.arcs.items():
+            task1, task2 = seq_tasks[i].task_idx, seq_tasks[j].task_idx
+            m.add_hint(var, (task1, task2) in arcs)
