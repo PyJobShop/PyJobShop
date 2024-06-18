@@ -1,16 +1,27 @@
+from typing import Optional
+
 from ortools.sat.python.cp_model import CpModel, LinearExpr
 
 from pyjobshop.ProblemData import ProblemData
+from pyjobshop.Solution import Solution
 
 from .variables import JobVar, TaskVar
 
 
-def makespan(m: CpModel, data: ProblemData, task_vars: list[TaskVar]):
+def makespan(
+    m: CpModel,
+    data: ProblemData,
+    task_vars: list[TaskVar],
+    init: Optional[Solution] = None,
+):
     """
     Minimizes the makespan.
     """
     makespan = m.new_int_var(0, data.horizon, "makespan")
     completion_times = [var.end for var in task_vars]
+
+    if init:
+        m.add_hint(makespan, max([task.end for task in init.tasks]))
 
     m.add_max_equality(makespan, completion_times)
     m.minimize(makespan)

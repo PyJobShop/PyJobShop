@@ -2,6 +2,7 @@ import pytest
 from numpy.testing import assert_, assert_equal
 
 from pyjobshop import solve
+from pyjobshop.Solution import Solution, TaskData
 
 
 def test_solve(small, solver):
@@ -23,8 +24,19 @@ def test_unknown_solver(small):
         solve(small, "unknown")
 
 
-# TODO set initial solution
-def test_solve_initial_solution():
+def test_solve_initial_solution(small, capsys):
+    init = Solution([TaskData(0, 0, 1, 1), TaskData(0, 1, 2, 3)])
+    solve(
+        small,
+        "ortools",
+        log=True,
+        initial_solution=init,
+        fix_variables_to_their_hinted_value=True,
+    )
+    printed = capsys.readouterr().out
+
+    assert_("The solution hint is complete and is feasible." in printed)
+
     # OR Tools shows [hint]
     # CP Optimizer? I don't know.
     pass

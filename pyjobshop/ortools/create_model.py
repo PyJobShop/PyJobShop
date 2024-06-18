@@ -21,6 +21,7 @@ from .objectives import (
 )
 from .variables import (
     AssignmentVar,
+    add_hint_to_vars,
     assignment_variables,
     job_variables,
     sequence_variables,
@@ -55,7 +56,7 @@ def create_model(
     seq_vars = sequence_variables(model, data, assign_vars)
 
     if data.objective == "makespan":
-        makespan(model, data, task_vars)
+        makespan(model, data, task_vars, initial_solution)
     elif data.objective == "tardy_jobs":
         tardy_jobs(model, data, job_vars)
     elif data.objective == "total_tardiness":
@@ -71,7 +72,18 @@ def create_model(
     activate_setup_times(model, data, seq_vars)
     task_graph(model, data, task_vars, assign_vars, seq_vars)
 
-    # Must be called last to ensure that sequence constriants are enforced!
+    # From here onwards we know which sequence constraints are active.
     enforce_circuit(model, data, seq_vars)
+
+    if initial_solution is not None:
+        add_hint_to_vars(
+            model,
+            data,
+            initial_solution,
+            job_vars,
+            task_vars,
+            assign_vars,
+            seq_vars,
+        )
 
     return model, assign_vars

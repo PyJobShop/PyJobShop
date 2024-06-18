@@ -1,8 +1,10 @@
 from dataclasses import dataclass, field
 
+import numpy as np
 from ortools.sat.python.cp_model import BoolVarT, CpModel, IntervalVar, IntVar
 
 from pyjobshop.ProblemData import ProblemData
+from pyjobshop.Solution import Solution
 from pyjobshop.utils import compute_min_max_durations
 
 
@@ -261,3 +263,65 @@ def sequence_variables(
         variables.append(SequenceVar(assign_vars))
 
     return variables
+
+
+def add_hint_to_vars(
+    m: CpModel,
+    data: ProblemData,
+    init: Solution,
+    job_vars: list[JobVar],
+    task_vars: list[TaskVar],
+    assign_vars: dict[tuple[int, int], AssignmentVar],
+    seq_vars: list[SequenceVar],
+):
+    """
+    Adds hints to variables based on the given initial solution.
+    """
+    for idx in range(data.num_jobs):
+        job = data.jobs[idx]
+        job_var = job_vars[idx]
+        sol_tasks = [init.tasks[task] for task in job.tasks]
+
+        job_start = min(task.start for task in sol_tasks)
+        job_end = max(task.end for task in sol_tasks)
+
+        m.add_hint(job_var.start, job_start)
+        m.add_hint(job_var.duration, job_end - job_start)
+        m.add_hint(job_var.end, job_end)
+
+    for idx in range(data.num_tasks):
+        task_var = task_vars[idx]
+        sol_task = init.tasks[idx]
+
+        m.add_hint(task_var.start, sol_task.start)
+        m.add_hint(task_var.duration, sol_task.duration)
+        m.add_hint(task_var.end, sol_task.end)
+
+    for (task, machine), var in assign_vars.items():
+        sol_task = init.tasks[task]
+
+        m.add_hint(var.start, sol_task.start)
+        m.add_hint(var.duration, sol_task.duration)
+        m.add_hint(var.end, sol_task.end)
+        m.add_hint(var.is_present, machine == sol_task.machine)
+
+    for idx in range(data.num_machines):
+        seq_var = seq_vars[idx]
+
+        if not seq_var.is_active:
+            continue
+
+        # set rank, start, end and arcs
+        seq_tasks = seq_var.tasks
+        sol_tasks = [init.tasks[task.task_idx] for task in seq_tasks]
+
+        starts = [
+            task.start if task.machine == idx else -1 for task in sol_tasks
+        ]
+        num_not_present = sum(start == -1 for start in starts)
+        ranks = np.argsort(starts) - num_not_present
+        ranks = np.where(ranks < 0, -1, ranks)
+
+        # rank == -1 if not present on machine
+        # otherwise rank is the index of the task in the sequence
+        # TODO Add hints for sequence variables.
