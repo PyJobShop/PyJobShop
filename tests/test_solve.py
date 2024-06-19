@@ -37,9 +37,7 @@ def test_solve_initial_solution(small, capsys):
 
     assert_("The solution hint is complete and is feasible." in printed)
 
-    # OR Tools shows [hint]
-    # CP Optimizer? I don't know.
-    pass
+    # TODO CP Optimizer?
 
 
 def test_solve_initial_solution_setup(capsys):

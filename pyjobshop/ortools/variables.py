@@ -267,19 +267,19 @@ def sequence_variables(
 def add_hint_to_vars(
     m: CpModel,
     data: ProblemData,
-    init: Solution,
+    solution: Solution,
     job_vars: list[JobVar],
     task_vars: list[TaskVar],
     assign_vars: dict[tuple[int, int], AssignmentVar],
     seq_vars: list[SequenceVar],
 ):
     """
-    Adds hints to variables based on the given initial solution.
+    Adds hints to variables based on the given solution.
     """
     for idx in range(data.num_jobs):
         job = data.jobs[idx]
         job_var = job_vars[idx]
-        sol_tasks = [init.tasks[task] for task in job.tasks]
+        sol_tasks = [solution.tasks[task] for task in job.tasks]
 
         job_start = min(task.start for task in sol_tasks)
         job_end = max(task.end for task in sol_tasks)
@@ -290,24 +290,24 @@ def add_hint_to_vars(
 
     for idx in range(data.num_tasks):
         task_var = task_vars[idx]
-        sol_task = init.tasks[idx]
+        sol_task = solution.tasks[idx]
 
         m.add_hint(task_var.start, sol_task.start)
         m.add_hint(task_var.duration, sol_task.duration)
         m.add_hint(task_var.end, sol_task.end)
 
-    for (task, machine), var in assign_vars.items():
-        sol_task = init.tasks[task]
+    for (task_idx, machine_idx), var in assign_vars.items():
+        sol_task = solution.tasks[task_idx]
 
         m.add_hint(var.start, sol_task.start)
         m.add_hint(var.duration, sol_task.duration)
         m.add_hint(var.end, sol_task.end)
-        m.add_hint(var.is_present, machine == sol_task.machine)
+        m.add_hint(var.is_present, machine_idx == sol_task.machine)
 
     # Compute solution sequences.
     sequences_: list[list[tuple]] = [[] for _ in range(data.num_machines)]
-    for idx, task_ in enumerate(init.tasks):
-        sequences_[task_.machine].append((task_.start, idx))
+    for idx, task in enumerate(solution.tasks):
+        sequences_[task.machine].append((task.start, idx))
 
     sequences = [[idx for _, idx in seq] for seq in sequences_]
 
