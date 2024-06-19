@@ -20,7 +20,7 @@ def small():
 @pytest.fixture(scope="session")
 def fjsp():
     """
-    Solve a small flexible jobshop problem instance.
+    A small flexible jobshop instance with 3 jobs, 3 machines and 9 tasks.
     """
     DATA = [  # task = (processing_time, machine_id)
         [
@@ -53,7 +53,6 @@ def fjsp():
             task_idx = (job_idx, idx)
             tasks[task_idx] = model.add_task(jobs[job_idx])
 
-    for job_idx, job_data in enumerate(DATA):
         for idx, task_data in enumerate(job_data):
             task = tasks[(job_idx, idx)]
 
