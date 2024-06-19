@@ -27,16 +27,25 @@ The documentation is available [here](https://pyjobshop.readthedocs.io/).
 
 
 ## Constraint programming solvers
-PyJobShop uses [OR-Tools](https://github.com/google/or-tools) as the default constraint programming solver.
+PyJobShop uses [OR-Tools'](https://github.com/google/or-tools) CP-SAT solver as its default constraint programming solver.
+CP-SAT is an open-source constraint programming solver and encompasses other technologies such as satisfiability and mixed-integer linear programming solvers.
+CP-SAT has consistently won the annual [MiniZinc Challenge](https://www.minizinc.org/challenge/), demonstrating its superior performance on constraint programming models.
 
-TODO
+> [!TIP]
+> If you are new to scheduling or constraint programming, you might benefit from first reading the TODO and TODO pages.
 
+Besides OR-Tools' CP-SAT solver, PyJobShop also implements the IBM ILOG CP Optimizer, which is a commercial and very effective constraint programming solver.
+To use CP Optimizer, you have to install PyJobShop with the optional `cpoptimizer` dependency as follows: 
 
-### Installing CPLEX
-Running the CP model and solving it requires the optimization engine from IBM CPLEX. 
-See [their documentation](http://ibmdecisionoptimization.github.io/docplex-doc/getting_started.html#setting-up-an-optimization-engine) for more details.
-If you install the free community edition, you can only solve models with up to 1000 variables and 1000 constraints.
+``` shell
+pip install pyjobshop[cpoptimizer]
+```
+
+This installation comes with the free community edition of CP Optimizer, but it only solves models with up to 1000 variables and 1000 constraints.
 Models beyond that size require a paid version or an academic version.
+See [their documentation](http://ibmdecisionoptimization.github.io/docplex-doc/getting_started.html#setting-up-an-optimization-engine) for more details on how to obtain such version.
+
+TODO: refer to documentation on how to get an academic version of CP Optimizer.
 
 ## Examples
 We provide example notebooks that show how PyJobShop may be used to solve scheduling problems.
