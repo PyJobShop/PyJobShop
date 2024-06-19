@@ -1,8 +1,8 @@
 > [!NOTE]
 > This package is under development. Expect things to break significantly in versions ``v0.0.*``.
 
+![PyJobShop logo](docs/source/assets/images/logo.png)
 
-# PyJobShop
 [![PyPI](https://img.shields.io/pypi/v/PyJobShop?style=flat-square)](https://pypi.org/project/pyjobshop/)
 [![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](https://github.com/PyJobShop/PyJobShop/)
 [![CI](https://img.shields.io/github/actions/workflow/status/PyJobShop/PyJobShop/.github%2Fworkflows%2FCI.yml?style=flat-square)](https://github.com/PyJobShop/PyJobShop/)
