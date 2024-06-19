@@ -12,24 +12,9 @@
 PyJobShop is a Python package for solving scheduling problems with constraint programming.
 It currently supports the following scheduling problems:
 
-- **Machine environments:**
-  - Single machine
-  - Parallel machines
-  - Hybrid flow shops
-  - Open shops
-  - Flexible job shops
-- **Constraints:**
-  - Release dates
-  - Deadlines
-  - Sequence-dependent setup times
-  - No-wait
-  - Blocking
-  - Precedence constraints
-- **Objective functions:**
-  - Minimizing makespan
-  - Total completion time
-  - Number of tardy jobs
-  - Total tardiness
+- **Machine environments:** single machine, parallel machines, hybrid flow shops, open shops, and flexible job shops.
+- **Constraints:** release dates, deadlines, sequence-dependent setup times, no-wait, blocking, and precedence constraints.
+- **Objective functions:** minimizing makespan, total completion time, number of tardy jobs, and total tardiness.
 
 You can find PyJobShop on the Python Package Index under the name `pyjobshop`. 
 To install it, simply run:
