@@ -1,6 +1,6 @@
 import numpy as np
 import pytest
-from numpy.testing import assert_equal, assert_raises
+from numpy.testing import assert_, assert_equal, assert_raises
 
 from pyjobshop.constants import MAX_VALUE
 from pyjobshop.Model import Model
@@ -288,6 +288,114 @@ def test_problem_data_tardy_objective_without_job_due_dates(
         ProblemData(
             [Job()], [Machine()], [Task()], {(0, 0): 0}, objective=objective
         )
+
+
+def test_problem_data_replace_no_changes(fjsp):
+    """
+    Tests that when using ``ProblemData.replace()`` without any arguments
+    returns a new instance with different objects, but with the same values.
+    """
+    jobs = [Job(due_date=1, deadline=1), Job(due_date=2, deadline=2)]
+    machines = [Machine(name="machine"), Machine(name="machine")]
+    tasks = [Task(earliest_start=1), Task(earliest_start=1)]
+    processing_times = {(0, 0): 1, (1, 1): 2}
+    constraints = {(0, 1): [Constraint.END_BEFORE_START]}
+    setup_times = np.zeros((2, 2, 2))
+    horizon = 1
+    objective = Objective.MAKESPAN
+
+    original = ProblemData(
+        jobs,
+        machines,
+        tasks,
+        processing_times,
+        constraints,
+        setup_times,
+        horizon,
+        objective,
+    )
+    new = original.replace()
+    assert_(new is not original)
+
+    for idx in range(len(jobs)):
+        assert_(new.jobs[idx] is not original.jobs[idx])
+        assert_equal(new.jobs[idx].deadline, original.jobs[idx].deadline)
+        assert_equal(new.jobs[idx].due_date, original.jobs[idx].due_date)
+
+    for idx in range(len(machines)):
+        assert_(new.machines[idx] is not original.machines[idx])
+        assert_equal(new.machines[idx].name, original.machines[idx].name)
+
+    for idx in range(len(tasks)):
+        assert_(new.tasks[idx] is not original.tasks[idx])
+        assert_equal(
+            new.tasks[idx].earliest_start, original.tasks[idx].earliest_start
+        )
+
+    assert_equal(new.processing_times, original.processing_times)
+    assert_equal(new.constraints, original.constraints)
+    assert_equal(new.setup_times, original.setup_times)
+    assert_equal(new.horizon, original.horizon)
+    assert_equal(new.objective, original.objective)
+
+
+def test_problem_data_replace_with_changes(fjsp):
+    """
+    Tests that when using ``ProblemData.replace()`` replaces the attributes
+    with the new values when they are passed as arguments.
+    """
+    jobs = [Job(due_date=1, deadline=1), Job(due_date=2, deadline=2)]
+    machines = [Machine(name="machine"), Machine(name="machine")]
+    tasks = [Task(earliest_start=1), Task(earliest_start=1)]
+    processing_times = {(0, 0): 1, (1, 1): 2}
+    constraints = {(0, 1): [Constraint.END_BEFORE_START]}
+    setup_times = np.zeros((2, 2, 2))
+    horizon = 1
+    objective = Objective.MAKESPAN
+
+    original = ProblemData(
+        jobs,
+        machines,
+        tasks,
+        processing_times,
+        constraints,
+        setup_times,
+        horizon,
+        objective,
+    )
+
+    new = original.replace(
+        jobs=[Job(due_date=2, deadline=2), Job(due_date=1, deadline=1)],
+        machines=[Machine(name="new_machine"), Machine(name="new_machine")],
+        tasks=[Task(earliest_start=2), Task(earliest_start=2)],
+        processing_times={(0, 0): 2, (1, 1): 1},
+        constraints={(1, 0): [Constraint.END_BEFORE_START]},
+        setup_times=np.ones((2, 2, 2)),
+        horizon=2,
+        objective=Objective.TOTAL_TARDINESS,
+    )
+    assert_(new is not original)
+
+    for idx in range(len(jobs)):
+        assert_(new.jobs[idx] is not original.jobs[idx])
+        assert_(new.jobs[idx].deadline != original.jobs[idx].deadline)
+        assert_(new.jobs[idx].due_date != original.jobs[idx].due_date)
+
+    for idx in range(len(machines)):
+        assert_(new.machines[idx] is not original.machines[idx])
+        assert new.machines[idx].name != original.machines[idx].name
+
+    for idx in range(len(tasks)):
+        assert_(new.tasks[idx] is not original.tasks[idx])
+        assert_(
+            new.tasks[idx].earliest_start != original.tasks[idx].earliest_start
+        )
+
+    assert_(new.processing_times != original.processing_times)
+    assert_(new.constraints != original.constraints)
+    assert_(not np.array_equal(new.setup_times, original.setup_times))
+    assert_(new.horizon != original.horizon)
+    assert_(new.objective != original.objective)
 
 
 # --- Tests that involve checking solver correctness of problem data. ---

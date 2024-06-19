@@ -1,6 +1,7 @@
 import bisect
+from copy import deepcopy
 from enum import Enum
-from typing import Optional
+from typing import Optional, TypeVar
 
 import enum_tools.documentation
 import numpy as np
@@ -8,6 +9,7 @@ import numpy as np
 from pyjobshop.constants import MAX_VALUE
 
 _CONSTRAINTS_TYPE = dict[tuple[int, int], list["Constraint"]]
+T = TypeVar("T")
 
 
 class Job:
@@ -343,6 +345,45 @@ class ProblemData:
             if any(job.due_date is None for job in self.jobs):
                 msg = "Job due dates required for tardiness-based objectives."
                 raise ValueError(msg)
+
+    def replace(
+        self,
+        jobs: Optional[list[Job]] = None,
+        machines: Optional[list[Machine]] = None,
+        tasks: Optional[list[Task]] = None,
+        processing_times: Optional[dict[tuple[int, int], int]] = None,
+        constraints: Optional[_CONSTRAINTS_TYPE] = None,
+        setup_times: Optional[np.ndarray] = None,
+        horizon: Optional[int] = None,
+        objective: Optional[Objective] = None,
+    ) -> "ProblemData":
+        """
+        Returns a new instance of the problem data with updated values, if
+        provided.
+        """
+
+        def _copy_if_none(value: Optional[T], default: T) -> T:
+            return value if value is not None else deepcopy(default)
+
+        jobs = _copy_if_none(jobs, self.jobs)
+        machines = _copy_if_none(machines, self.machines)
+        tasks = _copy_if_none(tasks, self.tasks)
+        proc_times = _copy_if_none(processing_times, self.processing_times)
+        constraints = _copy_if_none(constraints, self.constraints)
+        setup_times = _copy_if_none(setup_times, self.setup_times)
+        horizon = _copy_if_none(horizon, self.horizon)
+        objective = _copy_if_none(objective, self.objective)
+
+        return ProblemData(
+            jobs=jobs,
+            machines=machines,
+            tasks=tasks,
+            processing_times=proc_times,
+            constraints=constraints,
+            setup_times=setup_times,
+            horizon=horizon,
+            objective=objective,
+        )
 
     @property
     def jobs(self) -> list[Job]:
