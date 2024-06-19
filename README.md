@@ -1,5 +1,5 @@
 > [!NOTE]
-> This package is under development. Expect things to break significantly during the v0.0.x phase.
+> This package is under development. Expect things to break significantly in versions ``v0.0.*``.
 
 
 # PyJobShop
@@ -9,23 +9,43 @@
 [![DOC](https://img.shields.io/readthedocs/pyjobshop?style=flat-square)](https://pyjobshop.readthedocs.io/)
 [![Codecov](https://img.shields.io/codecov/c/github/PyJobShop/PyJobShop?style=flat-square)](https://app.codecov.io/gh/PyJobShop/PyJobShop/)
 
-PyJobShop is a package for implementing scheduling models in Python.
-It supports the classically known *flexible job shop problem* (FJSP) and many of its extensions such as arbitrary precedence relations, sequence-dependent setup times, and many more!
-The implementation is currently work in progress - feel free to open an issue if you have any questions.
+PyJobShop is a package for solving scheduling problems with constraint programming (CP).
+It currently supports the following scheduling characteristics:
+
+- **Machine environments:** single machine, parallel machines, hybrid flow shops, open shops, and flexible job shops.
+- **Constraints:** release dates, deadlines, sequence-dependent setup times, no-wait, blocking, and general precedence constraints.
+- **Objective functions:** minimizing makespan, total completion time, number of tardy jobs, and total tardiness.
 
 
-## Installation
-First, clone this repository to your local setup and `cd` into it. 
-Then, make sure you have [Poetry](https://python-poetry.org/) version 1.2+ installed, and run the following command:
+You can find PyJobShop on the Python Package Index under the name `pyjobshop`. 
+To install it, simply run:
 
 ``` shell
-poetry install
+pip install pyjobshop
 ```
 
-This will set-up a virtual environment and install all necessary dependencies. 
+The documentation is available [here](https://pyjobshop.readthedocs.io/).
+
+
+## Constraint programming solvers
+PyJobShop uses [OR-Tools](https://github.com/google/or-tools) as the default constraint programming solver.
+
+TODO
+
 
 ### Installing CPLEX
 Running the CP model and solving it requires the optimization engine from IBM CPLEX. 
 See [their documentation](http://ibmdecisionoptimization.github.io/docplex-doc/getting_started.html#setting-up-an-optimization-engine) for more details.
 If you install the free community edition, you can only solve models with up to 1000 variables and 1000 constraints.
 Models beyond that size require a paid version or an academic version.
+
+## Examples
+We provide example notebooks that show how PyJobShop may be used to solve scheduling problems.
+
+- TODO
+
+## Contributing
+TODO
+
+## Getting help
+TODO
