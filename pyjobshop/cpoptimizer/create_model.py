@@ -17,7 +17,7 @@ from .objectives import (
 from .variables import (
     job_variables,
     sequence_variables,
-    task_alternatives_variables,
+    task_alternative_variables,
     task_variables,
 )
 
@@ -40,7 +40,7 @@ def create_model(data: ProblemData) -> CpoModel:
 
     job_vars = job_variables(model, data)
     task_vars = task_variables(model, data)
-    task_alt_vars = task_alternatives_variables(model, data)
+    task_alt_vars = task_alternative_variables(model, data)
     seq_vars = sequence_variables(model, data, task_alt_vars)
 
     if data.objective == "makespan":

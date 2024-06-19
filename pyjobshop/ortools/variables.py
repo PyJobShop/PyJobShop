@@ -84,14 +84,14 @@ class TaskAltVar:
 @dataclass
 class SequenceVar:
     """
-    Represents a sequence of interval variables of alternative tasks. Relevant
+    Represents a sequence of interval variables of task alternatives. Relevant
     sequence variables are lazily generated when activated by constraints that
     call the ``activate`` method.
 
     Parameters
     ----------
     task_alts
-        The task alternatives variables in the sequence.
+        The task alternative variables in the sequence.
     starts
         The start literals for each task.
     ends
@@ -201,7 +201,7 @@ def task_variables(m: CpModel, data: ProblemData) -> list[TaskVar]:
     return variables
 
 
-def task_alternatives_variables(
+def task_alternative_variables(
     m: CpModel, data: ProblemData
 ) -> dict[tuple[int, int], TaskAltVar]:
     """
@@ -212,7 +212,7 @@ def task_alternatives_variables(
     -------
     dict[tuple[int, int], TaskAltVar]
         A dictionary that maps each task index and machine index pair to its
-        corresponding alternative task variable.
+        corresponding task alternative variable.
     """
     variables = {}
 

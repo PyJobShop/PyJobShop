@@ -48,7 +48,7 @@ def task_variables(m: CpoModel, data: ProblemData) -> list[CpoIntervalVar]:
     return variables
 
 
-def task_alternatives_variables(
+def task_alternative_variables(
     m: CpoModel, data: ProblemData
 ) -> dict[tuple[int, int], CpoIntervalVar]:
     """

@@ -54,7 +54,7 @@ def select_one_task_alternative(
     task_alt_vars: TaskAltVars,
 ):
     """
-    Selects one optional interval for each alternative task, ensuring that
+    Selects one optional interval for each task alternative, ensuring that
     each task is scheduled on exactly one machine.
     """
     for task in range(data.num_tasks):

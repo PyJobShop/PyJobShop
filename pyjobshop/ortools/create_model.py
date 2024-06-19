@@ -20,7 +20,7 @@ from .variables import (
     TaskAltVar,
     job_variables,
     sequence_variables,
-    task_alternatives_variables,
+    task_alternative_variables,
     task_variables,
 )
 
@@ -39,13 +39,13 @@ def create_model(
     Returns
     -------
     tuple[CpModel, dict[tuple[int, int], TaskAltVar]]
-        The constraint programming model and the task alternatives variables.
+        The constraint programming model and the task alternative variables.
     """
     model = CpModel()
 
     job_vars = job_variables(model, data)
     task_vars = task_variables(model, data)
-    task_alt_vars = task_alternatives_variables(model, data)
+    task_alt_vars = task_alternative_variables(model, data)
     seq_vars = sequence_variables(model, data, task_alt_vars)
 
     if data.objective == "makespan":
