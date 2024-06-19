@@ -2,7 +2,7 @@ from typing import Optional
 
 from ortools.sat.python.cp_model import CpSolver
 
-from pyjobshop.ortools.variables import AltTaskVar
+from pyjobshop.ortools.variables import TaskAltVar
 from pyjobshop.ProblemData import ProblemData
 from pyjobshop.Result import Result, SolveStatus
 from pyjobshop.Solution import Solution, TaskData
@@ -40,7 +40,7 @@ def solve(
         A Result object containing the best found solution and additional
         information about the solver run.
     """
-    cp_model, alt_task_vars = create_model(data)
+    cp_model, task_alt_vars = create_model(data)
     cp_solver = CpSolver()
 
     params = {
@@ -59,7 +59,7 @@ def solve(
     objective = cp_solver.objective_value
 
     if status in ["OPTIMAL", "FEASIBLE"]:
-        solution = _result2solution(data, cp_solver, alt_task_vars)
+        solution = _result2solution(data, cp_solver, task_alt_vars)
     else:
         # No feasible solution found due to infeasible instance or time limit.
         solution = Solution([])
@@ -87,28 +87,28 @@ def _get_solve_status(status):
 def _result2solution(
     data: ProblemData,
     cp_solver: CpSolver,
-    alt_task_vars: dict[tuple[int, int], AltTaskVar],
+    task_alt_vars: dict[tuple[int, int], TaskAltVar],
 ) -> Solution:
     """
-        Converts a result from the OR-Tools CP solver to a Solution object.
-    AltTaskVar
-        Parameters
-        ----------
-        data
-            The problem data instance.
-        cp_solver
-            The CP solver.
-        alt_task_vars
-            The alternative task variables.
+    Converts a result from the OR-Tools CP solver to a Solution object.
 
-        Returns
-        -------
-        Solution
-            The solution.
+    Parameters
+    ----------
+    data
+        The problem data instance.
+    cp_solver
+        The CP solver.
+    task_alt_vars
+        The task alternatives variables.
+
+    Returns
+    -------
+    Solution
+        The solution.
     """
     tasks = {}
 
-    for (task, machine), var in alt_task_vars.items():
+    for (task, machine), var in task_alt_vars.items():
         if cp_solver.value(var.is_present):
             start = cp_solver.value(var.start)
             duration = cp_solver.value(var.duration)

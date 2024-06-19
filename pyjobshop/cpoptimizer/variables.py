@@ -48,7 +48,7 @@ def task_variables(m: CpoModel, data: ProblemData) -> list[CpoIntervalVar]:
     return variables
 
 
-def alt_task_variables(
+def task_alternatives_variables(
     m: CpoModel, data: ProblemData
 ) -> dict[tuple[int, int], CpoIntervalVar]:
     """
@@ -87,7 +87,7 @@ def alt_task_variables(
 def sequence_variables(
     m: CpoModel,
     data: ProblemData,
-    alt_task_var: dict[tuple[int, int], CpoIntervalVar],
+    task_alt_vars: dict[tuple[int, int], CpoIntervalVar],
 ) -> list[CpoSequenceVar]:
     """
     Creates a sequence variable for each machine, using the corresponding
@@ -96,7 +96,7 @@ def sequence_variables(
     variables = []
 
     for machine, tasks in enumerate(data.machine2tasks):
-        intervals = [alt_task_var[task, machine] for task in tasks]
+        intervals = [task_alt_vars[task, machine] for task in tasks]
         variables.append(m.sequence_var(name=f"S{machine}", vars=intervals))
 
     return variables

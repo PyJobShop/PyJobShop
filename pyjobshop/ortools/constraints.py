@@ -5,11 +5,11 @@ from ortools.sat.python.cp_model import CpModel
 
 from pyjobshop.ProblemData import ProblemData
 
-from .variables import AltTaskVar, JobVar, SequenceVar, TaskVar
+from .variables import JobVar, SequenceVar, TaskAltVar, TaskVar
 
 JobVars = list[JobVar]
 TaskVars = list[TaskVar]
-AltTaskVars = dict[tuple[int, int], AltTaskVar]
+TaskAltVars = dict[tuple[int, int], TaskAltVar]
 SequenceVars = list[SequenceVar]
 
 
@@ -32,10 +32,10 @@ def select_one_task_alternative(
     m: CpModel,
     data: ProblemData,
     task_vars: TaskVars,
-    alt_task_vars: AltTaskVars,
+    task_alt_vars: TaskAltVars,
 ):
     """
-    Selects one optional interval for each alternative task, ensuring that
+    Selects one optional interval for each task alternative, ensuring that
     each task is scheduled on exactly one machine.
     """
     for task in range(data.num_tasks):
@@ -43,14 +43,14 @@ def select_one_task_alternative(
 
         for machine in data.task2machines[task]:
             main = task_vars[task]
-            opt = alt_task_vars[task, machine]
-            is_present = opt.is_present
+            alt = task_alt_vars[task, machine]
+            is_present = alt.is_present
             presences.append(is_present)
 
             # Sync each optional interval variable with the main variable.
-            m.add(main.start == opt.start).only_enforce_if(is_present)
-            m.add(main.duration == opt.duration).only_enforce_if(is_present)
-            m.add(main.end == opt.end).only_enforce_if(is_present)
+            m.add(main.start == alt.start).only_enforce_if(is_present)
+            m.add(main.duration == alt.duration).only_enforce_if(is_present)
+            m.add(main.end == alt.end).only_enforce_if(is_present)
 
         # Select exactly one optional interval variable for each task.
         m.add_exactly_one(presences)
@@ -62,7 +62,7 @@ def no_overlap_machines(m: CpModel, data: ProblemData, seq_vars: SequenceVars):
     intervals in a sequence variable are overlapping.
     """
     for machine in range(data.num_machines):
-        m.add_no_overlap([var.interval for var in seq_vars[machine].alt_tasks])
+        m.add_no_overlap([var.interval for var in seq_vars[machine].task_alts])
 
 
 def activate_setup_times(
@@ -84,7 +84,7 @@ def task_graph(
     m: CpModel,
     data: ProblemData,
     task_vars: TaskVars,
-    alt_task_vars: AltTaskVars,
+    task_alt_vars: TaskAltVars,
     seq_vars: SequenceVars,
 ):
     """
@@ -124,15 +124,15 @@ def task_graph(
                 continue
 
             sequence = seq_vars[machine]
-            var1 = alt_task_vars[task1, machine]
-            var2 = alt_task_vars[task2, machine]
+            var1 = task_alt_vars[task1, machine]
+            var2 = task_alt_vars[task2, machine]
 
             for constraint in data.constraints[task1, task2]:
                 if constraint == "previous":
                     sequence.activate(m)
 
-                    idx1 = sequence.alt_tasks.index(var1)
-                    idx2 = sequence.alt_tasks.index(var2)
+                    idx1 = sequence.task_alts.index(var1)
+                    idx2 = sequence.task_alts.index(var2)
                     arc = sequence.arcs[idx1, idx2]
 
                     # arc <=> var1.is_present & var2.is_present
@@ -151,8 +151,8 @@ def task_graph(
                     m.add_implication(both_present, var2.is_present)
 
                     # Schedule var1 before var2 when both are present.
-                    idx1 = sequence.alt_tasks.index(var1)
-                    idx2 = sequence.alt_tasks.index(var2)
+                    idx1 = sequence.task_alts.index(var1)
+                    idx2 = sequence.task_alts.index(var2)
                     rank1 = sequence.ranks[idx1]
                     rank2 = sequence.ranks[idx2]
 
@@ -178,14 +178,14 @@ def enforce_circuit(m: CpModel, data: ProblemData, seq_vars: SequenceVars):
             # circuit constraints.
             continue
 
-        alt_task_vars = sequence.alt_tasks
+        task_alt_vars = sequence.task_alts
         starts = sequence.starts
         ends = sequence.ends
         ranks = sequence.ranks
         arcs = sequence.arcs
         circuit = []
 
-        for idx1, var1 in enumerate(alt_task_vars):
+        for idx1, var1 in enumerate(task_alt_vars):
             # Set initial arcs from the dummy node (-1) to/from a task.
             start = starts[idx1]
             end = ends[idx1]
@@ -201,7 +201,7 @@ def enforce_circuit(m: CpModel, data: ProblemData, seq_vars: SequenceVars):
             circuit.append([idx1, idx1, ~var1.is_present])
             m.add(rank == -1).only_enforce_if(~var1.is_present)
 
-            for idx2, var2 in enumerate(alt_task_vars):
+            for idx2, var2 in enumerate(task_alt_vars):
                 if idx1 == idx2:
                     continue
 

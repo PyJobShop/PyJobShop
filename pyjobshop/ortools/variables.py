@@ -53,7 +53,7 @@ class TaskVar:
 
 
 @dataclass
-class AltTaskVar:
+class TaskAltVar:
     """
     Variables that represent an assignment of a task to a machine.
 
@@ -90,8 +90,8 @@ class SequenceVar:
 
     Parameters
     ----------
-    alt_tasks
-        The alternative task variables in the sequence.
+    task_alts
+        The task alternatives variables in the sequence.
     starts
         The start literals for each task.
     ends
@@ -107,7 +107,7 @@ class SequenceVar:
         circuit constraint must be added for this machine. Default ``False``.
     """
 
-    alt_tasks: list[AltTaskVar]
+    task_alts: list[TaskAltVar]
     starts: list[BoolVarT] = field(default_factory=list)
     ends: list[BoolVarT] = field(default_factory=list)
     ranks: list[IntVar] = field(default_factory=list)
@@ -122,7 +122,7 @@ class SequenceVar:
             return
 
         self.is_active = True
-        num_tasks = len(self.alt_tasks)
+        num_tasks = len(self.task_alts)
 
         # Start and end literals define whether the corresponding interval
         # is first or last in the sequence, respectively.
@@ -201,16 +201,16 @@ def task_variables(m: CpModel, data: ProblemData) -> list[TaskVar]:
     return variables
 
 
-def alternative_task_variables(
+def task_alternatives_variables(
     m: CpModel, data: ProblemData
-) -> dict[tuple[int, int], AltTaskVar]:
+) -> dict[tuple[int, int], TaskAltVar]:
     """
     Creates an optional interval variable for each eligible task and machine
     pair.
 
     Returns
     -------
-    dict[tuple[int, int], AltTaskVar]
+    dict[tuple[int, int], TaskAltVar]
         A dictionary that maps each task index and machine index pair to its
         corresponding alternative task variable.
     """
@@ -239,7 +239,7 @@ def alternative_task_variables(
         interval = m.new_optional_interval_var(
             start, duration, end, is_present, f"{name}_interval"
         )
-        variables[task_idx, machine_idx] = AltTaskVar(
+        variables[task_idx, machine_idx] = TaskAltVar(
             task_idx=task_idx,
             interval=interval,
             start=start,
@@ -254,7 +254,7 @@ def alternative_task_variables(
 def sequence_variables(
     m: CpModel,
     data: ProblemData,
-    alt_task_vars: dict[tuple[int, int], AltTaskVar],
+    task_alt_vars: dict[tuple[int, int], TaskAltVar],
 ) -> list[SequenceVar]:
     """
     Creates a sequence variable for each machine. Sequence variables are used
@@ -266,7 +266,7 @@ def sequence_variables(
 
     for machine in range(data.num_machines):
         tasks = data.machine2tasks[machine]
-        alt_vars = [alt_task_vars[task, machine] for task in tasks]
+        alt_vars = [task_alt_vars[task, machine] for task in tasks]
         variables.append(SequenceVar(alt_vars))
 
     return variables

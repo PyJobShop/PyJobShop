@@ -17,17 +17,17 @@ from .objectives import (
     total_tardiness,
 )
 from .variables import (
-    AltTaskVar,
-    alternative_task_variables,
+    TaskAltVar,
     job_variables,
     sequence_variables,
+    task_alternatives_variables,
     task_variables,
 )
 
 
 def create_model(
     data: ProblemData,
-) -> tuple[CpModel, dict[tuple[int, int], AltTaskVar]]:
+) -> tuple[CpModel, dict[tuple[int, int], TaskAltVar]]:
     """
     Creates an OR-Tools model for the given problem.
 
@@ -38,15 +38,15 @@ def create_model(
 
     Returns
     -------
-    tuple[CpModel, dict[tuple[int, int], AltTaskVar]]
-        The constraint programming model and the alternative task variables.
+    tuple[CpModel, dict[tuple[int, int], TaskAltVar]]
+        The constraint programming model and the task alternatives variables.
     """
     model = CpModel()
 
     job_vars = job_variables(model, data)
     task_vars = task_variables(model, data)
-    alt_task_vars = alternative_task_variables(model, data)
-    seq_vars = sequence_variables(model, data, alt_task_vars)
+    task_alt_vars = task_alternatives_variables(model, data)
+    seq_vars = sequence_variables(model, data, task_alt_vars)
 
     if data.objective == "makespan":
         makespan(model, data, task_vars)
@@ -60,12 +60,12 @@ def create_model(
         raise ValueError(f"Unknown objective: {data.objective}")
 
     job_spans_tasks(model, data, job_vars, task_vars)
-    select_one_task_alternative(model, data, task_vars, alt_task_vars)
+    select_one_task_alternative(model, data, task_vars, task_alt_vars)
     no_overlap_machines(model, data, seq_vars)
     activate_setup_times(model, data, seq_vars)
-    task_graph(model, data, task_vars, alt_task_vars, seq_vars)
+    task_graph(model, data, task_vars, task_alt_vars, seq_vars)
 
     # Must be called last to ensure that sequence constriants are enforced!
     enforce_circuit(model, data, seq_vars)
 
-    return model, alt_task_vars
+    return model, task_alt_vars
