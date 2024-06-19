@@ -40,6 +40,16 @@ def test_solve_initial_solution(small, capsys):
     # TODO CP Optimizer?
 
 
+def test_cp_opt(small, capsys):
+    init = Solution([TaskData(0, 0, 1, 1), TaskData(0, 1, 2, 3)])
+
+    solve(small, "cpoptimizer", log=True, initial_solution=init)
+    printed = capsys.readouterr().out
+
+    msg = "Starting point is complete and consistent with constraints."
+    assert_(msg in printed)
+
+
 def test_solve_initial_solution_setup(capsys):
     init = Solution([TaskData(0, 0, 2, 2), TaskData(0, 6, 2, 8)])
     model = Model()
