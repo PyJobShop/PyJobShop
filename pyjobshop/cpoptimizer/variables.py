@@ -4,8 +4,6 @@ from docplex.cp.model import CpoModel
 from pyjobshop.ProblemData import ProblemData
 from pyjobshop.utils import compute_min_max_durations
 
-AssignVars = dict[tuple[int, int], CpoIntervalVar]
-
 
 def job_variables(m: CpoModel, data: ProblemData) -> list[CpoIntervalVar]:
     """
@@ -50,10 +48,18 @@ def task_variables(m: CpoModel, data: ProblemData) -> list[CpoIntervalVar]:
     return variables
 
 
-def assignment_variables(m: CpoModel, data: ProblemData) -> AssignVars:
+def alt_task_variables(
+    m: CpoModel, data: ProblemData
+) -> dict[tuple[int, int], CpoIntervalVar]:
     """
-    Creates an optional interval variable for each task and eligible
-    machine pair.
+    Creates an optional interval variable for each eligible task and machine
+    pair.
+
+    Returns
+    -------
+    dict[tuple[int, int], CpoIntervalVar]
+        A dictionary that maps each task index and machine index pair to its
+        corresponding interval variable.
     """
     variables = {}
 
@@ -79,7 +85,9 @@ def assignment_variables(m: CpoModel, data: ProblemData) -> AssignVars:
 
 
 def sequence_variables(
-    m: CpoModel, data: ProblemData, assign: AssignVars
+    m: CpoModel,
+    data: ProblemData,
+    alt_task_var: dict[tuple[int, int], CpoIntervalVar],
 ) -> list[CpoSequenceVar]:
     """
     Creates a sequence variable for each machine, using the corresponding
@@ -88,7 +96,7 @@ def sequence_variables(
     variables = []
 
     for machine, tasks in enumerate(data.machine2tasks):
-        intervals = [assign[task, machine] for task in tasks]
+        intervals = [alt_task_var[task, machine] for task in tasks]
         variables.append(m.sequence_var(name=f"S{machine}", vars=intervals))
 
     return variables

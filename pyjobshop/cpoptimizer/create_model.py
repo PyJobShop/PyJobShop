@@ -15,7 +15,7 @@ from .objectives import (
     total_tardiness,
 )
 from .variables import (
-    assignment_variables,
+    alt_task_variables,
     job_variables,
     sequence_variables,
     task_variables,
@@ -40,8 +40,8 @@ def create_model(data: ProblemData) -> CpoModel:
 
     job_vars = job_variables(model, data)
     task_vars = task_variables(model, data)
-    assign_vars = assignment_variables(model, data)
-    seq_vars = sequence_variables(model, data, assign_vars)
+    alt_vars = alt_task_variables(model, data)
+    seq_vars = sequence_variables(model, data, alt_vars)
 
     if data.objective == "makespan":
         makespan(model, data, task_vars)
@@ -56,7 +56,7 @@ def create_model(data: ProblemData) -> CpoModel:
 
     job_spans_tasks(model, data, job_vars, task_vars)
     no_overlap_and_setup_times(model, data, seq_vars)
-    select_one_task_alternative(model, data, task_vars, assign_vars)
-    task_graph(model, data, task_vars, assign_vars, seq_vars)
+    select_one_task_alternative(model, data, task_vars, alt_vars)
+    task_graph(model, data, task_vars, alt_vars, seq_vars)
 
     return model

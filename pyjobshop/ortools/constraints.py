@@ -5,11 +5,11 @@ from ortools.sat.python.cp_model import CpModel
 
 from pyjobshop.ProblemData import ProblemData
 
-from .variables import AssignmentVar, JobVar, SequenceVar, TaskVar
+from .variables import AltTaskVar, JobVar, SequenceVar, TaskVar
 
 JobVars = list[JobVar]
 TaskVars = list[TaskVar]
-AssignmentVars = dict[tuple[int, int], AssignmentVar]
+AltTaskVars = dict[tuple[int, int], AltTaskVar]
 SequenceVars = list[SequenceVar]
 
 
@@ -32,10 +32,10 @@ def select_one_task_alternative(
     m: CpModel,
     data: ProblemData,
     task_vars: TaskVars,
-    assign_vars: AssignmentVars,
+    alt_task_vars: AltTaskVars,
 ):
     """
-    Selects one optional (assignment) interval for each task, ensuring that
+    Selects one optional interval for each alternative task, ensuring that
     each task is scheduled on exactly one machine.
     """
     for task in range(data.num_tasks):
@@ -43,7 +43,7 @@ def select_one_task_alternative(
 
         for machine in data.task2machines[task]:
             main = task_vars[task]
-            opt = assign_vars[task, machine]
+            opt = alt_task_vars[task, machine]
             is_present = opt.is_present
             presences.append(is_present)
 
@@ -62,7 +62,7 @@ def no_overlap_machines(m: CpModel, data: ProblemData, seq_vars: SequenceVars):
     intervals in a sequence variable are overlapping.
     """
     for machine in range(data.num_machines):
-        m.add_no_overlap([var.interval for var in seq_vars[machine].tasks])
+        m.add_no_overlap([var.interval for var in seq_vars[machine].alt_tasks])
 
 
 def activate_setup_times(
@@ -84,7 +84,7 @@ def task_graph(
     m: CpModel,
     data: ProblemData,
     task_vars: TaskVars,
-    assign_vars: AssignmentVars,
+    alt_task_vars: AltTaskVars,
     seq_vars: SequenceVars,
 ):
     """
@@ -124,15 +124,15 @@ def task_graph(
                 continue
 
             sequence = seq_vars[machine]
-            var1 = assign_vars[task1, machine]
-            var2 = assign_vars[task2, machine]
+            var1 = alt_task_vars[task1, machine]
+            var2 = alt_task_vars[task2, machine]
 
             for constraint in data.constraints[task1, task2]:
                 if constraint == "previous":
                     sequence.activate(m)
 
-                    idx1 = sequence.tasks.index(var1)
-                    idx2 = sequence.tasks.index(var2)
+                    idx1 = sequence.alt_tasks.index(var1)
+                    idx2 = sequence.alt_tasks.index(var2)
                     arc = sequence.arcs[idx1, idx2]
 
                     # arc <=> var1.is_present & var2.is_present
@@ -151,8 +151,8 @@ def task_graph(
                     m.add_implication(both_present, var2.is_present)
 
                     # Schedule var1 before var2 when both are present.
-                    idx1 = sequence.tasks.index(var1)
-                    idx2 = sequence.tasks.index(var2)
+                    idx1 = sequence.alt_tasks.index(var1)
+                    idx2 = sequence.alt_tasks.index(var2)
                     rank1 = sequence.ranks[idx1]
                     rank2 = sequence.ranks[idx2]
 
@@ -178,14 +178,14 @@ def enforce_circuit(m: CpModel, data: ProblemData, seq_vars: SequenceVars):
             # circuit constraints.
             continue
 
-        assign_vars = sequence.tasks
+        alt_task_vars = sequence.alt_tasks
         starts = sequence.starts
         ends = sequence.ends
         ranks = sequence.ranks
         arcs = sequence.arcs
         circuit = []
 
-        for idx1, var1 in enumerate(assign_vars):
+        for idx1, var1 in enumerate(alt_task_vars):
             # Set initial arcs from the dummy node (-1) to/from a task.
             start = starts[idx1]
             end = ends[idx1]
@@ -201,7 +201,7 @@ def enforce_circuit(m: CpModel, data: ProblemData, seq_vars: SequenceVars):
             circuit.append([idx1, idx1, ~var1.is_present])
             m.add(rank == -1).only_enforce_if(~var1.is_present)
 
-            for idx2, var2 in enumerate(assign_vars):
+            for idx2, var2 in enumerate(alt_task_vars):
                 if idx1 == idx2:
                     continue
 
