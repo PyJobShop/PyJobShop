@@ -9,7 +9,7 @@ import numpy as np
 from pyjobshop.constants import MAX_VALUE
 
 _CONSTRAINTS_TYPE = dict[tuple[int, int], list["Constraint"]]
-T = TypeVar("T")
+_T = TypeVar("_T")
 
 
 class Job:
@@ -188,7 +188,7 @@ class Task:
 @enum_tools.documentation.document_enum
 class Objective(str, Enum):
     """
-    Choices for objective functions (to be minimized).
+    Choices for objective functions.
     """
 
     #: Minimize the maximum completion time of all jobs.
@@ -273,7 +273,7 @@ class ProblemData:
     horizon
         The horizon value. Default ``MAX_VALUE``.
     objective
-        The objective function to be minimized. Default is the makespan.
+        The objective function. Default is minimizing the makespan.
     """
 
     def __init__(
@@ -358,21 +358,45 @@ class ProblemData:
         objective: Optional[Objective] = None,
     ) -> "ProblemData":
         """
-        Returns a new instance of the problem data with updated values, if
-        provided.
+        Returns a new ProblemData instance with possibly replaced data. If a
+        parameter is not provided, the original data is deepcopied instead.
+
+        Parameters
+        ----------
+        jobs
+            Optional list of jobs.
+        machines
+            Optional list of machines.
+        tasks
+            Optional list of tasks.
+        processing_times
+            Optional processing times of tasks on machines.
+        constraints
+            Optional constraints between tasks.
+        setup_times
+            Optional sequence-dependent setup times.
+        horizon
+            Optional horizon value.
+        objective
+            Optional objective function.
+
+        Returns
+        -------
+        ProblemData
+            A new ProblemData instance with possibly replaced data.
         """
 
-        def _copy_if_none(value: Optional[T], default: T) -> T:
+        def _deepcopy_if_none(value: Optional[_T], default: _T) -> _T:
             return value if value is not None else deepcopy(default)
 
-        jobs = _copy_if_none(jobs, self.jobs)
-        machines = _copy_if_none(machines, self.machines)
-        tasks = _copy_if_none(tasks, self.tasks)
-        proc_times = _copy_if_none(processing_times, self.processing_times)
-        constraints = _copy_if_none(constraints, self.constraints)
-        setup_times = _copy_if_none(setup_times, self.setup_times)
-        horizon = _copy_if_none(horizon, self.horizon)
-        objective = _copy_if_none(objective, self.objective)
+        jobs = _deepcopy_if_none(jobs, self.jobs)
+        machines = _deepcopy_if_none(machines, self.machines)
+        tasks = _deepcopy_if_none(tasks, self.tasks)
+        proc_times = _deepcopy_if_none(processing_times, self.processing_times)
+        constraints = _deepcopy_if_none(constraints, self.constraints)
+        setup_times = _deepcopy_if_none(setup_times, self.setup_times)
+        horizon = _deepcopy_if_none(horizon, self.horizon)
+        objective = _deepcopy_if_none(objective, self.objective)
 
         return ProblemData(
             jobs=jobs,
@@ -463,12 +487,12 @@ class ProblemData:
     @property
     def objective(self) -> Objective:
         """
-        The objective function to be minimized.
+        The objective function.
 
         Returns
         -------
         Objective
-            The objective function to be minimized.
+            The objective function.
         """
         return self._objective
 
