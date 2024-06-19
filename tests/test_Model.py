@@ -69,14 +69,23 @@ def test_model_to_data():
     assert_equal(data.objective, Objective.TOTAL_COMPLETION_TIME)
 
 
-def test_model_from_data_to_data(small):
+def test_from_data(fjsp):
     """
-    Tests that calling ``Model.data()`` returns the same data as the input.
+    Tests that initializing from a data instance returns a valid model
+    representation of that instance.
     """
-    data = small
+    data = fjsp
     model = Model.from_data(data)
+    m_data = model.data()
 
-    assert_equal(model.data(), data)
+    assert_equal(m_data.num_jobs, data.num_jobs)
+    assert_equal(m_data.num_machines, data.num_machines)
+    assert_equal(m_data.num_tasks, data.num_tasks)
+    assert_equal(m_data.processing_times, data.processing_times)
+    assert_equal(m_data.constraints, data.constraints)
+    assert_equal(m_data.setup_times, data.setup_times)
+    assert_equal(m_data.horizon, data.horizon)
+    assert_equal(m_data.objective, data.objective)
 
 
 def test_model_to_data_default_values():

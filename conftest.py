@@ -17,6 +17,58 @@ def small():
     return model.data()
 
 
+@pytest.fixture(scope="session")
+def fjsp():
+    """
+    Solve a small flexible jobshop problem instance.
+    """
+    DATA = [  # task = (processing_time, machine_id)
+        [
+            [(3, 0), (1, 1), (5, 2)],  # task 0 with 3 alternatives
+            [(2, 0), (4, 1), (6, 2)],  # task 1 with 3 alternatives
+            [(2, 0), (3, 1), (1, 2)],  # task 2 with 3 alternatives
+        ],
+        [
+            [(2, 0), (3, 1), (4, 2)],
+            [(1, 0), (5, 1), (4, 2)],
+            [(2, 0), (1, 1), (4, 2)],
+        ],
+        [
+            [(2, 0), (1, 1), (4, 2)],
+            [(2, 0), (3, 1), (4, 2)],
+            [(3, 0), (1, 1), (5, 2)],
+        ],
+    ]
+
+    model = Model()
+
+    machines = [model.add_machine() for _ in range(3)]
+    jobs = {}
+    tasks = {}
+
+    for job_idx, job_data in enumerate(DATA):
+        jobs[job_idx] = model.add_job()
+
+        for idx in range(len(job_data)):
+            task_idx = (job_idx, idx)
+            tasks[task_idx] = model.add_task(jobs[job_idx])
+
+    for job_idx, job_data in enumerate(DATA):
+        for idx, task_data in enumerate(job_data):
+            task = tasks[(job_idx, idx)]
+
+            for duration, machine_idx in task_data:
+                machine = machines[machine_idx]
+                model.add_processing_time(task, machine, duration)
+
+        for idx in range(len(job_data) - 1):
+            first = tasks[(job_idx, idx)]
+            second = tasks[(job_idx, idx + 1)]
+            model.add_end_before_start(first, second)
+
+    return model.data()
+
+
 def pytest_addoption(parser):
     parser.addoption(
         "--solvers",
