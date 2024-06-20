@@ -18,10 +18,10 @@ from .objectives import (
     total_tardiness,
 )
 from .variables import (
-    assignment_variables,
     job_variables,
     sequence_variables,
     set_initial_solution,
+    task_alternative_variables,
     task_variables,
 )
 
@@ -49,12 +49,12 @@ def create_model(
 
     job_vars = job_variables(model, data)
     task_vars = task_variables(model, data)
-    assign_vars = assignment_variables(model, data)
-    seq_vars = sequence_variables(model, data, assign_vars)
+    task_alt_vars = task_alternative_variables(model, data)
+    seq_vars = sequence_variables(model, data, task_alt_vars)
 
     if initial_solution is not None:
         set_initial_solution(
-            model, data, initial_solution, job_vars, task_vars, assign_vars
+            model, data, initial_solution, job_vars, task_vars, task_alt_vars
         )
 
     if data.objective == "makespan":
@@ -70,7 +70,7 @@ def create_model(
 
     job_spans_tasks(model, data, job_vars, task_vars)
     no_overlap_and_setup_times(model, data, seq_vars)
-    select_one_task_alternative(model, data, task_vars, assign_vars)
-    task_graph(model, data, task_vars, assign_vars, seq_vars)
+    select_one_task_alternative(model, data, task_vars, task_alt_vars)
+    task_graph(model, data, task_vars, task_alt_vars, seq_vars)
 
     return model

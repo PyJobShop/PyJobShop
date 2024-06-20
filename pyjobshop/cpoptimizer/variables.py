@@ -5,8 +5,6 @@ from pyjobshop.ProblemData import ProblemData
 from pyjobshop.Solution import Solution
 from pyjobshop.utils import compute_min_max_durations
 
-AssignVars = dict[tuple[int, int], CpoIntervalVar]
-
 
 def job_variables(m: CpoModel, data: ProblemData) -> list[CpoIntervalVar]:
     """
@@ -51,10 +49,18 @@ def task_variables(m: CpoModel, data: ProblemData) -> list[CpoIntervalVar]:
     return variables
 
 
-def assignment_variables(m: CpoModel, data: ProblemData) -> AssignVars:
+def task_alternative_variables(
+    m: CpoModel, data: ProblemData
+) -> dict[tuple[int, int], CpoIntervalVar]:
     """
-    Creates an optional interval variable for each task and eligible
-    machine pair.
+    Creates an optional interval variable for each eligible task and machine
+    pair.
+
+    Returns
+    -------
+    dict[tuple[int, int], CpoIntervalVar]
+        A dictionary that maps each task index and machine index pair to its
+        corresponding interval variable.
     """
     variables = {}
 
@@ -80,16 +86,18 @@ def assignment_variables(m: CpoModel, data: ProblemData) -> AssignVars:
 
 
 def sequence_variables(
-    m: CpoModel, data: ProblemData, assign: AssignVars
+    m: CpoModel,
+    data: ProblemData,
+    task_alt_vars: dict[tuple[int, int], CpoIntervalVar],
 ) -> list[CpoSequenceVar]:
     """
     Creates a sequence variable for each machine, using the corresponding
-    assignment variables.
+    task alternative variables.
     """
     variables = []
 
     for machine, tasks in enumerate(data.machine2tasks):
-        intervals = [assign[task, machine] for task in tasks]
+        intervals = [task_alt_vars[task, machine] for task in tasks]
         variables.append(m.sequence_var(name=f"S{machine}", vars=intervals))
 
     return variables
@@ -101,7 +109,7 @@ def set_initial_solution(
     solution: Solution,
     job_vars: list[CpoIntervalVar],
     task_vars: list[CpoIntervalVar],
-    assign_vars: AssignVars,
+    task_alt_vars: dict[tuple[int, int], CpoIntervalVar],
 ):
     """
     Sets an starting solution to the model.
@@ -129,7 +137,7 @@ def set_initial_solution(
             size=sol_task.duration,
         )
 
-    for (task_idx, machine_idx), var in assign_vars.items():
+    for (task_idx, machine_idx), var in task_alt_vars.items():
         sol_task = solution.tasks[task_idx]
 
         stp.add_interval_var_solution(
