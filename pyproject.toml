@@ -107,6 +107,7 @@ addopts = "--cov=. --cov-report=xml"
 omit = [
     "docs/*",
     "tests/*",
+    "cpo_config.py",
     "pyjobshop/cpoptimizer/*",
     "pyjobshop/ortools/*",
     "pyjobshop/cli.py"

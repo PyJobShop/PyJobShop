@@ -1,6 +1,9 @@
+from typing import Optional
+
 from docplex.cp.model import CpoModel
 
 from pyjobshop.ProblemData import ProblemData
+from pyjobshop.Solution import Solution
 
 from .constraints import (
     job_spans_tasks,
@@ -17,12 +20,16 @@ from .objectives import (
 from .variables import (
     job_variables,
     sequence_variables,
+    set_initial_solution,
     task_alternative_variables,
     task_variables,
 )
 
 
-def create_model(data: ProblemData) -> CpoModel:
+def create_model(
+    data: ProblemData,
+    initial_solution: Optional[Solution] = None,
+) -> CpoModel:
     """
     Creates a CP Optimizer model for the given problem data.
 
@@ -30,6 +37,8 @@ def create_model(data: ProblemData) -> CpoModel:
     ----------
     data
         The problem data instance.
+    initial_solution
+        An initial solution to start the solver from. Default is no solution.
 
     Returns
     -------
@@ -42,6 +51,11 @@ def create_model(data: ProblemData) -> CpoModel:
     task_vars = task_variables(model, data)
     task_alt_vars = task_alternative_variables(model, data)
     seq_vars = sequence_variables(model, data, task_alt_vars)
+
+    if initial_solution is not None:
+        set_initial_solution(
+            model, data, initial_solution, job_vars, task_vars, task_alt_vars
+        )
 
     if data.objective == "makespan":
         makespan(model, data, task_vars)
