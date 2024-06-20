@@ -139,11 +139,10 @@ def set_initial_solution(
 
     for (task_idx, machine_idx), var in task_alt_vars.items():
         sol_task = solution.tasks[task_idx]
-        is_present = machine_idx == sol_task.machine
 
         stp.add_interval_var_solution(
             var,
-            presence=is_present,
+            presence=machine_idx == sol_task.machine,
             start=sol_task.start,
             end=sol_task.end,
             size=sol_task.duration,
