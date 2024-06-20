@@ -35,7 +35,9 @@ def test_solve_initial_solution(small, capsys):
     )
     printed = capsys.readouterr().out
 
-    assert_("The solution hint is complete and is feasible." in printed)
+    # Not all variables are hinted (only job/task/task_alt) so this message
+    # is correct.
+    assert_("The solution hint is incomplete" in printed)
 
     # TODO CP Optimizer?
 
@@ -72,14 +74,14 @@ def test_solve_initial_solution_setup(capsys):
     )
     printed = capsys.readouterr().out
 
-    assert_("The solution hint is complete and is feasible." in printed)
+    assert_("The solution hint is incomplete" in printed)
     assert_equal(result.objective, 8)
 
     # Don't fix
     result = solve(model.data(), "ortools", log=True, initial_solution=init)
     printed = capsys.readouterr().out
 
-    assert_("The solution hint is complete and is feasible." in printed)
+    assert_("The solution hint is incomplete" in printed)
     assert_equal(result.objective, 6)
 
 

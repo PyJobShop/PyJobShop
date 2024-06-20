@@ -112,7 +112,7 @@ def set_initial_solution(
     task_alt_vars: dict[tuple[int, int], CpoIntervalVar],
 ):
     """
-    Sets an starting solution to the model.
+    Sets a starting point for the model based on the provided solution.
     """
     stp = m.create_empty_solution()
 
