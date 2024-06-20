@@ -57,8 +57,6 @@ def solve(
     for key, value in params.items():
         setattr(cp_solver.parameters, key, value)
 
-    cp_solver.log_callback = print  # TODO how to enable this only in tests?
-
     status_code = cp_solver.solve(cp_model)
     status = cp_solver.status_name(status_code)
     objective = cp_solver.objective_value
