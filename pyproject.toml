@@ -27,8 +27,7 @@ cplex = { version = "22.1.1.0", optional = true }
 
 
 [tool.poetry.extras]
-# cpoptimizer = ["cplex", "docplex"]
-cpoptimizer = ["docplex"]
+cpoptimizer = ["cplex", "docplex"]
 
 
 [tool.poetry.group.dev.dependencies]
