@@ -62,7 +62,7 @@ class Model:
     @property
     def objective(self) -> Objective:
         """
-        Returns the objective function to be minimized in this model.
+        Returns the objective function in this model.
         """
         return self._objective
 
@@ -454,7 +454,7 @@ class Model:
 
     def set_objective(self, objective: Objective):
         """
-        Sets the objective to be minimized in this model.
+        Sets the objective in this model.
 
         Parameters
         ----------
