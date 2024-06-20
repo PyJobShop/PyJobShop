@@ -280,7 +280,6 @@ def add_hint_to_vars(
     job_vars: list[JobVar],
     task_vars: list[TaskVar],
     task_alt_vars: dict[tuple[int, int], TaskAltVar],
-    seq_vars: list[SequenceVar],
 ):
     """
     Adds hints to variables based on the given solution.
@@ -312,32 +311,3 @@ def add_hint_to_vars(
         m.add_hint(var.duration, sol_task.duration)
         m.add_hint(var.end, sol_task.end)
         m.add_hint(var.is_present, machine_idx == sol_task.machine)
-
-    # Compute solution sequences.
-    sequences_: list[list[tuple]] = [[] for _ in range(data.num_machines)]
-    for idx, task in enumerate(solution.tasks):
-        sequences_[task.machine].append((task.start, idx))
-
-    sequences = [[idx for _, idx in seq] for seq in sequences_]
-
-    for idx in range(data.num_machines):
-        seq_var = seq_vars[idx]  # sequence variable for the machine
-        seq_tasks = seq_var.task_alts  # assignment variables in the sequence
-        seq = sequences[idx]  # sequence of _scheduled_ task indices
-
-        if not seq_var.is_active:
-            continue
-
-        for idx in range(len(seq_tasks)):
-            task_idx = seq_tasks[idx].task_idx
-            rank = seq.index(task_idx) if task_idx in seq else -1
-
-            m.add_hint(seq_var.ranks[idx], rank)
-            m.add_hint(seq_var.starts[idx], rank == 0)
-            m.add_hint(seq_var.ends[idx], rank == len(seq) - 1)
-
-        arcs = [(seq[idx], seq[idx + 1]) for idx in range(len(seq) - 1)]
-
-        for (i, j), var in seq_var.arcs.items():
-            task1, task2 = seq_tasks[i].task_idx, seq_tasks[j].task_idx
-            m.add_hint(var, (task1, task2) in arcs)

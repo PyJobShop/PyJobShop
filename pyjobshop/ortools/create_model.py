@@ -55,8 +55,13 @@ def create_model(
     task_alt_vars = task_alternative_variables(model, data)
     seq_vars = sequence_variables(model, data, task_alt_vars)
 
+    if initial_solution is not None:
+        add_hint_to_vars(
+            model, data, initial_solution, job_vars, task_vars, task_alt_vars
+        )
+
     if data.objective == "makespan":
-        makespan(model, data, task_vars, initial_solution)
+        makespan(model, data, task_vars)
     elif data.objective == "tardy_jobs":
         tardy_jobs(model, data, job_vars)
     elif data.objective == "total_tardiness":
@@ -74,16 +79,5 @@ def create_model(
 
     # From here onwards we know which sequence constraints are active.
     enforce_circuit(model, data, seq_vars)
-
-    if initial_solution is not None:
-        add_hint_to_vars(
-            model,
-            data,
-            initial_solution,
-            job_vars,
-            task_vars,
-            task_alt_vars,
-            seq_vars,
-        )
 
     return model, task_alt_vars
