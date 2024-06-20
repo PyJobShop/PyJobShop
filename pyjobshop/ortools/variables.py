@@ -53,7 +53,7 @@ class TaskVar:
 
 
 @dataclass
-class AssignmentVar:
+class TaskAltVar:
     """
     Variables that represent an assignment of a task to a machine.
 
@@ -62,7 +62,7 @@ class AssignmentVar:
     task_idx
         The index of the task.
     interval
-        The interval variable representing the assignment of the task.
+        The optional interval variable representing the assignment of the task.
     start
         The start time variable of the interval.
     duration
@@ -84,14 +84,14 @@ class AssignmentVar:
 @dataclass
 class SequenceVar:
     """
-    Represents a sequence of tasks assigned to a machine. Relevant sequence
-    variables are lazily generated when activated by constraints that call
-    the ``activate`` method.
+    Represents a sequence of interval variables of task alternatives. Relevant
+    sequence variables are lazily generated when activated by constraints that
+    call the ``activate`` method.
 
     Parameters
     ----------
-    tasks
-        The task variables in the sequence.
+    task_alts
+        The task alternative variables in the sequence.
     starts
         The start literals for each task.
     ends
@@ -107,7 +107,7 @@ class SequenceVar:
         circuit constraint must be added for this machine. Default ``False``.
     """
 
-    tasks: list[AssignmentVar]
+    task_alts: list[TaskAltVar]
     starts: list[BoolVarT] = field(default_factory=list)
     ends: list[BoolVarT] = field(default_factory=list)
     ranks: list[IntVar] = field(default_factory=list)
@@ -122,7 +122,7 @@ class SequenceVar:
             return
 
         self.is_active = True
-        num_tasks = len(self.tasks)
+        num_tasks = len(self.task_alts)
 
         # Start and end literals define whether the corresponding interval
         # is first or last in the sequence, respectively.
@@ -201,11 +201,18 @@ def task_variables(m: CpModel, data: ProblemData) -> list[TaskVar]:
     return variables
 
 
-def assignment_variables(
+def task_alternative_variables(
     m: CpModel, data: ProblemData
-) -> dict[tuple[int, int], AssignmentVar]:
+) -> dict[tuple[int, int], TaskAltVar]:
     """
-    Creates an interval variable for each task and eligible machine pair.
+    Creates an optional interval variable for each eligible task and machine
+    pair.
+
+    Returns
+    -------
+    dict[tuple[int, int], TaskAltVar]
+        A dictionary that maps each task index and machine index pair to its
+        corresponding task alternative variable.
     """
     variables = {}
 
@@ -232,7 +239,7 @@ def assignment_variables(
         interval = m.new_optional_interval_var(
             start, duration, end, is_present, f"{name}_interval"
         )
-        variables[task_idx, machine_idx] = AssignmentVar(
+        variables[task_idx, machine_idx] = TaskAltVar(
             task_idx=task_idx,
             interval=interval,
             start=start,
@@ -245,7 +252,9 @@ def assignment_variables(
 
 
 def sequence_variables(
-    m: CpModel, data: ProblemData, assign: dict[tuple[int, int], AssignmentVar]
+    m: CpModel,
+    data: ProblemData,
+    task_alt_vars: dict[tuple[int, int], TaskAltVar],
 ) -> list[SequenceVar]:
     """
     Creates a sequence variable for each machine. Sequence variables are used
@@ -257,7 +266,7 @@ def sequence_variables(
 
     for machine in range(data.num_machines):
         tasks = data.machine2tasks[machine]
-        assign_vars = [assign[task, machine] for task in tasks]
-        variables.append(SequenceVar(assign_vars))
+        alt_vars = [task_alt_vars[task, machine] for task in tasks]
+        variables.append(SequenceVar(alt_vars))
 
     return variables
