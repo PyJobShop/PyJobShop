@@ -1,6 +1,9 @@
+from typing import Optional
+
 from ortools.sat.python.cp_model import CpModel
 
 from pyjobshop.ProblemData import ProblemData
+from pyjobshop.Solution import Solution
 
 from .constraints import (
     activate_setup_times,
@@ -17,17 +20,19 @@ from .objectives import (
     total_tardiness,
 )
 from .variables import (
-    AssignmentVar,
-    assignment_variables,
+    TaskAltVar,
+    add_hint_to_vars,
     job_variables,
     sequence_variables,
+    task_alternative_variables,
     task_variables,
 )
 
 
 def create_model(
     data: ProblemData,
-) -> tuple[CpModel, dict[tuple[int, int], AssignmentVar]]:
+    initial_solution: Optional[Solution] = None,
+) -> tuple[CpModel, dict[tuple[int, int], TaskAltVar]]:
     """
     Creates an OR-Tools model for the given problem.
 
@@ -35,18 +40,25 @@ def create_model(
     ----------
     data
         The problem data instance.
+    initial_solution
+        An initial solution to start the solver from. Default is no solution.
 
     Returns
     -------
-    tuple[CpModel, dict[tuple[int, int], AssignmentVar]]
-        The constraint programming model and the assignment variables.
+    tuple[CpModel, dict[tuple[int, int], TaskAltVar]]
+        The constraint programming model and the task alternative variables.
     """
     model = CpModel()
 
     job_vars = job_variables(model, data)
     task_vars = task_variables(model, data)
-    assign_vars = assignment_variables(model, data)
-    seq_vars = sequence_variables(model, data, assign_vars)
+    task_alt_vars = task_alternative_variables(model, data)
+    seq_vars = sequence_variables(model, data, task_alt_vars)
+
+    if initial_solution is not None:
+        add_hint_to_vars(
+            model, data, initial_solution, job_vars, task_vars, task_alt_vars
+        )
 
     if data.objective == "makespan":
         makespan(model, data, task_vars)
@@ -60,12 +72,12 @@ def create_model(
         raise ValueError(f"Unknown objective: {data.objective}")
 
     job_spans_tasks(model, data, job_vars, task_vars)
-    select_one_task_alternative(model, data, task_vars, assign_vars)
+    select_one_task_alternative(model, data, task_vars, task_alt_vars)
     no_overlap_machines(model, data, seq_vars)
     activate_setup_times(model, data, seq_vars)
-    task_graph(model, data, task_vars, assign_vars, seq_vars)
+    task_graph(model, data, task_vars, task_alt_vars, seq_vars)
 
-    # Must be called last to ensure that sequence constriants are enforced!
+    # From here onwards we know which sequence constraints are active.
     enforce_circuit(model, data, seq_vars)
 
-    return model, assign_vars
+    return model, task_alt_vars

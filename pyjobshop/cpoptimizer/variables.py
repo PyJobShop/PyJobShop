@@ -2,9 +2,8 @@ from docplex.cp.expression import CpoIntervalVar, CpoSequenceVar
 from docplex.cp.model import CpoModel
 
 from pyjobshop.ProblemData import ProblemData
+from pyjobshop.Solution import Solution
 from pyjobshop.utils import compute_min_max_durations
-
-AssignVars = dict[tuple[int, int], CpoIntervalVar]
 
 
 def job_variables(m: CpoModel, data: ProblemData) -> list[CpoIntervalVar]:
@@ -50,10 +49,18 @@ def task_variables(m: CpoModel, data: ProblemData) -> list[CpoIntervalVar]:
     return variables
 
 
-def assignment_variables(m: CpoModel, data: ProblemData) -> AssignVars:
+def task_alternative_variables(
+    m: CpoModel, data: ProblemData
+) -> dict[tuple[int, int], CpoIntervalVar]:
     """
-    Creates an optional interval variable for each task and eligible
-    machine pair.
+    Creates an optional interval variable for each eligible task and machine
+    pair.
+
+    Returns
+    -------
+    dict[tuple[int, int], CpoIntervalVar]
+        A dictionary that maps each task index and machine index pair to its
+        corresponding interval variable.
     """
     variables = {}
 
@@ -79,16 +86,66 @@ def assignment_variables(m: CpoModel, data: ProblemData) -> AssignVars:
 
 
 def sequence_variables(
-    m: CpoModel, data: ProblemData, assign: AssignVars
+    m: CpoModel,
+    data: ProblemData,
+    task_alt_vars: dict[tuple[int, int], CpoIntervalVar],
 ) -> list[CpoSequenceVar]:
     """
     Creates a sequence variable for each machine, using the corresponding
-    assignment variables.
+    task alternative variables.
     """
     variables = []
 
     for machine, tasks in enumerate(data.machine2tasks):
-        intervals = [assign[task, machine] for task in tasks]
+        intervals = [task_alt_vars[task, machine] for task in tasks]
         variables.append(m.sequence_var(name=f"S{machine}", vars=intervals))
 
     return variables
+
+
+def set_initial_solution(
+    m: CpoModel,
+    data: ProblemData,
+    solution: Solution,
+    job_vars: list[CpoIntervalVar],
+    task_vars: list[CpoIntervalVar],
+    task_alt_vars: dict[tuple[int, int], CpoIntervalVar],
+):
+    """
+    Sets a starting point for the model based on the provided solution.
+    """
+    stp = m.create_empty_solution()
+
+    for idx in range(data.num_jobs):
+        job = data.jobs[idx]
+        job_var = job_vars[idx]
+        sol_tasks = [solution.tasks[task] for task in job.tasks]
+
+        job_start = min(task.start for task in sol_tasks)
+        job_end = max(task.end for task in sol_tasks)
+
+        stp.add_interval_var_solution(job_var, start=job_start, end=job_end)
+
+    for idx in range(data.num_tasks):
+        task_var = task_vars[idx]
+        sol_task = solution.tasks[idx]
+
+        stp.add_interval_var_solution(
+            task_var,
+            start=sol_task.start,
+            end=sol_task.end,
+            size=sol_task.duration,
+        )
+
+    for (task_idx, machine_idx), var in task_alt_vars.items():
+        sol_task = solution.tasks[task_idx]
+
+        stp.add_interval_var_solution(
+            var,
+            presence=machine_idx == sol_task.machine,
+            start=sol_task.start,
+            end=sol_task.end,
+            size=sol_task.duration,
+        )
+
+    m.set_starting_point(stp)

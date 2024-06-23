@@ -8,7 +8,7 @@ from pyjobshop.ProblemData import ProblemData
 
 JobVars = list[CpoIntervalVar]
 TaskVars = list[CpoIntervalVar]
-AssignmentVars = dict[tuple[int, int], CpoIntervalVar]
+TaskAltVars = dict[tuple[int, int], CpoIntervalVar]
 SeqVars = list[CpoSequenceVar]
 
 
@@ -51,15 +51,15 @@ def select_one_task_alternative(
     m: CpoModel,
     data: ProblemData,
     task_vars: TaskVars,
-    assign_vars: AssignmentVars,
+    task_alt_vars: TaskAltVars,
 ):
     """
-    Selects one optional (assignment) interval for each task, ensuring that
+    Selects one optional interval for each task alternative, ensuring that
     each task is scheduled on exactly one machine.
     """
     for task in range(data.num_tasks):
         machines = data.task2machines[task]
-        optional = [assign_vars[task, machine] for machine in machines]
+        optional = [task_alt_vars[task, machine] for machine in machines]
         m.add(m.alternative(task_vars[task], optional))
 
 
@@ -67,7 +67,7 @@ def task_graph(
     m: CpoModel,
     data: ProblemData,
     task_vars: TaskVars,
-    assign_vars: AssignmentVars,
+    task_alt_vars: TaskAltVars,
     seq_vars: SeqVars,
 ):
     """
@@ -108,8 +108,8 @@ def task_graph(
             if task1 == task2 or (task1, task2) not in data.constraints:
                 continue
 
-            var1 = assign_vars[task1, machine]
-            var2 = assign_vars[task2, machine]
+            var1 = task_alt_vars[task1, machine]
+            var2 = task_alt_vars[task2, machine]
 
             for constraint in data.constraints[task1, task2]:
                 if constraint == "previous":

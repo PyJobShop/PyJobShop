@@ -3,6 +3,7 @@ from typing import Optional
 import pyjobshop.ortools
 from pyjobshop.ProblemData import ProblemData
 from pyjobshop.Result import Result
+from pyjobshop.Solution import Solution
 
 try:
     import pyjobshop.cpoptimizer
@@ -18,6 +19,7 @@ def solve(
     time_limit: float = float("inf"),
     log: bool = False,
     num_workers: Optional[int] = None,
+    initial_solution: Optional[Solution] = None,
     **kwargs,
 ) -> Result:
     """
@@ -37,6 +39,8 @@ def solve(
         The number of workers to use for parallel solving. If not specified,
         the default of the selected solver is used, which is typically the
         number of available CPU cores.
+    initial_solution
+        An initial solution to start the solver from. Default is no solution.
     kwargs
         Additional parameters passed to the solver.
 
@@ -53,11 +57,11 @@ def solve(
     """
     if solver == "ortools":
         return pyjobshop.ortools.solve(
-            data, time_limit, log, num_workers, **kwargs
+            data, time_limit, log, num_workers, initial_solution, **kwargs
         )
     elif solver == "cpoptimizer" and CPOPTIMIZER_AVAILABLE:
         return pyjobshop.cpoptimizer.solve(
-            data, time_limit, log, num_workers, **kwargs
+            data, time_limit, log, num_workers, initial_solution, **kwargs
         )
     elif solver == "cpoptimizer" and not CPOPTIMIZER_AVAILABLE:
         msg = (
