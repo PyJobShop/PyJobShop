@@ -14,7 +14,7 @@ It currently supports the following scheduling problems:
 - **Constraints:** release dates, deadlines, sequence-dependent setup times, no-wait, blocking, and precedence constraints.
 - **Objective functions:** minimizing makespan, total completion time, number of tardy jobs, and total tardiness.
 
-You can find PyJobShop on the Python Package Index under the name `pyjobshop`.
+You can find PyJobShop on the Python Package Index under the name ``pyjobshop``.
 To install it, simply run::
 
   pip install pyjobshop
