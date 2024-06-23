@@ -1,3 +1,3 @@
-Introduction to constraint programming
-======================================
+Introduction to CP
+==================
 TODO
