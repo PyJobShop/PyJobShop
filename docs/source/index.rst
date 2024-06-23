@@ -26,6 +26,7 @@ Contents
 .. toctree::
    :maxdepth: 1
    :caption: Getting started
+
    setup/intro_to_scheduling
    setup/intro_to_cp
    setup/installation

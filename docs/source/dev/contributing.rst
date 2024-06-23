@@ -1,3 +1,3 @@
-Contributing to PyJobShop
-=========================
+Contributing
+============
 TODO
