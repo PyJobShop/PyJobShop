@@ -476,8 +476,8 @@ class Model:
         Parameters
         ----------
         solver
-            The CP solver to use, one of ['ortools', 'cpoptimizer']. Default
-            'ortools'.
+            The CP solver to use, one of ``['ortools', 'cpoptimizer']``.
+            Default ``ortools``.
         time_limit
             The time limit for the solver in seconds. Default ``float('inf')``.
         log
