@@ -15,11 +15,9 @@ It currently supports the following scheduling problems:
 - **Objective functions:** minimizing makespan, total completion time, number of tardy jobs, and total tardiness.
 
 You can find PyJobShop on the Python Package Index under the name `pyjobshop`.
-To install it, simply run:
+To install it, simply run::
 
-``` shell
-pip install pyjobshop
-```
+  pip install pyjobshop
 
 
 Contents
@@ -51,6 +49,5 @@ Contents
    :maxdepth: 1
    :caption: Developing PyJobShop
 
-   dev/benchmarking
    dev/contributing
    dev/new_variants
