@@ -1,7 +1,7 @@
 > [!NOTE]
 > This package is under development. Expect things to break significantly in versions ``v0.0.*``.
 
-![PyJobShop logo](docs/source/assets/logo.svg)
+![PyJobShop logo](docs/source/assets/images/logo.svg)
 
 [![PyPI](https://img.shields.io/pypi/v/PyJobShop?style=flat-square)](https://pypi.org/project/pyjobshop/)
 [![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](https://github.com/PyJobShop/PyJobShop/)
@@ -9,7 +9,7 @@
 [![DOC](https://img.shields.io/readthedocs/pyjobshop?style=flat-square)](https://pyjobshop.readthedocs.io/)
 [![Codecov](https://img.shields.io/codecov/c/github/PyJobShop/PyJobShop?style=flat-square)](https://app.codecov.io/gh/PyJobShop/PyJobShop/)
 
-PyJobShop is a Python package for solving scheduling problems with constraint programming.
+PyJobShop is a Python library for solving scheduling problems with constraint programming.
 It currently supports the following scheduling problems:
 
 - **Machine environments:** single machine, parallel machines, hybrid flow shops, open shops, and flexible job shops.
