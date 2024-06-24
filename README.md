@@ -57,4 +57,7 @@ Please have a look [here](https://pyjobshop.readthedocs.io/en/latest/contributin
 If you aim to make a large change, it is helpful to discuss the change first in a new GitHub issue. Feel free to open one!
 
 ## Getting help
-TODO
+Feel free to open an issue or a new discussion thread here on GitHub.
+Please do not e-mail us with questions, modelling issues, or code examples.
+Those are much easier to discuss via GitHub than over e-mail.
+When writing your issue or discussion, please follow the instructions [here](https://pyjobshop.readthedocs.io/setup/getting_help.html).
