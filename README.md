@@ -12,8 +12,8 @@
 PyJobShop is a Python library for solving scheduling problems with constraint programming.
 It currently supports the following scheduling problems:
 
-- **Machine environments:** single machine, parallel machines, hybrid flow shops, open shops, and flexible job shops.
-- **Constraints:** release dates, deadlines, sequence-dependent setup times, no-wait, blocking, and precedence constraints.
+- **Machine environments:** single machine, parallel machines, hybrid flow shops, open shops, job shops, and flexible job shops.
+- **Constraints:** release dates, deadlines, due dates, sequence-dependent setup times, no-wait, blocking, and precedence constraints.
 - **Objective functions:** minimizing makespan, total completion time, number of tardy jobs, and total tardiness.
 
 You can find PyJobShop on the Python Package Index under the name `pyjobshop`. 
@@ -36,16 +36,16 @@ CP-SAT has consistently won the annual [MiniZinc Challenge](https://www.minizinc
 > [!TIP]
 > If you are new to scheduling or constraint programming, you might benefit from first reading the TODO and TODO pages.
 
-Besides OR-Tools' CP-SAT solver, PyJobShop also implements the IBM ILOG CP Optimizer, which is a commercial and very effective constraint programming solver.
+Besides OR-Tools' CP-SAT solver, PyJobShop also implements the IBM ILOG CP Optimizer, which is a commercial constraint programming solver.
 To use CP Optimizer, you have to install PyJobShop with the optional `cpoptimizer` dependency as follows: 
 
 ``` shell
 pip install pyjobshop[cpoptimizer]
 ```
 
-This installation comes with the free community edition of CP Optimizer, but it only solves models with up to 1000 variables and 1000 constraints.
-Models beyond that size require a paid version or an academic version.
-See [their documentation](http://ibmdecisionoptimization.github.io/docplex-doc/getting_started.html#setting-up-an-optimization-engine) for more details on how to obtain such version.
+This installation comes with the free community edition of CP Optimizer, which only solves models with up to 1000 variables and 1000 constraints.
+Models beyond that size require the paid version or academic version.
+See [their documentation](http://ibmdecisionoptimization.github.io/docplex-doc/getting_started.html#setting-up-an-optimization-engine) for more details about how to obtain such version.
 
 TODO: refer to documentation on how to get an academic version of CP Optimizer.
 
@@ -55,7 +55,9 @@ We provide example notebooks that show how PyJobShop may be used to solve schedu
 - TODO
 
 ## Contributing
-TODO
+We are very grateful for any contributions you are willing to make. 
+Please have a look [here](https://pyjobshop.readthedocs.io/en/latest/contributing.html) to get started. 
+If you aim to make a large change, it is helpful to discuss the change first in a new GitHub issue. Feel free to open one!
 
 ## Getting help
 TODO
