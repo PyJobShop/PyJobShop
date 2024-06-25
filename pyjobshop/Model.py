@@ -13,6 +13,7 @@ from pyjobshop.ProblemData import (
     Task,
 )
 from pyjobshop.Result import Result
+from pyjobshop.Solution import Solution
 from pyjobshop.solve import solve
 
 
@@ -469,6 +470,8 @@ class Model:
         time_limit: float = float("inf"),
         log: bool = True,
         num_workers: Optional[int] = None,
+        initial_solution: Optional[Solution] = None,
+        **kwargs,
     ) -> Result:
         """
         Solves the problem data instance created by the model.
@@ -476,16 +479,21 @@ class Model:
         Parameters
         ----------
         solver
-            The CP solver to use, one of ``['ortools', 'cpoptimizer']``.
-            Default ``ortools``.
+            The solver to use. Either ``'ortools'`` (default) or
+            ``'cpoptimizer'``.
         time_limit
             The time limit for the solver in seconds. Default ``float('inf')``.
         log
             Whether to log the solver output. Default ``True``.
         num_workers
             The number of workers to use for parallel solving. If not
-            specified, the default value of the selected solver is used, which
-            is typically the maximum number of available CPU cores.
+            specified, the default of the selected solver is used, which is
+            typically the number of available CPU cores.
+        initial_solution
+            An initial solution to start the solver from. Default is no
+            solution.
+        kwargs
+            Additional parameters passed to the solver.
 
         Returns
         -------
@@ -493,4 +501,12 @@ class Model:
             A Result object containing the best found solution and additional
             information about the solver run.
         """
-        return solve(self.data(), solver, time_limit, log, num_workers)
+        return solve(
+            self.data(),
+            solver,
+            time_limit,
+            log,
+            num_workers,
+            initial_solution,
+            **kwargs,
+        )

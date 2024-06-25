@@ -3,6 +3,7 @@ from numpy.testing import assert_equal
 from pyjobshop.constants import MAX_VALUE
 from pyjobshop.Model import Model
 from pyjobshop.ProblemData import Constraint, Objective
+from pyjobshop.Solution import Solution, TaskData
 
 
 def test_model_to_data():
@@ -208,4 +209,23 @@ def test_solve(solver: str):
     result = model.solve(solver=solver)
 
     assert_equal(result.objective, 3)
+    assert_equal(result.status.value, "Optimal")
+
+
+def test_solve_initial_solution_fixed(small):
+    """
+    Tests that Model.solve() correctly takes the initial solution and passes
+    additional kwargs to the solver, fixing the solution.
+    """
+    model = Model.from_data(small)
+    init = Solution([TaskData(0, 0, 1, 1), TaskData(0, 3, 2, 5)])
+    result = model.solve(
+        "ortools",
+        initial_solution=init,
+        fix_variables_to_their_hinted_value=True,
+    )
+
+    # The initial solution has makespan 5 and is fixed, even though this
+    # instance admits a better solution with makespan 3.
+    assert_equal(result.objective, 5)
     assert_equal(result.status.value, "Optimal")
