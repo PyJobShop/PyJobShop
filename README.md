@@ -26,7 +26,7 @@ pip install pyjobshop
 The documentation is available [here](https://pyjobshop.readthedocs.io/).
 
 > [!TIP]
-> If you are new to scheduling or constraint programming, you might benefit from first reading the [introduction to scheduling](https://pyjobshop.readthedocs.io/en/latest/setup/intro_to_scheduling.html) and [introduction to CP](https://pyjobshop.readthedocs.io/en/latest/setup/intro_to_cp.html) pages.
+> If you are new to scheduling or constraint programming, you might benefit from first reading the [introduction to scheduling](https://pyjobshop.readthedocs.io/en/stable/setup/intro_to_scheduling.html) and [introduction to CP](https://pyjobshop.readthedocs.io/en/stable/setup/intro_to_cp.html) pages.
 
 ## Constraint programming solvers
 PyJobShop uses [OR-Tools'](https://github.com/google/or-tools) CP-SAT solver as its default constraint programming solver.
@@ -53,11 +53,11 @@ We provide example notebooks that show how PyJobShop may be used to solve schedu
 
 ## Contributing
 We are very grateful for any contributions you are willing to make. 
-Please have a look [here](https://pyjobshop.readthedocs.io/en/latest/contributing.html) to get started. 
+Please have a look [here](https://pyjobshop.readthedocs.io/en/stable/contributing.html) to get started. 
 If you aim to make a large change, it is helpful to discuss the change first in a new GitHub issue. Feel free to open one!
 
 ## Getting help
 Feel free to open an issue or a new discussion thread here on GitHub.
 Please do not e-mail us with questions, modelling issues, or code examples.
 Those are much easier to discuss via GitHub than over e-mail.
-When writing your issue or discussion, please follow the instructions [here](https://pyjobshop.readthedocs.io/setup/getting_help.html).
+When writing your issue or discussion, please follow the instructions [here](https://pyjobshop.readthedocs.io/en/stable/setup/getting_help.html).
