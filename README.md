@@ -1,31 +1,63 @@
 > [!NOTE]
-> This package is under development. Expect things to break significantly during the v0.0.x phase.
+> This package is under development. Expect things to break significantly in versions ``v0.0.*``.
 
+![PyJobShop logo](docs/source/assets/images/logo.svg)
 
-# PyJobShop
 [![PyPI](https://img.shields.io/pypi/v/PyJobShop?style=flat-square)](https://pypi.org/project/pyjobshop/)
 [![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](https://github.com/PyJobShop/PyJobShop/)
 [![CI](https://img.shields.io/github/actions/workflow/status/PyJobShop/PyJobShop/.github%2Fworkflows%2FCI.yml?style=flat-square)](https://github.com/PyJobShop/PyJobShop/)
 [![DOC](https://img.shields.io/readthedocs/pyjobshop?style=flat-square)](https://pyjobshop.readthedocs.io/)
 [![Codecov](https://img.shields.io/codecov/c/github/PyJobShop/PyJobShop?style=flat-square)](https://app.codecov.io/gh/PyJobShop/PyJobShop/)
 
-PyJobShop is a package for implementing scheduling models in Python.
-It supports the classically known *flexible job shop problem* (FJSP) and many of its extensions such as arbitrary precedence relations, sequence-dependent setup times, and many more!
-The implementation is currently work in progress - feel free to open an issue if you have any questions.
+PyJobShop is a Python library for solving scheduling problems with constraint programming.
+It currently supports the following scheduling problems:
 
+- **Machine environments:** single machine, parallel machines, hybrid flow shops, open shops, job shops, and flexible job shops.
+- **Constraints:** release dates, deadlines, due dates, sequence-dependent setup times, no-wait, blocking, and precedence constraints.
+- **Objective functions:** minimizing makespan, total completion time, number of tardy jobs, and total tardiness.
 
-## Installation
-First, clone this repository to your local setup and `cd` into it. 
-Then, make sure you have [Poetry](https://python-poetry.org/) version 1.2+ installed, and run the following command:
+You can find PyJobShop on the Python Package Index under the name `pyjobshop`. 
+To install it, simply run:
 
 ``` shell
-poetry install
+pip install pyjobshop
 ```
 
-This will set-up a virtual environment and install all necessary dependencies. 
+The documentation is available [here](https://pyjobshop.readthedocs.io/).
 
-### Installing CPLEX
-Running the CP model and solving it requires the optimization engine from IBM CPLEX. 
-See [their documentation](http://ibmdecisionoptimization.github.io/docplex-doc/getting_started.html#setting-up-an-optimization-engine) for more details.
-If you install the free community edition, you can only solve models with up to 1000 variables and 1000 constraints.
-Models beyond that size require a paid version or an academic version.
+> [!TIP]
+> If you are new to scheduling or constraint programming, you might benefit from first reading the [introduction to scheduling](https://pyjobshop.readthedocs.io/en/stable/setup/intro_to_scheduling.html) and [introduction to CP](https://pyjobshop.readthedocs.io/en/stable/setup/intro_to_cp.html) pages.
+
+## Constraint programming solvers
+PyJobShop uses [OR-Tools'](https://github.com/google/or-tools) CP-SAT solver as its default constraint programming solver.
+CP-SAT is an open-source constraint programming solver and encompasses other technologies such as satisfiability and mixed-integer linear programming solvers.
+CP-SAT has consistently won the annual [MiniZinc Challenge](https://www.minizinc.org/challenge/), demonstrating its superior performance on constraint programming models.
+
+Besides OR-Tools' CP-SAT solver, PyJobShop also implements the IBM ILOG CP Optimizer, which is a commercial constraint programming solver.
+To use CP Optimizer, you have to install PyJobShop with the optional `cpoptimizer` dependency as follows: 
+
+``` shell
+pip install pyjobshop[cpoptimizer]
+```
+
+This installation comes with the free community edition of CP Optimizer, which only solves models with up to 1000 variables and 1000 constraints.
+Models beyond that size require the paid version or academic version.
+See [their documentation](http://ibmdecisionoptimization.github.io/docplex-doc/getting_started.html#setting-up-an-optimization-engine) for more details about how to obtain such version.
+
+TODO: refer to documentation on how to get an academic version of CP Optimizer.
+
+## Examples
+We provide example notebooks that show how PyJobShop may be used to solve scheduling problems.
+
+- TODO
+
+## Contributing
+We are very grateful for any contributions you are willing to make. 
+Please have a look [here](https://pyjobshop.readthedocs.io/en/stable/contributing.html) to get started. 
+If you aim to make a large change, it is helpful to discuss the change first in a new GitHub issue. Feel free to open one!
+
+## Getting help
+Feel free to open an issue or a new discussion thread here on GitHub.
+Please do not e-mail us with questions, modelling issues, or code examples.
+Those are much easier to discuss via GitHub than over e-mail.
+When writing your issue or discussion, please follow the instructions [here](https://pyjobshop.readthedocs.io/en/stable/setup/getting_help.html).

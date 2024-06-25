@@ -70,29 +70,57 @@ class Job:
 
     @property
     def weight(self) -> int:
+        """
+        The job importance weight, used as multiplicative factor in the
+        objective function.
+        """
         return self._weight
 
     @property
     def release_date(self) -> int:
+        """
+        The earliest time that the job may start.
+        """
         return self._release_date
 
     @property
     def deadline(self) -> int:
+        """
+        The latest time by which the job must be completed.
+        """
         return self._deadline
 
     @property
     def due_date(self) -> Optional[int]:
+        """
+        The latest time that the job should be completed before incurring
+        penalties.
+        """
         return self._due_date
 
     @property
     def tasks(self) -> list[int]:
+        """
+        List of task indices that belong to this job.
+        """
         return self._tasks
 
     @property
     def name(self) -> str:
+        """
+        Name of the job.
+        """
         return self._name
 
     def add_task(self, idx: int):
+        """
+        Adds a task index to the job.
+
+        Parameters
+        ----------
+        idx
+            Task index to add.
+        """
         self._tasks.append(idx)
 
 
@@ -111,6 +139,9 @@ class Machine:
 
     @property
     def name(self) -> str:
+        """
+        Name of the machine.
+        """
         return self._name
 
 
@@ -162,26 +193,44 @@ class Task:
 
     @property
     def earliest_start(self) -> int:
+        """
+        Earliest start time of the task.
+        """
         return self._earliest_start
 
     @property
     def latest_start(self) -> int:
+        """
+        Latest start time of the task.
+        """
         return self._latest_start
 
     @property
     def earliest_end(self) -> int:
+        """
+        Earliest end time of the task.
+        """
         return self._earliest_end
 
     @property
     def latest_end(self) -> int:
+        """
+        Latest end time of the task.
+        """
         return self._latest_end
 
     @property
     def fixed_duration(self) -> bool:
+        """
+        Whether the task has a fixed duration.
+        """
         return self._fixed_duration
 
     @property
     def name(self) -> str:
+        """
+        Name of the task.
+        """
         return self._name
 
 
@@ -261,15 +310,15 @@ class ProblemData:
     tasks
         List of tasks.
     processing_times
-        Processing times of tasks on machines. First index is the machine
-        index, second index is the task index.
+        Processing times of tasks on machines. First index is the task index,
+        second index is the machine index.
     constraints
         Dict indexed by task pairs with a list of constraints as values.
         Default is None, which initializes an empty dict.
     setup_times
-        Sequence-dependent setup times between tasks on a given machine.
-        The first dimension of the array is indexed by the machine index. The
-        last two dimensions of the array are indexed by task indices.
+        Sequence-dependent setup times between tasks on a given machine. The
+        first dimension of the array is indexed by the machine index. The last
+        two dimensions of the array are indexed by task indices.
     horizon
         The horizon value. Default ``MAX_VALUE``.
     objective
@@ -433,41 +482,25 @@ class ProblemData:
     @property
     def processing_times(self) -> dict[tuple[int, int], int]:
         """
-        Processing times of tasks on machines.
-
-        Returns
-        -------
-        dict[tuple[int, int], int]
-            Processing times of tasks on machines. First index is
-            the machine index, second index is the task index.
+        Processing times of tasks on machines. First index is the
+        task index, second index is the machine index.
         """
         return self._processing_times
 
     @property
     def constraints(self) -> _CONSTRAINTS_TYPE:
         """
-        Constraints between tasks.
-
-        Returns
-        -------
-        dict[tuple[int, int], list[Constraint]]
-            The dictionary is indexed by task pairs with a list of
-            constraints.
+        Dict indexed by task pairs with a list of constraints as values.
+        Indexed by task pairs.
         """
         return self._constraints
 
     @property
     def setup_times(self) -> np.ndarray:
         """
-        Sequence-dependent setup times between tasks on a given machine.
-
-        Returns
-        -------
-        np.ndarray
-            Sequence-dependent setup times between tasks on a given
-            machine. The first dimension of the array is indexed by the machine
-            index. The last two dimensions of the array are indexed by
-            task indices.
+        Sequence-dependent setup times between tasks on a given machine. The
+        first dimension of the array is indexed by the machine index. The last
+        two dimensions of the array are indexed by task indices.
         """
         return self._setup_times
 
@@ -476,11 +509,6 @@ class ProblemData:
         """
         The time horizon of this instance. This is an upper bound on the
         completion time of all tasks.
-
-        Returns
-        -------
-        int
-            The horizon value.
         """
         return self._horizon
 
@@ -488,11 +516,6 @@ class ProblemData:
     def objective(self) -> Objective:
         """
         The objective function.
-
-        Returns
-        -------
-        Objective
-            The objective function.
         """
         return self._objective
 
@@ -501,11 +524,6 @@ class ProblemData:
         """
         List of task indices for each machine. These are inferred from
         the (machine, task) pairs in the processing times dict.
-
-        Returns
-        -------
-        list[list[int]]
-            List of task indices for each machine.
         """
         return self._machine2tasks
 
@@ -514,11 +532,6 @@ class ProblemData:
         """
         List of eligible machine indices for each task. These are inferred
         from the (machine, task) pairs in the processing times dict.
-
-        Returns
-        -------
-        list[list[int]]
-            List of eligible machine indices for each task.
         """
         return self._task2machines
 

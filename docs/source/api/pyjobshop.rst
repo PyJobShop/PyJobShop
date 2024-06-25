@@ -32,5 +32,17 @@ PyJobShop
 
    .. autoclass:: Solution
 
+   .. autoclass:: TaskData
+
+.. automodule:: pyjobshop.Results
+
+   .. autoclass:: Result
+
+   .. autoclass:: SolveStatus
+
+
 .. automodule:: pyjobshop.plot
+   :members:
+
+.. automodule:: pyjobshop.solve
    :members:
