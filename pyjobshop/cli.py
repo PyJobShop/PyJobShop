@@ -1,8 +1,11 @@
 import argparse
 from pathlib import Path
+from typing import Optional
 
 import fjsplib
 import numpy as np
+import tomli
+from progiter import ProgIter
 
 import pyjobshop
 from pyjobshop import Model, solve
@@ -32,7 +35,13 @@ def parse_args():
     parser.add_argument("--log", action="store_true", help=msg)
 
     msg = "Number of workers to use for parallel solving."
-    parser.add_argument("--num_workers", type=int, default=8, help=msg)
+    parser.add_argument("--num_workers", type=int, help=msg)
+
+    msg = """
+    Optional parameter configuration file (in TOML format). These parameters
+    are passed to the solver as additional solver parameters.
+    """
+    parser.add_argument("--config_loc", type=Path, help=msg)
 
     return parser.parse_args()
 
@@ -88,17 +97,24 @@ def _solve(
     time_limit: float,
     log: bool,
     num_workers: int,
+    config_loc: Optional[Path],
 ) -> tuple[str, str, float, float]:
     """
     Solves a single instance.
     """
+    if config_loc is not None:
+        with open(config_loc, "rb") as fh:
+            params = tomli.load(fh)
+    else:
+        params = {}
+
     instance = fjsplib.read(instance_loc)
     data = instance2data(instance)
-    result = solve(data, solver, time_limit, log, num_workers)
+    result = solve(data, solver, time_limit, log, num_workers, **params)
 
     return (
         instance_loc.name,
-        "Y" if result.status.value in ["Optimal", "Feasible"] else "N",
+        result.status.value,
         result.objective,
         round(result.runtime, 2),
     )
@@ -108,21 +124,28 @@ def benchmark(instances: list[Path], **kwargs):
     """
     Solves the list of instances and prints a table of the results.
     """
-    results = [_solve(instance, **kwargs) for instance in instances]
+    results = [_solve(instance, **kwargs) for instance in ProgIter(instances)]
 
     dtypes = [
         ("inst", "U37"),
-        ("feas", "U1"),
-        ("obj", float),
+        ("feas", "U37"),
+        ("obj", int),
         ("time", float),
     ]
     data = np.asarray(results, dtype=dtypes)
-    headers = ["Instance", "Feas.", "Obj.", "Time (s)"]
+    headers = ["Instance", "Status", "Obj.", "Time (s)"]
+
+    avg_objective = data["obj"].mean()
+    avg_runtime = data["time"].mean()
+    num_optimal = np.count_nonzero(data["feas"] == "Optimal")
+    num_feas = np.count_nonzero(data["feas"] == "Feasible") + num_optimal
+    num_infeas = np.count_nonzero(data["feas"].size - num_feas)
 
     print("\n", tabulate(headers, data), "\n", sep="")
-    print(f"     Avg. objective: {data['obj'].mean():.0f}")
-    print(f"      Avg. run-time: {data['time'].mean():.2f}s")
-    print(f"       Total infeas: {np.count_nonzero(data['feas'] != 'Y')}")
+    print(f"     Avg. objective: {avg_objective:.2f}")
+    print(f"      Avg. run-time: {avg_runtime:.2f}s")
+    print(f"      Total optimal: {num_optimal}")
+    print(f"       Total infeas: {num_infeas}")
 
 
 def main():
