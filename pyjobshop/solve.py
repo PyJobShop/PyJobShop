@@ -30,7 +30,7 @@ def solve(
     data
         The problem data instance.
     solver
-        The solver to use. Either ``ortools`` or ``cpoptimizer``.
+        The solver to use. Either ``'ortools'`` (default) or ``'cpoptimizer'``.
     time_limit
         The time limit for the solver in seconds. Default ``float('inf')``.
     log
