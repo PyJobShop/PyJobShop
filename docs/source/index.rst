@@ -56,4 +56,3 @@ Contents
    :caption: Developing PyJobShop
 
    dev/contributing
-   dev/new_variants
