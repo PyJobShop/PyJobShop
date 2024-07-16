@@ -24,7 +24,7 @@ enum-tools = "^0.11.0"
 progiter = "^2.0.0"
 tomli = "^2.0.1"
 fjsplib = { git = "https://github.com/PyJobShop/FJSPLIB.git", rev = "75b2d18" }
-cplex = { version = "22.1.1.2", optional = true, markers = "python_version < '3.12'"}
+cplex = { version = "22.1.1.2", optional = true }
 docplex = { version = "^2.25.236", optional = true }
 
 
