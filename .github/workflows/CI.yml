@@ -8,9 +8,12 @@ on:
 
 jobs:
   build:
+    name: Test pyjobshop using Python ${{ matrix.python-version }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: true
+      matrix:
+        python-version: ['3.9', '3.12']
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v4
