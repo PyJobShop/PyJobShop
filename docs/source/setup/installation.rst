@@ -21,29 +21,21 @@ This can be useful to get features that have not yet made it to the Python packa
 
 Installing CP Optimizer
 -----------------------
-Besides OR-Tools' CP-SAT solver, PyJobShop also implements the IBM ILOG CP Optimizer, which is a commercial constraint programming solver.
-To try out CP Optimizer, you can install PyJobShop with the optional `cpoptimizer` dependency as follows:
+By default, PyJobShop comes with OR-Tools' CP-SAT solver, which is an open-source constraint programming solver.
+PyJobShop also implements the IBM ILOG CP Optimizer, which is a commercial constraint programming solver.
+To use PyJobShop with CP Optimizer, you can install PyJobShop with the optional `cpoptimizer` dependency as follows:
 
 .. code-block:: shell
 
    pip install pyjobshop[cpoptimizer]
 
-This installation comes with the free community edition of CP Optimizer, which only solves models with up to 1000 variables and 1000 constraints.
-Models beyond that size require the paid version or academic version.
+This installation comes with the free community edition of CP Optimizer, which solves models with up to 1000 variables and 1000 constraints.
+Models beyond that size require a paid version or academic version of CP Optimizer.
 
-If you are a student or researcher working academia, you can get a free academic version of CP Optimizer for non-commericial purposes.
+If you are a student or researcher, you can get a free academic version of CP Optimizer for non-commercial purposes.
 The steps below describe how you can install CP Optimizer through their academic program.
 
-- Visit [ibm.com/academic](https://ibm.com/academic) and register and log in.
-- Navigate to [academic.ibm.com/a2mt/downloads/data_science](https://academic.ibm.com/a2mt/downloads/data_science) and download CP Optimizer.
+- Register at [ibm.com/academic](https://ibm.com/academic) and log in.
+- Go to [academic.ibm.com/a2mt/downloads/data_science](https://academic.ibm.com/a2mt/downloads/data_science) and download CP Optimizer.
 - Follow the installation instructions and make sure to follow the Python installation instructions at the end.
-- Ensure the solver executable is found by adding its directory to the PATH. Add the following line to your shell configuration file (``~/.bashrc`, `~/.zshrc`, etc.):
 - Ensure that the path to `cpoptimizer(.exe)` is accessible and properly set in your system path.
-
-
-To check that your installation was successful, run the following command:
-
-
-.. code-block:: shell
-
-   poetry run pytest --solvers cpoptimizer
