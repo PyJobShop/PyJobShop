@@ -1,20 +1,22 @@
 from itertools import product
 
 import numpy as np
-from ortools.sat.python.cp_model import CpModel
+from ortools.sat.python.cp_model import CpModel, IntervalVar
 
 from pyjobshop.ProblemData import ProblemData
 
-from .variables import JobVar, SequenceVar, TaskAltVar, TaskVar
+from .variables import SequenceVar, TaskAltVar, TaskVar
 
-JobVars = list[JobVar]
 TaskVars = list[TaskVar]
 TaskAltVars = dict[tuple[int, int], TaskAltVar]
 SequenceVars = list[SequenceVar]
 
 
 def job_spans_tasks(
-    m: CpModel, data: ProblemData, job_vars: JobVars, task_vars: TaskVars
+    m: CpModel,
+    data: ProblemData,
+    job_vars: list[IntervalVar],
+    task_vars: TaskVars,
 ):
     """
     Ensures that the job variables span the related task variables.
@@ -24,8 +26,8 @@ def job_spans_tasks(
         task_start_vars = [task_vars[task_idx].start for task_idx in job.tasks]
         task_end_vars = [task_vars[task_idx].end for task_idx in job.tasks]
 
-        m.add_min_equality(job_var.start, task_start_vars)
-        m.add_max_equality(job_var.end, task_end_vars)
+        m.add_min_equality(job_var.start_expr(), task_start_vars)
+        m.add_max_equality(job_var.end_expr(), task_end_vars)
 
 
 def select_one_task_alternative(

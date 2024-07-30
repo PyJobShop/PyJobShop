@@ -8,29 +8,6 @@ from pyjobshop.utils import compute_min_max_durations
 
 
 @dataclass
-class JobVar:
-    """
-    Variables that represent a job in the problem.
-
-    Parameters
-    ----------
-    interval
-        The interval variable representing the job.
-    start
-        The start time variable of the interval.
-    duration
-        The duration variable of the interval.
-    end
-        The end time variable of the interval.
-    """
-
-    interval: IntervalVar
-    start: IntVar
-    duration: IntVar
-    end: IntVar
-
-
-@dataclass
 class TaskVar:
     """
     Variables that represent a task in the problem.
@@ -143,7 +120,7 @@ class SequenceVar:
         }
 
 
-def job_variables(m: CpModel, data: ProblemData) -> list[JobVar]:
+def job_variables(m: CpModel, data: ProblemData) -> list[IntervalVar]:
     """
     Creates an interval variable for each job.
     """
@@ -166,8 +143,8 @@ def job_variables(m: CpModel, data: ProblemData) -> list[JobVar]:
             ub=min(job.deadline, data.horizon),
             name=f"{name}_end",
         )
-        interval = m.NewIntervalVar(start, duration, end, f"{name}_interval")
-        variables.append(JobVar(interval, start, duration, end))
+        interval = m.new_interval_var(start, duration, end, f"{name}_interval")
+        variables.append(interval)
 
     return variables
 
@@ -196,7 +173,7 @@ def task_variables(m: CpModel, data: ProblemData) -> list[TaskVar]:
             ub=min(task.latest_end, data.horizon),
             name=f"{name}_end",
         )
-        interval = m.NewIntervalVar(start, duration, end, f"interval_{task}")
+        interval = m.new_interval_var(start, duration, end, f"interval_{task}")
         variables.append(TaskVar(interval, start, duration, end))
 
     return variables
@@ -277,7 +254,7 @@ def add_hint_to_vars(
     m: CpModel,
     data: ProblemData,
     solution: Solution,
-    job_vars: list[JobVar],
+    job_vars: list[IntervalVar],
     task_vars: list[TaskVar],
     task_alt_vars: dict[tuple[int, int], TaskAltVar],
 ):
@@ -292,9 +269,9 @@ def add_hint_to_vars(
         job_start = min(task.start for task in sol_tasks)
         job_end = max(task.end for task in sol_tasks)
 
-        m.add_hint(job_var.start, job_start)
-        m.add_hint(job_var.duration, job_end - job_start)
-        m.add_hint(job_var.end, job_end)
+        m.add_hint(job_var.start_expr(), job_start)
+        m.add_hint(job_var.size_expr(), job_end - job_start)
+        m.add_hint(job_var.end_expr(), job_end)
 
     for idx in range(data.num_tasks):
         task_var = task_vars[idx]
