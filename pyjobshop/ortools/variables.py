@@ -8,29 +8,6 @@ from pyjobshop.utils import compute_min_max_durations
 
 
 @dataclass
-class TaskVar:
-    """
-    Variables that represent a task in the problem.
-
-    Parameters
-    ----------
-    interval
-        The interval variable representing the task.
-    start
-        The start time variable of the interval.
-    duration
-        The duration variable of the interval.
-    end
-        The end time variable of the interval.
-    """
-
-    interval: IntervalVar
-    start: IntVar
-    duration: IntVar
-    end: IntVar
-
-
-@dataclass
 class TaskAltVar:
     """
     Variables that represent an assignment of a task to a machine.
@@ -149,7 +126,7 @@ def job_variables(m: CpModel, data: ProblemData) -> list[IntervalVar]:
     return variables
 
 
-def task_variables(m: CpModel, data: ProblemData) -> list[TaskVar]:
+def task_variables(m: CpModel, data: ProblemData) -> list[IntervalVar]:
     """
     Creates an interval variable for each task.
     """
@@ -174,7 +151,7 @@ def task_variables(m: CpModel, data: ProblemData) -> list[TaskVar]:
             name=f"{name}_end",
         )
         interval = m.new_interval_var(start, duration, end, f"interval_{task}")
-        variables.append(TaskVar(interval, start, duration, end))
+        variables.append(interval)
 
     return variables
 
@@ -255,7 +232,7 @@ def add_hint_to_vars(
     data: ProblemData,
     solution: Solution,
     job_vars: list[IntervalVar],
-    task_vars: list[TaskVar],
+    task_vars: list[IntervalVar],
     task_alt_vars: dict[tuple[int, int], TaskAltVar],
 ):
     """
@@ -277,9 +254,9 @@ def add_hint_to_vars(
         task_var = task_vars[idx]
         sol_task = solution.tasks[idx]
 
-        m.add_hint(task_var.start, sol_task.start)
-        m.add_hint(task_var.duration, sol_task.duration)
-        m.add_hint(task_var.end, sol_task.end)
+        m.add_hint(task_var.start_expr(), sol_task.start)
+        m.add_hint(task_var.size_expr(), sol_task.duration)
+        m.add_hint(task_var.end_expr(), sol_task.end)
 
     for (task_idx, machine_idx), var in task_alt_vars.items():
         sol_task = solution.tasks[task_idx]

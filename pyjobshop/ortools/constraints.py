@@ -5,9 +5,8 @@ from ortools.sat.python.cp_model import CpModel, IntervalVar
 
 from pyjobshop.ProblemData import ProblemData
 
-from .variables import SequenceVar, TaskAltVar, TaskVar
+from .variables import SequenceVar, TaskAltVar
 
-TaskVars = list[TaskVar]
 TaskAltVars = dict[tuple[int, int], TaskAltVar]
 SequenceVars = list[SequenceVar]
 
@@ -16,15 +15,15 @@ def job_spans_tasks(
     m: CpModel,
     data: ProblemData,
     job_vars: list[IntervalVar],
-    task_vars: TaskVars,
+    task_vars: list[IntervalVar],
 ):
     """
     Ensures that the job variables span the related task variables.
     """
     for idx, job in enumerate(data.jobs):
         job_var = job_vars[idx]
-        task_start_vars = [task_vars[task_idx].start for task_idx in job.tasks]
-        task_end_vars = [task_vars[task_idx].end for task_idx in job.tasks]
+        task_start_vars = [task_vars[task].start_expr() for task in job.tasks]
+        task_end_vars = [task_vars[task].end_expr() for task in job.tasks]
 
         m.add_min_equality(job_var.start_expr(), task_start_vars)
         m.add_max_equality(job_var.end_expr(), task_end_vars)
@@ -33,7 +32,7 @@ def job_spans_tasks(
 def select_one_task_alternative(
     m: CpModel,
     data: ProblemData,
-    task_vars: TaskVars,
+    task_vars: list[IntervalVar],
     task_alt_vars: TaskAltVars,
 ):
     """
@@ -50,9 +49,9 @@ def select_one_task_alternative(
             presences.append(is_present)
 
             # Sync each optional interval variable with the main variable.
-            m.add(main.start == alt.start).only_enforce_if(is_present)
-            m.add(main.duration == alt.duration).only_enforce_if(is_present)
-            m.add(main.end == alt.end).only_enforce_if(is_present)
+            m.add(main.start_expr() == alt.start).only_enforce_if(is_present)
+            m.add(main.size_expr() == alt.duration).only_enforce_if(is_present)
+            m.add(main.end_expr() == alt.end).only_enforce_if(is_present)
 
         # Select exactly one optional interval variable for each task.
         m.add_exactly_one(presences)
@@ -85,7 +84,7 @@ def activate_setup_times(
 def task_graph(
     m: CpModel,
     data: ProblemData,
-    task_vars: TaskVars,
+    task_vars: list[IntervalVar],
     task_alt_vars: TaskAltVars,
     seq_vars: SequenceVars,
 ):
@@ -94,26 +93,28 @@ def task_graph(
     tasks are scheduled according to the graph.
     """
     for (idx1, idx2), constraints in data.constraints.items():
-        task_var1 = task_vars[idx1]
-        task_var2 = task_vars[idx2]
+        start1 = task_vars[idx1].start_expr()
+        end1 = task_vars[idx1].end_expr()
+        start2 = task_vars[idx2].start_expr()
+        end2 = task_vars[idx2].end_expr()
 
         for prec_type in constraints:
             if prec_type == "start_at_start":
-                expr = task_var1.start == task_var2.start
+                expr = start1 == start2
             elif prec_type == "start_at_end":
-                expr = task_var1.start == task_var2.end
+                expr = start1 == end2
             elif prec_type == "start_before_start":
-                expr = task_var1.start <= task_var2.start
+                expr = start1 <= start2
             elif prec_type == "start_before_end":
-                expr = task_var1.start <= task_var2.end
+                expr = start1 <= end2
             elif prec_type == "end_at_start":
-                expr = task_var1.end == task_var2.start
+                expr = end1 == start2
             elif prec_type == "end_at_end":
-                expr = task_var1.end == task_var2.end
+                expr = end1 == end2
             elif prec_type == "end_before_start":
-                expr = task_var1.end <= task_var2.start
+                expr = end1 <= start2
             elif prec_type == "end_before_end":
-                expr = task_var1.end <= task_var2.end
+                expr = end1 <= end2
             else:
                 continue
 
