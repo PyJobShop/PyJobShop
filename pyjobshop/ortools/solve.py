@@ -7,7 +7,7 @@ from pyjobshop.ProblemData import ProblemData
 from pyjobshop.Result import Result, SolveStatus
 from pyjobshop.Solution import Solution, TaskData
 
-from .create_model import create_model
+from .ModelBuilder import ModelBuilder
 
 
 def solve(
@@ -43,7 +43,8 @@ def solve(
         A Result object containing the best found solution and additional
         information about the solver run.
     """
-    cp_model, task_alt_vars = create_model(data, initial_solution)
+    builder = ModelBuilder(data)
+    cp_model = builder.build(initial_solution)
     cp_solver = CpSolver()
 
     params = {
@@ -62,7 +63,7 @@ def solve(
     objective = cp_solver.objective_value
 
     if status in ["OPTIMAL", "FEASIBLE"]:
-        solution = _result2solution(data, cp_solver, task_alt_vars)
+        solution = _result2solution(data, cp_solver, builder.task_alt_vars)
     else:
         # No feasible solution found due to infeasible instance or time limit.
         solution = Solution([])
