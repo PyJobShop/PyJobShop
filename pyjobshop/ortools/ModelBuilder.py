@@ -230,14 +230,14 @@ class VariablesBuilder:
         self, m: CpModel, data: ProblemData
     ) -> dict[tuple[int, int], TaskAltVar]:
         """
-        Creates an optional interval variable for each eligible task and machine
-        pair.
+        Creates an optional interval variable for each eligible task and
+        machine pair.
 
         Returns
         -------
         dict[tuple[int, int], TaskAltVar]
-            A dictionary that maps each task index and machine index pair to its
-            corresponding task alternative variable.
+            A dictionary that maps each task index and machine index pair to
+            its corresponding task alternative variable.
         """
         variables = {}
 
@@ -285,10 +285,10 @@ class VariablesBuilder:
         task_alt_vars: dict[tuple[int, int], TaskAltVar],
     ) -> list[SequenceVar]:
         """
-        Creates a sequence variable for each machine. Sequence variables are used
-        to model the ordering of intervals on a given machine. This is used for
-        modeling machine setups and sequencing task constraints, such as previous,
-        before, first, last and permutations.
+        Creates a sequence variable for each machine. Sequence variables are
+        used to model the ordering of intervals on a given machine. This is
+        used for modeling machine setups and sequencing task constraints, such
+        as previous, before, first, last and permutations.
         """
         variables = []
 
