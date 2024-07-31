@@ -2,12 +2,11 @@ from typing import Optional
 
 from ortools.sat.python.cp_model import CpSolver
 
-from pyjobshop.ortools.variables import TaskAltVar
 from pyjobshop.ProblemData import ProblemData
 from pyjobshop.Result import Result, SolveStatus
 from pyjobshop.Solution import Solution, TaskData
 
-from .ModelBuilder import ModelBuilder
+from .ModelBuilder import ModelBuilder, TaskAltVar
 
 
 def solve(
