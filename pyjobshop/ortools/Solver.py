@@ -43,6 +43,8 @@ class Solver:
             self._variables.task_alt_vars,
         )
 
+        m.clear_hints()
+
         for idx in range(data.num_jobs):
             job = data.jobs[idx]
             job_var = job_vars[idx]
@@ -78,6 +80,8 @@ class Solver:
             return SolveStatus.FEASIBLE
         elif status == "INFEASIBLE":
             return SolveStatus.INFEASIBLE
+        elif status == "MODEL_INVALID":
+            return SolveStatus.UNKNOWN
         else:
             return SolveStatus.TIME_LIMIT
 
@@ -108,8 +112,8 @@ class Solver:
 
     def solve(
         self,
-        time_limit: float,
-        log: bool,
+        time_limit: float = float("inf"),
+        log: bool = False,
         num_workers: Optional[int] = None,
         initial_solution: Optional[Solution] = None,
         **kwargs,
