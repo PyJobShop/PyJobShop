@@ -1,6 +1,6 @@
 from ortools.sat.python.cp_model import CpModel, LinearExpr
 
-from pyjobshop.ProblemData import ProblemData
+from pyjobshop.ProblemData import Objective, ProblemData
 
 from .Variables import Variables
 
@@ -66,12 +66,10 @@ class Objectives:
         weights = [job.weight for job in self._data.jobs]
         self._m.minimize(LinearExpr.weighted_sum(exprs, weights))
 
-    def add_objective(self):
+    def set_objective(self, objective: Objective):
         """
-        Adds the objective to the model.
+        Sets the objective of the the model.
         """
-        objective = self._data.objective
-
         if objective == "makespan":
             self._makespan()
         elif objective == "tardy_jobs":

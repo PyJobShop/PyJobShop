@@ -32,7 +32,7 @@ class Solver:
         self._constraints = Constraints(self._m, data, self._variables)
         self._objectives = Objectives(self._m, data, self._variables)
 
-    def _add_hint_to_vars(self, solution: Solution):
+    def add_hints(self, solution: Solution):
         """
         Adds hints to variables based on the given solution.
         """
@@ -71,13 +71,6 @@ class Solver:
             m.add_hint(var.end, sol_task.end)
             m.add_hint(var.is_present, machine_idx == sol_task.machine)
 
-    def add_hints(self, solution: Solution):
-        """
-        Adds the solution as hint to the model.
-        """
-        if solution is not None:
-            self._add_hint_to_vars(solution)
-
     def _get_solve_status(self, status: str):
         if status == "OPTIMAL":
             return SolveStatus.OPTIMAL
@@ -88,18 +81,14 @@ class Solver:
         else:
             return SolveStatus.TIME_LIMIT
 
-    def _result2solution(self, cp_solver: CpSolver) -> Solution:
+    def _convert_to_solution(self, cp_solver: CpSolver) -> Solution:
         """
         Converts a result from the OR-Tools CP solver to a Solution object.
 
         Parameters
         ----------
-        data
-            The problem data instance.
         cp_solver
             The CP solver.
-        task_alt_vars
-            The task alternatives variables.
 
         Returns
         -------
@@ -148,11 +137,11 @@ class Solver:
             A Result object containing the best found solution and additional
             information about the solver run.
         """
-        if initial_solution:
+        if initial_solution is not None:
             self.add_hints(initial_solution)
 
         self._constraints.add_all_constraints()
-        self._objectives.add_objective()
+        self._objectives.set_objective(self._data.objective)
 
         params = {
             "max_time_in_seconds": time_limit,
@@ -171,7 +160,7 @@ class Solver:
         objective = cp_solver.objective_value
 
         if status in ["OPTIMAL", "FEASIBLE"]:
-            solution = self._result2solution(cp_solver)
+            solution = self._convert_to_solution(cp_solver)
         else:
             # No feasible solution found due to infeasibility or time limit.
             solution = Solution([])
