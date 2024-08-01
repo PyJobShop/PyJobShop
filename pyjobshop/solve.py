@@ -1,6 +1,6 @@
 from typing import Optional
 
-from pyjobshop.apis.ortools import ModelBuilder as ORToolsModelBuilder
+from pyjobshop.ortools.Solver import Solver as ORToolsSolver
 from pyjobshop.ProblemData import ProblemData
 from pyjobshop.Result import Result
 from pyjobshop.Solution import Solution
@@ -56,9 +56,9 @@ def solve(
         If CP Optimizer is chosen but its dependencies are not installed.
     """
     if solver == "ortools":
-        builder = ORToolsModelBuilder(data)
+        builder = ORToolsSolver(data)
         return builder.solve(
-            data, time_limit, log, num_workers, initial_solution, **kwargs
+            time_limit, log, num_workers, initial_solution, **kwargs
         )
     elif solver == "cpoptimizer" and CPOPTIMIZER_AVAILABLE:
         return pyjobshop.cpoptimizer.solve(
