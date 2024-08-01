@@ -102,12 +102,10 @@ class Constraints:
 
     def task_graph(self):
         """
-        Creates constraints based on the task graph, ensuring that the
-        tasks are scheduled according to the graph.
+        Creates constraints based on the task graph for task variables.
         """
         m, data = self._m, self._data
-        task_vars, task_alt_vars = self.task_vars, self.task_alt_vars
-        seq_vars = self.sequence_vars
+        task_vars = self.task_vars
 
         for (idx1, idx2), constraints in data.constraints.items():
             task_var1 = task_vars[idx1]
@@ -135,7 +133,14 @@ class Constraints:
 
                 m.add(expr)
 
-        # Separately handle assignment related constraints for efficiency.
+    def task_alt_graph(self):
+        """
+        Creates constraints based on the task graph for task alternative
+        variables, which involve assignment decisions.
+        """
+        m, data = self._m, self._data
+        task_alt_vars, seq_vars = self.task_alt_vars, self.sequence_vars
+
         for machine, tasks in enumerate(data.machine2tasks):
             for task1, task2 in product(tasks, repeat=2):
                 if task1 == task2 or (task1, task2) not in data.constraints:
@@ -253,6 +258,7 @@ class Constraints:
         self.no_overlap_machines()
         self.activate_setup_times()
         self.task_graph()
+        self.task_alt_graph()
 
         # From here onwards we know which sequence constraints are active.
         self.enforce_circuit()
