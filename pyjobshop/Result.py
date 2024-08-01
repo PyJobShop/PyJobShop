@@ -9,6 +9,7 @@ class SolveStatus(str, Enum):
     FEASIBLE = "Feasible"
     INFEASIBLE = "Infeasible"
     TIME_LIMIT = "Time-limit"
+    UNKNOWN = "Unknown"
 
 
 @dataclass
