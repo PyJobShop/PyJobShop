@@ -17,7 +17,7 @@ def solve(
     data: ProblemData,
     solver: str = "ortools",
     time_limit: float = float("inf"),
-    log: bool = False,
+    log: bool = True,
     num_workers: Optional[int] = None,
     initial_solution: Optional[Solution] = None,
     **kwargs,
@@ -56,9 +56,14 @@ def solve(
         If CP Optimizer is chosen but its dependencies are not installed.
     """
     if solver == "ortools":
-        builder = ORToolsSolver(data)
-        return builder.solve(
-            time_limit, log, num_workers, initial_solution, **kwargs
+        solver_ = ORToolsSolver(data)
+        return solver_.solve(
+            data.objective,
+            time_limit,
+            log,
+            num_workers,
+            initial_solution,
+            **kwargs,
         )
     elif solver == "cpoptimizer" and CPOPTIMIZER_AVAILABLE:
         return pyjobshop.cpoptimizer.solve(
