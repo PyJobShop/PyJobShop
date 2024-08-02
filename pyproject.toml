@@ -21,7 +21,7 @@ numpy = "^1.24.2"
 matplotlib = "^3.7.1"
 ortools = "^9.10.4067"
 enum-tools = "^0.11.0"
-progiter = "^2.0.0"
+tqdm = "^4.66.4"
 tomli = "^2.0.1"
 fjsplib = { git = "https://github.com/PyJobShop/FJSPLIB.git", rev = "75b2d18" }
 cplex = { version = "22.1.1.2", optional = true, markers = "python_version < '3.12'"}
