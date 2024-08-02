@@ -149,7 +149,7 @@ class SequenceVar:
 
 class Variables:
     """
-    Helper class that creates the variables for the OR-Tools CP solver.
+    Helper class that creates the core variables for OR-Tools.
     """
 
     def __init__(self, m: CpModel, data: ProblemData):
