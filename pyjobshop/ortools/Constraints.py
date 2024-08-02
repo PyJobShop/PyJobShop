@@ -210,14 +210,17 @@ class Constraints:
             ends = sequence.ends
             ranks = sequence.ranks
             arcs = sequence.arcs
-            circuit = []
+
+            # Add dummy node self-arc to allow empty circuits.
+            empty = m.new_bool_var(f"empty_circuit_{machine}")
+            circuit = [(-1, -1, empty)]
 
             for idx1, var1 in enumerate(task_alt_vars):
-                # Set initial arcs from the dummy node (-1) to/from a task.
-                start = starts[idx1]
-                end = ends[idx1]
+                start = starts[idx1]  # "is start node" literal
+                end = ends[idx1]  # "is end node" literal
                 rank = ranks[idx1]
 
+                # Arcs from the dummy node to/from a task.
                 circuit.append([-1, idx1, start])
                 circuit.append([idx1, -1, end])
 
@@ -227,6 +230,9 @@ class Constraints:
                 # Self arc if the task is not present on this machine.
                 circuit.append([idx1, idx1, ~var1.is_present])
                 m.add(rank == -1).only_enforce_if(~var1.is_present)
+
+                # If the circuit is empty then the var should not be present.
+                m.add_implication(empty, ~var1.is_present)
 
                 for idx2, var2 in enumerate(task_alt_vars):
                     if idx1 == idx2:
@@ -243,11 +249,10 @@ class Constraints:
 
                     # TODO Validate that this cannot be combined with overlap.
                     task1, task2 = var1.task_idx, var2.task_idx
-                    setup = data.setup_times[machine][task1, task2]
+                    setup = data.setup_times[machine, task1, task2]
                     m.add(var1.end + setup <= var2.start).only_enforce_if(arc)
 
-            if circuit:
-                m.add_circuit(circuit)
+            m.add_circuit(circuit)
 
     def add_all_constraints(self):
         """
