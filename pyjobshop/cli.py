@@ -153,7 +153,7 @@ def benchmark(instances: list[Path], num_parallel_instances: int, **kwargs):
     dtypes = [
         ("inst", "U37"),
         ("feas", "U37"),
-        ("obj", int),
+        ("obj", float),
         ("time", float),
     ]
     data = np.asarray(results, dtype=dtypes)
