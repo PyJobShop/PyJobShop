@@ -142,21 +142,21 @@ class Constraints:
             "different_machine",
         }
 
-        for (idx1, idx2), constraints in data.constraints.items():
+        for (task1, task2), constraints in data.constraints.items():
             task_alt_constraints = set(constraints) & relevant_constraints
             if not task_alt_constraints:
                 continue
 
             # Find the common machines for both tasks, because the constraints
             # apply to the task alternative variables on the same machine.
-            machines1 = data.task2machines[idx1]
-            machines2 = data.task2machines[idx2]
+            machines1 = data.task2machines[task1]
+            machines2 = data.task2machines[task2]
             machines = set(machines1) & set(machines2)
 
             for machine in machines:
                 sequence = self.sequence_vars[machine]
-                var1 = self.task_alt_vars[idx1, machine]
-                var2 = self.task_alt_vars[idx2, machine]
+                var1 = self.task_alt_vars[task1, machine]
+                var2 = self.task_alt_vars[task2, machine]
 
                 for constraint in task_alt_constraints:
                     if constraint == "previous":
