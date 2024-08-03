@@ -93,9 +93,7 @@ class Constraints:
         seq_vars = self.sequence_vars
 
         for machine in range(data.num_machines):
-            setup_times = data.setup_times[machine]
-
-            if np.any(setup_times):
+            if np.any(data.setup_times[machine]):
                 seq_vars[machine].activate(m)
 
     def task_graph(self):
@@ -133,32 +131,32 @@ class Constraints:
 
     def task_alt_graph(self):
         """
-        Creates constraints based on the task graph for task alternative
-        variables, which involve assignment decisions.
+        Creates constraints based on the task graph which involve task
+        alternative variables.
         """
         m, data = self._m, self._data
-        task_alt_vars, seq_vars = self.task_alt_vars, self.sequence_vars
+        relevant_constraints = {
+            "previous",
+            "before",
+            "same_machine",
+            "different_machine",
+        }
 
         for (idx1, idx2), constraints in data.constraints.items():
-            valid_constraints = {
-                "previous",
-                "before",
-                "same_machine",
-                "different_machine",
-            }
-            task_alt_constraints = list(set(constraints) & valid_constraints)
-
+            task_alt_constraints = set(constraints) & relevant_constraints
             if not task_alt_constraints:
                 continue
 
+            # Find the common machines for both tasks, because the constraints
+            # apply to the task alternative variables on the same machine.
             machines1 = data.task2machines[idx1]
             machines2 = data.task2machines[idx2]
-            same_machine = set(machines1).intersection(set(machines2))
+            machines = set(machines1) & set(machines2)
 
-            for machine in same_machine:
-                sequence = seq_vars[machine]
-                var1 = task_alt_vars[idx1, machine]
-                var2 = task_alt_vars[idx2, machine]
+            for machine in machines:
+                sequence = self.sequence_vars[machine]
+                var1 = self.task_alt_vars[idx1, machine]
+                var2 = self.task_alt_vars[idx2, machine]
 
                 for constraint in task_alt_constraints:
                     if constraint == "previous":
