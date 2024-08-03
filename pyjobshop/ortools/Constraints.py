@@ -139,18 +139,19 @@ class Constraints:
         variables, which involve assignment decisions.
         """
         m, data = self._m, self._data
+        constraints = data.constraints
         task_alt_vars, seq_vars = self.task_alt_vars, self.sequence_vars
 
         for machine, tasks in enumerate(data.machine2tasks):
             for task1, task2 in product(tasks, repeat=2):
-                if task1 == task2 or (task1, task2) not in data.constraints:
+                if task1 == task2 or (task1, task2) not in constraints:
                     continue
 
                 sequence = seq_vars[machine]
                 var1 = task_alt_vars[task1, machine]
                 var2 = task_alt_vars[task2, machine]
 
-                for constraint in data.constraints[task1, task2]:
+                for constraint in constraints[task1, task2]:
                     if constraint == "previous":
                         sequence.activate(m)
 
