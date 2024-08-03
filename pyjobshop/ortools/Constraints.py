@@ -1,5 +1,3 @@
-from itertools import product
-
 import numpy as np
 from ortools.sat.python.cp_model import (
     CpModel,
@@ -97,7 +95,7 @@ class Constraints:
         for machine in range(data.num_machines):
             setup_times = data.setup_times[machine]
 
-            if np.any(setup_times != 0):
+            if np.any(setup_times):
                 seq_vars[machine].activate(m)
 
     def task_graph(self):
@@ -139,19 +137,30 @@ class Constraints:
         variables, which involve assignment decisions.
         """
         m, data = self._m, self._data
-        constraints = data.constraints
         task_alt_vars, seq_vars = self.task_alt_vars, self.sequence_vars
 
-        for machine, tasks in enumerate(data.machine2tasks):
-            for task1, task2 in product(tasks, repeat=2):
-                if task1 == task2 or (task1, task2) not in constraints:
-                    continue
+        for (idx1, idx2), constraints in data.constraints.items():
+            valid_constraints = {
+                "previous",
+                "before",
+                "same_machine",
+                "different_machine",
+            }
+            task_alt_constraints = list(set(constraints) & valid_constraints)
 
+            if not task_alt_constraints:
+                continue
+
+            machines1 = data.task2machines[idx1]
+            machines2 = data.task2machines[idx2]
+            same_machine = set(machines1).intersection(set(machines2))
+
+            for machine in same_machine:
                 sequence = seq_vars[machine]
-                var1 = task_alt_vars[task1, machine]
-                var2 = task_alt_vars[task2, machine]
+                var1 = task_alt_vars[idx1, machine]
+                var2 = task_alt_vars[idx2, machine]
 
-                for constraint in constraints[task1, task2]:
+                for constraint in task_alt_constraints:
                     if constraint == "previous":
                         sequence.activate(m)
 
