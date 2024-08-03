@@ -345,7 +345,11 @@ class ProblemData:
         num_mach = self.num_machines
         num_tasks = self.num_tasks
 
-        self._setup_times = setup_times
+        self._setup_times = (
+            setup_times
+            if setup_times is not None
+            else np.zeros((num_mach, num_tasks, num_tasks), dtype=int)
+        )
         self._horizon = horizon
         self._objective = objective
 
@@ -376,13 +380,12 @@ class ProblemData:
         if set(range(num_tasks)) != tasks_with_processing:
             raise ValueError("Processing times missing for some tasks.")
 
-        if self.setup_times is not None:
-            if np.any(self.setup_times < 0):
-                raise ValueError("Setup times must be non-negative.")
+        if np.any(self.setup_times < 0):
+            raise ValueError("Setup times must be non-negative.")
 
-            if self.setup_times.shape != (num_mach, num_tasks, num_tasks):
-                shape = "(num_machines, num_tasks, num_tasks)"
-                raise ValueError(f"Setup times shape != {shape}.")
+        if self.setup_times.shape != (num_mach, num_tasks, num_tasks):
+            msg = "Setup times shape not (num_machines, num_tasks, num_tasks)."
+            raise ValueError(msg)
 
         if self.horizon < 0:
             raise ValueError("Horizon must be non-negative.")

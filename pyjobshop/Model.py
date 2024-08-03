@@ -138,15 +138,14 @@ class Model:
                 elif constraint == Constraint.DIFFERENT_MACHINE:
                     model.add_different_machine(task1, task2)
 
-        if (setup_times := data.setup_times) is not None:
-            for (mach, idx1, idx2), duration in np.ndenumerate(setup_times):
-                if duration != 0:
-                    model.add_setup_time(
-                        machine=model.machines[mach],
-                        task1=model.tasks[idx1],
-                        task2=model.tasks[idx2],
-                        duration=duration,
-                    )
+        for (mach, idx1, idx2), duration in np.ndenumerate(data.setup_times):
+            if duration != 0:
+                model.add_setup_time(
+                    machine=model.machines[mach],
+                    task1=model.tasks[idx1],
+                    task2=model.tasks[idx2],
+                    duration=duration,
+                )
 
         model.set_horizon(data.horizon)
         model.set_objective(data.objective)
@@ -160,14 +159,10 @@ class Model:
         num_tasks = len(self.tasks)
         num_machines = len(self.machines)
 
-        # Turn setup times into a 3D array with zero as default if applicable.
-        if self._setup_times.items():
-            shape = (num_machines, num_tasks, num_tasks)
-            setup_times = np.zeros(shape, dtype=int)
-            for (machine, task1, task2), duration in self._setup_times.items():
-                setup_times[machine, task1, task2] = duration
-        else:
-            setup_times = None
+        # Convert setup times into a 3D array with zero as default.
+        setup_times = np.zeros((num_machines, num_tasks, num_tasks), dtype=int)
+        for (machine, task1, task2), duration in self._setup_times.items():
+            setup_times[machine, task1, task2] = duration
 
         return ProblemData(
             jobs=self.jobs,

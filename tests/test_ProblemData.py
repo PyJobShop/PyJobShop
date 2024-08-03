@@ -220,7 +220,7 @@ def test_problem_data_default_values():
     data = ProblemData(jobs, machines, tasks, processing_times)
 
     assert_equal(data.constraints, {})
-    assert_equal(data.setup_times, None)
+    assert_equal(data.setup_times, np.zeros((1, 1, 1), dtype=int))
     assert_equal(data.horizon, MAX_VALUE)
     assert_equal(data.objective, Objective.MAKESPAN)
 

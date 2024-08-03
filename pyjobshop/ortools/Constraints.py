@@ -93,7 +93,9 @@ class Constraints:
         seq_vars = self.sequence_vars
 
         for machine in range(data.num_machines):
-            if data.setup_times is not None and np.any(data.setup_times):
+            setup_times = data.setup_times[machine]
+
+            if np.any(setup_times):
                 seq_vars[machine].activate(m)
 
     def task_graph(self):
@@ -257,10 +259,8 @@ class Constraints:
 
                     # TODO Validate that this cannot be combined with overlap.
                     task1, task2 = var1.task_idx, var2.task_idx
-                    delay = 0
-                    if data.setup_times is not None:
-                        delay = data.setup_times[machine, task1, task2]
-                    m.add(var1.end + delay <= var2.start).only_enforce_if(arc)
+                    setup = data.setup_times[machine, task1, task2]
+                    m.add(var1.end + setup <= var2.start).only_enforce_if(arc)
 
             m.add_circuit(circuit)
 
