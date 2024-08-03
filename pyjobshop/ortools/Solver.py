@@ -5,7 +5,7 @@ from ortools.sat.python.cp_model import (
     CpSolver,
 )
 
-from pyjobshop.ProblemData import Objective, ProblemData
+from pyjobshop.ProblemData import ProblemData
 from pyjobshop.Result import Result, SolveStatus
 from pyjobshop.Solution import Solution, TaskData
 
@@ -31,9 +31,6 @@ class Solver:
         self._variables = Variables(self._m, data)
         self._constraints = Constraints(self._m, data, self._variables)
         self._objectives = Objectives(self._m, data, self._variables)
-
-    def add_objective_constraint(self, objective, bound):
-        self._objectives.add_objective_constraint(objective, bound)
 
     def add_hints(self, solution: Solution):
         """
@@ -115,7 +112,6 @@ class Solver:
 
     def solve(
         self,
-        objective: Objective = Objective.MAKESPAN,
         time_limit: float = float("inf"),
         log: bool = False,
         num_workers: Optional[int] = None,
@@ -149,7 +145,7 @@ class Solver:
             self.add_hints(initial_solution)
 
         self._constraints.add_all_constraints()
-        self._objectives.set_objective(objective)
+        self._objectives.set_objective(self._data.objective)
 
         params = {
             "max_time_in_seconds": time_limit,
@@ -165,18 +161,18 @@ class Solver:
 
         status_code = cp_solver.solve(self._m)
         status = cp_solver.status_name(status_code)
-        objective_value = cp_solver.objective_value
+        objective = cp_solver.objective_value
 
         if status in ["OPTIMAL", "FEASIBLE"]:
             solution = self._convert_to_solution(cp_solver)
         else:
             # No feasible solution found due to infeasibility or time limit.
             solution = Solution([])
-            objective_value = float("inf")
+            objective = float("inf")
 
         return Result(
             self._get_solve_status(status),
             cp_solver.wall_time,
             solution,
-            objective_value,
+            objective,
         )
