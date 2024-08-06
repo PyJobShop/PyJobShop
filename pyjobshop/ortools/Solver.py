@@ -30,7 +30,7 @@ class Solver:
         self._m = CpModel()
         self._variables = Variables(self._m, data)
         self._constraints = Constraints(self._m, data, self._variables)
-        self._objectives = ObjectiveManager(self._m, data, self._variables)
+        self._obj_manager = ObjectiveManager(self._m, data, self._variables)
 
     def add_objective_as_constraint(self, objective: Objective, bound: int):
         """
@@ -43,7 +43,7 @@ class Solver:
         bound
             The bound for the objective function.
         """
-        self._objectives.add_objective_as_constraint(objective, bound)
+        self._obj_manager.add_objective_as_constraint(objective, bound)
 
     def add_hints(self, solution: Solution):
         """
@@ -115,7 +115,6 @@ class Solver:
 
     def solve(
         self,
-        objective: Objective = Objective.MAKESPAN,
         time_limit: float = float("inf"),
         log: bool = False,
         num_workers: Optional[int] = None,
@@ -149,7 +148,7 @@ class Solver:
             self.add_hints(initial_solution)
 
         self._constraints.add_all_constraints()
-        self._objectives.set_objective(objective)
+        self._obj_manager.set_objective(self._data.objective)
 
         params = {
             "max_time_in_seconds": time_limit,
@@ -180,57 +179,3 @@ class Solver:
             solution,
             objective_value,
         )
-
-    def sequential_solve(
-        self,
-        objectives: list[Objective],
-        time_limit: float = float("inf"),
-        log: bool = False,
-        num_workers: Optional[int] = None,
-        initial_solution: Optional[Solution] = None,
-        **kwargs,
-    ):
-        """
-        Solves the given problem data instance sequentially with different
-        objective functions each time, using the previous result on the
-        objective as constraint on the next solve.
-
-        Parameters
-        ----------
-        objectives
-            List of objectives to solve in sequence.
-        time_limit
-            The time limit for the solver in seconds.
-        log
-            Whether to log the solver output.
-        num_workers
-            The number of workers to use for parallel solving. If not set, all
-            available CPU cores are used.
-        """
-        if len(objectives) == 0:
-            raise ValueError("At least one objective must be given.")
-
-        result = self.solve(
-            objectives[0],
-            time_limit,  # TODO is time limit per solve?
-            log,
-            num_workers,
-            initial_solution,
-            **kwargs,
-        )
-
-        for idx, objective in enumerate(objectives[1:], 1):
-            # TODO what if no solution was found?
-            init = result.best
-            prev_obj = objectives[idx - 1]
-            self.add_objective_as_constraint(prev_obj, int(result.objective))
-            result = self.solve(
-                objective,
-                time_limit,
-                log,
-                num_workers,
-                init,
-                **kwargs,
-            )
-
-        return result  # TODO do we need to return all results?

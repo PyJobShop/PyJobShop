@@ -17,7 +17,7 @@ def solve(
     data: ProblemData,
     solver: str = "ortools",
     time_limit: float = float("inf"),
-    log: bool = True,
+    log: bool = False,
     num_workers: Optional[int] = None,
     initial_solution: Optional[Solution] = None,
     **kwargs,
@@ -58,7 +58,6 @@ def solve(
     if solver == "ortools":
         solver_ = ORToolsSolver(data)
         return solver_.solve(
-            data.objective,
             time_limit,
             log,
             num_workers,
