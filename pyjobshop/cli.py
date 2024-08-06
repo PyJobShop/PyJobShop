@@ -1,14 +1,15 @@
 import argparse
+import warnings
+from functools import partial
+from multiprocessing import cpu_count
 from pathlib import Path
 from typing import Optional
 
-import fjsplib
 import numpy as np
 import tomli
-from progiter import ProgIter
+from tqdm.contrib.concurrent import process_map
 
-import pyjobshop
-from pyjobshop import Model, solve
+from pyjobshop import read, solve
 
 
 def parse_args():
@@ -34,8 +35,16 @@ def parse_args():
     msg = "Whether to log the solver output."
     parser.add_argument("--log", action="store_true", help=msg)
 
-    msg = "Number of workers to use for parallel solving."
-    parser.add_argument("--num_workers", type=int, help=msg)
+    msg = (
+        "Number of worker threads to use for solving a single instance."
+        "Default is the number of available CPU cores."
+    )
+    parser.add_argument("--num_workers_per_instance", type=int, help=msg)
+
+    msg = "Number of instances to solve in parallel. Default is 1."
+    parser.add_argument(
+        "--num_parallel_instances", type=int, default=1, help=msg
+    )
 
     msg = """
     Optional parameter configuration file (in TOML format). These parameters
@@ -69,34 +78,12 @@ def tabulate(headers: list[str], rows: np.ndarray) -> str:
     return "\n".join(header + content)
 
 
-def instance2data(instance: fjsplib.Instance) -> pyjobshop.ProblemData:
-    """
-    Converts an FJSPLIB instance to a ProblemData object.
-    """
-    m = Model()
-
-    jobs = [m.add_job() for _ in range(instance.num_jobs)]
-    machines = [m.add_machine() for _ in range(instance.num_machines)]
-
-    for job_idx, tasks in enumerate(instance.jobs):
-        for task_data in tasks:
-            task = m.add_task(job=jobs[job_idx])
-
-            for machine_idx, duration in task_data:
-                m.add_processing_time(task, machines[machine_idx], duration)
-
-    for frm, to in instance.precedences:
-        m.add_end_before_start(m.tasks[frm], m.tasks[to])
-
-    return m.data()
-
-
 def _solve(
     instance_loc: Path,
     solver: str,
     time_limit: float,
     log: bool,
-    num_workers: int,
+    num_workers_per_instance: int,
     config_loc: Optional[Path],
 ) -> tuple[str, str, float, float]:
     """
@@ -108,9 +95,10 @@ def _solve(
     else:
         params = {}
 
-    instance = fjsplib.read(instance_loc)
-    data = instance2data(instance)
-    result = solve(data, solver, time_limit, log, num_workers, **params)
+    data = read(instance_loc)
+    result = solve(
+        data, solver, time_limit, log, num_workers_per_instance, **params
+    )
 
     return (
         instance_loc.name,
@@ -120,16 +108,52 @@ def _solve(
     )
 
 
-def benchmark(instances: list[Path], **kwargs):
+def _check_cpu_usage(
+    num_parallel_instances: int, num_workers_per_instance: Optional[int]
+):
+    """
+    Warns if the number of workers per instance times the number of parallel
+    instances is greater than the number of available CPU cores
+    """
+    num_cpus = cpu_count()
+    num_workers_per_instance = (
+        num_workers_per_instance
+        if num_workers_per_instance is not None
+        else num_cpus  # uses all CPUs if not set
+    )
+
+    if num_workers_per_instance * num_parallel_instances > num_cpus:
+        warnings.warn(
+            f"Number of workers per instance ({num_workers_per_instance}) "
+            f"times number of parallel instances ({num_parallel_instances}) "
+            f"is greater than the number of available CPU cores ({num_cpus}). "
+            "This may lead to suboptimal performance.",
+            stacklevel=2,
+        )
+
+
+def benchmark(instances: list[Path], num_parallel_instances: int, **kwargs):
     """
     Solves the list of instances and prints a table of the results.
     """
-    results = [_solve(instance, **kwargs) for instance in ProgIter(instances)]
+    _check_cpu_usage(
+        num_parallel_instances, kwargs.get("num_workers_per_instance")
+    )
+
+    args = sorted(instances)
+    func = partial(_solve, **kwargs)
+
+    if len(instances) == 1:
+        results = [func(args[0])]
+    else:
+        results = process_map(
+            func, args, max_workers=num_parallel_instances, unit="instance"
+        )
 
     dtypes = [
         ("inst", "U37"),
         ("feas", "U37"),
-        ("obj", int),
+        ("obj", float),
         ("time", float),
     ]
     data = np.asarray(results, dtype=dtypes)

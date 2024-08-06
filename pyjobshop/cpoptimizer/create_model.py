@@ -9,6 +9,7 @@ from .constraints import (
     job_spans_tasks,
     no_overlap_and_setup_times,
     select_one_task_alternative,
+    task_alt_graph,
     task_graph,
 )
 from .objectives import (
@@ -71,6 +72,7 @@ def create_model(
     job_spans_tasks(model, data, job_vars, task_vars)
     no_overlap_and_setup_times(model, data, seq_vars)
     select_one_task_alternative(model, data, task_vars, task_alt_vars)
-    task_graph(model, data, task_vars, task_alt_vars, seq_vars)
+    task_graph(model, data, task_vars)
+    task_alt_graph(model, data, task_alt_vars, seq_vars)
 
     return model
