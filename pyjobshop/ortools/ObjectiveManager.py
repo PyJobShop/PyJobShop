@@ -15,13 +15,13 @@ from .VariablesManager import VariablesManager
 
 class ObjectiveManager:
     """
-    Helper class to manage the objective of the model.
+    Manage the objective function of the OR-Tools CP model.
     """
 
     def __init__(
         self, model: CpModel, data: ProblemData, vars_manager: VariablesManager
     ):
-        self._m = model
+        self._model = model
         self._data = data
         self._task_vars = vars_manager.task_vars
         self._job_vars = vars_manager.job_vars
@@ -31,9 +31,9 @@ class ObjectiveManager:
         """
         Returns the makespan variable of the model.
         """
-        var = self._m.new_int_var(0, self._data.horizon, "makespan")
+        var = self._model.new_int_var(0, self._data.horizon, "makespan")
         completion_times = [var.end for var in self._task_vars]
-        self._m.add_max_equality(var, completion_times)
+        self._model.add_max_equality(var, completion_times)
         return var
 
     @cached_property
@@ -41,13 +41,13 @@ class ObjectiveManager:
         """
         Returns a list of booleans representing whether a job is tardy.
         """
+        model, data = self._model, self._data
         variables = []
 
-        for job, job_var in zip(self._data.jobs, self._job_vars):
-            assert job.due_date is not None
-            is_tardy = self._m.new_bool_var(f"is_tardy_{job}")
-            self._m.add(job_var.end > job.due_date).only_enforce_if(is_tardy)
-            self._m.add(job_var.end <= job.due_date).only_enforce_if(~is_tardy)
+        for job, job_var in zip(data.jobs, self._job_vars):
+            is_tardy = model.new_bool_var(f"is_tardy_{job}")
+            model.add(job_var.end > job.due_date).only_enforce_if(is_tardy)
+            model.add(job_var.end <= job.due_date).only_enforce_if(~is_tardy)
             variables.append(is_tardy)
 
         return variables
@@ -57,13 +57,12 @@ class ObjectiveManager:
         """
         Returns a list of integer variables representing the job tardiness.
         """
+        model, data = self._model, self._data
         variables = []
 
-        for job, var in zip(self._data.jobs, self._job_vars):
-            tardiness = self._m.new_int_var(
-                0, self._data.horizon, f"tardiness_{job}"
-            )
-            self._m.add_max_equality(tardiness, [0, var.end - job.due_date])
+        for job, var in zip(data.jobs, self._job_vars):
+            tardiness = model.new_int_var(0, data.horizon, f"tardiness_{job}")
+            model.add_max_equality(tardiness, [0, var.end - job.due_date])
             variables.append(tardiness)
 
         return variables
@@ -114,11 +113,11 @@ class ObjectiveManager:
         """
         Sets the objective of the the model.
         """
-        self._m.clear_objective()
-        self._m.minimize(self._objective2expr(objective))
+        self._model.clear_objective()
+        self._model.minimize(self._objective2expr(objective))
 
     def add_objective_as_constraint(self, objective: Objective, value: int):
         """
         Adds the objective function as constraint to the model.
         """
-        self._m.add(self._objective2expr(objective) <= value)
+        self._model.add(self._objective2expr(objective) <= value)

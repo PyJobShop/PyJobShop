@@ -27,12 +27,14 @@ class Solver:
     def __init__(self, data: ProblemData):
         self._data = data
 
-        self._m = CpModel()
-        self._vars_manager = VariablesManager(self._m, data)
+        self._model = CpModel()
+        self._vars_manager = VariablesManager(self._model, data)
         self._constrs_manager = ConstraintsManager(
-            self._m, data, self._vars_manager
+            self._model, data, self._vars_manager
         )
-        self._obj_manager = ObjectiveManager(self._m, data, self._vars_manager)
+        self._obj_manager = ObjectiveManager(
+            self._model, data, self._vars_manager
+        )
 
     def add_objective_as_constraint(self, objective: Objective, bound: int):
         """
@@ -123,7 +125,7 @@ class Solver:
         for key, value in params.items():
             setattr(cp_solver.parameters, key, value)
 
-        status_code = cp_solver.solve(self._m)
+        status_code = cp_solver.solve(self._model)
         status = cp_solver.status_name(status_code)
         objective_value = cp_solver.objective_value
 
