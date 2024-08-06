@@ -17,7 +17,7 @@ def solve(
     data: ProblemData,
     solver: str = "ortools",
     time_limit: float = float("inf"),
-    log: bool = False,
+    display: bool = False,
     num_workers: Optional[int] = None,
     initial_solution: Optional[Solution] = None,
     **kwargs,
@@ -33,8 +33,8 @@ def solve(
         The solver to use. Either ``'ortools'`` (default) or ``'cpoptimizer'``.
     time_limit
         The time limit for the solver in seconds. Default ``float('inf')``.
-    log
-        Whether to log the solver output. Default ``False``.
+    display
+        Whether to display the solver output. Default ``False``.
     num_workers
         The number of workers to use for parallel solving. If not specified,
         the default of the selected solver is used, which is typically the
@@ -59,14 +59,14 @@ def solve(
         solver_ = ORToolsSolver(data)
         return solver_.solve(
             time_limit,
-            log,
+            display,
             num_workers,
             initial_solution,
             **kwargs,
         )
     elif solver == "cpoptimizer" and CPOPTIMIZER_AVAILABLE:
         return pyjobshop.cpoptimizer.solve(
-            data, time_limit, log, num_workers, initial_solution, **kwargs
+            data, time_limit, display, num_workers, initial_solution, **kwargs
         )
     elif solver == "cpoptimizer" and not CPOPTIMIZER_AVAILABLE:
         msg = (

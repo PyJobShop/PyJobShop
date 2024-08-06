@@ -32,8 +32,8 @@ def parse_args():
         "--time_limit", type=float, default=float("inf"), help=msg
     )
 
-    msg = "Whether to log the solver output."
-    parser.add_argument("--log", action="store_true", help=msg)
+    msg = "Whether to display the solver output."
+    parser.add_argument("--display", action="store_true", help=msg)
 
     msg = (
         "Number of worker threads to use for solving a single instance."
@@ -82,7 +82,7 @@ def _solve(
     instance_loc: Path,
     solver: str,
     time_limit: float,
-    log: bool,
+    display: bool,
     num_workers_per_instance: int,
     config_loc: Optional[Path],
 ) -> tuple[str, str, float, float]:
@@ -97,7 +97,7 @@ def _solve(
 
     data = read(instance_loc)
     result = solve(
-        data, solver, time_limit, log, num_workers_per_instance, **params
+        data, solver, time_limit, display, num_workers_per_instance, **params
     )
 
     return (

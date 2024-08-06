@@ -468,7 +468,7 @@ class Model:
         self,
         solver: str = "ortools",
         time_limit: float = float("inf"),
-        log: bool = True,
+        display: bool = True,
         num_workers: Optional[int] = None,
         initial_solution: Optional[Solution] = None,
         **kwargs,
@@ -483,8 +483,8 @@ class Model:
             ``'cpoptimizer'``.
         time_limit
             The time limit for the solver in seconds. Default ``float('inf')``.
-        log
-            Whether to log the solver output. Default ``True``.
+        display
+            Whether to display the solver output. Default ``True``.
         num_workers
             The number of workers to use for parallel solving. If not
             specified, the default of the selected solver is used, which is
@@ -505,7 +505,7 @@ class Model:
             self.data(),
             solver,
             time_limit,
-            log,
+            display,
             num_workers,
             initial_solution,
             **kwargs,
