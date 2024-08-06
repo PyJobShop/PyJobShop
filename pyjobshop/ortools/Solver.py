@@ -47,47 +47,6 @@ class Solver:
         """
         self._obj_manager.add_objective_as_constraint(objective, bound)
 
-    def add_hints(self, solution: Solution):
-        """
-        Adds hints to variables based on the given solution.
-        """
-        m, data = self._m, self._data
-        job_vars, task_vars, task_alt_vars = (
-            self._vars_manager.job_vars,
-            self._vars_manager.task_vars,
-            self._vars_manager.task_alt_vars,
-        )
-
-        m.clear_hints()
-
-        for idx in range(data.num_jobs):
-            job = data.jobs[idx]
-            job_var = job_vars[idx]
-            sol_tasks = [solution.tasks[task] for task in job.tasks]
-
-            job_start = min(task.start for task in sol_tasks)
-            job_end = max(task.end for task in sol_tasks)
-
-            m.add_hint(job_var.start, job_start)
-            m.add_hint(job_var.duration, job_end - job_start)
-            m.add_hint(job_var.end, job_end)
-
-        for idx in range(data.num_tasks):
-            task_var = task_vars[idx]
-            sol_task = solution.tasks[idx]
-
-            m.add_hint(task_var.start, sol_task.start)
-            m.add_hint(task_var.duration, sol_task.duration)
-            m.add_hint(task_var.end, sol_task.end)
-
-        for (task_idx, machine_idx), var in task_alt_vars.items():
-            sol_task = solution.tasks[task_idx]
-
-            m.add_hint(var.start, sol_task.start)
-            m.add_hint(var.duration, sol_task.duration)
-            m.add_hint(var.end, sol_task.end)
-            m.add_hint(var.is_present, machine_idx == sol_task.machine)
-
     def _get_solve_status(self, status: str):
         if status == "OPTIMAL":
             return SolveStatus.OPTIMAL
@@ -147,7 +106,7 @@ class Solver:
             information about the solver run.
         """
         if initial_solution is not None:
-            self.add_hints(initial_solution)
+            self._vars_manager.add_hints(initial_solution)
 
         self._constrs_manager.add_all_constraints()
         self._obj_manager.set_objective(self._data.objective)
