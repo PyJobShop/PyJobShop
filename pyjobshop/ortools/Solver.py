@@ -10,7 +10,7 @@ from pyjobshop.Result import Result, SolveStatus
 from pyjobshop.Solution import Solution, TaskData
 
 from .Constraints import Constraints
-from .Objectives import Objectives
+from .ObjectiveManager import ObjectiveManager
 from .Variables import Variables
 
 
@@ -30,10 +30,20 @@ class Solver:
         self._m = CpModel()
         self._variables = Variables(self._m, data)
         self._constraints = Constraints(self._m, data, self._variables)
-        self._objectives = Objectives(self._m, data, self._variables)
+        self._objectives = ObjectiveManager(self._m, data, self._variables)
 
-    def add_objective_constraint(self, objective, bound):
-        self._objectives.add_objective_constraint(objective, bound)
+    def add_objective_as_constraint(self, objective: Objective, bound: int):
+        """
+        Adds the objective function as constraint to the model.
+
+        Parameters
+        ----------
+        objective
+            The objective function to add as constraint.
+        bound
+            The bound for the objective function.
+        """
+        self._objectives.add_objective_as_constraint(objective, bound)
 
     def add_hints(self, solution: Solution):
         """
@@ -91,16 +101,6 @@ class Solver:
     def _convert_to_solution(self, cp_solver: CpSolver) -> Solution:
         """
         Converts a result from the OR-Tools CP solver to a Solution object.
-
-        Parameters
-        ----------
-        cp_solver
-            The CP solver.
-
-        Returns
-        -------
-        Solution
-            The solution.
         """
         tasks = {}
 
@@ -190,6 +190,26 @@ class Solver:
         initial_solution: Optional[Solution] = None,
         **kwargs,
     ):
+        """
+        Solves the given problem data instance sequentially with different
+        objective functions each time, using the previous result on the
+        objective as constraint on the next solve.
+
+        Parameters
+        ----------
+        objectives
+            List of objectives to solve in sequence.
+        time_limit
+            The time limit for the solver in seconds.
+        log
+            Whether to log the solver output.
+        num_workers
+            The number of workers to use for parallel solving. If not set, all
+            available CPU cores are used.
+        """
+        if len(objectives) == 0:
+            raise ValueError("At least one objective must be given.")
+
         result = self.solve(
             objectives[0],
             time_limit,  # TODO is time limit per solve?
@@ -203,7 +223,7 @@ class Solver:
             # TODO what if no solution was found?
             init = result.best
             prev_obj = objectives[idx - 1]
-            self.add_objective_constraint(prev_obj, int(result.objective))
+            self.add_objective_as_constraint(prev_obj, int(result.objective))
             result = self.solve(
                 objective,
                 time_limit,
