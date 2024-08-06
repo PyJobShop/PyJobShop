@@ -283,11 +283,10 @@ class VariablesManager:
         used for modeling machine setups and sequencing task constraints, such
         as previous, before, first, last and permutations.
         """
-        data = self._data
         variables = []
 
-        for machine in range(data.num_machines):
-            tasks = data.machine2tasks[machine]
+        for machine in range(self._data.num_machines):
+            tasks = self._data.machine2tasks[machine]
             alt_vars = [self.task_alt_vars[task, machine] for task in tasks]
             variables.append(SequenceVar(alt_vars))
 
