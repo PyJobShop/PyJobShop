@@ -11,6 +11,7 @@ from pyjobshop.ProblemData import (
     Objective,
     ProblemData,
     Task,
+    TaskGroup,
 )
 from pyjobshop.Result import Result
 from pyjobshop.Solution import Solution
@@ -30,7 +31,7 @@ class Model:
         self._constraints: dict[tuple[int, int], list[Constraint]] = (
             defaultdict(list)
         )
-
+        self._groups: list[TaskGroup] = []
         self._setup_times: dict[tuple[int, int, int], int] = {}
         self._horizon: int = MAX_VALUE
         self._objective: Objective = Objective.MAKESPAN
@@ -59,6 +60,13 @@ class Model:
         Returns the list of tasks in the model.
         """
         return self._tasks
+
+    @property
+    def groups(self) -> list[TaskGroup]:
+        """
+        Returns the list of task groups in the model.
+        """
+        return self._groups
 
     @property
     def objective(self) -> Objective:
@@ -107,6 +115,11 @@ class Model:
                 task=model.tasks[task_idx],
                 machine=model.machines[mach_idx],
                 duration=duration,
+            )
+
+        for _group in data.groups:
+            model.add_group(
+                [model.tasks[idx] for idx in _group.tasks], name=_group.name
             )
 
         for (idx1, idx2), constraints in data.constraints.items():
@@ -169,6 +182,7 @@ class Model:
             machines=self.machines,
             tasks=self.tasks,
             processing_times=self._processing_times,
+            groups=self.groups,
             constraints=self._constraints,
             setup_times=setup_times,
             horizon=self._horizon,
@@ -309,6 +323,20 @@ class Model:
         task_idx = self._id2task[id(task)]
         machine_idx = self._id2machine[id(machine)]
         self._processing_times[task_idx, machine_idx] = duration
+
+    def add_group(self, tasks: list[Task], name: str = "") -> TaskGroup:
+        """
+        Adds a new task group to the model.
+
+        Returns
+        -------
+        TaskGroup
+            The created task group.
+        """
+        idcs = [self._id2task[id(task)] for task in tasks]
+        group = TaskGroup(idcs, name=name)
+        self._groups.append(group)
+        return group
 
     def add_start_at_start(self, first: Task, second: Task):
         """

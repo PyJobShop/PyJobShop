@@ -11,6 +11,7 @@ from pyjobshop.ProblemData import (
     Objective,
     ProblemData,
     Task,
+    TaskGroup,
 )
 from pyjobshop.Solution import TaskData as TaskData
 from pyjobshop.solve import solve
@@ -149,6 +150,16 @@ def test_task_attributes_raises_invalid_parameters(
         Task(earliest_start, latest_start, earliest_end, latest_end)
 
 
+def test_group_attributes():
+    """
+    Tests that the attributes of the TaskGroup class are set correctly.
+    """
+    group = TaskGroup(tasks=[0, 1, 2], name="TestGroup")
+
+    assert_equal(group.tasks, [0, 1, 2])
+    assert_equal(group.name, "TestGroup")
+
+
 def test_problem_data_input_parameter_attributes():
     """
     Tests that the input parameters of the ProblemData class are set correctly
@@ -158,6 +169,7 @@ def test_problem_data_input_parameter_attributes():
     machines = [Machine() for _ in range(5)]
     tasks = [Task() for _ in range(5)]
     processing_times = {(i, j): 1 for i in range(5) for j in range(5)}
+    groups = [TaskGroup(tasks=[idx]) for idx in range(5)]
     constraints = {
         key: [Constraint.END_BEFORE_START] for key in ((0, 1), (2, 3), (4, 5))
     }
@@ -170,6 +182,7 @@ def test_problem_data_input_parameter_attributes():
         machines,
         tasks,
         processing_times,
+        groups,
         constraints,
         setup_times,
         horizon,
@@ -180,6 +193,7 @@ def test_problem_data_input_parameter_attributes():
     assert_equal(data.machines, machines)
     assert_equal(data.tasks, tasks)
     assert_equal(data.processing_times, processing_times)
+    assert_equal(data.groups, groups)
     assert_equal(data.constraints, constraints)
     assert_equal(data.setup_times, setup_times)
     assert_equal(data.horizon, horizon)
@@ -219,6 +233,7 @@ def test_problem_data_default_values():
     processing_times = {(0, 0): 1}
     data = ProblemData(jobs, machines, tasks, processing_times)
 
+    assert_equal(data.groups, [])
     assert_equal(data.constraints, {})
     assert_equal(data.setup_times, np.zeros((1, 1, 1), dtype=int))
     assert_equal(data.horizon, MAX_VALUE)
@@ -230,7 +245,12 @@ def test_problem_data_job_references_invalid_task():
     Tests that an error is raised when a job references an unknown task.
     """
     with assert_raises(ValueError):
-        ProblemData([Job(tasks=[42])], [Machine()], [Task()], {})
+        ProblemData(
+            [Job(tasks=[42])],
+            [Machine()],
+            [Task()],
+            {(0, 0): 1},
+        )
 
 
 def test_problem_data_task_without_processing_times():
@@ -239,6 +259,20 @@ def test_problem_data_task_without_processing_times():
     """
     with assert_raises(ValueError):
         ProblemData([Job()], [Machine()], [Task()], {})
+
+
+def test_problem_data_group_references_invalid_task():
+    """
+    Tests that an error is raised when a group references an unknown task.
+    """
+    with assert_raises(ValueError):
+        ProblemData(
+            [Job()],
+            [Machine()],
+            [Task()],
+            {(0, 0): 1},
+            groups=[TaskGroup(tasks=[42])],
+        )
 
 
 @pytest.mark.parametrize(
@@ -301,6 +335,7 @@ def describe_problem_data_replace():
         machines = [Machine(name="machine"), Machine(name="machine")]
         tasks = [Task(earliest_start=1), Task(earliest_start=1)]
         processing_times = {(0, 0): 1, (1, 1): 2}
+        groups = [TaskGroup(tasks=[0, 1])]
         constraints = {(0, 1): [Constraint.END_BEFORE_START]}
         setup_times = np.zeros((2, 2, 2))
         horizon = 1
@@ -311,6 +346,7 @@ def describe_problem_data_replace():
             machines,
             tasks,
             processing_times,
+            groups,
             constraints,
             setup_times,
             horizon,
@@ -342,6 +378,10 @@ def describe_problem_data_replace():
                 data.tasks[idx].earliest_start,
             )
 
+        for idx in range(data.num_groups):
+            assert_(new.groups[idx] is not data.groups[idx])
+            assert_equal(new.groups[idx].tasks, data.groups[idx].tasks)
+
         assert_equal(new.processing_times, data.processing_times)
         assert_equal(new.constraints, data.constraints)
         assert_equal(new.setup_times, data.setup_times)
@@ -358,6 +398,7 @@ def describe_problem_data_replace():
             machines=[Machine(name="new"), Machine(name="new")],
             tasks=[Task(earliest_start=2), Task(earliest_start=2)],
             processing_times={(0, 0): 2, (1, 1): 1},
+            groups=[TaskGroup(tasks=[0, 1])],
             constraints={(1, 0): [Constraint.END_BEFORE_START]},
             setup_times=np.ones((2, 2, 2)),
             horizon=2,
@@ -379,6 +420,10 @@ def describe_problem_data_replace():
             assert_(
                 new.tasks[idx].earliest_start != data.tasks[idx].earliest_start
             )
+
+        for idx in range(data.num_groups):
+            assert_(new.groups[idx] is not data.groups[idx])
+            assert_(new.groups[idx].tasks != data.groups[idx].tasks)
 
         assert_(new.processing_times != data.processing_times)
         assert_(new.constraints != data.constraints)
@@ -636,6 +681,9 @@ def test_task_non_fixed_duration(solver: str):
     assert_equal(result.best.tasks, [TaskData(0, 0, 10, 10)])
 
 
+# TODO test task group
+
+
 @pytest.mark.parametrize(
     "prec_type,expected_makespan",
     [
@@ -674,7 +722,11 @@ def test_constraints(solver, prec_type: Constraint, expected_makespan: int):
     }
 
     data = ProblemData(
-        [job], machines, tasks, processing_times, {(0, 1): [prec_type]}
+        [job],
+        machines,
+        tasks,
+        processing_times,
+        constraints={(0, 1): [prec_type]},
     )
     result = solve(data, solver=solver)
 
