@@ -9,9 +9,9 @@ from pyjobshop.ProblemData import Objective, ProblemData
 from pyjobshop.Result import Result, SolveStatus
 from pyjobshop.Solution import Solution, TaskData
 
-from .Constraints import Constraints
+from .ConstraintsManager import ConstraintsManager
 from .ObjectiveManager import ObjectiveManager
-from .Variables import Variables
+from .VariablesManager import VariablesManager
 
 
 class Solver:
@@ -28,9 +28,11 @@ class Solver:
         self._data = data
 
         self._m = CpModel()
-        self._variables = Variables(self._m, data)
-        self._constraints = Constraints(self._m, data, self._variables)
-        self._obj_manager = ObjectiveManager(self._m, data, self._variables)
+        self._vars_manager = VariablesManager(self._m, data)
+        self._constrs_manager = ConstraintsManager(
+            self._m, data, self._vars_manager
+        )
+        self._obj_manager = ObjectiveManager(self._m, data, self._vars_manager)
 
     def add_objective_as_constraint(self, objective: Objective, bound: int):
         """
@@ -51,9 +53,9 @@ class Solver:
         """
         m, data = self._m, self._data
         job_vars, task_vars, task_alt_vars = (
-            self._variables.job_vars,
-            self._variables.task_vars,
-            self._variables.task_alt_vars,
+            self._vars_manager.job_vars,
+            self._vars_manager.task_vars,
+            self._vars_manager.task_alt_vars,
         )
 
         m.clear_hints()
@@ -104,7 +106,7 @@ class Solver:
         """
         tasks = {}
 
-        for (task, machine), var in self._variables.task_alt_vars.items():
+        for (task, machine), var in self._vars_manager.task_alt_vars.items():
             if cp_solver.value(var.is_present):
                 start = cp_solver.value(var.start)
                 duration = cp_solver.value(var.duration)
@@ -147,7 +149,7 @@ class Solver:
         if initial_solution is not None:
             self.add_hints(initial_solution)
 
-        self._constraints.add_all_constraints()
+        self._constrs_manager.add_all_constraints()
         self._obj_manager.set_objective(self._data.objective)
 
         params = {

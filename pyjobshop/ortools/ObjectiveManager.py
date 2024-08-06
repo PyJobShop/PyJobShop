@@ -10,7 +10,7 @@ from ortools.sat.python.cp_model import (
 
 from pyjobshop.ProblemData import Objective, ProblemData
 
-from .Variables import Variables
+from .VariablesManager import VariablesManager
 
 
 class ObjectiveManager:
@@ -19,12 +19,12 @@ class ObjectiveManager:
     """
 
     def __init__(
-        self, model: CpModel, data: ProblemData, variables: Variables
+        self, model: CpModel, data: ProblemData, vars_manager: VariablesManager
     ):
         self._m = model
         self._data = data
-        self._task_vars = variables.task_vars
-        self._job_vars = variables.job_vars
+        self._task_vars = vars_manager.task_vars
+        self._job_vars = vars_manager.job_vars
 
     @cached_property
     def makespan_var(self) -> IntVar:

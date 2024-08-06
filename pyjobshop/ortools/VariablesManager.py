@@ -147,23 +147,25 @@ class SequenceVar:
         }
 
 
-class Variables:
+class VariablesManager:
     """
-    Helper class that creates the core variables for OR-Tools.
+    Helper class that manages the core variables for OR-Tools.
     """
 
     def __init__(self, m: CpModel, data: ProblemData):
-        self.job_vars = self._job_variables(m, data)
-        self.task_vars = self._task_variables(m, data)
-        self.task_alt_vars = self._task_alternative_variables(m, data)
-        self.sequence_vars = self._sequence_variables(
-            m, data, self.task_alt_vars
-        )
+        self._model = m
+        self._data = data
 
-    def _job_variables(self, m: CpModel, data: ProblemData) -> list[JobVar]:
+        self.job_vars = self._make_job_variables()
+        self.task_vars = self._make_task_variables()
+        self.task_alt_vars = self._make_task_alternative_variables()
+        self.sequence_vars = self._make_sequence_variables()
+
+    def _make_job_variables(self) -> list[JobVar]:
         """
         Creates an interval variable for each job.
         """
+        m, data = self._model, self._data
         variables = []
 
         for job in data.jobs:
@@ -190,10 +192,11 @@ class Variables:
 
         return variables
 
-    def _task_variables(self, m: CpModel, data: ProblemData) -> list[TaskVar]:
+    def _make_task_variables(self) -> list[TaskVar]:
         """
         Creates an interval variable for each task.
         """
+        m, data = self._model, self._data
         variables = []
         min_durations, max_durations = compute_min_max_durations(data)
 
@@ -221,8 +224,8 @@ class Variables:
 
         return variables
 
-    def _task_alternative_variables(
-        self, m: CpModel, data: ProblemData
+    def _make_task_alternative_variables(
+        self,
     ) -> dict[tuple[int, int], TaskAltVar]:
         """
         Creates an optional interval variable for each eligible task and
@@ -234,6 +237,7 @@ class Variables:
             A dictionary that maps each task index and machine index pair to
             its corresponding task alternative variable.
         """
+        m, data = self._model, self._data
         variables = {}
 
         for (
@@ -273,23 +277,19 @@ class Variables:
 
         return variables
 
-    def _sequence_variables(
-        self,
-        m: CpModel,
-        data: ProblemData,
-        task_alt_vars: dict[tuple[int, int], TaskAltVar],
-    ) -> list[SequenceVar]:
+    def _make_sequence_variables(self) -> list[SequenceVar]:
         """
         Creates a sequence variable for each machine. Sequence variables are
         used to model the ordering of intervals on a given machine. This is
         used for modeling machine setups and sequencing task constraints, such
         as previous, before, first, last and permutations.
         """
+        data = self._data
         variables = []
 
         for machine in range(data.num_machines):
             tasks = data.machine2tasks[machine]
-            alt_vars = [task_alt_vars[task, machine] for task in tasks]
+            alt_vars = [self.task_alt_vars[task, machine] for task in tasks]
             variables.append(SequenceVar(alt_vars))
 
         return variables
