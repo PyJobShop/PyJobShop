@@ -398,7 +398,7 @@ def describe_problem_data_replace():
             machines=[Machine(name="new"), Machine(name="new")],
             tasks=[Task(earliest_start=2), Task(earliest_start=2)],
             processing_times={(0, 0): 2, (1, 1): 1},
-            groups=[TaskGroup(tasks=[0, 1])],
+            groups=[TaskGroup(tasks=[1, 0])],
             constraints={(1, 0): [Constraint.END_BEFORE_START]},
             setup_times=np.ones((2, 2, 2)),
             horizon=2,
