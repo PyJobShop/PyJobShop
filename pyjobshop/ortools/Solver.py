@@ -5,7 +5,7 @@ from ortools.sat.python.cp_model import (
     CpSolver,
 )
 
-from pyjobshop.ProblemData import Objective, ProblemData
+from pyjobshop.ProblemData import ProblemData
 from pyjobshop.Result import Result, SolveStatus
 from pyjobshop.Solution import Solution, TaskData
 
@@ -35,19 +35,6 @@ class Solver:
         self._obj_manager = ObjectiveManager(
             self._model, data, self._vars_manager
         )
-
-    def add_objective_as_constraint(self, objective: Objective, bound: int):
-        """
-        Adds the objective function as constraint to the model.
-
-        Parameters
-        ----------
-        objective
-            The objective function to add as constraint.
-        bound
-            The bound for the objective function.
-        """
-        self._obj_manager.add_objective_as_constraint(objective, bound)
 
     def _get_solve_status(self, status: str):
         if status == "OPTIMAL":
