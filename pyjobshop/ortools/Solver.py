@@ -180,3 +180,37 @@ class Solver:
             solution,
             objective_value,
         )
+
+    def sequential_solve(
+        self,
+        objectives: list[Objective],
+        time_limit: float = float("inf"),
+        log: bool = False,
+        num_workers: Optional[int] = None,
+        initial_solution: Optional[Solution] = None,
+        **kwargs,
+    ):
+        result = self.solve(
+            objectives[0],
+            time_limit,  # TODO is time limit per solve?
+            log,
+            num_workers,
+            initial_solution,
+            **kwargs,
+        )
+
+        for idx, objective in enumerate(objectives[1:], 1):
+            # TODO what if no solution was found?
+            init = result.best
+            prev_obj = objectives[idx - 1]
+            self.add_objective_constraint(prev_obj, int(result.objective))
+            result = self.solve(
+                objective,
+                time_limit,
+                log,
+                num_workers,
+                init,
+                **kwargs,
+            )
+
+        return result  # TODO do we need to return all results?
