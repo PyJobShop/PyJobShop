@@ -5,12 +5,12 @@ from ortools.sat.python.cp_model import (
 
 from pyjobshop.ProblemData import ProblemData
 
-from .Variables import Variables
+from .VariablesManager import VariablesManager
 
 
-class Constraints:
+class ConstraintsManager:
     """
-    Handles (most of) the constraints of the OR-Tools CP model.
+    Handles the core constraints of the OR-Tools CP model.
 
     Parameters
     ----------
@@ -19,15 +19,15 @@ class Constraints:
     """
 
     def __init__(
-        self, model: CpModel, data: ProblemData, variables: Variables
+        self, model: CpModel, data: ProblemData, vars_manager: VariablesManager
     ):
         self._m = model
         self._data = data
 
-        self.job_vars = variables.job_vars
-        self.task_vars = variables.task_vars
-        self.task_alt_vars = variables.task_alt_vars
-        self.sequence_vars = variables.sequence_vars
+        self.job_vars = vars_manager.job_vars
+        self.task_vars = vars_manager.task_vars
+        self.task_alt_vars = vars_manager.task_alt_vars
+        self.sequence_vars = vars_manager.sequence_vars
 
     def job_spans_tasks(self):
         """

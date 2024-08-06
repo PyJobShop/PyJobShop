@@ -8,6 +8,7 @@ from ortools.sat.python.cp_model import (
 )
 
 from pyjobshop.ProblemData import ProblemData
+from pyjobshop.Solution import Solution
 from pyjobshop.utils import compute_min_max_durations
 
 
@@ -147,82 +148,85 @@ class SequenceVar:
         }
 
 
-class Variables:
+class VariablesManager:
     """
-    Helper class that creates the variables for the OR-Tools CP solver.
+    Manages the core variables of the OR-Tools CP model.
     """
 
-    def __init__(self, m: CpModel, data: ProblemData):
-        self.job_vars = self._job_variables(m, data)
-        self.task_vars = self._task_variables(m, data)
-        self.task_alt_vars = self._task_alternative_variables(m, data)
-        self.sequence_vars = self._sequence_variables(
-            m, data, self.task_alt_vars
-        )
+    def __init__(self, model: CpModel, data: ProblemData):
+        self._model = model
+        self._data = data
 
-    def _job_variables(self, m: CpModel, data: ProblemData) -> list[JobVar]:
+        self.job_vars = self._make_job_variables()
+        self.task_vars = self._make_task_variables()
+        self.task_alt_vars = self._make_task_alternative_variables()
+        self.sequence_vars = self._make_sequence_variables()
+
+    def _make_job_variables(self) -> list[JobVar]:
         """
         Creates an interval variable for each job.
         """
+        model, data = self._model, self._data
         variables = []
 
         for job in data.jobs:
             name = f"J{job}"
-            start = m.new_int_var(
+            start = model.new_int_var(
                 lb=job.release_date,
                 ub=data.horizon,
                 name=f"{name}_start",
             )
-            duration = m.new_int_var(
+            duration = model.new_int_var(
                 lb=0,
                 ub=min(job.deadline - job.release_date, data.horizon),
                 name=f"{name}_duration",
             )
-            end = m.new_int_var(
+            end = model.new_int_var(
                 lb=0,
                 ub=min(job.deadline, data.horizon),
                 name=f"{name}_end",
             )
-            interval = m.NewIntervalVar(
+            interval = model.NewIntervalVar(
                 start, duration, end, f"{name}_interval"
             )
             variables.append(JobVar(interval, start, duration, end))
 
         return variables
 
-    def _task_variables(self, m: CpModel, data: ProblemData) -> list[TaskVar]:
+    def _make_task_variables(self) -> list[TaskVar]:
         """
         Creates an interval variable for each task.
         """
+        model, data = self._model, self._data
         variables = []
         min_durations, max_durations = compute_min_max_durations(data)
 
         for idx, task in enumerate(data.tasks):
             name = f"T{task}"
-            start = m.new_int_var(
+            start = model.new_int_var(
                 lb=task.earliest_start,
                 ub=min(task.latest_start, data.horizon),
                 name=f"{name}_start",
             )
-            duration = m.new_int_var(
+            duration = model.new_int_var(
                 lb=min_durations[idx],
                 ub=max_durations[idx] if task.fixed_duration else data.horizon,
                 name=f"{name}_duration",
             )
-            end = m.new_int_var(
+            end = model.new_int_var(
                 lb=task.earliest_end,
                 ub=min(task.latest_end, data.horizon),
                 name=f"{name}_end",
             )
-            interval = m.NewIntervalVar(
+            interval = model.NewIntervalVar(
                 start, duration, end, f"interval_{task}"
             )
             variables.append(TaskVar(interval, start, duration, end))
 
         return variables
 
-    def _task_alternative_variables(
-        self, m: CpModel, data: ProblemData
+    def _make_task_alternative_variables(
+        self,
     ) -> dict[tuple[int, int], TaskAltVar]:
         """
         Creates an optional interval variable for each eligible task and
@@ -234,32 +238,31 @@ class Variables:
             A dictionary that maps each task index and machine index pair to
             its corresponding task alternative variable.
         """
+        model, data = self._model, self._data
         variables = {}
+        processing_times = data.processing_times.items()
 
-        for (
-            task_idx,
-            machine_idx,
-        ), proc_time in data.processing_times.items():
+        for (task_idx, machine_idx), proc_time in processing_times:
             task = data.tasks[task_idx]
             machine = data.machines[machine_idx]
             name = f"A{task}_{machine}"
-            start = m.new_int_var(
+            start = model.new_int_var(
                 lb=task.earliest_start,
                 ub=min(task.latest_start, data.horizon),
                 name=f"{name}_start",
             )
-            duration = m.new_int_var(
+            duration = model.new_int_var(
                 lb=proc_time,
                 ub=proc_time if task.fixed_duration else data.horizon,
                 name=f"{name}_duration",
             )
-            end = m.new_int_var(
+            end = model.new_int_var(
                 lb=task.earliest_end,
                 ub=min(task.latest_end, data.horizon),
                 name=f"{name}_start",
             )
-            is_present = m.new_bool_var(f"{name}_is_present")
-            interval = m.new_optional_interval_var(
+            is_present = model.new_bool_var(f"{name}_is_present")
+            interval = model.new_optional_interval_var(
                 start, duration, end, is_present, f"{name}_interval"
             )
             variables[task_idx, machine_idx] = TaskAltVar(
@@ -273,12 +276,7 @@ class Variables:
 
         return variables
 
-    def _sequence_variables(
-        self,
-        m: CpModel,
-        data: ProblemData,
-        task_alt_vars: dict[tuple[int, int], TaskAltVar],
-    ) -> list[SequenceVar]:
+    def _make_sequence_variables(self) -> list[SequenceVar]:
         """
         Creates a sequence variable for each machine. Sequence variables are
         used to model the ordering of intervals on a given machine. This is
@@ -287,9 +285,50 @@ class Variables:
         """
         variables = []
 
-        for machine in range(data.num_machines):
-            tasks = data.machine2tasks[machine]
-            alt_vars = [task_alt_vars[task, machine] for task in tasks]
+        for machine in range(self._data.num_machines):
+            tasks = self._data.machine2tasks[machine]
+            alt_vars = [self.task_alt_vars[task, machine] for task in tasks]
             variables.append(SequenceVar(alt_vars))
 
         return variables
+
+    def add_hints(self, solution: Solution):
+        """
+        Adds hints to variables based on the given solution.
+        """
+        model, data = self._model, self._data
+        job_vars, task_vars, task_alt_vars = (
+            self.job_vars,
+            self.task_vars,
+            self.task_alt_vars,
+        )
+
+        model.clear_hints()
+
+        for idx in range(data.num_jobs):
+            job = data.jobs[idx]
+            job_var = job_vars[idx]
+            sol_tasks = [solution.tasks[task] for task in job.tasks]
+
+            job_start = min(task.start for task in sol_tasks)
+            job_end = max(task.end for task in sol_tasks)
+
+            model.add_hint(job_var.start, job_start)
+            model.add_hint(job_var.duration, job_end - job_start)
+            model.add_hint(job_var.end, job_end)
+
+        for idx in range(data.num_tasks):
+            task_var = task_vars[idx]
+            sol_task = solution.tasks[idx]
+
+            model.add_hint(task_var.start, sol_task.start)
+            model.add_hint(task_var.duration, sol_task.duration)
+            model.add_hint(task_var.end, sol_task.end)
+
+        for (task_idx, machine_idx), var in task_alt_vars.items():
+            sol_task = solution.tasks[task_idx]
+
+            model.add_hint(var.start, sol_task.start)
+            model.add_hint(var.duration, sol_task.duration)
+            model.add_hint(var.end, sol_task.end)
+            model.add_hint(var.is_present, machine_idx == sol_task.machine)

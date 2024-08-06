@@ -56,9 +56,13 @@ def solve(
         If CP Optimizer is chosen but its dependencies are not installed.
     """
     if solver == "ortools":
-        builder = ORToolsSolver(data)
-        return builder.solve(
-            time_limit, log, num_workers, initial_solution, **kwargs
+        solver_ = ORToolsSolver(data)
+        return solver_.solve(
+            time_limit,
+            log,
+            num_workers,
+            initial_solution,
+            **kwargs,
         )
     elif solver == "cpoptimizer" and CPOPTIMIZER_AVAILABLE:
         return pyjobshop.cpoptimizer.solve(
