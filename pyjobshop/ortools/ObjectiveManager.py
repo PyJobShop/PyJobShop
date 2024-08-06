@@ -39,7 +39,7 @@ class ObjectiveManager:
     @cached_property
     def is_tardy_vars(self) -> list[BoolVarT]:
         """
-        Returns a list of booleans representing whether a job is tardy.
+        Returns a list of boolean variables representing if a job is tardy.
         """
         model, data = self._model, self._data
         variables = []
