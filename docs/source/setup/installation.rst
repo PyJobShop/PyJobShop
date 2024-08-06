@@ -36,6 +36,6 @@ If you are a student or researcher, you can get a free academic version of CP Op
 The steps below describe how you can install CP Optimizer through their academic program.
 
 - Register at [ibm.com/academic](https://ibm.com/academic) and log in.
-- Go to [academic.ibm.com/a2mt/downloads/data_science](https://academic.ibm.com/a2mt/downloads/data_science) and download CP Optimizer.
+- Go to [academic.ibm.com/a2mt/downloads/data_science](https://academic.ibm.com/a2mt/downloads/data_science) and download ILOG CPLEX Optimization Studio, which comes with CP Optimizer.
 - Follow the installation instructions and make sure to follow the Python installation instructions at the end.
 - Ensure that the path to `cpoptimizer(.exe)` is accessible and properly set in your system path.
