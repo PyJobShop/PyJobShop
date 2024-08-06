@@ -296,6 +296,35 @@ class Constraint(str, Enum):
     DIFFERENT_MACHINE = "different_machine"
 
 
+class TaskGroup:
+    """
+    Group of tasks that must be present together.
+
+    Parameters
+    ----------
+    tasks
+        A list of task indices that belong to this group.
+    """
+
+    def __init__(self, tasks: Optional[list[int]] = None, name: str = ""):
+        self._tasks = [] if tasks is None else tasks
+        self._name = name
+
+    @property
+    def tasks(self) -> list[int]:
+        """
+        Returns the task belonging to this group.
+        """
+        return self._tasks
+
+    @property
+    def name(self) -> str:
+        """
+        Name of the group.
+        """
+        return self._name
+
+
 class ProblemData:
     """
     Creates a problem data instance. This instance contains all information
@@ -312,6 +341,8 @@ class ProblemData:
     processing_times
         Processing times of tasks on machines. First index is the task index,
         second index is the machine index.
+    groups
+        List of task groups. Default is None, which initializes an empty list.
     constraints
         Dict indexed by task pairs with a list of constraints as values.
         Default is None, which initializes an empty dict.
@@ -331,6 +362,7 @@ class ProblemData:
         machines: list[Machine],
         tasks: list[Task],
         processing_times: dict[tuple[int, int], int],
+        groups: Optional[list[TaskGroup]] = None,
         constraints: Optional[_CONSTRAINTS_TYPE] = None,
         setup_times: Optional[np.ndarray] = None,
         horizon: int = MAX_VALUE,
@@ -340,6 +372,7 @@ class ProblemData:
         self._machines = machines
         self._tasks = tasks
         self._processing_times = processing_times
+        self._groups = groups if groups is not None else []
         self._constraints = constraints if constraints is not None else {}
 
         num_mach = self.num_machines
@@ -380,6 +413,9 @@ class ProblemData:
         if set(range(num_tasks)) != tasks_with_processing:
             raise ValueError("Processing times missing for some tasks.")
 
+        if any(task >= num_tasks for g in self.groups for task in g.tasks):
+            raise ValueError("Group references to unknown task.")
+
         if np.any(self.setup_times < 0):
             raise ValueError("Setup times must be non-negative.")
 
@@ -401,6 +437,7 @@ class ProblemData:
         machines: Optional[list[Machine]] = None,
         tasks: Optional[list[Task]] = None,
         processing_times: Optional[dict[tuple[int, int], int]] = None,
+        groups: Optional[list[TaskGroup]] = None,
         constraints: Optional[_CONSTRAINTS_TYPE] = None,
         setup_times: Optional[np.ndarray] = None,
         horizon: Optional[int] = None,
@@ -420,6 +457,8 @@ class ProblemData:
             Optional list of tasks.
         processing_times
             Optional processing times of tasks on machines.
+        groups
+            Optional task groups.
         constraints
             Optional constraints between tasks.
         setup_times
@@ -442,6 +481,7 @@ class ProblemData:
         machines = _deepcopy_if_none(machines, self.machines)
         tasks = _deepcopy_if_none(tasks, self.tasks)
         proc_times = _deepcopy_if_none(processing_times, self.processing_times)
+        groups = _deepcopy_if_none(groups, self.groups)
         constraints = _deepcopy_if_none(constraints, self.constraints)
         setup_times = _deepcopy_if_none(setup_times, self.setup_times)
         horizon = _deepcopy_if_none(horizon, self.horizon)
@@ -452,6 +492,7 @@ class ProblemData:
             machines=machines,
             tasks=tasks,
             processing_times=proc_times,
+            groups=groups,
             constraints=constraints,
             setup_times=setup_times,
             horizon=horizon,
@@ -486,6 +527,13 @@ class ProblemData:
         task index, second index is the machine index.
         """
         return self._processing_times
+
+    @property
+    def groups(self) -> list[TaskGroup]:
+        """
+        TODO
+        """
+        return self._groups
 
     @property
     def constraints(self) -> _CONSTRAINTS_TYPE:
@@ -555,3 +603,10 @@ class ProblemData:
         Returns the number of tasks in this instance.
         """
         return len(self._tasks)
+
+    @property
+    def num_groups(self) -> int:
+        """
+        Returns the number of task groups in this instance.
+        """
+        return len(self._groups)

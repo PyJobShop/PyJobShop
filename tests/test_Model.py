@@ -19,6 +19,8 @@ def test_model_to_data():
     model.add_processing_time(task1, machine1, 1)
     model.add_processing_time(task2, machine2, 2)
 
+    group = model.add_group([task1, task2])
+
     model.add_start_at_start(task1, task2)
     model.add_start_at_end(task1, task2)
     model.add_start_before_start(task1, task2)
@@ -44,6 +46,7 @@ def test_model_to_data():
     assert_equal(data.machines, [machine1, machine2])
     assert_equal(data.tasks, [task1, task2])
     assert_equal(data.processing_times, {(0, 0): 1, (1, 1): 2})
+    assert_equal(data.groups, [group])
     assert_equal(
         data.constraints,
         {
@@ -83,6 +86,7 @@ def test_from_data(fjsp):
     assert_equal(m_data.num_machines, data.num_machines)
     assert_equal(m_data.num_tasks, data.num_tasks)
     assert_equal(m_data.processing_times, data.processing_times)
+    assert_equal(m_data.groups, data.groups)
     assert_equal(m_data.constraints, data.constraints)
     assert_equal(m_data.setup_times, data.setup_times)
     assert_equal(m_data.horizon, data.horizon)
@@ -106,6 +110,7 @@ def test_model_to_data_default_values():
     assert_equal(data.machines, [machine])
     assert_equal(data.tasks, [task])
     assert_equal(data.processing_times, {(0, 0): 1})
+    assert_equal(data.groups, [])
     assert_equal(data.constraints, {})
     assert_equal(data.setup_times, [[[0]]])
     assert_equal(data.horizon, MAX_VALUE)
@@ -163,6 +168,20 @@ def test_add_task_attributes():
     assert_equal(task.name, "task")
 
 
+def test_add_group_attributes():
+    """
+    Tests that adding a group to the model correctly sets the attributes.
+    """
+    model = Model()
+
+    task1 = model.add_task()
+    task2 = model.add_task()
+    group = model.add_group([task1, task2], name="group")
+
+    assert_equal(group.tasks, [0, 1])
+    assert_equal(group.name, "group")
+
+
 def test_model_attributes():
     """
     Tests that the model attributes are correctly.
@@ -172,10 +191,12 @@ def test_model_attributes():
     jobs = [model.add_job() for _ in range(10)]
     machines = [model.add_machine() for _ in range(20)]
     tasks = [model.add_task() for _ in range(30)]
+    groups = [model.add_group([tasks[i], tasks[i + 1]]) for i in range(0, 29)]
 
     assert_equal(model.jobs, jobs)
     assert_equal(model.machines, machines)
     assert_equal(model.tasks, tasks)
+    assert_equal(model.groups, groups)
 
 
 def test_model_set_objective():
