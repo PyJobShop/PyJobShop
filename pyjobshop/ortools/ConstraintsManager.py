@@ -79,9 +79,8 @@ class ConstraintsManager:
         seq_vars = self.sequence_vars
 
         for machine in range(data.num_machines):
-            m.add_no_overlap(
-                [var.interval for var in seq_vars[machine].task_alts]
-            )
+            intervals = [var.interval for var in seq_vars[machine].task_alts]
+            m.add_cumulative(intervals, [1] * len(intervals), 1)
 
     def activate_setup_times(self):
         """
