@@ -79,16 +79,21 @@ class ObjectiveManager:
         expr = 0
 
         if objective.weight_makespan > 0:
-            expr += self._makespan_expr()
+            expr += objective.weight_makespan * self._makespan_expr()
 
         if objective.weight_tardy_jobs > 0:
-            expr += self._tardy_jobs_expr()
+            expr += objective.weight_tardy_jobs * self._tardy_jobs_expr()
 
         if objective.weight_total_tardiness > 0:
-            expr += self._total_tardiness_expr()
+            expr += (
+                objective.weight_total_tardiness * self._total_tardiness_expr()
+            )
 
         if objective.weight_total_completion_time > 0:
-            expr += self._total_completion_time_expr()
+            expr += (
+                objective.weight_total_completion_time
+                * self._total_completion_time_expr()
+            )
 
         return expr
 
