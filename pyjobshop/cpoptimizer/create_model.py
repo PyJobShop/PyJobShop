@@ -12,12 +12,7 @@ from .constraints import (
     task_alt_graph,
     task_graph,
 )
-from .objectives import (
-    makespan,
-    tardy_jobs,
-    total_completion_time,
-    total_tardiness,
-)
+from .objectives import add_objective
 from .variables import (
     job_variables,
     sequence_variables,
@@ -58,16 +53,7 @@ def create_model(
             model, data, initial_solution, job_vars, task_vars, task_alt_vars
         )
 
-    if data.objective == "makespan":
-        makespan(model, data, task_vars)
-    elif data.objective == "tardy_jobs":
-        tardy_jobs(model, data, job_vars)
-    elif data.objective == "total_tardiness":
-        total_tardiness(model, data, job_vars)
-    elif data.objective == "total_completion_time":
-        total_completion_time(model, data, job_vars)
-    else:
-        raise ValueError(f"Unknown objective: {data.objective}")
+    add_objective(model, data, job_vars, task_vars)
 
     job_spans_tasks(model, data, job_vars, task_vars)
     no_overlap_and_setup_times(model, data, seq_vars)

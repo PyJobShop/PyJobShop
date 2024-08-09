@@ -28,13 +28,9 @@ class Solver:
         self._data = data
 
         self._model = CpModel()
-        self._vars_manager = VariablesManager(self._model, data)
-        self._constrs_manager = ConstraintsManager(
-            self._model, data, self._vars_manager
-        )
-        self._obj_manager = ObjectiveManager(
-            self._model, data, self._vars_manager
-        )
+        self._vars = VariablesManager(self._model, data)
+        self._constraints = ConstraintsManager(self._model, data, self._vars)
+        self._objective = ObjectiveManager(self._model, data, self._vars)
 
     def _get_solve_status(self, status: str):
         if status == "OPTIMAL":
@@ -54,7 +50,7 @@ class Solver:
         """
         tasks = {}
 
-        for (task, machine), var in self._vars_manager.task_alt_vars.items():
+        for (task, machine), var in self._vars.task_alt_vars.items():
             if cp_solver.value(var.is_present):
                 start = cp_solver.value(var.start)
                 duration = cp_solver.value(var.duration)
@@ -95,10 +91,10 @@ class Solver:
             information about the solver run.
         """
         if initial_solution is not None:
-            self._vars_manager.add_hints(initial_solution)
+            self._vars.add_hints(initial_solution)
 
-        self._constrs_manager.add_all_constraints()
-        self._obj_manager.set_objective(self._data.objective)
+        self._constraints.add_all_constraints()
+        self._objective.set_objective(self._data.objective)
 
         params = {
             "max_time_in_seconds": time_limit,
