@@ -166,6 +166,8 @@ class Task:
         machine). If the duration is not fixed, then the task duration
         can take longer than the processing time, e.g., due to blocking.
         Default ``True``.
+    required
+        Whether the task is required to be scheduled. Default ``True``.
     name
         Name of the task.
     """
@@ -177,6 +179,7 @@ class Task:
         earliest_end: int = 0,
         latest_end: int = MAX_VALUE,
         fixed_duration: bool = True,
+        required: bool = True,
         name: str = "",
     ):
         if earliest_start > latest_start:
@@ -190,6 +193,7 @@ class Task:
         self._earliest_end = earliest_end
         self._latest_end = latest_end
         self._fixed_duration = fixed_duration
+        self._required = required
         self._name = name
 
     @property
@@ -226,6 +230,13 @@ class Task:
         Whether the task has a fixed duration.
         """
         return self._fixed_duration
+
+    @property
+    def required(self) -> bool:
+        """
+        Whether the task is required to be scheduled.
+        """
+        return self._required
 
     @property
     def name(self) -> str:
