@@ -289,9 +289,9 @@ class Objective:
     * Total tardiness
 
     .. note::
-        To set a weight for a specific job, use the ``Job.weight`` attribute.
-        This weight is used in calculating the job-specific components of the
-        objective function (e.g., completion time, tardiness).
+        To set the weight for a specific job, use :attr:`Job.weight`. This
+        weight is used in calculating the job-specific contribution to the
+        objective function.
     """
 
     weight_makespan: int = 0
