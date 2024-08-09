@@ -29,8 +29,8 @@ class Solver:
 
         self._model = CpModel()
         self._vars = VariablesManager(self._model, data)
-        self._constrs = ConstraintsManager(self._model, data, self._vars)
-        self._obj = ObjectiveManager(self._model, data, self._vars)
+        self._constraints = ConstraintsManager(self._model, data, self._vars)
+        self._objective = ObjectiveManager(self._model, data, self._vars)
 
     def _get_solve_status(self, status: str):
         if status == "OPTIMAL":
@@ -93,8 +93,8 @@ class Solver:
         if initial_solution is not None:
             self._vars.add_hints(initial_solution)
 
-        self._constrs.add_all_constraints()
-        self._obj.set_objective(self._data.objective)
+        self._constraints.add_all_constraints()
+        self._objective.set_objective(self._data.objective)
 
         params = {
             "max_time_in_seconds": time_limit,
