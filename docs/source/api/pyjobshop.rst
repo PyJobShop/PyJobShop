@@ -24,9 +24,11 @@ PyJobShop
     .. autoclass:: Job
        :members:
 
+    .. autoclass:: Objective
+       :members:
+
     .. autoenum:: Constraint
 
-    .. autoenum:: Objective
 
 .. automodule:: pyjobshop.Solution
 
