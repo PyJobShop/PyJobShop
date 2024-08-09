@@ -769,7 +769,8 @@ def test_tight_horizon_results_in_infeasiblity(solver: str):
 )
 def test_objective_classmethods_set_attributes_correctly(objective, weights):
     """
-    TODO
+    Checks that the classmethods of the Objective class set the attributes
+    correctly.
     """
     obj = objective()
     assert_equal(obj.weight_makespan, weights[0])
@@ -799,14 +800,13 @@ def test_makespan_objective(solver: str):
 
 def test_tardy_jobs(solver: str):
     """
-    Tests that the (number of) tardy jobs objective is correctly optimized.
+    Tests that the number of tardy jobs objective is correctly optimized.
     """
     model = Model()
-
     machine = model.add_machine()
 
-    for idx in range(3):
-        job = model.add_job(due_date=idx + 1)
+    for _ in range(3):
+        job = model.add_job(due_date=3, weight=2)
         task = model.add_task(job=job)
         model.add_processing_time(task, machine, duration=3)
 
@@ -814,43 +814,15 @@ def test_tardy_jobs(solver: str):
 
     result = model.solve(solver=solver)
 
-    # Only the last job/task can be scheduled on time. The other two
-    # are tardy.
-    assert_equal(result.objective, 2)
+    # Only one job can be scheduled on time. The other two are tardy.
+    # Both jobs have weight 2, so the objective value is 4.
+    assert_equal(result.objective, 4)
     assert_equal(result.status.value, "Optimal")
 
 
 def test_total_completion_time(solver: str):
     """
     Tests that the total completion time objective is correctly optimized.
-    """
-    model = Model()
-
-    machines = [model.add_machine() for _ in range(2)]
-
-    for idx in range(3):
-        job = model.add_job()
-        task = model.add_task(job=job)
-
-        for machine in machines:
-            model.add_processing_time(task, machine, duration=idx + 1)
-
-    model.set_objective(weight_total_completion_time=1)
-
-    result = model.solve(solver=solver)
-
-    # We have three jobs (A, B, C) with processing times of 1, 2, 3 on either
-    # machine. The optimal schedule is [A, C] and [B] with total completion
-    # time of: 1 (A) + 4 (C) + 2 (B) = 7. Note how this leads a suboptimal
-    # makespan of 4, while it could have been 3 (with schedule [A, B] and [C]).
-    assert_equal(result.objective, 7)
-    assert_equal(result.status.value, "Optimal")
-
-
-def test_total_weighted_completion_time(solver: str):
-    """
-    Tests that the weights are taken into account when using the total
-    completion time objective function.
     """
     model = Model()
 
@@ -879,35 +851,6 @@ def test_total_tardiness(solver: str):
     """
     model = Model()
 
-    machines = [model.add_machine() for _ in range(2)]
-    due_dates = [1, 2, 3]
-
-    for idx in range(3):
-        job = model.add_job(due_date=due_dates[idx])
-        task = model.add_task(job=job)
-
-        for machine in machines:
-            model.add_processing_time(task, machine, duration=idx + 1)
-
-    model.set_objective(weight_total_tardiness=1)
-
-    result = model.solve(solver=solver)
-
-    # We have three jobs (A, B, C) with processing times of 1, 2, 3 on either
-    # machine and due dates 1, 2, 3. We schedule A and B first on both machines
-    # and C is scheduled after A on machine 1. Jobs A and B are on time
-    # while C is one time unit late, resulting in 1 total tardiness.
-    assert_equal(result.objective, 1)
-    assert_equal(result.status.value, "Optimal")
-
-
-def test_total_weighted_tardiness(solver: str):
-    """
-    Tests that the weights are taken into account when using the total
-    tardiness objective function.
-    """
-    model = Model()
-
     machine = model.add_machine()
     processing_times = [2, 4]
     due_dates = [2, 2]
@@ -927,6 +870,30 @@ def test_total_weighted_tardiness(solver: str):
     # weights, it's optimal to schedule B before A resulting in completion
     # times (6, 4) and thus a total tardiness of 2 * 4 + 10 * 2 = 28.
     assert_equal(result.objective, 28)
+    assert_equal(result.status.value, "Optimal")
+
+
+def test_combined_objective(solver: str):
+    """
+    Tests that a combined objective function of makespan and tardy jobs is
+    correctly optimized.
+    """
+    model = Model()
+
+    machine = model.add_machine()
+    processing_times = [2, 4]
+
+    for idx in range(2):
+        job = model.add_job(due_date=0)
+        task = model.add_task(job=job)
+        model.add_processing_time(task, machine, processing_times[idx])
+
+    model.set_objective(weight_makespan=10, weight_tardy_jobs=2)
+    result = model.solve(solver=solver)
+
+    # Optimal solution has a makespan of 6 and both jobs are tardy.
+    # The objective value is 10 * 6 + 2 * 2 = 64.
+    assert_equal(result.objective, 64)
     assert_equal(result.status.value, "Optimal")
 
 
