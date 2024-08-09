@@ -33,7 +33,7 @@ class Model:
 
         self._setup_times: dict[tuple[int, int, int], int] = {}
         self._horizon: int = MAX_VALUE
-        self._objective: Objective = Objective.MAKESPAN
+        self._objective: Objective = Objective.makespan()
 
         self._id2job: dict[int, int] = {}
         self._id2machine: dict[int, int] = {}
@@ -148,7 +148,12 @@ class Model:
                 )
 
         model.set_horizon(data.horizon)
-        model.set_objective(data.objective)
+        model.set_objective(
+            weight_makespan=data.objective.weight_makespan,
+            weight_tardy_jobs=data.objective.weight_tardy_jobs,
+            weight_total_tardiness=data.objective.weight_total_tardiness,
+            weight_total_completion_time=data.objective.weight_total_completion_time,
+        )
 
         return model
 
@@ -453,16 +458,33 @@ class Model:
         """
         self._horizon = horizon
 
-    def set_objective(self, objective: Objective):
+    def set_objective(
+        self,
+        weight_makespan: int = 0,
+        weight_tardy_jobs: int = 0,
+        weight_total_tardiness: int = 0,
+        weight_total_completion_time: int = 0,
+    ):
         """
-        Sets the objective in this model.
+        Sets the objective function in this model.
 
         Parameters
         ----------
-        objective
-            An objective function.
+        weight_makespan
+            Weight of the makespan objective. Default 0.
+        weight_tardy_jobs
+            Weight of the tardy jobs objective. Default 0.
+        weight_total_tardiness
+            Weight of the total tardiness objective. Default 0.
+        weight_total_completion_time
+            Weight of the total completion time objective. Default 0.
         """
-        self._objective = objective
+        self._objective = Objective(
+            weight_makespan=weight_makespan,
+            weight_tardy_jobs=weight_tardy_jobs,
+            weight_total_tardiness=weight_total_tardiness,
+            weight_total_completion_time=weight_total_completion_time,
+        )
 
     def solve(
         self,

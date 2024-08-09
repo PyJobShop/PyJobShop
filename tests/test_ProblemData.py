@@ -163,7 +163,7 @@ def test_problem_data_input_parameter_attributes():
     }
     setup_times = np.ones((5, 5, 5), dtype=int)
     horizon = 100
-    objective = Objective.TOTAL_COMPLETION_TIME
+    objective = Objective.total_completion_time()
 
     data = ProblemData(
         jobs,
@@ -222,7 +222,7 @@ def test_problem_data_default_values():
     assert_equal(data.constraints, {})
     assert_equal(data.setup_times, np.zeros((1, 1, 1), dtype=int))
     assert_equal(data.horizon, MAX_VALUE)
-    assert_equal(data.objective, Objective.MAKESPAN)
+    assert_equal(data.objective, Objective.makespan())
 
 
 def test_problem_data_job_references_invalid_task():
@@ -275,7 +275,7 @@ def test_problem_data_raises_when_invalid_arguments(
 
 
 @pytest.mark.parametrize(
-    "objective", [Objective.TARDY_JOBS, Objective.TOTAL_TARDINESS]
+    "objective", [Objective.tardy_jobs(), Objective.total_tardiness()]
 )
 def test_problem_data_tardy_objective_without_job_due_dates(
     objective: Objective,
@@ -304,7 +304,7 @@ def describe_problem_data_replace():
         constraints = {(0, 1): [Constraint.END_BEFORE_START]}
         setup_times = np.zeros((2, 2, 2))
         horizon = 1
-        objective = Objective.MAKESPAN
+        objective = Objective.makespan()
 
         return ProblemData(
             jobs,
@@ -361,7 +361,7 @@ def describe_problem_data_replace():
             constraints={(1, 0): [Constraint.END_BEFORE_START]},
             setup_times=np.ones((2, 2, 2)),
             horizon=2,
-            objective=Objective.TOTAL_TARDINESS,
+            objective=Objective.total_tardiness(),
         )
         assert_(new is not data)
 
@@ -758,6 +758,26 @@ def test_tight_horizon_results_in_infeasiblity(solver: str):
     assert_equal(result.status.value, "Infeasible")
 
 
+@pytest.mark.parametrize(
+    "objective, weights",
+    [
+        (Objective.makespan, (1, 0, 0, 0)),
+        (Objective.tardy_jobs, (0, 1, 0, 0)),
+        (Objective.total_tardiness, (0, 0, 1, 0)),
+        (Objective.total_completion_time, (0, 0, 0, 1)),
+    ],
+)
+def test_objective_classmethods_set_attributes_correctly(objective, weights):
+    """
+    TODO
+    """
+    obj = objective()
+    assert_equal(obj.weight_makespan, weights[0])
+    assert_equal(obj.weight_tardy_jobs, weights[1])
+    assert_equal(obj.weight_total_tardiness, weights[2])
+    assert_equal(obj.weight_total_completion_time, weights[3])
+
+
 def test_makespan_objective(solver: str):
     """
     Tests that the makespan objective is correctly optimized.
@@ -790,7 +810,7 @@ def test_tardy_jobs(solver: str):
         task = model.add_task(job=job)
         model.add_processing_time(task, machine, duration=3)
 
-    model.set_objective(Objective.TARDY_JOBS)
+    model.set_objective(weight_tardy_jobs=1)
 
     result = model.solve(solver=solver)
 
@@ -815,7 +835,7 @@ def test_total_completion_time(solver: str):
         for machine in machines:
             model.add_processing_time(task, machine, duration=idx + 1)
 
-    model.set_objective(Objective.TOTAL_COMPLETION_TIME)
+    model.set_objective(weight_total_completion_time=1)
 
     result = model.solve(solver=solver)
 
@@ -842,7 +862,7 @@ def test_total_weighted_completion_time(solver: str):
         task = model.add_task(job=job)
         model.add_processing_time(task, machine, duration=idx + 1)
 
-    model.set_objective(Objective.TOTAL_COMPLETION_TIME)
+    model.set_objective(weight_total_completion_time=1)
 
     result = model.solve(solver=solver)
 
@@ -869,7 +889,7 @@ def test_total_tardiness(solver: str):
         for machine in machines:
             model.add_processing_time(task, machine, duration=idx + 1)
 
-    model.set_objective(Objective.TOTAL_TARDINESS)
+    model.set_objective(weight_total_tardiness=1)
 
     result = model.solve(solver=solver)
 
@@ -898,7 +918,7 @@ def test_total_weighted_tardiness(solver: str):
         task = model.add_task(job=job)
         model.add_processing_time(task, machine, processing_times[idx])
 
-    model.set_objective(Objective.TOTAL_TARDINESS)
+    model.set_objective(weight_total_tardiness=1)
 
     result = model.solve(solver=solver)
 

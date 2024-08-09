@@ -94,30 +94,36 @@ class ObjectiveManager:
         weights = [job.weight for job in self._data.jobs]
         return LinearExpr.weighted_sum(self.tardiness_vars, weights)
 
-    def _objective2expr(self, objective: Objective):
+    def _objective_expr(self, objective: Objective):
         """
         Returns the expression corresponding to the given objective.
         """
-        if objective == "makespan":
-            return self._makespan_expr()
-        elif objective == "tardy_jobs":
-            return self._tardy_jobs_expr()
-        elif objective == "total_completion_time":
-            return self._total_completion_time_expr()
-        elif objective == "total_tardiness":
-            return self._total_tardiness_expr()
-        else:
-            raise ValueError(f"Objective {objective} not supported")
+        expr = 0
+
+        if objective.weight_makespan > 0:
+            expr += self._makespan_expr()
+
+        if objective.weight_tardy_jobs > 0:
+            expr += self._tardy_jobs_expr()
+
+        if objective.weight_total_tardiness > 0:
+            expr += self._total_tardiness_expr()
+
+        if objective.weight_total_completion_time > 0:
+            expr += self._total_completion_time_expr()
+
+        print(expr)
+        return expr
 
     def set_objective(self, objective: Objective):
         """
         Sets the objective of the the model.
         """
         self._model.clear_objective()
-        self._model.minimize(self._objective2expr(objective))
+        self._model.minimize(self._objective_expr(objective))
 
     def add_objective_as_constraint(self, objective: Objective, value: int):
         """
         Adds the objective function as constraint to the model.
         """
-        self._model.add(self._objective2expr(objective) <= value)
+        self._model.add(self._objective_expr(objective) <= value)

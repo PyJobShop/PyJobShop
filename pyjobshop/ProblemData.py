@@ -1,5 +1,6 @@
 import bisect
 from copy import deepcopy
+from dataclasses import dataclass
 from enum import Enum
 from typing import Optional, TypeVar
 
@@ -235,25 +236,6 @@ class Task:
 
 
 @enum_tools.documentation.document_enum
-class Objective(str, Enum):
-    """
-    Choices for objective functions.
-    """
-
-    #: Minimize the maximum completion time of all jobs.
-    MAKESPAN = "makespan"
-
-    #: Minimizes the number of jobs whose completion times exceed the due date.
-    TARDY_JOBS = "tardy_jobs"
-
-    #: Minimize the sum of job completion times.
-    TOTAL_COMPLETION_TIME = "total_completion_time"
-
-    #: Minimize the sum of job tardiness.
-    TOTAL_TARDINESS = "total_tardiness"
-
-
-@enum_tools.documentation.document_enum
 class Constraint(str, Enum):
     """
     Task constraints between two tasks :math:`i` and :math:`j`.
@@ -296,6 +278,52 @@ class Constraint(str, Enum):
     DIFFERENT_MACHINE = "different_machine"
 
 
+@dataclass
+class Objective:
+    """
+    Minimizes a weighted sum of the following objectives:
+    - Makespan
+    - Number of tardy jobs
+    - Total completion time
+    - Total tardiness
+
+    To set the weights for a given job, set the corresponding weight attribute.
+    """
+
+    weight_makespan: int = 0
+    weight_tardy_jobs: int = 0
+    weight_total_completion_time: int = 0
+    weight_total_tardiness: int = 0
+
+    @classmethod
+    def makespan(cls):
+        """
+        Minimizes the makespan.
+        """
+        return cls(weight_makespan=1)
+
+    @classmethod
+    def total_completion_time(cls):
+        """
+        Minimizes the total weighted completion time.
+        """
+        return cls(weight_total_completion_time=1)
+
+    @classmethod
+    def tardy_jobs(cls):
+        """
+        Minimizes the weighted number of tardy jobs.
+        """
+        return cls(weight_tardy_jobs=1)
+
+    @classmethod
+    def total_tardiness(cls):
+        """
+        Minimizes the total weighted tardiness.
+        """
+        return cls(weight_total_tardiness=1)
+
+
 class ProblemData:
     """
     Creates a problem data instance. This instance contains all information
@@ -334,7 +362,7 @@ class ProblemData:
         constraints: Optional[_CONSTRAINTS_TYPE] = None,
         setup_times: Optional[np.ndarray] = None,
         horizon: int = MAX_VALUE,
-        objective: Objective = Objective.MAKESPAN,
+        objective: Optional[Objective] = None,
     ):
         self._jobs = jobs
         self._machines = machines
@@ -351,7 +379,9 @@ class ProblemData:
             else np.zeros((num_mach, num_tasks, num_tasks), dtype=int)
         )
         self._horizon = horizon
-        self._objective = objective
+        self._objective = (
+            objective if objective is not None else Objective.makespan()
+        )
 
         self._machine2tasks: list[list[int]] = [[] for _ in range(num_mach)]
         self._task2machines: list[list[int]] = [[] for _ in range(num_tasks)]
@@ -390,7 +420,10 @@ class ProblemData:
         if self.horizon < 0:
             raise ValueError("Horizon must be non-negative.")
 
-        if self.objective in [Objective.TARDY_JOBS, Objective.TOTAL_TARDINESS]:
+        if (
+            self.objective.weight_tardy_jobs > 0
+            or self.objective.weight_total_tardiness > 0
+        ):
             if any(job.due_date is None for job in self.jobs):
                 msg = "Job due dates required for tardiness-based objectives."
                 raise ValueError(msg)
