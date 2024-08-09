@@ -51,7 +51,7 @@ def _tardy_jobs(
     """
     total = []
 
-    for job, var in zip(data.jobs, job_vars, strict=True):
+    for job, var in zip(data.jobs, job_vars):
         is_tardy = m.greater(m.end_of(var) - job.due_date, 0)
         total.append(job.weight * is_tardy)
 
@@ -66,7 +66,7 @@ def _total_completion_time(
     """
     total = []
 
-    for job, var in zip(data.jobs, job_vars, strict=True):
+    for job, var in zip(data.jobs, job_vars):
         completion_time = m.end_of(var)
         total.append(job.weight * completion_time)
 
@@ -81,7 +81,7 @@ def _total_tardiness(
     """
     total = []
 
-    for job, var in zip(data.jobs, job_vars, strict=True):
+    for job, var in zip(data.jobs, job_vars):
         tardiness = m.max(0, m.end_of(var) - job.due_date)
         total.append(job.weight * tardiness)
 
