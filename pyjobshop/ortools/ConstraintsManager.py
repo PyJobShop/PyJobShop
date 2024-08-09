@@ -162,32 +162,22 @@ class ConstraintsManager:
                     if constraint == "previous":
                         sequence.activate(m)
 
+                        # Schedule var1 right behind var2 if both are present.
                         idx1 = sequence.task_alts.index(var1)
                         idx2 = sequence.task_alts.index(var2)
                         arc = sequence.arcs[idx1, idx2]
+                        both_present = [var1.is_present, var2.is_present]
 
-                        # arc <=> var1.is_present & var2.is_present
-                        m.add_bool_or(
-                            [arc, ~var1.is_present, ~var2.is_present]
-                        )
-                        m.add_implication(arc, var1.is_present)
-                        m.add_implication(arc, var2.is_present)
-                    if constraint == "before":
+                        m.add(arc == 1).only_enforce_if(both_present)
+                    elif constraint == "before":
                         sequence.activate(m)
-                        both_present = m.new_bool_var("")
 
-                        # both_present <=> var1.is_present & var2.is_present
-                        m.add_bool_or(
-                            [both_present, ~var1.is_present, ~var2.is_present]
-                        )
-                        m.add_implication(both_present, var1.is_present)
-                        m.add_implication(both_present, var2.is_present)
-
-                        # Schedule var1 before var2 when both are present.
+                        # Schedule var1 before var2 if both are present.
                         idx1 = sequence.task_alts.index(var1)
                         idx2 = sequence.task_alts.index(var2)
                         rank1 = sequence.ranks[idx1]
                         rank2 = sequence.ranks[idx2]
+                        both_present = [var1.is_present, var2.is_present]
 
                         m.add(rank1 <= rank2).only_enforce_if(both_present)
                     elif constraint == "same_machine":
