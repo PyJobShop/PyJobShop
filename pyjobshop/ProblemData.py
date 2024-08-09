@@ -281,13 +281,17 @@ class Constraint(str, Enum):
 @dataclass
 class Objective:
     """
-    Minimizes a weighted sum of the following objectives:
-    - Makespan
-    - Number of tardy jobs
-    - Total completion time
-    - Total tardiness
+    Represents a weighted sum of the following objective functions:
 
-    To set the weights for a given job, set the corresponding weight attribute.
+    * Makespan
+    * Number of tardy jobs
+    * Total completion time
+    * Total tardiness
+
+    .. note::
+        To set a weight for a specific job, use the ``Job.weight`` attribute.
+        This weight is used in calculating the job-specific components of the
+        objective function (e.g., completion time, tardiness).
     """
 
     weight_makespan: int = 0
