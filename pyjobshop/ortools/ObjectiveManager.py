@@ -1,9 +1,5 @@
-from functools import cached_property
-
 from ortools.sat.python.cp_model import (
-    BoolVarT,
     CpModel,
-    IntVar,
     LinearExpr,
     LinearExprT,
 )
@@ -15,7 +11,7 @@ from .VariablesManager import VariablesManager
 
 class ObjectiveManager:
     """
-    Manages the objective variables and expressions of the OR-Tools CP model.
+    Manages the objective expressions of the OR-Tools CP model.
     """
 
     def __init__(
@@ -26,75 +22,57 @@ class ObjectiveManager:
         self._task_vars = vars_manager.task_vars
         self._job_vars = vars_manager.job_vars
 
-    @cached_property
-    def makespan_var(self) -> IntVar:
-        """
-        Returns the makespan variable of the model.
-        """
-        var = self._model.new_int_var(0, self._data.horizon, "makespan")
-        completion_times = [var.end for var in self._task_vars]
-        self._model.add_max_equality(var, completion_times)
-        return var
-
-    @cached_property
-    def is_tardy_vars(self) -> list[BoolVarT]:
-        """
-        Returns a list of boolean variables representing if a job is tardy.
-        """
-        model, data = self._model, self._data
-        variables = []
-
-        for job, job_var in zip(data.jobs, self._job_vars):
-            is_tardy = model.new_bool_var(f"is_tardy_{job}")
-            model.add(job_var.end > job.due_date).only_enforce_if(is_tardy)
-            model.add(job_var.end <= job.due_date).only_enforce_if(~is_tardy)
-            variables.append(is_tardy)
-
-        return variables
-
-    @cached_property
-    def tardiness_vars(self) -> list[IntVar]:
-        """
-        Returns a list of integer variables representing the job tardiness.
-        """
-        model, data = self._model, self._data
-        variables = []
-
-        for job, var in zip(data.jobs, self._job_vars):
-            tardiness = model.new_int_var(0, data.horizon, f"tardiness_{job}")
-            model.add_max_equality(tardiness, [0, var.end - job.due_date])
-            variables.append(tardiness)
-
-        return variables
-
     def _makespan_expr(self) -> LinearExprT:
         """
         Returns an expression representing the makespan of the model.
         """
-        return self.makespan_var
+        makespan = self._model.new_int_var(0, self._data.horizon, "makespan")
+        completion_times = [var.end for var in self._task_vars]
+        self._model.add_max_equality(makespan, completion_times)
+        return makespan
 
     def _tardy_jobs_expr(self) -> LinearExprT:
         """
         Returns an expression representing the number of tardy jobs.
         """
-        return LinearExpr.sum(self.is_tardy_vars)
+        model, data = self._model, self._data
+        is_tardy_vars = []
+
+        for job, job_var in zip(data.jobs, self._job_vars):
+            assert job.due_date is not None
+            is_tardy = model.new_bool_var(f"is_tardy_{job}")
+            model.add(job_var.end > job.due_date).only_enforce_if(is_tardy)
+            model.add(job_var.end <= job.due_date).only_enforce_if(~is_tardy)
+            is_tardy_vars.append(is_tardy)
+
+        weights = [job.weight for job in data.jobs]
+        return LinearExpr.weighted_sum(is_tardy_vars, weights)
 
     def _total_completion_time_expr(self) -> LinearExprT:
         """
         Returns an expression representing the total completion time of jobs.
         """
-        exprs = [var.end for var in self._job_vars]
+        completion_time_vars = [var.end for var in self._job_vars]
         weights = [job.weight for job in self._data.jobs]
-        return LinearExpr.weighted_sum(exprs, weights)
+        return LinearExpr.weighted_sum(completion_time_vars, weights)
 
     def _total_tardiness_expr(self) -> LinearExprT:
         """
         Returns an expression representing the total tardiness of jobs.
         """
-        weights = [job.weight for job in self._data.jobs]
-        return LinearExpr.weighted_sum(self.tardiness_vars, weights)
+        model, data = self._model, self._data
+        tardiness_vars = []
 
-    def _objective_expr(self, objective: Objective):
+        for job, var in zip(data.jobs, self._job_vars):
+            assert job.due_date is not None
+            tardiness = model.new_int_var(0, data.horizon, f"tardiness_{job}")
+            model.add_max_equality(tardiness, [0, var.end - job.due_date])
+            tardiness_vars.append(tardiness)
+
+        weights = [job.weight for job in data.jobs]
+        return LinearExpr.weighted_sum(tardiness_vars, weights)
+
+    def _objective_expr(self, objective: Objective) -> LinearExprT:
         """
         Returns the expression corresponding to the given objective.
         """
@@ -112,7 +90,6 @@ class ObjectiveManager:
         if objective.weight_total_completion_time > 0:
             expr += self._total_completion_time_expr()
 
-        print(expr)
         return expr
 
     def set_objective(self, objective: Objective):
