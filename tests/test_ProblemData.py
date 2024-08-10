@@ -639,6 +639,50 @@ def test_task_non_fixed_duration(solver: str):
     assert_equal(result.best.tasks, [TaskData(0, 0, 10, 10)])
 
 
+def test_task_not_required(solver: str):
+    """
+    Tests that when all tasks are not required, then no tasks are scheduled.
+    """
+    model = Model()
+
+    job = model.add_job()
+    machine = model.add_machine()
+    tasks = [model.add_task(job=job, required=False) for _ in range(4)]
+    for task in tasks:
+        model.add_processing_time(task, machine, duration=1)
+
+    result = model.solve(solver=solver)
+
+    # All tasks are not required and not scheduled, so the makespan is 0.
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.objective, 0)
+
+    for task_data in result.best.tasks:
+        assert_equal(task_data.present, False)
+
+
+def test_job_does_not_span_task_not_required(solver: str):
+    """
+    Tests that jobs do not span tasks that are not required.
+    """
+    model = Model()
+
+    job = model.add_job()
+    machine = model.add_machine()
+    task1 = model.add_task(job=job, required=True)
+    task2 = model.add_task(job=job, earliest_start=10, required=False)
+
+    model.add_processing_time(task1, machine, duration=1)
+    model.add_processing_time(task2, machine, duration=1)
+
+    result = model.solve(solver=solver)
+
+    # Task 1 is required but task 2 is not. The job should span only task 1,
+    # so the makespan is 1.
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.objective, 1)
+
+
 @pytest.mark.parametrize(
     "prec_type,expected_makespan",
     [

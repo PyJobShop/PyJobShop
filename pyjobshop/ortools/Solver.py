@@ -57,6 +57,16 @@ class Solver:
                 end = cp_solver.value(var.end)
                 tasks[task] = TaskData(machine, start, duration, end)
 
+        for idx in range(self._data.num_tasks):
+            if idx not in tasks:
+                start = cp_solver.value(self._vars.task_vars[idx].start)
+                duration = cp_solver.value(self._vars.task_vars[idx].duration)
+                end = cp_solver.value(self._vars.task_vars[idx].end)
+                machine = -1
+                tasks[idx] = TaskData(
+                    machine, start, duration, end, present=False
+                )
+
         return Solution([tasks[idx] for idx in range(self._data.num_tasks)])
 
     def solve(

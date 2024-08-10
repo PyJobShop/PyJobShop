@@ -22,6 +22,7 @@ class TaskData:
     start: int
     duration: int
     end: int
+    present: bool = True
 
 
 class Solution:

@@ -1,7 +1,5 @@
 import numpy as np
-from ortools.sat.python.cp_model import (
-    CpModel,
-)
+from ortools.sat.python.cp_model import CpModel
 
 from pyjobshop.ProblemData import ProblemData
 
@@ -33,16 +31,28 @@ class ConstraintsManager:
         """
         Ensures that the job variables span the related task variables.
         """
-        for idx, job in enumerate(self._data.jobs):
-            job_var = self.job_vars[idx]
-            task_start_vars = [
-                self.task_vars[task].start for task in job.tasks
-            ]
-            task_end_vars = [self.task_vars[task].end for task in job.tasks]
+        data = self._data
 
-            # TODO ignore end/start if task not present
-            self._m.add_min_equality(job_var.start, task_start_vars)
-            self._m.add_max_equality(job_var.end, task_end_vars)
+        for idx, job in enumerate(data.jobs):
+            job_var = self.job_vars[idx]
+
+            # For required tasks, the job spans the entire task.
+            req = [task for task in job.tasks if data.tasks[task].required]
+            if req:  # cannot use add_min_equality if req is empty
+                starts = [self.task_vars[task].start for task in req]
+                ends = [self.task_vars[task].end for task in req]
+                self._m.add_max_equality(job_var.end, ends)
+                self._m.add_min_equality(job_var.start, starts)
+
+            # For optional tasks, we have a weaker constraint that the job
+            # should span the task only if the task is present.
+            optional = [task for task in job.tasks if task not in req]
+            for task in optional:
+                task_var = self.task_vars[task]
+                expr1 = job_var.start <= task_var.start
+                expr2 = job_var.end >= task_var.end
+                self._m.add(expr1).only_enforce_if(task_var.is_present)
+                self._m.add(expr2).only_enforce_if(task_var.is_present)
 
     def select_one_task_alternative(self):
         """
