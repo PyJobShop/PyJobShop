@@ -150,7 +150,7 @@ class SequenceVar:
 
 class VariablesManager:
     """
-    Manages the core variables of the OR-Tools CP model.
+    Manages the core variables of the OR-Tools model.
     """
 
     def __init__(self, model: CpModel, data: ProblemData):

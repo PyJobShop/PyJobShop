@@ -6,7 +6,8 @@ from pyjobshop.Result import Result
 from pyjobshop.Solution import Solution
 
 try:
-    import pyjobshop.cpoptimizer
+    # TODO move this check to the CP Optimizer Solver classes
+    from pyjobshop.cpoptimizer.Solver import Solver as CPOptimizerSolver
 
     CPOPTIMIZER_AVAILABLE = True
 except ModuleNotFoundError:
@@ -56,8 +57,8 @@ def solve(
         If CP Optimizer is chosen but its dependencies are not installed.
     """
     if solver == "ortools":
-        solver_ = ORToolsSolver(data)
-        return solver_.solve(
+        ortools = ORToolsSolver(data)
+        return ortools.solve(
             time_limit,
             display,
             num_workers,
@@ -65,8 +66,13 @@ def solve(
             **kwargs,
         )
     elif solver == "cpoptimizer" and CPOPTIMIZER_AVAILABLE:
-        return pyjobshop.cpoptimizer.solve(
-            data, time_limit, display, num_workers, initial_solution, **kwargs
+        cpoptimizer = CPOptimizerSolver(data)
+        return cpoptimizer.solve(
+            time_limit,
+            display,
+            num_workers,
+            initial_solution,
+            **kwargs,
         )
     elif solver == "cpoptimizer" and not CPOPTIMIZER_AVAILABLE:
         msg = (

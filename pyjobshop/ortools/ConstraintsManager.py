@@ -10,12 +10,7 @@ from .VariablesManager import VariablesManager
 
 class ConstraintsManager:
     """
-    Handles the core constraints of the OR-Tools CP model.
-
-    Parameters
-    ----------
-    data
-        The problem data instance.
+    Handles the core constraints of the OR-Tools model.
     """
 
     def __init__(
@@ -24,6 +19,7 @@ class ConstraintsManager:
         self._m = model
         self._data = data
 
+        # TODO make private
         self.job_vars = vars_manager.job_vars
         self.task_vars = vars_manager.task_vars
         self.task_alt_vars = vars_manager.task_alt_vars

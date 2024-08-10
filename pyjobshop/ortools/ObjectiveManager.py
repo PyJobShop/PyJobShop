@@ -11,7 +11,7 @@ from .VariablesManager import VariablesManager
 
 class ObjectiveManager:
     """
-    Manages the objective expressions of the OR-Tools CP model.
+    Manages the objective expressions of the OR-Tools model.
     """
 
     def __init__(
