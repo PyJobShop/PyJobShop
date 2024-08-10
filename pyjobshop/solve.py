@@ -5,14 +5,6 @@ from pyjobshop.ProblemData import ProblemData
 from pyjobshop.Result import Result
 from pyjobshop.Solution import Solution
 
-try:
-    # TODO move this check to the CP Optimizer Solver classes
-    from pyjobshop.cpoptimizer.Solver import Solver as CPOptimizerSolver
-
-    CPOPTIMIZER_AVAILABLE = True
-except ModuleNotFoundError:
-    CPOPTIMIZER_AVAILABLE = False
-
 
 def solve(
     data: ProblemData,
@@ -65,7 +57,9 @@ def solve(
             initial_solution,
             **kwargs,
         )
-    elif solver == "cpoptimizer" and CPOPTIMIZER_AVAILABLE:
+    elif solver == "cpoptimizer":
+        from pyjobshop.cpoptimizer.Solver import Solver as CPOptimizerSolver
+
         cpoptimizer = CPOptimizerSolver(data)
         return cpoptimizer.solve(
             time_limit,
@@ -74,12 +68,5 @@ def solve(
             initial_solution,
             **kwargs,
         )
-    elif solver == "cpoptimizer" and not CPOPTIMIZER_AVAILABLE:
-        msg = (
-            "Using CP Optimizer requires the relevant dependencies to be "
-            "installed. You can install those using `pip install "
-            "pyjobshop[cpoptimizer]`."
-        )
-        raise ModuleNotFoundError(msg)
     else:
         raise ValueError(f"Unknown solver choice: {solver}.")
