@@ -50,12 +50,15 @@ class TaskVar:
         The duration variable of the interval.
     end
         The end time variable of the interval.
+    is_present
+        The boolean variable indicating whether the interval is present.
     """
 
     interval: IntervalVar
     start: IntVar
     duration: IntVar
     end: IntVar
+    is_present: BoolVarT
 
 
 @dataclass
@@ -84,7 +87,7 @@ class TaskAltVar:
     start: IntVar
     duration: IntVar
     end: IntVar
-    is_present: IntVar
+    is_present: BoolVarT
 
 
 @dataclass
@@ -218,10 +221,18 @@ class VariablesManager:
                 ub=min(task.latest_end, data.horizon),
                 name=f"{name}_end",
             )
-            interval = model.NewIntervalVar(
-                start, duration, end, f"interval_{task}"
+            is_present = (
+                model.new_constant(1)
+                if task.required
+                else model.new_bool_var(f"{name}_is_present")
             )
-            variables.append(TaskVar(interval, start, duration, end))
+            # TODO Do we need to use new_interval_var if the task is required?
+            interval = model.new_optional_interval_var(
+                start, duration, end, is_present, f"{name}_interval"
+            )
+            variables.append(
+                TaskVar(interval, start, duration, end, is_present)
+            )
 
         return variables
 

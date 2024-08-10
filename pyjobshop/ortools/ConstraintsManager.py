@@ -40,6 +40,7 @@ class ConstraintsManager:
             ]
             task_end_vars = [self.task_vars[task].end for task in job.tasks]
 
+            # TODO ignore end/start if task not present
             self._m.add_min_equality(job_var.start, task_start_vars)
             self._m.add_max_equality(job_var.end, task_end_vars)
 
@@ -52,23 +53,23 @@ class ConstraintsManager:
         task_vars, task_alt_vars = self.task_vars, self.task_alt_vars
 
         for task in range(data.num_tasks):
-            presences = []
+            main = task_vars[task]
+            machines = data.task2machines[task]
+            alts = [task_alt_vars[task, machine] for machine in machines]
 
-            for machine in data.task2machines[task]:
-                main = task_vars[task]
-                alt = task_alt_vars[task, machine]
-                is_present = alt.is_present
-                presences.append(is_present)
+            # Select exactly one alternative task for each task only if the
+            # task is present.
+            alt_presences = [alt.is_present for alt in alts]
+            m.add(sum(alt_presences) == 1).only_enforce_if(main.is_present)
 
-                # Sync each optional interval variable with the main variable.
-                m.add(main.start == alt.start).only_enforce_if(is_present)
+            for alt in alts:
+                # Sync the selected alternative with the main interval.
+                both_present = [main.is_present, alt.is_present]
+                m.add(main.start == alt.start).only_enforce_if(both_present)
                 m.add(main.duration == alt.duration).only_enforce_if(
-                    is_present
+                    both_present
                 )
-                m.add(main.end == alt.end).only_enforce_if(is_present)
-
-            # Select exactly one optional interval variable for each task.
-            m.add_exactly_one(presences)
+                m.add(main.end == alt.end).only_enforce_if(both_present)
 
     def no_overlap_machines(self):
         """
@@ -127,7 +128,9 @@ class ConstraintsManager:
                 else:
                     continue
 
-                m.add(expr)
+                # Only enforce the constraint if both tasks are present.
+                presences = [task_var1.is_present, task_var2.is_present]
+                m.add(expr).only_enforce_if(presences)
 
     def task_alt_graph(self):
         """
