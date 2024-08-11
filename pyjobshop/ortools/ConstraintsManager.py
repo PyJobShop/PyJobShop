@@ -254,7 +254,7 @@ class ConstraintsManager:
 
     def add_all_constraints(self):
         """
-        Adds the constraints for the CP Model.
+        Adds all the constraints to the CP model.
         """
         self._job_spans_tasks()
         self._select_one_task_alternative()
