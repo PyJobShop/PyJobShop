@@ -24,7 +24,7 @@ class ConstraintsManager:
         self._task_alt_vars = vars_manager.task_alt_vars
         self._sequence_vars = vars_manager.sequence_vars
 
-    def job_spans_tasks(self):
+    def _job_spans_tasks(self):
         """
         Ensures that the job variables span the related task variables.
         """
@@ -36,7 +36,7 @@ class ConstraintsManager:
 
             model.add(model.span(job_var, job_task_vars))
 
-    def select_one_task_alternative(self):
+    def _select_one_task_alternative(self):
         """
         Selects one task alternative for each main task, ensuring that each
         task is assigned to exactly one machine.
@@ -48,7 +48,7 @@ class ConstraintsManager:
             alts = [self._task_alt_vars[task, machine] for machine in machines]
             model.add(model.alternative(self._task_vars[task], alts))
 
-    def no_overlap_and_setup_times(self):
+    def _no_overlap_and_setup_times(self):
         """
         Creates the no-overlap constraints for machines, ensuring that no two
         intervals in a sequence variable are overlapping. If setup times are
@@ -68,7 +68,7 @@ class ConstraintsManager:
             else:
                 model.add(model.no_overlap(seq_var, setups))
 
-    def task_graph(self):
+    def _task_graph(self):
         """
         Creates constraints based on the task graph for task variables.
         """
@@ -100,7 +100,7 @@ class ConstraintsManager:
 
                 model.add(expr)
 
-    def task_alt_graph(self):
+    def _task_alt_graph(self):
         """
         Creates constraints based on the task graph which involve task
         alternative variables.
@@ -148,8 +148,8 @@ class ConstraintsManager:
         """
         Adds the constraints for the CP Model.
         """
-        self.job_spans_tasks()
-        self.no_overlap_and_setup_times()
-        self.select_one_task_alternative()
-        self.task_graph()
-        self.task_alt_graph()
+        self._job_spans_tasks()
+        self._no_overlap_and_setup_times()
+        self._select_one_task_alternative()
+        self._task_graph()
+        self._task_alt_graph()

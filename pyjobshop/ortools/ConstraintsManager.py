@@ -23,7 +23,7 @@ class ConstraintsManager:
         self._task_alt_vars = vars_manager.task_alt_vars
         self._sequence_vars = vars_manager.sequence_vars
 
-    def job_spans_tasks(self):
+    def _job_spans_tasks(self):
         """
         Ensures that the job variables span the related task variables.
         """
@@ -37,7 +37,7 @@ class ConstraintsManager:
             model.add_min_equality(job_var.start, task_starts)
             model.add_max_equality(job_var.end, task_ends)
 
-    def select_one_task_alternative(self):
+    def _select_one_task_alternative(self):
         """
         Selects one task alternative for each main task, ensuring that each
         task is assigned to exactly one machine.
@@ -63,7 +63,7 @@ class ConstraintsManager:
             # Select exactly one optional interval variable for each task.
             model.add_exactly_one(presences)
 
-    def no_overlap_machines(self):
+    def _no_overlap_machines(self):
         """
         Creates the no overlap constraints for machines, ensuring that no two
         intervals in a sequence variable are overlapping.
@@ -74,7 +74,7 @@ class ConstraintsManager:
             seq_var = self._sequence_vars[machine]
             model.add_no_overlap([var.interval for var in seq_var.task_alts])
 
-    def activate_setup_times(self):
+    def _activate_setup_times(self):
         """
         Activates the sequence variables for machines that have setup times.
         The ``circuit_constraints`` function will in turn add constraints to
@@ -86,7 +86,7 @@ class ConstraintsManager:
             if np.any(data.setup_times[machine]):
                 self._sequence_vars[machine].activate(model)
 
-    def task_graph(self):
+    def _task_graph(self):
         """
         Creates constraints based on the task graph for task variables.
         """
@@ -118,7 +118,7 @@ class ConstraintsManager:
 
                 model.add(expr)
 
-    def task_alt_graph(self):
+    def _task_alt_graph(self):
         """
         Creates constraints based on the task graph which involve task
         alternative variables.
@@ -186,7 +186,7 @@ class ConstraintsManager:
                         expr = var1.is_present != var2.is_present
                         model.add(expr)
 
-    def enforce_circuit(self):
+    def _enforce_circuit(self):
         """
         Enforce the circuit constraints for each machine, ensuring that the
         sequencing constraints are respected.
@@ -256,12 +256,12 @@ class ConstraintsManager:
         """
         Adds the constraints for the CP Model.
         """
-        self.job_spans_tasks()
-        self.select_one_task_alternative()
-        self.no_overlap_machines()
-        self.activate_setup_times()
-        self.task_graph()
-        self.task_alt_graph()
+        self._job_spans_tasks()
+        self._select_one_task_alternative()
+        self._no_overlap_machines()
+        self._activate_setup_times()
+        self._task_graph()
+        self._task_alt_graph()
 
         # From here onwards we know which sequence constraints are active.
-        self.enforce_circuit()
+        self._enforce_circuit()
