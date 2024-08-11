@@ -73,7 +73,9 @@ class VariablesManager:
         min_durations, max_durations = compute_min_max_durations(self._data)
 
         for idx, task in enumerate(data.tasks):
-            var = model.interval_var(name=f"T{task}")
+            var = model.interval_var(
+                optional=not task.required, name=f"T{task}"
+            )
 
             var.set_start_min(task.earliest_start)
             var.set_start_max(min(task.latest_start, data.horizon))

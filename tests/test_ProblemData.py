@@ -653,7 +653,7 @@ def test_task_not_required(solver: str):
 
     result = model.solve(solver=solver)
 
-    # All tasks are not required and not scheduled, so the makespan is 0.
+    # No task is required, so the makespan should be 0.
     assert_equal(result.status.value, "Optimal")
     assert_equal(result.objective, 0)
 

@@ -34,6 +34,7 @@ class ConstraintsManager:
             job_var = self._job_vars[idx]
             job_task_vars = [self._task_vars[task] for task in job.tasks]
 
+            # TODO job_var is present iff at least one task is present
             model.add(model.span(job_var, job_task_vars))
 
     def _select_one_task_alternative(self):
@@ -44,9 +45,10 @@ class ConstraintsManager:
         model, data = self._model, self._data
 
         for task in range(data.num_tasks):
+            main = self._task_vars[task]
             machines = data.task2machines[task]
             alts = [self._task_alt_vars[task, machine] for machine in machines]
-            model.add(model.alternative(self._task_vars[task], alts))
+            model.add(model.alternative(main, alts))
 
     def _no_overlap_and_setup_times(self):
         """

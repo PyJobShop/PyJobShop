@@ -30,6 +30,36 @@ class Solver:
         self._constraints = ConstraintsManager(self._model, data, self._vars)
         self._objective = ObjectiveManager(self._model, data, self._vars)
 
+    def _convert_to_solution(self, result: CpoSolveResult) -> Solution:
+        """
+        Converts an CpoSolveResult object to a solution.
+        """
+        tasks = {}
+
+        for var in result.get_all_var_solutions():  # type: ignore
+            name = var.get_name()
+
+            # Scheduled tasks are inferred from variables start with an "A"
+            # (assignment) and that are present in the solution.
+            if name.startswith("A") and var.is_present():
+                task, machine = [int(num) for num in name[1:].split("_")]
+                start = var.start
+                duration = var.size
+                end = var.end
+                tasks[task] = TaskData(machine, start, duration, end)
+
+        for idx in range(self._data.num_tasks):
+            if idx not in tasks:
+                start = -1
+                duration = 0
+                end = -1
+                machine = -1
+                tasks[idx] = TaskData(
+                    machine, start, duration, end, present=False
+                )
+
+        return Solution([tasks[idx] for idx in range(self._data.num_tasks)])
+
     def solve(
         self,
         time_limit: float = float("inf"),
@@ -78,7 +108,7 @@ class Solver:
         status = cp_result.get_solve_status()
 
         if status in ["Optimal", "Feasible"]:
-            solution = _result2solution(self._data, cp_result)
+            solution = self._convert_to_solution(cp_result)
             objective: float = cp_result.get_objective_value()  # type: ignore
         else:
             # No feasible solution due to infeasible instance or time limit.
@@ -102,24 +132,3 @@ def _get_solve_status(status):
         return SolveStatus.INFEASIBLE
     else:
         return SolveStatus.TIME_LIMIT
-
-
-def _result2solution(data: ProblemData, result: CpoSolveResult) -> Solution:
-    """
-    Converts an CpoSolveResult object to a solution.
-    """
-    tasks = {}
-
-    for var in result.get_all_var_solutions():  # type: ignore
-        name = var.get_name()
-
-        # Scheduled tasks are inferred from variables start with an "A"
-        # (assignment) and that are present in the solution.
-        if name.startswith("A") and var.is_present():
-            task, machine = [int(num) for num in name[1:].split("_")]
-            start = var.start
-            duration = var.size
-            end = var.end
-            tasks[task] = TaskData(machine, start, duration, end)
-
-    return Solution([tasks[idx] for idx in range(data.num_tasks)])
