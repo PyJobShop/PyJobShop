@@ -21,7 +21,7 @@ class ObjectiveManager:
         self._task_vars = vars_manager.task_vars
         self._job_vars = vars_manager.job_vars
 
-        self._current_objective_epxr = None
+        self._current_objective_expr = None
 
     def _makespan_expr(self) -> CpoExpr:
         """
@@ -100,12 +100,12 @@ class ObjectiveManager:
         """
         Sets the objective of the the model.
         """
-        if self._current_objective_epxr is not None:
-            self._model.remove(self._current_objective_epxr)
+        if self._current_objective_expr is not None:
+            self._model.remove(self._current_objective_expr)
 
         obj_expr = self._objective_expr(objective)
         self._model.add(obj_expr)
-        self._current_objective_epxr = obj_expr
+        self._current_objective_expr = obj_expr
 
     def add_objective_as_constraint(self, objective: Objective, value: int):
         """
