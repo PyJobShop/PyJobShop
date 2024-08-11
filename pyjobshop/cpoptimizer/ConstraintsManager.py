@@ -28,24 +28,25 @@ class ConstraintsManager:
         """
         Ensures that the job variables span the related task variables.
         """
-        m, data = self._model, self._data
+        model, data = self._model, self._data
+
         for idx, job in enumerate(data.jobs):
             job_var = self._job_vars[idx]
             job_task_vars = [self._task_vars[task] for task in job.tasks]
 
-            m.add(m.span(job_var, job_task_vars))
+            model.add(model.span(job_var, job_task_vars))
 
     def select_one_task_alternative(self):
         """
         Selects one task alternative for each main task, ensuring that each
         task is assigned to exactly one machine.
         """
-        m, data = self._model, self._data
+        model, data = self._model, self._data
 
         for task in range(data.num_tasks):
             machines = data.task2machines[task]
             alts = [self._task_alt_vars[task, machine] for machine in machines]
-            m.add(m.alternative(self._task_vars[task], alts))
+            model.add(model.alternative(self._task_vars[task], alts))
 
     def no_overlap_and_setup_times(self):
         """
@@ -53,7 +54,8 @@ class ConstraintsManager:
         intervals in a sequence variable are overlapping. If setup times are
         available, the setup times are enforced as well.
         """
-        m, data = self._model, self._data
+        model, data = self._model, self._data
+
         for machine in range(data.num_machines):
             if not (tasks := data.machine2tasks[machine]):
                 continue  # skip if no tasks on this machine
@@ -62,47 +64,48 @@ class ConstraintsManager:
             seq_var = self._sequence_vars[machine]
 
             if np.all(setups == 0):  # no setup times
-                m.add(m.no_overlap(seq_var))
+                model.add(model.no_overlap(seq_var))
             else:
-                m.add(m.no_overlap(seq_var, setups))
+                model.add(model.no_overlap(seq_var, setups))
 
     def task_graph(self):
         """
         Creates constraints based on the task graph for task variables.
         """
-        m, data = self._model, self._data
+        model, data = self._model, self._data
+
         for (idx1, idx2), constraints in data.constraints.items():
             task1 = self._task_vars[idx1]
             task2 = self._task_vars[idx2]
 
             for constraint in constraints:
                 if constraint == "start_at_start":
-                    expr = m.start_at_start(task1, task2)
+                    expr = model.start_at_start(task1, task2)
                 elif constraint == "start_at_end":
-                    expr = m.start_at_end(task1, task2)
+                    expr = model.start_at_end(task1, task2)
                 elif constraint == "start_before_start":
-                    expr = m.start_before_start(task1, task2)
+                    expr = model.start_before_start(task1, task2)
                 elif constraint == "start_before_end":
-                    expr = m.start_before_end(task1, task2)
+                    expr = model.start_before_end(task1, task2)
                 elif constraint == "end_at_start":
-                    expr = m.end_at_start(task1, task2)
+                    expr = model.end_at_start(task1, task2)
                 elif constraint == "end_at_end":
-                    expr = m.end_at_end(task1, task2)
+                    expr = model.end_at_end(task1, task2)
                 elif constraint == "end_before_start":
-                    expr = m.end_before_start(task1, task2)
+                    expr = model.end_before_start(task1, task2)
                 elif constraint == "end_before_end":
-                    expr = m.end_before_end(task1, task2)
+                    expr = model.end_before_end(task1, task2)
                 else:
                     continue
 
-                m.add(expr)
+                model.add(expr)
 
     def task_alt_graph(self):
         """
         Creates constraints based on the task graph which involve task
         alternative variables.
         """
-        m, data = self._model, self._data
+        model, data = self._model, self._data
         relevant_constraints = {
             "previous",
             "before",
@@ -127,15 +130,19 @@ class ConstraintsManager:
 
                 for constraint in task_alt_constraints:
                     if constraint == "previous":
-                        expr = m.previous(seq_var, var1, var2)
+                        expr = model.previous(seq_var, var1, var2)
                     elif constraint == "before":
-                        expr = m.before(seq_var, var1, var2)
+                        expr = model.before(seq_var, var1, var2)
                     elif constraint == "same_machine":
-                        expr = m.presence_of(var1) == m.presence_of(var2)
+                        presence1 = model.presence_of(var1)
+                        presence2 = model.presence_of(var2)
+                        expr = presence1 == presence2
                     elif constraint == "different_machine":
-                        expr = m.presence_of(var1) != m.presence_of(var2)
+                        presence1 = model.presence_of(var1)
+                        presence2 = model.presence_of(var2)
+                        expr = presence1 != presence2
 
-                    m.add(expr)
+                    model.add(expr)
 
     def add_all_constraints(self):
         """

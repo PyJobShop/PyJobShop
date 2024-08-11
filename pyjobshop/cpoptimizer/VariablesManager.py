@@ -68,12 +68,12 @@ class VariablesManager:
         """
         Creates an interval variable for each task.
         """
-        m, data = self._model, self._data
+        model, data = self._model, self._data
         variables = []
         min_durations, max_durations = compute_min_max_durations(self._data)
 
         for idx, task in enumerate(data.tasks):
-            var = m.interval_var(name=f"T{task}")
+            var = model.interval_var(name=f"T{task}")
 
             var.set_start_min(task.earliest_start)
             var.set_start_max(min(task.latest_start, data.horizon))
@@ -103,11 +103,13 @@ class VariablesManager:
             A dictionary that maps each task index and machine index pair to
             its corresponding task alternative variable.
         """
-        m, data = self._model, self._data
+        model, data = self._model, self._data
         variables = {}
 
         for (task_idx, machine), duration in data.processing_times.items():
-            var = m.interval_var(optional=True, name=f"A{task_idx}_{machine}")
+            var = model.interval_var(
+                optional=True, name=f"A{task_idx}_{machine}"
+            )
             task = data.tasks[task_idx]
 
             var.set_start_min(task.earliest_start)
@@ -133,23 +135,22 @@ class VariablesManager:
         used for modeling machine setups and sequencing task constraints, such
         as previous, before, first, last and permutations.
         """
-        m, data = self._model, self._data
+        model, data = self._model, self._data
         variables = []
 
         for machine, tasks in enumerate(data.machine2tasks):
             intervals = [self.task_alt_vars[task, machine] for task in tasks]
-            variables.append(
-                m.sequence_var(name=f"S{machine}", vars=intervals)
-            )
+            seq_var = model.sequence_var(name=f"S{machine}", vars=intervals)
+            variables.append(seq_var)
 
         return variables
 
     def warmstart(self, solution: Solution):
         """
-        Warm-starts the variables based on the given solution.
+        Warmstarts the variables based on the given solution.
         """
-        m, data = self._model, self._data
-        stp = m.create_empty_solution()
+        model, data = self._model, self._data
+        stp = model.create_empty_solution()
 
         for idx in range(data.num_jobs):
             job = data.jobs[idx]
@@ -185,4 +186,4 @@ class VariablesManager:
                 size=sol_task.duration,
             )
 
-        m.set_starting_point(stp)
+        model.set_starting_point(stp)

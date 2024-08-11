@@ -322,7 +322,7 @@ class VariablesManager:
 
     def warmstart(self, solution: Solution):
         """
-        Warm-starts the variables based on the given solution.
+        Warmstarts the variables based on the given solution.
         """
         model, data = self._model, self._data
         job_vars, task_vars, task_alt_vars = (
