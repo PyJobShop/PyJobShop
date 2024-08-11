@@ -27,7 +27,7 @@ def test_subsequent_solve_clears_hint(small):
 def test_empty_circuit_not_allowed_bug():
     """
     This solves the bug identified in #178, where it was not possible to leave
-    an machine empty because empty circuits were not allowed.
+    a machine empty because empty circuits were not allowed.
     """
     model = Model()
 

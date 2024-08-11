@@ -101,7 +101,7 @@ class Solver:
             information about the solver run.
         """
         if initial_solution is not None:
-            self._vars.add_hints(initial_solution)
+            self._vars.warmstart(initial_solution)
 
         self._constraints.add_all_constraints()
         self._objective.set_objective(self._data.objective)

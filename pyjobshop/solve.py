@@ -5,13 +5,6 @@ from pyjobshop.ProblemData import ProblemData
 from pyjobshop.Result import Result
 from pyjobshop.Solution import Solution
 
-try:
-    import pyjobshop.cpoptimizer
-
-    CPOPTIMIZER_AVAILABLE = True
-except ModuleNotFoundError:
-    CPOPTIMIZER_AVAILABLE = False
-
 
 def solve(
     data: ProblemData,
@@ -56,24 +49,24 @@ def solve(
         If CP Optimizer is chosen but its dependencies are not installed.
     """
     if solver == "ortools":
-        solver_ = ORToolsSolver(data)
-        return solver_.solve(
+        ortools = ORToolsSolver(data)
+        return ortools.solve(
             time_limit,
             display,
             num_workers,
             initial_solution,
             **kwargs,
         )
-    elif solver == "cpoptimizer" and CPOPTIMIZER_AVAILABLE:
-        return pyjobshop.cpoptimizer.solve(
-            data, time_limit, display, num_workers, initial_solution, **kwargs
+    elif solver == "cpoptimizer":
+        from pyjobshop.cpoptimizer.Solver import Solver as CPOptimizerSolver
+
+        cpoptimizer = CPOptimizerSolver(data)
+        return cpoptimizer.solve(
+            time_limit,
+            display,
+            num_workers,
+            initial_solution,
+            **kwargs,
         )
-    elif solver == "cpoptimizer" and not CPOPTIMIZER_AVAILABLE:
-        msg = (
-            "Using CP Optimizer requires the relevant dependencies to be "
-            "installed. You can install those using `pip install "
-            "pyjobshop[cpoptimizer]`."
-        )
-        raise ModuleNotFoundError(msg)
     else:
         raise ValueError(f"Unknown solver choice: {solver}.")

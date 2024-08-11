@@ -8,115 +8,106 @@ from .VariablesManager import VariablesManager
 
 class ConstraintsManager:
     """
-    Handles the core constraints of the OR-Tools CP model.
-
-    Parameters
-    ----------
-    data
-        The problem data instance.
+    Handles the core constraints of the OR-Tools model.
     """
 
     def __init__(
         self, model: CpModel, data: ProblemData, vars_manager: VariablesManager
     ):
-        self._m = model
+        self._model = model
         self._data = data
+        self._job_vars = vars_manager.job_vars
+        self._task_vars = vars_manager.task_vars
+        self._task_alt_vars = vars_manager.task_alt_vars
+        self._sequence_vars = vars_manager.sequence_vars
 
-        self.job_vars = vars_manager.job_vars
-        self.task_vars = vars_manager.task_vars
-        self.task_alt_vars = vars_manager.task_alt_vars
-        self.sequence_vars = vars_manager.sequence_vars
-
-    def job_spans_tasks(self):
+    def _job_spans_tasks(self):
         """
         Ensures that the job variables span the related task variables.
         """
-        data = self._data
+        model, data = self._model, self._data
 
         for idx, job in enumerate(data.jobs):
-            job_var = self.job_vars[idx]
+            job_var = self._job_vars[idx]
 
             # For required tasks, the job spans the entire task.
             req = [task for task in job.tasks if data.tasks[task].required]
             if req:  # cannot use add_min_equality if req is empty
-                starts = [self.task_vars[task].start for task in req]
-                ends = [self.task_vars[task].end for task in req]
-                self._m.add_max_equality(job_var.end, ends)
-                self._m.add_min_equality(job_var.start, starts)
+                task_starts = [self._task_vars[task].start for task in req]
+                task_ends = [self._task_vars[task].end for task in req]
+                model.add_max_equality(job_var.end, task_ends)
+                model.add_min_equality(job_var.start, task_starts)
 
             # For optional tasks, we have a weaker constraint that the job
             # should span the task only if the task is present.
             optional = [task for task in job.tasks if task not in req]
             for task in optional:
-                task_var = self.task_vars[task]
+                task_var = self._task_vars[task]
                 expr1 = job_var.start <= task_var.start
                 expr2 = job_var.end >= task_var.end
-                self._m.add(expr1).only_enforce_if(task_var.is_present)
-                self._m.add(expr2).only_enforce_if(task_var.is_present)
+                model.add(expr1).only_enforce_if(task_var.is_present)
+                model.add(expr2).only_enforce_if(task_var.is_present)
 
-    def select_one_task_alternative(self):
+    def _select_one_task_alternative(self):
         """
-        Selects one optional interval for each task alternative, ensuring that
-        each task is scheduled on exactly one machine.
+        Selects one task alternative for each main task, ensuring that each
+        task is assigned to exactly one machine.
         """
-        m, data = self._m, self._data
-        task_vars, task_alt_vars = self.task_vars, self.task_alt_vars
+        model, data = self._model, self._data
 
         for task in range(data.num_tasks):
-            main = task_vars[task]
+            main = self._task_vars[task]
             machines = data.task2machines[task]
-            alts = [task_alt_vars[task, machine] for machine in machines]
+            alts = [self._task_alt_vars[task, machine] for machine in machines]
 
             # Select exactly one alternative task for each task only if the
             # task is present.
             alt_presences = [alt.is_present for alt in alts]
-            m.add(sum(alt_presences) == 1).only_enforce_if(main.is_present)
+            model.add(sum(alt_presences) == 1).only_enforce_if(main.is_present)
 
             for alt in alts:
                 # Sync the selected alternative with the main interval.
                 both_present = [main.is_present, alt.is_present]
-                m.add(main.start == alt.start).only_enforce_if(both_present)
-                m.add(main.duration == alt.duration).only_enforce_if(
+                model.add(main.start == alt.start).only_enforce_if(
                     both_present
                 )
-                m.add(main.end == alt.end).only_enforce_if(both_present)
+                model.add(main.duration == alt.duration).only_enforce_if(
+                    both_present
+                )
+                model.add(main.end == alt.end).only_enforce_if(both_present)
 
-    def no_overlap_machines(self):
+    def _no_overlap_machines(self):
         """
         Creates the no overlap constraints for machines, ensuring that no two
         intervals in a sequence variable are overlapping.
         """
-        m, data = self._m, self._data
-        seq_vars = self.sequence_vars
+        model, data = self._model, self._data
 
         for machine in range(data.num_machines):
-            m.add_no_overlap(
-                [var.interval for var in seq_vars[machine].task_alts]
-            )
+            seq_var = self._sequence_vars[machine]
+            model.add_no_overlap([var.interval for var in seq_var.task_alts])
 
-    def activate_setup_times(self):
+    def _activate_setup_times(self):
         """
         Activates the sequence variables for machines that have setup times.
         The ``circuit_constraints`` function will in turn add constraints to
         the CP-SAT model to enforce setup times.
         """
-        m, data = self._m, self._data
-        seq_vars = self.sequence_vars
+        model, data = self._model, self._data
 
         for machine in range(data.num_machines):
             if np.any(data.setup_times[machine]):
-                seq_vars[machine].activate(m)
+                self._sequence_vars[machine].activate(model)
 
-    def task_graph(self):
+    def _task_graph(self):
         """
         Creates constraints based on the task graph for task variables.
         """
-        m, data = self._m, self._data
-        task_vars = self.task_vars
+        model, data = self._model, self._data
 
         for (idx1, idx2), constraints in data.constraints.items():
-            task_var1 = task_vars[idx1]
-            task_var2 = task_vars[idx2]
+            task_var1 = self._task_vars[idx1]
+            task_var2 = self._task_vars[idx2]
 
             for prec_type in constraints:
                 if prec_type == "start_at_start":
@@ -140,14 +131,14 @@ class ConstraintsManager:
 
                 # Only enforce the constraint if both tasks are present.
                 presences = [task_var1.is_present, task_var2.is_present]
-                m.add(expr).only_enforce_if(presences)
+                model.add(expr).only_enforce_if(presences)
 
-    def task_alt_graph(self):
+    def _task_alt_graph(self):
         """
         Creates constraints based on the task graph which involve task
         alternative variables.
         """
-        m, data = self._m, self._data
+        model, data = self._model, self._data
         relevant_constraints = {
             "previous",
             "before",
@@ -167,13 +158,13 @@ class ConstraintsManager:
             machines = set(machines1) & set(machines2)
 
             for machine in machines:
-                sequence = self.sequence_vars[machine]
-                var1 = self.task_alt_vars[task1, machine]
-                var2 = self.task_alt_vars[task2, machine]
+                sequence = self._sequence_vars[machine]
+                var1 = self._task_alt_vars[task1, machine]
+                var2 = self._task_alt_vars[task2, machine]
 
                 for constraint in task_alt_constraints:
                     if constraint == "previous":
-                        sequence.activate(m)
+                        sequence.activate(model)
 
                         # Schedule var1 right behind var2 if both are present.
                         idx1 = sequence.task_alts.index(var1)
@@ -181,9 +172,9 @@ class ConstraintsManager:
                         arc = sequence.arcs[idx1, idx2]
                         both_present = [var1.is_present, var2.is_present]
 
-                        m.add(arc == 1).only_enforce_if(both_present)
+                        model.add(arc == 1).only_enforce_if(both_present)
                     elif constraint == "before":
-                        sequence.activate(m)
+                        sequence.activate(model)
 
                         # Schedule var1 before var2 if both are present.
                         idx1 = sequence.task_alts.index(var1)
@@ -192,24 +183,23 @@ class ConstraintsManager:
                         rank2 = sequence.ranks[idx2]
                         both_present = [var1.is_present, var2.is_present]
 
-                        m.add(rank1 <= rank2).only_enforce_if(both_present)
+                        model.add(rank1 <= rank2).only_enforce_if(both_present)
                     elif constraint == "same_machine":
                         expr = var1.is_present == var2.is_present
-                        m.add(expr)
+                        model.add(expr)
                     elif constraint == "different_machine":
                         expr = var1.is_present != var2.is_present
-                        m.add(expr)
+                        model.add(expr)
 
-    def enforce_circuit(self):
+    def _enforce_circuit(self):
         """
         Enforce the circuit constraints for each machine, ensuring that the
         sequencing constraints are respected.
         """
-        data, m = self._data, self._m
-        seq_vars = self.sequence_vars
+        model, data = self._model, self._data
 
         for machine in range(data.num_machines):
-            sequence = seq_vars[machine]
+            sequence = self._sequence_vars[machine]
 
             if not sequence.is_active:
                 # No sequencing constraints found. Skip the creation of
@@ -223,7 +213,7 @@ class ConstraintsManager:
             arcs = sequence.arcs
 
             # Add dummy node self-arc to allow empty circuits.
-            empty = m.new_bool_var(f"empty_circuit_{machine}")
+            empty = model.new_bool_var(f"empty_circuit_{machine}")
             circuit = [(-1, -1, empty)]
 
             for idx1, var1 in enumerate(task_alt_vars):
@@ -236,14 +226,14 @@ class ConstraintsManager:
                 circuit.append([idx1, -1, end])
 
                 # Set rank for first task in the sequence.
-                m.add(rank == 0).only_enforce_if(start)
+                model.add(rank == 0).only_enforce_if(start)
 
                 # Self arc if the task is not present on this machine.
                 circuit.append([idx1, idx1, ~var1.is_present])
-                m.add(rank == -1).only_enforce_if(~var1.is_present)
+                model.add(rank == -1).only_enforce_if(~var1.is_present)
 
                 # If the circuit is empty then the var should not be present.
-                m.add_implication(empty, ~var1.is_present)
+                model.add_implication(empty, ~var1.is_present)
 
                 for idx2, var2 in enumerate(task_alt_vars):
                     if idx1 == idx2:
@@ -252,29 +242,31 @@ class ConstraintsManager:
                     arc = arcs[idx1, idx2]
                     circuit.append([idx1, idx2, arc])
 
-                    m.add_implication(arc, var1.is_present)
-                    m.add_implication(arc, var2.is_present)
+                    model.add_implication(arc, var1.is_present)
+                    model.add_implication(arc, var2.is_present)
 
                     # Maintain rank incrementally.
-                    m.add(rank + 1 == ranks[idx2]).only_enforce_if(arc)
+                    model.add(rank + 1 == ranks[idx2]).only_enforce_if(arc)
 
                     # TODO Validate that this cannot be combined with overlap.
                     task1, task2 = var1.task_idx, var2.task_idx
                     setup = data.setup_times[machine, task1, task2]
-                    m.add(var1.end + setup <= var2.start).only_enforce_if(arc)
+                    model.add(var1.end + setup <= var2.start).only_enforce_if(
+                        arc
+                    )
 
-            m.add_circuit(circuit)
+            model.add_circuit(circuit)
 
     def add_all_constraints(self):
         """
-        Adds the constraints for the CP Model.
+        Adds all the constraints to the CP model.
         """
-        self.job_spans_tasks()
-        self.select_one_task_alternative()
-        self.no_overlap_machines()
-        self.activate_setup_times()
-        self.task_graph()
-        self.task_alt_graph()
+        self._job_spans_tasks()
+        self._select_one_task_alternative()
+        self._no_overlap_machines()
+        self._activate_setup_times()
+        self._task_graph()
+        self._task_alt_graph()
 
         # From here onwards we know which sequence constraints are active.
-        self.enforce_circuit()
+        self._enforce_circuit()

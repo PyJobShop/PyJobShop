@@ -153,17 +153,45 @@ class SequenceVar:
 
 class VariablesManager:
     """
-    Manages the core variables of the OR-Tools CP model.
+    Manages the core variables of the OR-Tools model.
     """
 
     def __init__(self, model: CpModel, data: ProblemData):
         self._model = model
         self._data = data
 
-        self.job_vars = self._make_job_variables()
-        self.task_vars = self._make_task_variables()
-        self.task_alt_vars = self._make_task_alternative_variables()
-        self.sequence_vars = self._make_sequence_variables()
+        self._job_vars = self._make_job_variables()
+        self._task_vars = self._make_task_variables()
+        self._task_alt_vars = self._make_task_alternative_variables()
+        self._sequence_vars = self._make_sequence_variables()
+
+    @property
+    def job_vars(self) -> list[JobVar]:
+        """
+        Returns the job variables.
+        """
+        return self._job_vars
+
+    @property
+    def task_vars(self) -> list[TaskVar]:
+        """
+        Returns the task variables.
+        """
+        return self._task_vars
+
+    @property
+    def task_alt_vars(self) -> dict[tuple[int, int], TaskAltVar]:
+        """
+        Returns the task alternative variables.
+        """
+        return self._task_alt_vars
+
+    @property
+    def sequence_vars(self) -> list[SequenceVar]:
+        """
+        Returns the sequence variables.
+        """
+        return self._sequence_vars
 
     def _make_job_variables(self) -> list[JobVar]:
         """
@@ -303,9 +331,9 @@ class VariablesManager:
 
         return variables
 
-    def add_hints(self, solution: Solution):
+    def warmstart(self, solution: Solution):
         """
-        Adds hints to variables based on the given solution.
+        Warmstarts the variables based on the given solution.
         """
         model, data = self._model, self._data
         job_vars, task_vars, task_alt_vars = (
