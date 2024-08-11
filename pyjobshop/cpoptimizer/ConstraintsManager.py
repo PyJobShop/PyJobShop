@@ -8,7 +8,7 @@ from .VariablesManager import VariablesManager
 
 class ConstraintsManager:
     """
-    Handles the core constraints of the OR-Tools model.
+    Handles the core constraints of the CP Optimizer model.
     """
 
     def __init__(
@@ -17,40 +17,35 @@ class ConstraintsManager:
         data: ProblemData,
         vars_manager: VariablesManager,
     ):
-        self._m = model
+        self._model = model
         self._data = data
-
-        # TODO make private
-        self.job_vars = vars_manager.job_vars
-        self.task_vars = vars_manager.task_vars
-        self.task_alt_vars = vars_manager.task_alt_vars
-        self.sequence_vars = vars_manager.sequence_vars
+        self._job_vars = vars_manager.job_vars
+        self._task_vars = vars_manager.task_vars
+        self._task_alt_vars = vars_manager.task_alt_vars
+        self._sequence_vars = vars_manager.sequence_vars
 
     def job_spans_tasks(self):
         """
         Ensures that the job variables span the related task variables.
         """
-        m, data = self._m, self._data
+        m, data = self._model, self._data
         for idx, job in enumerate(data.jobs):
-            job_var = self.job_vars[idx]
-            related_task_vars = [
-                self.task_vars[task_idx] for task_idx in job.tasks
-            ]
+            job_var = self._job_vars[idx]
+            job_task_vars = [self._task_vars[task] for task in job.tasks]
 
-            m.add(m.span(job_var, related_task_vars))
+            m.add(m.span(job_var, job_task_vars))
 
     def select_one_task_alternative(self):
         """
-        Selects one optional interval for each task alternative, ensuring that
-        each task is scheduled on exactly one machine.
+        Selects one task alternative for each main task, ensuring that each
+        task is assigned to exactly one machine.
         """
-        m, data = self._m, self._data
+        m, data = self._model, self._data
+
         for task in range(data.num_tasks):
             machines = data.task2machines[task]
-            optional = [
-                self.task_alt_vars[task, machine] for machine in machines
-            ]
-            m.add(m.alternative(self.task_vars[task], optional))
+            alts = [self._task_alt_vars[task, machine] for machine in machines]
+            m.add(m.alternative(self._task_vars[task], alts))
 
     def no_overlap_and_setup_times(self):
         """
@@ -58,15 +53,15 @@ class ConstraintsManager:
         intervals in a sequence variable are overlapping. If setup times are
         available, the setup times are enforced as well.
         """
-        m, data = self._m, self._data
+        m, data = self._model, self._data
         for machine in range(data.num_machines):
             if not (tasks := data.machine2tasks[machine]):
-                continue  # There no tasks for this machine.
+                continue  # skip if no tasks on this machine
 
             setups = data.setup_times[machine, :, :][np.ix_(tasks, tasks)]
-            seq_var = self.sequence_vars[machine]
+            seq_var = self._sequence_vars[machine]
 
-            if np.all(setups == 0):  # No setup times for this machine.
+            if np.all(setups == 0):  # no setup times
                 m.add(m.no_overlap(seq_var))
             else:
                 m.add(m.no_overlap(seq_var, setups))
@@ -75,10 +70,10 @@ class ConstraintsManager:
         """
         Creates constraints based on the task graph for task variables.
         """
-        m, data = self._m, self._data
+        m, data = self._model, self._data
         for (idx1, idx2), constraints in data.constraints.items():
-            task1 = self.task_vars[idx1]
-            task2 = self.task_vars[idx2]
+            task1 = self._task_vars[idx1]
+            task2 = self._task_vars[idx2]
 
             for constraint in constraints:
                 if constraint == "start_at_start":
@@ -107,7 +102,7 @@ class ConstraintsManager:
         Creates constraints based on the task graph which involve task
         alternative variables.
         """
-        m, data = self._m, self._data
+        m, data = self._model, self._data
         relevant_constraints = {
             "previous",
             "before",
@@ -126,9 +121,9 @@ class ConstraintsManager:
             machines = set(machines1) & set(machines2)
 
             for machine in machines:
-                seq_var = self.sequence_vars[machine]
-                var1 = self.task_alt_vars[task1, machine]
-                var2 = self.task_alt_vars[task2, machine]
+                seq_var = self._sequence_vars[machine]
+                var1 = self._task_alt_vars[task1, machine]
+                var2 = self._task_alt_vars[task2, machine]
 
                 for constraint in task_alt_constraints:
                     if constraint == "previous":

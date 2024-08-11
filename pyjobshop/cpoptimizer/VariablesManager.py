@@ -15,10 +15,38 @@ class VariablesManager:
         self._model = model
         self._data = data
 
-        self.job_vars = self._make_job_variables()
-        self.task_vars = self._make_task_variables()
-        self.task_alt_vars = self._make_task_alternative_variables()
-        self.sequence_vars = self._make_sequence_variables()
+        self._job_vars = self._make_job_variables()
+        self._task_vars = self._make_task_variables()
+        self._task_alt_vars = self._make_task_alternative_variables()
+        self._sequence_vars = self._make_sequence_variables()
+
+    @property
+    def job_vars(self) -> list[CpoIntervalVar]:
+        """
+        Returns the job variables.
+        """
+        return self._job_vars
+
+    @property
+    def task_vars(self) -> list[CpoIntervalVar]:
+        """
+        Returns the task variables.
+        """
+        return self._task_vars
+
+    @property
+    def task_alt_vars(self) -> dict[tuple[int, int], CpoIntervalVar]:
+        """
+        Returns the task alternative variables.
+        """
+        return self._task_alt_vars
+
+    @property
+    def sequence_vars(self) -> list[CpoSequenceVar]:
+        """
+        Returns the sequence variables.
+        """
+        return self._sequence_vars
 
     def _make_job_variables(self) -> list[CpoIntervalVar]:
         """
@@ -116,9 +144,9 @@ class VariablesManager:
 
         return variables
 
-    def add_hints(self, solution: Solution):
+    def warmstart(self, solution: Solution):
         """
-        Adds hints to variables based on the given solution.
+        Warm-starts the variables based on the given solution.
         """
         m, data = self._model, self._data
         stp = m.create_empty_solution()

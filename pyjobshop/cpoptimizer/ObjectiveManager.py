@@ -21,6 +21,8 @@ class ObjectiveManager:
         self._task_vars = vars_manager.task_vars
         self._job_vars = vars_manager.job_vars
 
+        self._current_objective_epxr = None
+
     def _makespan_expr(self) -> CpoExpr:
         """
         Returns an expression representing the makespan of the model.
@@ -92,14 +94,18 @@ class ObjectiveManager:
                 * self._total_completion_time_expr()
             )
 
-        return expr
+        return self._model.minimize(expr)
 
     def set_objective(self, objective: Objective):
         """
         Sets the objective of the the model.
         """
-        # self._model.clear_objective() # TODO is this necessary?
-        self._model.minimize(self._objective_expr(objective))
+        if self._current_objective_epxr is not None:
+            self._model.remove(self._current_objective_epxr)
+
+        obj_expr = self._objective_expr(objective)
+        self._model.add(obj_expr)
+        self._current_objective_epxr = obj_expr
 
     def add_objective_as_constraint(self, objective: Objective, value: int):
         """

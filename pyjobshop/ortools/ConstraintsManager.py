@@ -18,41 +18,37 @@ class ConstraintsManager:
     ):
         self._m = model
         self._data = data
-
-        # TODO make private
-        self.job_vars = vars_manager.job_vars
-        self.task_vars = vars_manager.task_vars
-        self.task_alt_vars = vars_manager.task_alt_vars
-        self.sequence_vars = vars_manager.sequence_vars
+        self._job_vars = vars_manager.job_vars
+        self._task_vars = vars_manager.task_vars
+        self._task_alt_vars = vars_manager.task_alt_vars
+        self._sequence_vars = vars_manager.sequence_vars
 
     def job_spans_tasks(self):
         """
         Ensures that the job variables span the related task variables.
         """
-        for idx, job in enumerate(self._data.jobs):
-            job_var = self.job_vars[idx]
-            task_start_vars = [
-                self.task_vars[task].start for task in job.tasks
-            ]
-            task_end_vars = [self.task_vars[task].end for task in job.tasks]
+        m, data = self._m, self._data
+        for idx, job in enumerate(data.jobs):
+            job_var = self._job_vars[idx]
+            task_starts = [self._task_vars[task].start for task in job.tasks]
+            task_ends = [self._task_vars[task].end for task in job.tasks]
 
-            self._m.add_min_equality(job_var.start, task_start_vars)
-            self._m.add_max_equality(job_var.end, task_end_vars)
+            m.add_min_equality(job_var.start, task_starts)
+            m.add_max_equality(job_var.end, task_ends)
 
     def select_one_task_alternative(self):
         """
-        Selects one optional interval for each task alternative, ensuring that
-        each task is scheduled on exactly one machine.
+        Selects one task alternative for each main task, ensuring that each
+        task is assigned to exactly one machine.
         """
         m, data = self._m, self._data
-        task_vars, task_alt_vars = self.task_vars, self.task_alt_vars
 
         for task in range(data.num_tasks):
             presences = []
 
             for machine in data.task2machines[task]:
-                main = task_vars[task]
-                alt = task_alt_vars[task, machine]
+                main = self._task_vars[task]
+                alt = self._task_alt_vars[task, machine]
                 is_present = alt.is_present
                 presences.append(is_present)
 
@@ -72,7 +68,7 @@ class ConstraintsManager:
         intervals in a sequence variable are overlapping.
         """
         m, data = self._m, self._data
-        seq_vars = self.sequence_vars
+        seq_vars = self._sequence_vars
 
         for machine in range(data.num_machines):
             m.add_no_overlap(
@@ -86,7 +82,7 @@ class ConstraintsManager:
         the CP-SAT model to enforce setup times.
         """
         m, data = self._m, self._data
-        seq_vars = self.sequence_vars
+        seq_vars = self._sequence_vars
 
         for machine in range(data.num_machines):
             if np.any(data.setup_times[machine]):
@@ -97,7 +93,7 @@ class ConstraintsManager:
         Creates constraints based on the task graph for task variables.
         """
         m, data = self._m, self._data
-        task_vars = self.task_vars
+        task_vars = self._task_vars
 
         for (idx1, idx2), constraints in data.constraints.items():
             task_var1 = task_vars[idx1]
@@ -150,9 +146,9 @@ class ConstraintsManager:
             machines = set(machines1) & set(machines2)
 
             for machine in machines:
-                sequence = self.sequence_vars[machine]
-                var1 = self.task_alt_vars[task1, machine]
-                var2 = self.task_alt_vars[task2, machine]
+                sequence = self._sequence_vars[machine]
+                var1 = self._task_alt_vars[task1, machine]
+                var2 = self._task_alt_vars[task2, machine]
 
                 for constraint in task_alt_constraints:
                     if constraint == "previous":
@@ -199,7 +195,7 @@ class ConstraintsManager:
         sequencing constraints are respected.
         """
         data, m = self._data, self._m
-        seq_vars = self.sequence_vars
+        seq_vars = self._sequence_vars
 
         for machine in range(data.num_machines):
             sequence = seq_vars[machine]
