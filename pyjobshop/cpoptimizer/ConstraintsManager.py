@@ -45,8 +45,7 @@ class ConstraintsManager:
 
         for task in range(data.num_tasks):
             mode_vars = [
-                self._mode_vars[task, data.modes[mode].machine]
-                for mode in data._task2modes[task]
+                self._mode_vars[mode] for mode in data._task2modes[task]
             ]
             model.add(model.alternative(self._task_vars[task], mode_vars))
 
@@ -127,8 +126,18 @@ class ConstraintsManager:
 
             for machine in machines:
                 seq_var = self._sequence_vars[machine]
-                var1 = self._mode_vars[task1, machine]
-                var2 = self._mode_vars[task2, machine]
+                mode1 = [
+                    mode
+                    for mode in data._task2modes[task1]
+                    if data.modes[mode].machine == machine
+                ][0]
+                mode2 = [
+                    mode
+                    for mode in data._task2modes[task2]
+                    if data.modes[mode].machine == machine
+                ][0]
+                var1 = self._mode_vars[mode1]
+                var2 = self._mode_vars[mode2]
 
                 for constraint in task_alt_constraints:
                     if constraint == "previous":

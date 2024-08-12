@@ -410,6 +410,10 @@ class ProblemData:
             bisect.insort(self._machine2tasks[mode.machine], mode.task)
             bisect.insort(self._task2machines[mode.task], mode.machine)
 
+        self._machine2modes: list[list[int]] = [[] for _ in range(num_mach)]
+        for idx, mode in enumerate(self._modes):
+            bisect.insort(self._machine2modes[mode.machine], idx)
+
         self._validate_parameters()
 
     def _validate_parameters(self):
@@ -428,7 +432,7 @@ class ProblemData:
 
         tasks_with_processing = {mode.task for mode in self.modes}
         if set(range(num_tasks)) != tasks_with_processing:
-            raise ValueError("Processing times missing for some tasks.")
+            raise ValueError("Processing modes missing for some tasks.")
 
         if np.any(self.setup_times < 0):
             raise ValueError("Setup times must be non-negative.")

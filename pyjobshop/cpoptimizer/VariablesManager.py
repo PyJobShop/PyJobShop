@@ -35,7 +35,7 @@ class VariablesManager:
         return self._task_vars
 
     @property
-    def mode_vars(self) -> dict[tuple[int, int], CpoIntervalVar]:
+    def mode_vars(self) -> list[CpoIntervalVar]:
         """
         Returns the mode variables.
         """
@@ -90,15 +90,15 @@ class VariablesManager:
 
         return variables
 
-    def _make_mode_variables(self) -> dict[tuple[int, int], CpoIntervalVar]:
+    def _make_mode_variables(self) -> list[CpoIntervalVar]:
         """
         Creates an optional interval variable for each mode variable.
         """
         model, data = self._model, self._data
-        variables = {}
+        variables = []
 
         for mode in self._data.modes:
-            task_idx, machine_idx = mode.task, mode.resources[0]
+            task_idx, machine_idx = mode.task, mode.machine
             var = model.interval_var(
                 optional=True, name=f"A{task_idx}_{machine_idx}"
             )
@@ -116,7 +116,7 @@ class VariablesManager:
                 var.set_size_min(mode.duration)
                 var.set_size_max(data.horizon)
 
-            variables[task_idx, machine_idx] = var
+            variables.append(var)
 
         return variables
 
@@ -130,8 +130,8 @@ class VariablesManager:
         model, data = self._model, self._data
         variables = []
 
-        for machine, tasks in enumerate(data.machine2tasks):
-            intervals = [self.mode_vars[task, machine] for task in tasks]
+        for machine, modes in enumerate(data._machine2modes):
+            intervals = [self.mode_vars[mode] for mode in modes]
             seq_var = model.sequence_var(name=f"S{machine}", vars=intervals)
             variables.append(seq_var)
 
@@ -167,12 +167,13 @@ class VariablesManager:
                 size=sol_task.duration,
             )
 
-        for (task_idx, machine_idx), var in self.mode_vars.items():
-            sol_task = solution.tasks[task_idx]
+        for idx, mode in enumerate(data.modes):
+            sol_task = solution.tasks[mode.task]
+            var = self.mode_vars[idx]
 
             stp.add_interval_var_solution(
                 var,
-                presence=machine_idx == sol_task.machine,
+                presence=mode.machine == sol_task.machine,
                 start=sol_task.start,
                 end=sol_task.end,
                 size=sol_task.duration,

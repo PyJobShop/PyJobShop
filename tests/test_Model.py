@@ -111,7 +111,7 @@ def test_model_to_data_default_values():
     assert_equal(data.jobs, [job])
     assert_equal(data.machines, [machine])
     assert_equal(data.tasks, [task])
-    # assert_equal(data.processing_times, {(0, 0): 1}) #TODO
+    assert_equal(data.modes, [Mode(task=0, duration=1, resources=[0])])
     assert_equal(data.constraints, {})
     assert_equal(data.setup_times, [[[0]]])
     assert_equal(data.horizon, MAX_VALUE)

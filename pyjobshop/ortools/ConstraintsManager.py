@@ -1,7 +1,5 @@
 import numpy as np
-from ortools.sat.python.cp_model import (
-    CpModel,
-)
+from ortools.sat.python.cp_model import CpModel
 
 from pyjobshop.ProblemData import ProblemData
 
@@ -20,7 +18,7 @@ class ConstraintsManager:
         self._data = data
         self._job_vars = vars_manager.job_vars
         self._task_vars = vars_manager.task_vars
-        self._task_alt_vars = vars_manager.mode_vars
+        self._modes = vars_manager.mode_vars
         self._sequence_vars = vars_manager.sequence_vars
 
     def _job_spans_tasks(self):
@@ -37,7 +35,7 @@ class ConstraintsManager:
             model.add_min_equality(job_var.start, task_starts)
             model.add_max_equality(job_var.end, task_ends)
 
-    def _select_one_task_alternative(self):
+    def _select_one_mode(self):
         """
         Selects one task alternative for each main task, ensuring that each
         task is assigned to exactly one machine.
@@ -49,7 +47,7 @@ class ConstraintsManager:
 
             for machine in data.task2machines[task]:
                 main = self._task_vars[task]
-                alt = self._task_alt_vars[task, machine]
+                alt = self._modes[task, machine]
                 is_present = alt.is_present
                 presences.append(is_present)
 
@@ -144,8 +142,8 @@ class ConstraintsManager:
 
             for machine in machines:
                 sequence = self._sequence_vars[machine]
-                var1 = self._task_alt_vars[task1, machine]
-                var2 = self._task_alt_vars[task2, machine]
+                var1 = self._modes[task1, machine]
+                var2 = self._modes[task2, machine]
 
                 for constraint in task_alt_constraints:
                     if constraint == "previous":
@@ -201,7 +199,7 @@ class ConstraintsManager:
                 # (expensive) circuit constraints.
                 continue
 
-            task_alt_vars = sequence.modes
+            modes = sequence.modes
             starts = sequence.starts
             ends = sequence.ends
             ranks = sequence.ranks
@@ -211,7 +209,7 @@ class ConstraintsManager:
             empty = model.new_bool_var(f"empty_circuit_{machine}")
             circuit = [(-1, -1, empty)]
 
-            for idx1, var1 in enumerate(task_alt_vars):
+            for idx1, var1 in enumerate(modes):
                 start = starts[idx1]  # "is start node" literal
                 end = ends[idx1]  # "is end node" literal
                 rank = ranks[idx1]
@@ -230,7 +228,7 @@ class ConstraintsManager:
                 # If the circuit is empty then the var should not be present.
                 model.add_implication(empty, ~var1.is_present)
 
-                for idx2, var2 in enumerate(task_alt_vars):
+                for idx2, var2 in enumerate(modes):
                     if idx1 == idx2:
                         continue
 
@@ -257,7 +255,7 @@ class ConstraintsManager:
         Adds all the constraints to the CP model.
         """
         self._job_spans_tasks()
-        self._select_one_task_alternative()
+        self._select_one_mode()
         self._no_overlap_machines()
         self._activate_setup_times()
         self._task_graph()
