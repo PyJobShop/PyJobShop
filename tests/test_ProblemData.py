@@ -208,12 +208,6 @@ def test_problem_data_non_input_parameter_attributes():
 
     data = ProblemData(jobs, machines, tasks, modes)
 
-    # The lists in machine2tasks and task2machines are sorted.
-    machine2tasks = [[1], [2], [0, 1]]
-    task2machines = [[2], [0, 2], [1]]
-    assert_equal(data.machine2tasks, machine2tasks)
-    assert_equal(data.task2machines, task2machines)
-
     assert_equal(data.num_jobs, 1)
     assert_equal(data.num_machines, 3)
     assert_equal(data.num_tasks, 3)

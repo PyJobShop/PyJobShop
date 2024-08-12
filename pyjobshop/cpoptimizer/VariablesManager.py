@@ -1,6 +1,7 @@
 from docplex.cp.expression import CpoIntervalVar, CpoSequenceVar
 from docplex.cp.model import CpoModel
 
+import pyjobshop.utils as utils
 from pyjobshop.ProblemData import ProblemData
 from pyjobshop.Solution import Solution
 from pyjobshop.utils import compute_min_max_durations
@@ -128,9 +129,10 @@ class VariablesManager:
         as previous, before, first, last and permutations.
         """
         model, data = self._model, self._data
+        machine2modes = utils.machine2modes(data)
         variables = []
 
-        for machine, modes in enumerate(data._machine2modes):
+        for machine, modes in enumerate(machine2modes):
             intervals = [self.mode_vars[mode] for mode in modes]
             seq_var = model.sequence_var(name=f"S{machine}", vars=intervals)
             variables.append(seq_var)

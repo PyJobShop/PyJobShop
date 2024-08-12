@@ -1,3 +1,5 @@
+import bisect
+
 from pyjobshop.ProblemData import ProblemData
 
 
@@ -27,3 +29,24 @@ def compute_min_max_durations(
     max_durations = [max(durations[task]) for task in range(data.num_tasks)]
 
     return min_durations, max_durations
+
+
+def machine2modes(data):
+    result = [[] for _ in range(data.num_machines)]
+    for idx, mode in enumerate(data.modes):
+        bisect.insort(result[mode.machine], idx)
+    return result
+
+
+def task2machines(data):
+    result = [[] for _ in range(data.num_tasks)]
+    for mode in data.modes:
+        bisect.insort(result[mode.task], mode.machine)
+    return result
+
+
+def task2modes(data):
+    result = [[] for _ in range(data.num_tasks)]
+    for idx, mode in enumerate(data.modes):
+        bisect.insort(result[mode.task], idx)
+    return result

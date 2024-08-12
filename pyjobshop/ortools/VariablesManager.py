@@ -7,6 +7,7 @@ from ortools.sat.python.cp_model import (
     IntVar,
 )
 
+import pyjobshop.utils as utils
 from pyjobshop.ProblemData import ProblemData
 from pyjobshop.Solution import Solution
 from pyjobshop.utils import compute_min_max_durations
@@ -306,7 +307,7 @@ class VariablesManager:
         """
         variables = []
 
-        for modes in self._data._machine2modes:
+        for modes in utils.machine2modes(self._data):
             intervals = [self.mode_vars[mode] for mode in modes]
             variables.append(SequenceVar(intervals))
 

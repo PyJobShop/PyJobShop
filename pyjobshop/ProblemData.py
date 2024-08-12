@@ -1,4 +1,3 @@
-import bisect
 from copy import deepcopy
 from dataclasses import dataclass, field
 from enum import Enum
@@ -402,18 +401,6 @@ class ProblemData:
             objective if objective is not None else Objective.makespan()
         )
 
-        self._machine2tasks: list[list[int]] = [[] for _ in range(num_mach)]
-        self._task2machines: list[list[int]] = [[] for _ in range(num_tasks)]
-        self._task2modes: list[list[int]] = [[] for _ in range(num_tasks)]
-        for idx, mode in enumerate(self._modes):
-            self._task2modes[mode.task].append(idx)
-            bisect.insort(self._machine2tasks[mode.machine], mode.task)
-            bisect.insort(self._task2machines[mode.task], mode.machine)
-
-        self._machine2modes: list[list[int]] = [[] for _ in range(num_mach)]
-        for idx, mode in enumerate(self._modes):
-            bisect.insort(self._machine2modes[mode.machine], idx)
-
         self._validate_parameters()
 
     def _validate_parameters(self):
@@ -574,22 +561,6 @@ class ProblemData:
         The objective function.
         """
         return self._objective
-
-    @property
-    def machine2tasks(self) -> list[list[int]]:
-        """
-        List of task indices for each machine. These are inferred from
-        the (machine, task) pairs in the processing times dict.
-        """
-        return self._machine2tasks
-
-    @property
-    def task2machines(self) -> list[list[int]]:
-        """
-        List of eligible machine indices for each task. These are inferred
-        from the (machine, task) pairs in the processing times dict.
-        """
-        return self._task2machines
 
     @property
     def num_jobs(self) -> int:

@@ -1,6 +1,7 @@
 import numpy as np
 from docplex.cp.model import CpoModel
 
+import pyjobshop.utils as utils
 from pyjobshop.ProblemData import ProblemData
 
 from .VariablesManager import VariablesManager
@@ -42,11 +43,10 @@ class ConstraintsManager:
         exactly one mode.
         """
         model, data = self._model, self._data
+        task2modes = utils.task2modes(data)
 
         for task in range(data.num_tasks):
-            mode_vars = [
-                self._mode_vars[mode] for mode in data._task2modes[task]
-            ]
+            mode_vars = [self._mode_vars[mode] for mode in task2modes[task]]
             model.add(model.alternative(self._task_vars[task], mode_vars))
 
     def _no_overlap_and_setup_times(self):
@@ -56,11 +56,13 @@ class ConstraintsManager:
         available, the setup times are enforced as well.
         """
         model, data = self._model, self._data
+        machine2modes = utils.machine2modes(data)
 
         for machine in range(data.num_machines):
-            if not (tasks := data.machine2tasks[machine]):
-                continue  # skip if no tasks on this machine
+            if not (modes := machine2modes[machine]):
+                continue  # skip if no modes for this machine
 
+            tasks = [data.modes[mode].task for mode in modes]
             setups = data.setup_times[machine, :, :][np.ix_(tasks, tasks)]
             seq_var = self._sequence_vars[machine]
 
@@ -107,12 +109,15 @@ class ConstraintsManager:
         alternative variables.
         """
         model, data = self._model, self._data
+        task2machines = utils.task2machines(data)
+        task2modes = utils.task2modes(data)
         relevant_constraints = {
             "previous",
             "before",
             "same_machine",
             "different_machine",
         }
+
         for (task1, task2), constraints in data.constraints.items():
             task_alt_constraints = set(constraints) & relevant_constraints
             if not task_alt_constraints:
@@ -120,20 +125,20 @@ class ConstraintsManager:
 
             # Find the common machines for both tasks, because the constraints
             # apply to the task alternative variables on the same machine.
-            machines1 = data.task2machines[task1]
-            machines2 = data.task2machines[task2]
+            machines1 = task2machines[task1]
+            machines2 = task2machines[task2]
             machines = set(machines1) & set(machines2)
 
             for machine in machines:
                 seq_var = self._sequence_vars[machine]
                 mode1 = [
                     mode
-                    for mode in data._task2modes[task1]
+                    for mode in task2modes[task1]
                     if data.modes[mode].machine == machine
                 ][0]
                 mode2 = [
                     mode
-                    for mode in data._task2modes[task2]
+                    for mode in task2modes[task2]
                     if data.modes[mode].machine == machine
                 ][0]
                 var1 = self._mode_vars[mode1]
