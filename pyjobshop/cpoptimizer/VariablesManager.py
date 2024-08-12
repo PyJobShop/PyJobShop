@@ -99,11 +99,10 @@ class VariablesManager:
         variables = []
 
         for mode in self._data.modes:
-            task_idx, machine_idx = mode.task, mode.machine
             var = model.interval_var(
-                optional=True, name=f"A{task_idx}_{machine_idx}"
+                optional=True, name=f"A{mode.task}_{mode.machine}"
             )
-            task = data.tasks[task_idx]
+            task = data.tasks[mode.task]
 
             var.set_start_min(task.earliest_start)
             var.set_start_max(min(task.latest_start, data.horizon))

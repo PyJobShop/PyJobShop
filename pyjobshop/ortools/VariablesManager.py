@@ -346,7 +346,9 @@ class VariablesManager:
             model.add_hint(task_var.duration, sol_task.duration)
             model.add_hint(task_var.end, sol_task.end)
 
-        for mode, var in zip(data.modes, mode_vars):
+        for idx in range(len(data.modes)):
+            var = mode_vars[idx]
+            mode = data.modes[idx]
             sol_task = solution.tasks[mode.task]
 
             model.add_hint(var.start, sol_task.start)
