@@ -109,7 +109,6 @@ class ConstraintsManager:
         alternative variables.
         """
         model, data = self._model, self._data
-        task2machines = utils.task2machines(data)
         task2modes = utils.task2modes(data)
         relevant_constraints = {
             "previous",
@@ -123,24 +122,20 @@ class ConstraintsManager:
             if not task_alt_constraints:
                 continue
 
-            # Find the common machines for both tasks, because the constraints
-            # apply to the task alternative variables on the same machine.
-            machines1 = task2machines[task1]
-            machines2 = task2machines[task2]
+            # Find the common modes for both tasks, because the constraints
+            # apply to the mode variables on the same machine.
+            # TODO this is super complex but I don't have a good idea yet
+            # how to deal with modes and assignment constraints.
+            modes1 = task2modes[task1]
+            modes2 = task2modes[task2]
+            machines1 = [data.modes[mode].machine for mode in modes1]
+            machines2 = [data.modes[mode].machine for mode in modes2]
             machines = set(machines1) & set(machines2)
 
             for machine in machines:
                 seq_var = self._sequence_vars[machine]
-                mode1 = [
-                    mode
-                    for mode in task2modes[task1]
-                    if data.modes[mode].machine == machine
-                ][0]
-                mode2 = [
-                    mode
-                    for mode in task2modes[task2]
-                    if data.modes[mode].machine == machine
-                ][0]
+                mode1 = modes1[machines1.index(machine)]
+                mode2 = modes2[machines2.index(machine)]
                 var1 = self._mode_vars[mode1]
                 var2 = self._mode_vars[mode2]
 

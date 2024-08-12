@@ -38,13 +38,6 @@ def machine2modes(data):
     return result
 
 
-def task2machines(data):
-    result = [[] for _ in range(data.num_tasks)]
-    for mode in data.modes:
-        bisect.insort(result[mode.task], mode.machine)
-    return result
-
-
 def task2modes(data):
     result = [[] for _ in range(data.num_tasks)]
     for idx, mode in enumerate(data.modes):
