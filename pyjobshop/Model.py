@@ -104,15 +104,10 @@ class Model:
             )
 
         for mode in data.modes:
-            task_idx, mach_idx, duration = (
-                mode.task,
-                mode.resources[0],
-                mode.duration,
-            )
             model.add_processing_time(
-                task=model.tasks[task_idx],
-                machine=model.machines[mach_idx],
-                duration=duration,
+                task=model.tasks[mode.task],
+                machine=model.machines[mode.machine],
+                duration=mode.duration,
             )
 
         for (idx1, idx2), constraints in data.constraints.items():
@@ -320,8 +315,7 @@ class Model:
         task_idx = self._id2task[id(task)]
         machine_idx = self._id2machine[id(machine)]
 
-        mode = Mode(task_idx, duration, [machine_idx])
-        self._modes.append(mode)
+        self._modes.append(Mode(task_idx, duration, [machine_idx]))
 
     def add_start_at_start(self, first: Task, second: Task):
         """

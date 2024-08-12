@@ -331,6 +331,17 @@ class Objective:
 class Mode:
     """
     Simple dataclass for storing processing mode data.
+
+    Parameters
+    ----------
+    task
+        Task index that this mode belongs to.
+    duration
+        Processing duration of this mode.
+    resources
+        List of resources that are required for this mode.
+    demands
+        List of resource demands for this mode.
     """
 
     task: int
