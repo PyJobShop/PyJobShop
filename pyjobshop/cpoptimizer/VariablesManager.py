@@ -1,6 +1,7 @@
 from docplex.cp.expression import CpoIntervalVar, CpoSequenceVar
 from docplex.cp.model import CpoModel
 
+import pyjobshop.utils as utils
 from pyjobshop.ProblemData import ProblemData
 from pyjobshop.Solution import Solution
 from pyjobshop.utils import compute_min_max_durations
@@ -17,7 +18,7 @@ class VariablesManager:
 
         self._job_vars = self._make_job_variables()
         self._task_vars = self._make_task_variables()
-        self._task_alt_vars = self._make_task_alternative_variables()
+        self._mode_vars = self._make_mode_variables()
         self._sequence_vars = self._make_sequence_variables()
 
     @property
@@ -35,11 +36,11 @@ class VariablesManager:
         return self._task_vars
 
     @property
-    def task_alt_vars(self) -> dict[tuple[int, int], CpoIntervalVar]:
+    def mode_vars(self) -> list[CpoIntervalVar]:
         """
-        Returns the task alternative variables.
+        Returns the mode variables.
         """
-        return self._task_alt_vars
+        return self._mode_vars
 
     @property
     def sequence_vars(self) -> list[CpoSequenceVar]:
@@ -90,27 +91,18 @@ class VariablesManager:
 
         return variables
 
-    def _make_task_alternative_variables(
-        self,
-    ) -> dict[tuple[int, int], CpoIntervalVar]:
+    def _make_mode_variables(self) -> list[CpoIntervalVar]:
         """
-        Creates an optional interval variable for each eligible task and
-        machine pair.
-
-        Returns
-        -------
-        dict[tuple[int, int], TaskAltVar]
-            A dictionary that maps each task index and machine index pair to
-            its corresponding task alternative variable.
+        Creates an optional interval variable for each mode variable.
         """
         model, data = self._model, self._data
-        variables = {}
+        variables = []
 
-        for (task_idx, machine), duration in data.processing_times.items():
+        for mode in data.modes:
             var = model.interval_var(
-                optional=True, name=f"A{task_idx}_{machine}"
+                optional=True, name=f"M{mode.task}_{mode.machine}"
             )
-            task = data.tasks[task_idx]
+            task = data.tasks[mode.task]
 
             var.set_start_min(task.earliest_start)
             var.set_start_max(min(task.latest_start, data.horizon))
@@ -119,12 +111,12 @@ class VariablesManager:
             var.set_end_max(min(task.latest_end, data.horizon))
 
             if task.fixed_duration:
-                var.set_size(duration)
+                var.set_size(mode.duration)
             else:
-                var.set_size_min(duration)
+                var.set_size_min(mode.duration)
                 var.set_size_max(data.horizon)
 
-            variables[task_idx, machine] = var
+            variables.append(var)
 
         return variables
 
@@ -136,10 +128,11 @@ class VariablesManager:
         as previous, before, first, last and permutations.
         """
         model, data = self._model, self._data
+        machine2modes = utils.machine2modes(data)
         variables = []
 
-        for machine, tasks in enumerate(data.machine2tasks):
-            intervals = [self.task_alt_vars[task, machine] for task in tasks]
+        for machine, modes in enumerate(machine2modes):
+            intervals = [self.mode_vars[mode] for mode in modes]
             seq_var = model.sequence_var(name=f"S{machine}", vars=intervals)
             variables.append(seq_var)
 
@@ -175,12 +168,13 @@ class VariablesManager:
                 size=sol_task.duration,
             )
 
-        for (task_idx, machine_idx), var in self.task_alt_vars.items():
-            sol_task = solution.tasks[task_idx]
+        for idx, mode in enumerate(data.modes):
+            sol_task = solution.tasks[mode.task]
+            var = self.mode_vars[idx]
 
             stp.add_interval_var_solution(
                 var,
-                presence=machine_idx == sol_task.machine,
+                presence=mode.machine == sol_task.machine,
                 start=sol_task.start,
                 end=sol_task.end,
                 size=sol_task.duration,

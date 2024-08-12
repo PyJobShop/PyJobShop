@@ -8,6 +8,7 @@ from pyjobshop.ProblemData import (
     Constraint,
     Job,
     Machine,
+    Mode,
     Objective,
     ProblemData,
     Task,
@@ -26,7 +27,7 @@ class Model:
         self._jobs: list[Job] = []
         self._machines: list[Machine] = []
         self._tasks: list[Task] = []
-        self._processing_times: dict[tuple[int, int], int] = {}
+        self._modes: list[Mode] = []
         self._constraints: dict[tuple[int, int], list[Constraint]] = (
             defaultdict(list)
         )
@@ -102,11 +103,11 @@ class Model:
                 name=task.name,
             )
 
-        for (task_idx, mach_idx), duration in data.processing_times.items():
+        for mode in data.modes:
             model.add_processing_time(
-                task=model.tasks[task_idx],
-                machine=model.machines[mach_idx],
-                duration=duration,
+                task=model.tasks[mode.task],
+                machine=model.machines[mode.machine],
+                duration=mode.duration,
             )
 
         for (idx1, idx2), constraints in data.constraints.items():
@@ -173,7 +174,7 @@ class Model:
             jobs=self.jobs,
             machines=self.machines,
             tasks=self.tasks,
-            processing_times=self._processing_times,
+            modes=self._modes,
             constraints=self._constraints,
             setup_times=setup_times,
             horizon=self._horizon,
@@ -313,7 +314,8 @@ class Model:
 
         task_idx = self._id2task[id(task)]
         machine_idx = self._id2machine[id(machine)]
-        self._processing_times[task_idx, machine_idx] = duration
+
+        self._modes.append(Mode(task_idx, duration, [machine_idx]))
 
     def add_start_at_start(self, first: Task, second: Task):
         """

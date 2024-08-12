@@ -1,8 +1,7 @@
 import numpy as np
-from ortools.sat.python.cp_model import (
-    CpModel,
-)
+from ortools.sat.python.cp_model import CpModel
 
+import pyjobshop.utils as utils
 from pyjobshop.ProblemData import ProblemData
 
 from .VariablesManager import VariablesManager
@@ -20,7 +19,7 @@ class ConstraintsManager:
         self._data = data
         self._job_vars = vars_manager.job_vars
         self._task_vars = vars_manager.task_vars
-        self._task_alt_vars = vars_manager.task_alt_vars
+        self._mode_vars = vars_manager.mode_vars
         self._sequence_vars = vars_manager.sequence_vars
 
     def _job_spans_tasks(self):
@@ -37,28 +36,29 @@ class ConstraintsManager:
             model.add_min_equality(job_var.start, task_starts)
             model.add_max_equality(job_var.end, task_ends)
 
-    def _select_one_task_alternative(self):
+    def _select_one_mode(self):
         """
-        Selects one task alternative for each main task, ensuring that each
-        task is assigned to exactly one machine.
+        Selects one mode for each task, ensuring that each task performs
+        exactly one mode.
         """
         model, data = self._model, self._data
+        task2modes = utils.task2modes(data)
 
         for task in range(data.num_tasks):
             presences = []
 
-            for machine in data.task2machines[task]:
+            for mode in task2modes[task]:
                 main = self._task_vars[task]
-                alt = self._task_alt_vars[task, machine]
-                is_present = alt.is_present
+                opt = self._mode_vars[mode]
+                is_present = opt.is_present
                 presences.append(is_present)
 
                 # Sync each optional interval variable with the main variable.
-                model.add(main.start == alt.start).only_enforce_if(is_present)
-                model.add(main.duration == alt.duration).only_enforce_if(
+                model.add(main.start == opt.start).only_enforce_if(is_present)
+                model.add(main.duration == opt.duration).only_enforce_if(
                     is_present
                 )
-                model.add(main.end == alt.end).only_enforce_if(is_present)
+                model.add(main.end == opt.end).only_enforce_if(is_present)
 
             # Select exactly one optional interval variable for each task.
             model.add_exactly_one(presences)
@@ -72,7 +72,7 @@ class ConstraintsManager:
 
         for machine in range(data.num_machines):
             seq_var = self._sequence_vars[machine]
-            model.add_no_overlap([var.interval for var in seq_var.task_alts])
+            model.add_no_overlap([var.interval for var in seq_var.modes])
 
     def _activate_setup_times(self):
         """
@@ -124,6 +124,7 @@ class ConstraintsManager:
         alternative variables.
         """
         model, data = self._model, self._data
+        task2modes = utils.task2modes(data)
         relevant_constraints = {
             "previous",
             "before",
@@ -136,23 +137,29 @@ class ConstraintsManager:
             if not task_alt_constraints:
                 continue
 
-            # Find the common machines for both tasks, because the constraints
-            # apply to the task alternative variables on the same machine.
-            machines1 = data.task2machines[task1]
-            machines2 = data.task2machines[task2]
+            # Find the common modes for both tasks, because the constraints
+            # apply to the mode variables on the same machine.
+            # TODO this is super complex but I don't have a good idea yet
+            # how to deal with modes and assignment constraints.
+            modes1 = task2modes[task1]
+            modes2 = task2modes[task2]
+            machines1 = [data.modes[mode].machine for mode in modes1]
+            machines2 = [data.modes[mode].machine for mode in modes2]
             machines = set(machines1) & set(machines2)
 
             for machine in machines:
                 sequence = self._sequence_vars[machine]
-                var1 = self._task_alt_vars[task1, machine]
-                var2 = self._task_alt_vars[task2, machine]
+                mode1 = modes1[machines1.index(machine)]
+                mode2 = modes2[machines2.index(machine)]
+                var1 = self._mode_vars[mode1]
+                var2 = self._mode_vars[mode2]
 
                 for constraint in task_alt_constraints:
                     if constraint == "previous":
                         sequence.activate(model)
 
-                        idx1 = sequence.task_alts.index(var1)
-                        idx2 = sequence.task_alts.index(var2)
+                        idx1 = sequence.modes.index(var1)
+                        idx2 = sequence.modes.index(var2)
                         arc = sequence.arcs[idx1, idx2]
 
                         # arc <=> var1.is_present & var2.is_present
@@ -173,8 +180,8 @@ class ConstraintsManager:
                         model.add_implication(both_present, var2.is_present)
 
                         # Schedule var1 before var2 when both are present.
-                        idx1 = sequence.task_alts.index(var1)
-                        idx2 = sequence.task_alts.index(var2)
+                        idx1 = sequence.modes.index(var1)
+                        idx2 = sequence.modes.index(var2)
                         rank1 = sequence.ranks[idx1]
                         rank2 = sequence.ranks[idx2]
 
@@ -201,7 +208,7 @@ class ConstraintsManager:
                 # (expensive) circuit constraints.
                 continue
 
-            task_alt_vars = sequence.task_alts
+            modes = sequence.modes
             starts = sequence.starts
             ends = sequence.ends
             ranks = sequence.ranks
@@ -211,7 +218,7 @@ class ConstraintsManager:
             empty = model.new_bool_var(f"empty_circuit_{machine}")
             circuit = [(-1, -1, empty)]
 
-            for idx1, var1 in enumerate(task_alt_vars):
+            for idx1, var1 in enumerate(modes):
                 start = starts[idx1]  # "is start node" literal
                 end = ends[idx1]  # "is end node" literal
                 rank = ranks[idx1]
@@ -230,7 +237,7 @@ class ConstraintsManager:
                 # If the circuit is empty then the var should not be present.
                 model.add_implication(empty, ~var1.is_present)
 
-                for idx2, var2 in enumerate(task_alt_vars):
+                for idx2, var2 in enumerate(modes):
                     if idx1 == idx2:
                         continue
 
@@ -257,7 +264,7 @@ class ConstraintsManager:
         Adds all the constraints to the CP model.
         """
         self._job_spans_tasks()
-        self._select_one_task_alternative()
+        self._select_one_mode()
         self._no_overlap_machines()
         self._activate_setup_times()
         self._task_graph()

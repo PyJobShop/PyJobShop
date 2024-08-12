@@ -8,6 +8,7 @@ from pyjobshop.ProblemData import (
     Constraint,
     Job,
     Machine,
+    Mode,
     Objective,
     ProblemData,
     Task,
@@ -157,7 +158,11 @@ def test_problem_data_input_parameter_attributes():
     jobs = [Job(tasks=[idx]) for idx in range(5)]
     machines = [Machine() for _ in range(5)]
     tasks = [Task() for _ in range(5)]
-    processing_times = {(i, j): 1 for i in range(5) for j in range(5)}
+    modes = [
+        Mode(task=task, duration=1, resources=[machine])
+        for task in range(5)
+        for machine in range(5)
+    ]
     constraints = {
         key: [Constraint.END_BEFORE_START] for key in ((0, 1), (2, 3), (4, 5))
     }
@@ -169,7 +174,7 @@ def test_problem_data_input_parameter_attributes():
         jobs,
         machines,
         tasks,
-        processing_times,
+        modes,
         constraints,
         setup_times,
         horizon,
@@ -179,7 +184,7 @@ def test_problem_data_input_parameter_attributes():
     assert_equal(data.jobs, jobs)
     assert_equal(data.machines, machines)
     assert_equal(data.tasks, tasks)
-    assert_equal(data.processing_times, processing_times)
+    assert_equal(data.modes, modes)
     assert_equal(data.constraints, constraints)
     assert_equal(data.setup_times, setup_times)
     assert_equal(data.horizon, horizon)
@@ -194,15 +199,14 @@ def test_problem_data_non_input_parameter_attributes():
     jobs = [Job(tasks=[0, 1, 2])]
     machines = [Machine() for _ in range(3)]
     tasks = [Task() for _ in range(3)]
-    processing_times = {(2, 1): 1, (1, 2): 1, (1, 0): 1, (0, 2): 1}
+    modes = [
+        Mode(task=2, duration=1, resources=[1]),
+        Mode(task=1, duration=1, resources=[2]),
+        Mode(task=1, duration=1, resources=[0]),
+        Mode(task=0, duration=1, resources=[2]),
+    ]
 
-    data = ProblemData(jobs, machines, tasks, processing_times)
-
-    # The lists in machine2tasks and task2machines are sorted.
-    machine2tasks = [[1], [2], [0, 1]]
-    task2machines = [[2], [0, 2], [1]]
-    assert_equal(data.machine2tasks, machine2tasks)
-    assert_equal(data.task2machines, task2machines)
+    data = ProblemData(jobs, machines, tasks, modes)
 
     assert_equal(data.num_jobs, 1)
     assert_equal(data.num_machines, 3)
@@ -216,8 +220,8 @@ def test_problem_data_default_values():
     jobs = [Job(tasks=[0])]
     machines = [Machine()]
     tasks = [Task()]
-    processing_times = {(0, 0): 1}
-    data = ProblemData(jobs, machines, tasks, processing_times)
+    modes = [Mode(task=0, duration=1, resources=[0])]
+    data = ProblemData(jobs, machines, tasks, modes)
 
     assert_equal(data.constraints, {})
     assert_equal(data.setup_times, np.zeros((1, 1, 1), dtype=int))
@@ -225,39 +229,42 @@ def test_problem_data_default_values():
     assert_equal(data.objective, Objective.makespan())
 
 
-def test_problem_data_job_references_invalid_task():
+def test_problem_data_job_references_unknown_task():
     """
     Tests that an error is raised when a job references an unknown task.
     """
     with assert_raises(ValueError):
-        ProblemData([Job(tasks=[42])], [Machine()], [Task()], {})
+        ProblemData(
+            [Job(tasks=[42])],
+            [Machine()],
+            [Task()],
+            [Mode(0, 1, [0])],
+        )
 
 
-def test_problem_data_task_without_processing_times():
+def test_problem_data_task_without_modes():
     """
-    Tests that an error is raised when a task has no processing times.
+    Tests that an error is raised when a task has no processing modes.
     """
     with assert_raises(ValueError):
-        ProblemData([Job()], [Machine()], [Task()], {})
+        ProblemData([Job()], [Machine()], [Task()], [])
 
 
 @pytest.mark.parametrize(
-    "processing_times, setup_times, horizon",
+    "mode, setup_times, horizon",
     [
-        # Negative processing times.
-        ({(0, 0): -1}, np.ones((1, 1, 1)), 1),
+        # Negative processing mode duration.
+        (Mode(0, -1, [0]), np.ones((1, 1, 1)), 1),
         # Negative setup times.
-        ({(0, 0): 1}, np.ones((1, 1, 1)) * -1, 1),
+        (Mode(0, 1, [0]), np.ones((1, 1, 1)) * -1, 1),
         # Invalid setup times shape.
-        ({(0, 0): 1}, np.ones((2, 2, 2)), 1),
+        (Mode(0, 1, [0]), np.ones((2, 2, 2)), 1),
         # Negative horizon.
-        ({(0, 0): 1}, np.ones((1, 1, 1)), -1),
+        (Mode(0, 1, [0]), np.ones((1, 1, 1)), -1),
     ],
 )
 def test_problem_data_raises_when_invalid_arguments(
-    processing_times: dict[tuple[int, int], int],
-    setup_times: np.ndarray,
-    horizon: int,
+    mode: Mode, setup_times: np.ndarray, horizon: int
 ):
     """
     Tests that the ProblemData class raises an error when invalid arguments are
@@ -268,7 +275,7 @@ def test_problem_data_raises_when_invalid_arguments(
             [Job()],
             [Machine()],
             [Task()],
-            processing_times,
+            modes=[mode],
             setup_times=setup_times.astype(int),
             horizon=horizon,
         )
@@ -286,7 +293,11 @@ def test_problem_data_tardy_objective_without_job_due_dates(
     """
     with assert_raises(ValueError):
         ProblemData(
-            [Job()], [Machine()], [Task()], {(0, 0): 0}, objective=objective
+            [Job()],
+            [Machine()],
+            [Task()],
+            [Mode(0, 0, [0])],
+            objective=objective,
         )
 
 
@@ -300,7 +311,10 @@ def describe_problem_data_replace():
         jobs = [Job(due_date=1, deadline=1), Job(due_date=2, deadline=2)]
         machines = [Machine(name="machine"), Machine(name="machine")]
         tasks = [Task(earliest_start=1), Task(earliest_start=1)]
-        processing_times = {(0, 0): 1, (1, 1): 2}
+        modes = [
+            Mode(task=0, duration=1, resources=[0]),
+            Mode(task=1, duration=2, resources=[1]),
+        ]
         constraints = {(0, 1): [Constraint.END_BEFORE_START]}
         setup_times = np.zeros((2, 2, 2))
         horizon = 1
@@ -310,7 +324,7 @@ def describe_problem_data_replace():
             jobs,
             machines,
             tasks,
-            processing_times,
+            modes,
             constraints,
             setup_times,
             horizon,
@@ -342,7 +356,7 @@ def describe_problem_data_replace():
                 data.tasks[idx].earliest_start,
             )
 
-        assert_equal(new.processing_times, data.processing_times)
+        assert_equal(new.modes, data.modes)
         assert_equal(new.constraints, data.constraints)
         assert_equal(new.setup_times, data.setup_times)
         assert_equal(new.horizon, data.horizon)
@@ -357,7 +371,10 @@ def describe_problem_data_replace():
             jobs=[Job(due_date=2, deadline=2), Job(due_date=1, deadline=1)],
             machines=[Machine(name="new"), Machine(name="new")],
             tasks=[Task(earliest_start=2), Task(earliest_start=2)],
-            processing_times={(0, 0): 2, (1, 1): 1},
+            modes=[
+                Mode(task=0, duration=2, resources=[0]),
+                Mode(task=1, duration=1, resources=[1]),
+            ],
             constraints={(1, 0): [Constraint.END_BEFORE_START]},
             setup_times=np.ones((2, 2, 2)),
             horizon=2,
@@ -380,7 +397,7 @@ def describe_problem_data_replace():
                 new.tasks[idx].earliest_start != data.tasks[idx].earliest_start
             )
 
-        assert_(new.processing_times != data.processing_times)
+        assert_(new.modes != data.modes)
         assert_(new.constraints != data.constraints)
         assert_(not np.array_equal(new.setup_times, data.setup_times))
         assert_(new.horizon != data.horizon)
@@ -669,13 +686,13 @@ def test_constraints(solver, prec_type: Constraint, expected_makespan: int):
     job = model.add_job()
     machines = [model.add_machine() for _ in range(2)]
     tasks = [model.add_task(job=job) for _ in range(2)]
-    processing_times = {
-        (m, t): 2 for m in range(len(machines)) for t in range(len(tasks))
-    }
+    modes = [
+        Mode(task=task, duration=2, resources=[machine])
+        for machine in range(len(machines))
+        for task in range(len(tasks))
+    ]
 
-    data = ProblemData(
-        [job], machines, tasks, processing_times, {(0, 1): [prec_type]}
-    )
+    data = ProblemData([job], machines, tasks, modes, {(0, 1): [prec_type]})
     result = solve(data, solver=solver)
 
     assert_equal(result.objective, expected_makespan)
@@ -852,14 +869,14 @@ def test_total_tardiness(solver: str):
     model = Model()
 
     machine = model.add_machine()
-    processing_times = [2, 4]
+    durations = [2, 4]
     due_dates = [2, 2]
     weights = [2, 10]
 
     for idx in range(2):
         job = model.add_job(weight=weights[idx], due_date=due_dates[idx])
         task = model.add_task(job=job)
-        model.add_processing_time(task, machine, processing_times[idx])
+        model.add_processing_time(task, machine, durations[idx])
 
     model.set_objective(weight_total_tardiness=1)
 
@@ -881,12 +898,12 @@ def test_combined_objective(solver: str):
     model = Model()
 
     machine = model.add_machine()
-    processing_times = [2, 4]
+    durations = [2, 4]
 
     for idx in range(2):
         job = model.add_job(due_date=0)
         task = model.add_task(job=job)
-        model.add_processing_time(task, machine, processing_times[idx])
+        model.add_processing_time(task, machine, durations[idx])
 
     model.set_objective(weight_makespan=10, weight_tardy_jobs=2)
     result = model.solve(solver=solver)

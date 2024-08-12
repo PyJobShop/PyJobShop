@@ -7,6 +7,7 @@ from ortools.sat.python.cp_model import (
     IntVar,
 )
 
+import pyjobshop.utils as utils
 from pyjobshop.ProblemData import ProblemData
 from pyjobshop.Solution import Solution
 from pyjobshop.utils import compute_min_max_durations
@@ -59,9 +60,9 @@ class TaskVar:
 
 
 @dataclass
-class TaskAltVar:
+class ModeVar:
     """
-    Variables that represent an assignment of a task to a machine.
+    Variables that represent a possible processing mode of a task.
 
     Parameters
     ----------
@@ -96,8 +97,8 @@ class SequenceVar:
 
     Parameters
     ----------
-    task_alts
-        The task alternative variables in the sequence.
+    modes
+        The mode variables of each task belonging to this sequence.
     starts
         The start literals for each task.
     ends
@@ -113,7 +114,7 @@ class SequenceVar:
         circuit constraint must be added for this machine. Default ``False``.
     """
 
-    task_alts: list[TaskAltVar]
+    modes: list[ModeVar]
     starts: list[BoolVarT] = field(default_factory=list)
     ends: list[BoolVarT] = field(default_factory=list)
     ranks: list[IntVar] = field(default_factory=list)
@@ -128,7 +129,7 @@ class SequenceVar:
             return
 
         self.is_active = True
-        num_tasks = len(self.task_alts)
+        num_tasks = len(self.modes)
 
         # Start and end literals define whether the corresponding interval
         # is first or last in the sequence, respectively.
@@ -159,7 +160,7 @@ class VariablesManager:
 
         self._job_vars = self._make_job_variables()
         self._task_vars = self._make_task_variables()
-        self._task_alt_vars = self._make_task_alternative_variables()
+        self._mode_vars = self._make_mode_variables()
         self._sequence_vars = self._make_sequence_variables()
 
     @property
@@ -177,11 +178,11 @@ class VariablesManager:
         return self._task_vars
 
     @property
-    def task_alt_vars(self) -> dict[tuple[int, int], TaskAltVar]:
+    def mode_vars(self) -> list[ModeVar]:
         """
-        Returns the task alternative variables.
+        Returns the mode variables.
         """
-        return self._task_alt_vars
+        return self._mode_vars
 
     @property
     def sequence_vars(self) -> list[SequenceVar]:
@@ -253,26 +254,18 @@ class VariablesManager:
 
         return variables
 
-    def _make_task_alternative_variables(
+    def _make_mode_variables(
         self,
-    ) -> dict[tuple[int, int], TaskAltVar]:
+    ) -> list[ModeVar]:
         """
-        Creates an optional interval variable for each eligible task and
-        machine pair.
-
-        Returns
-        -------
-        dict[tuple[int, int], TaskAltVar]
-            A dictionary that maps each task index and machine index pair to
-            its corresponding task alternative variable.
+        Creates an optional interval variable for mode.
         """
         model, data = self._model, self._data
-        variables = {}
-        processing_times = data.processing_times.items()
+        variables = []
 
-        for (task_idx, machine_idx), proc_time in processing_times:
-            task = data.tasks[task_idx]
-            machine = data.machines[machine_idx]
+        for mode in data.modes:
+            task = data.tasks[mode.task]
+            machine = data.machines[mode.machine]
             name = f"A{task}_{machine}"
             start = model.new_int_var(
                 lb=task.earliest_start,
@@ -280,8 +273,8 @@ class VariablesManager:
                 name=f"{name}_start",
             )
             duration = model.new_int_var(
-                lb=proc_time,
-                ub=proc_time if task.fixed_duration else data.horizon,
+                lb=mode.duration,
+                ub=mode.duration if task.fixed_duration else data.horizon,
                 name=f"{name}_duration",
             )
             end = model.new_int_var(
@@ -293,14 +286,15 @@ class VariablesManager:
             interval = model.new_optional_interval_var(
                 start, duration, end, is_present, f"{name}_interval"
             )
-            variables[task_idx, machine_idx] = TaskAltVar(
-                task_idx=task_idx,
+            var = ModeVar(
+                task_idx=mode.task,
                 interval=interval,
                 start=start,
                 duration=duration,
                 end=end,
                 is_present=is_present,
             )
+            variables.append(var)
 
         return variables
 
@@ -313,10 +307,9 @@ class VariablesManager:
         """
         variables = []
 
-        for machine in range(self._data.num_machines):
-            tasks = self._data.machine2tasks[machine]
-            alt_vars = [self.task_alt_vars[task, machine] for task in tasks]
-            variables.append(SequenceVar(alt_vars))
+        for modes in utils.machine2modes(self._data):
+            intervals = [self.mode_vars[mode] for mode in modes]
+            variables.append(SequenceVar(intervals))
 
         return variables
 
@@ -325,10 +318,10 @@ class VariablesManager:
         Warmstarts the variables based on the given solution.
         """
         model, data = self._model, self._data
-        job_vars, task_vars, task_alt_vars = (
+        job_vars, task_vars, mode_vars = (
             self.job_vars,
             self.task_vars,
-            self.task_alt_vars,
+            self.mode_vars,
         )
 
         model.clear_hints()
@@ -353,10 +346,12 @@ class VariablesManager:
             model.add_hint(task_var.duration, sol_task.duration)
             model.add_hint(task_var.end, sol_task.end)
 
-        for (task_idx, machine_idx), var in task_alt_vars.items():
-            sol_task = solution.tasks[task_idx]
+        for idx in range(len(data.modes)):
+            var = mode_vars[idx]
+            mode = data.modes[idx]
+            sol_task = solution.tasks[mode.task]
 
             model.add_hint(var.start, sol_task.start)
             model.add_hint(var.duration, sol_task.duration)
             model.add_hint(var.end, sol_task.end)
-            model.add_hint(var.is_present, machine_idx == sol_task.machine)
+            model.add_hint(var.is_present, mode.machine == sol_task.machine)
