@@ -177,7 +177,7 @@ class VariablesManager:
         return self._task_vars
 
     @property
-    def mode_vars(self) -> dict[tuple[int, int], ModeVar]:
+    def mode_vars(self) -> list[ModeVar]:
         """
         Returns the mode variables.
         """
@@ -255,27 +255,16 @@ class VariablesManager:
 
     def _make_mode_variables(
         self,
-    ) -> dict[tuple[int, int], ModeVar]:
+    ) -> list[ModeVar]:
         """
         Creates an optional interval variable for mode.
-
-        Returns
-        -------
-        dict[tuple[int, int], TaskAltVar]
-            A dictionary that maps each task index and machine index pair to
-            its corresponding task alternative variable.
         """
         model, data = self._model, self._data
-        variables = {}
+        variables = []
 
         for mode in data.modes:
-            task_idx, machine_idx, proc_time = (
-                mode.task,
-                mode.machine,
-                mode.duration,
-            )
-            task = data.tasks[task_idx]
-            machine = data.machines[machine_idx]
+            task = data.tasks[mode.task]
+            machine = data.machines[mode.machine]
             name = f"A{task}_{machine}"
             start = model.new_int_var(
                 lb=task.earliest_start,
@@ -283,8 +272,8 @@ class VariablesManager:
                 name=f"{name}_start",
             )
             duration = model.new_int_var(
-                lb=proc_time,
-                ub=proc_time if task.fixed_duration else data.horizon,
+                lb=mode.duration,
+                ub=mode.duration if task.fixed_duration else data.horizon,
                 name=f"{name}_duration",
             )
             end = model.new_int_var(
@@ -296,14 +285,15 @@ class VariablesManager:
             interval = model.new_optional_interval_var(
                 start, duration, end, is_present, f"{name}_interval"
             )
-            variables[task_idx, machine_idx] = ModeVar(
-                task_idx=task_idx,
+            var = ModeVar(
+                task_idx=mode.task,
                 interval=interval,
                 start=start,
                 duration=duration,
                 end=end,
                 is_present=is_present,
             )
+            variables.append(var)
 
         return variables
 
@@ -316,10 +306,9 @@ class VariablesManager:
         """
         variables = []
 
-        for machine in range(self._data.num_machines):
-            tasks = self._data.machine2tasks[machine]
-            alt_vars = [self.mode_vars[task, machine] for task in tasks]
-            variables.append(SequenceVar(alt_vars))
+        for modes in self._data._machine2modes:
+            intervals = [self.mode_vars[mode] for mode in modes]
+            variables.append(SequenceVar(intervals))
 
         return variables
 
@@ -356,10 +345,10 @@ class VariablesManager:
             model.add_hint(task_var.duration, sol_task.duration)
             model.add_hint(task_var.end, sol_task.end)
 
-        for (task_idx, machine_idx), var in mode_vars.items():
-            sol_task = solution.tasks[task_idx]
+        for mode, var in zip(data.modes, mode_vars):
+            sol_task = solution.tasks[mode.task]
 
             model.add_hint(var.start, sol_task.start)
             model.add_hint(var.duration, sol_task.duration)
             model.add_hint(var.end, sol_task.end)
-            model.add_hint(var.is_present, machine_idx == sol_task.machine)
+            model.add_hint(var.is_present, mode.machine == sol_task.machine)

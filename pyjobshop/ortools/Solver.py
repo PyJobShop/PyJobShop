@@ -50,12 +50,13 @@ class Solver:
         """
         tasks = {}
 
-        for (task, machine), var in self._vars.mode_vars.items():
+        for idx, var in enumerate(self._vars.mode_vars):
             if cp_solver.value(var.is_present):
                 start = cp_solver.value(var.start)
                 duration = cp_solver.value(var.duration)
                 end = cp_solver.value(var.end)
-                tasks[task] = TaskData(machine, start, duration, end)
+                mode = self._data.modes[idx]
+                tasks[mode.task] = TaskData(mode.machine, start, duration, end)
 
         return Solution([tasks[idx] for idx in range(self._data.num_tasks)])
 

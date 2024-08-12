@@ -18,7 +18,7 @@ class ConstraintsManager:
         self._data = data
         self._job_vars = vars_manager.job_vars
         self._task_vars = vars_manager.task_vars
-        self._modes = vars_manager.mode_vars
+        self._mode_vars = vars_manager.mode_vars
         self._sequence_vars = vars_manager.sequence_vars
 
     def _job_spans_tasks(self):
@@ -37,26 +37,26 @@ class ConstraintsManager:
 
     def _select_one_mode(self):
         """
-        Selects one task alternative for each main task, ensuring that each
-        task is assigned to exactly one machine.
+        Selects one mode for each task, ensuring that each task performs
+        exactly one mode.
         """
         model, data = self._model, self._data
 
         for task in range(data.num_tasks):
             presences = []
 
-            for machine in data.task2machines[task]:
+            for mode in data._task2modes[task]:
                 main = self._task_vars[task]
-                alt = self._modes[task, machine]
-                is_present = alt.is_present
+                opt = self._mode_vars[mode]
+                is_present = opt.is_present
                 presences.append(is_present)
 
                 # Sync each optional interval variable with the main variable.
-                model.add(main.start == alt.start).only_enforce_if(is_present)
-                model.add(main.duration == alt.duration).only_enforce_if(
+                model.add(main.start == opt.start).only_enforce_if(is_present)
+                model.add(main.duration == opt.duration).only_enforce_if(
                     is_present
                 )
-                model.add(main.end == alt.end).only_enforce_if(is_present)
+                model.add(main.end == opt.end).only_enforce_if(is_present)
 
             # Select exactly one optional interval variable for each task.
             model.add_exactly_one(presences)
@@ -142,8 +142,18 @@ class ConstraintsManager:
 
             for machine in machines:
                 sequence = self._sequence_vars[machine]
-                var1 = self._modes[task1, machine]
-                var2 = self._modes[task2, machine]
+                mode1 = [
+                    mode
+                    for mode in data._task2modes[task1]
+                    if data.modes[mode].machine == machine
+                ][0]
+                mode2 = [
+                    mode
+                    for mode in data._task2modes[task2]
+                    if data.modes[mode].machine == machine
+                ][0]
+                var1 = self._mode_vars[mode1]
+                var2 = self._mode_vars[mode2]
 
                 for constraint in task_alt_constraints:
                     if constraint == "previous":
