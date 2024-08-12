@@ -50,7 +50,7 @@ class Solver:
         """
         tasks = {}
 
-        for (task, machine), var in self._vars.task_alt_vars.items():
+        for (task, machine), var in self._vars.mode_vars.items():
             if cp_solver.value(var.is_present):
                 start = cp_solver.value(var.start)
                 duration = cp_solver.value(var.duration)

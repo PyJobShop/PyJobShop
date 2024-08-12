@@ -1,6 +1,6 @@
 import bisect
 from copy import deepcopy
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 from typing import Optional, TypeVar
 
@@ -328,6 +328,22 @@ class Objective:
         return cls(weight_total_tardiness=1)
 
 
+@dataclass
+class Mode:
+    """
+    Simple dataclass for storing processing mode data.
+    """
+
+    task: int
+    duration: int
+    resources: list[int]
+    demands: list[int] = field(default_factory=list)
+
+    @property
+    def machine(self):
+        return self.resources[0]
+
+
 class ProblemData:
     """
     Creates a problem data instance. This instance contains all information
@@ -341,9 +357,8 @@ class ProblemData:
         List of machines.
     tasks
         List of tasks.
-    processing_times
-        Processing times of tasks on machines. First index is the task index,
-        second index is the machine index.
+    modes
+        List of processing modes of tasks.
     constraints
         Dict indexed by task pairs with a list of constraints as values.
         Default is None, which initializes an empty dict.
@@ -362,7 +377,7 @@ class ProblemData:
         jobs: list[Job],
         machines: list[Machine],
         tasks: list[Task],
-        processing_times: dict[tuple[int, int], int],
+        modes: list[Mode],
         constraints: Optional[_CONSTRAINTS_TYPE] = None,
         setup_times: Optional[np.ndarray] = None,
         horizon: int = MAX_VALUE,
@@ -371,7 +386,7 @@ class ProblemData:
         self._jobs = jobs
         self._machines = machines
         self._tasks = tasks
-        self._processing_times = processing_times
+        self._modes = modes
         self._constraints = constraints if constraints is not None else {}
 
         num_mach = self.num_machines
@@ -389,10 +404,11 @@ class ProblemData:
 
         self._machine2tasks: list[list[int]] = [[] for _ in range(num_mach)]
         self._task2machines: list[list[int]] = [[] for _ in range(num_tasks)]
-
-        for task, machine in self.processing_times.keys():
-            bisect.insort(self._machine2tasks[machine], task)
-            bisect.insort(self._task2machines[task], machine)
+        self._task2modes: list[list[int]] = [[] for _ in range(num_tasks)]
+        for idx, mode in enumerate(self._modes):
+            self._task2modes[mode.task].append(idx)
+            bisect.insort(self._machine2tasks[mode.machine], mode.task)
+            bisect.insort(self._task2machines[mode.task], mode.machine)
 
         self._validate_parameters()
 
@@ -407,10 +423,10 @@ class ProblemData:
             if any(task >= num_tasks for task in job.tasks):
                 raise ValueError("Job references to unknown task.")
 
-        if any(duration < 0 for duration in self.processing_times.values()):
-            raise ValueError("Processing times must be non-negative.")
+        if any(mode.duration < 0 for mode in self.modes):
+            raise ValueError("Processing mode duration must be non-negative.")
 
-        tasks_with_processing = {t for t, _ in self.processing_times.keys()}
+        tasks_with_processing = {mode.task for mode in self.modes}
         if set(range(num_tasks)) != tasks_with_processing:
             raise ValueError("Processing times missing for some tasks.")
 
@@ -437,7 +453,7 @@ class ProblemData:
         jobs: Optional[list[Job]] = None,
         machines: Optional[list[Machine]] = None,
         tasks: Optional[list[Task]] = None,
-        processing_times: Optional[dict[tuple[int, int], int]] = None,
+        modes: Optional[list[Mode]] = None,
         constraints: Optional[_CONSTRAINTS_TYPE] = None,
         setup_times: Optional[np.ndarray] = None,
         horizon: Optional[int] = None,
@@ -455,8 +471,8 @@ class ProblemData:
             Optional list of machines.
         tasks
             Optional list of tasks.
-        processing_times
-            Optional processing times of tasks on machines.
+        modes
+            Optional processing modes of tasks.
         constraints
             Optional constraints between tasks.
         setup_times
@@ -478,7 +494,7 @@ class ProblemData:
         jobs = _deepcopy_if_none(jobs, self.jobs)
         machines = _deepcopy_if_none(machines, self.machines)
         tasks = _deepcopy_if_none(tasks, self.tasks)
-        proc_times = _deepcopy_if_none(processing_times, self.processing_times)
+        modes = _deepcopy_if_none(modes, self.modes)
         constraints = _deepcopy_if_none(constraints, self.constraints)
         setup_times = _deepcopy_if_none(setup_times, self.setup_times)
         horizon = _deepcopy_if_none(horizon, self.horizon)
@@ -488,7 +504,7 @@ class ProblemData:
             jobs=jobs,
             machines=machines,
             tasks=tasks,
-            processing_times=proc_times,
+            modes=modes,
             constraints=constraints,
             setup_times=setup_times,
             horizon=horizon,
@@ -517,12 +533,11 @@ class ProblemData:
         return self._tasks
 
     @property
-    def processing_times(self) -> dict[tuple[int, int], int]:
+    def modes(self) -> list[Mode]:
         """
-        Processing times of tasks on machines. First index is the
-        task index, second index is the machine index.
+        Returns the processing modes of this problem instance.
         """
-        return self._processing_times
+        return self._modes
 
     @property
     def constraints(self) -> _CONSTRAINTS_TYPE:

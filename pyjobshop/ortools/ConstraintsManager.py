@@ -20,7 +20,7 @@ class ConstraintsManager:
         self._data = data
         self._job_vars = vars_manager.job_vars
         self._task_vars = vars_manager.task_vars
-        self._task_alt_vars = vars_manager.task_alt_vars
+        self._task_alt_vars = vars_manager.mode_vars
         self._sequence_vars = vars_manager.sequence_vars
 
     def _job_spans_tasks(self):
@@ -72,7 +72,7 @@ class ConstraintsManager:
 
         for machine in range(data.num_machines):
             seq_var = self._sequence_vars[machine]
-            model.add_no_overlap([var.interval for var in seq_var.task_alts])
+            model.add_no_overlap([var.interval for var in seq_var.modes])
 
     def _activate_setup_times(self):
         """
@@ -151,8 +151,8 @@ class ConstraintsManager:
                     if constraint == "previous":
                         sequence.activate(model)
 
-                        idx1 = sequence.task_alts.index(var1)
-                        idx2 = sequence.task_alts.index(var2)
+                        idx1 = sequence.modes.index(var1)
+                        idx2 = sequence.modes.index(var2)
                         arc = sequence.arcs[idx1, idx2]
 
                         # arc <=> var1.is_present & var2.is_present
@@ -173,8 +173,8 @@ class ConstraintsManager:
                         model.add_implication(both_present, var2.is_present)
 
                         # Schedule var1 before var2 when both are present.
-                        idx1 = sequence.task_alts.index(var1)
-                        idx2 = sequence.task_alts.index(var2)
+                        idx1 = sequence.modes.index(var1)
+                        idx2 = sequence.modes.index(var2)
                         rank1 = sequence.ranks[idx1]
                         rank2 = sequence.ranks[idx2]
 
@@ -201,7 +201,7 @@ class ConstraintsManager:
                 # (expensive) circuit constraints.
                 continue
 
-            task_alt_vars = sequence.task_alts
+            task_alt_vars = sequence.modes
             starts = sequence.starts
             ends = sequence.ends
             ranks = sequence.ranks

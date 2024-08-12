@@ -17,7 +17,7 @@ class VariablesManager:
 
         self._job_vars = self._make_job_variables()
         self._task_vars = self._make_task_variables()
-        self._task_alt_vars = self._make_task_alternative_variables()
+        self._mode_vars = self._make_mode_variables()
         self._sequence_vars = self._make_sequence_variables()
 
     @property
@@ -35,11 +35,11 @@ class VariablesManager:
         return self._task_vars
 
     @property
-    def task_alt_vars(self) -> dict[tuple[int, int], CpoIntervalVar]:
+    def mode_vars(self) -> dict[tuple[int, int], CpoIntervalVar]:
         """
-        Returns the task alternative variables.
+        Returns the mode variables.
         """
-        return self._task_alt_vars
+        return self._mode_vars
 
     @property
     def sequence_vars(self) -> list[CpoSequenceVar]:
@@ -90,25 +90,17 @@ class VariablesManager:
 
         return variables
 
-    def _make_task_alternative_variables(
-        self,
-    ) -> dict[tuple[int, int], CpoIntervalVar]:
+    def _make_mode_variables(self) -> dict[tuple[int, int], CpoIntervalVar]:
         """
-        Creates an optional interval variable for each eligible task and
-        machine pair.
-
-        Returns
-        -------
-        dict[tuple[int, int], TaskAltVar]
-            A dictionary that maps each task index and machine index pair to
-            its corresponding task alternative variable.
+        Creates an optional interval variable for each mode variable.
         """
         model, data = self._model, self._data
         variables = {}
 
-        for (task_idx, machine), duration in data.processing_times.items():
+        for mode in self._data.modes:
+            task_idx, machine_idx = mode.task, mode.resources[0]
             var = model.interval_var(
-                optional=True, name=f"A{task_idx}_{machine}"
+                optional=True, name=f"A{task_idx}_{machine_idx}"
             )
             task = data.tasks[task_idx]
 
@@ -119,12 +111,12 @@ class VariablesManager:
             var.set_end_max(min(task.latest_end, data.horizon))
 
             if task.fixed_duration:
-                var.set_size(duration)
+                var.set_size(mode.duration)
             else:
-                var.set_size_min(duration)
+                var.set_size_min(mode.duration)
                 var.set_size_max(data.horizon)
 
-            variables[task_idx, machine] = var
+            variables[task_idx, machine_idx] = var
 
         return variables
 
@@ -139,7 +131,7 @@ class VariablesManager:
         variables = []
 
         for machine, tasks in enumerate(data.machine2tasks):
-            intervals = [self.task_alt_vars[task, machine] for task in tasks]
+            intervals = [self.mode_vars[task, machine] for task in tasks]
             seq_var = model.sequence_var(name=f"S{machine}", vars=intervals)
             variables.append(seq_var)
 
@@ -175,7 +167,7 @@ class VariablesManager:
                 size=sol_task.duration,
             )
 
-        for (task_idx, machine_idx), var in self.task_alt_vars.items():
+        for (task_idx, machine_idx), var in self.mode_vars.items():
             sol_task = solution.tasks[task_idx]
 
             stp.add_interval_var_solution(

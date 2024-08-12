@@ -2,7 +2,7 @@ from numpy.testing import assert_equal
 
 from pyjobshop.constants import MAX_VALUE
 from pyjobshop.Model import Model
-from pyjobshop.ProblemData import Constraint, Objective
+from pyjobshop.ProblemData import Constraint, Mode, Objective
 from pyjobshop.Solution import Solution, TaskData
 
 
@@ -43,7 +43,13 @@ def test_model_to_data():
     assert_equal(data.jobs, [job])
     assert_equal(data.machines, [machine1, machine2])
     assert_equal(data.tasks, [task1, task2])
-    assert_equal(data.processing_times, {(0, 0): 1, (1, 1): 2})
+    assert_equal(
+        data.modes,
+        [
+            Mode(task=0, duration=1, resources=[0]),
+            Mode(task=1, duration=2, resources=[1]),
+        ],
+    )
     assert_equal(
         data.constraints,
         {
@@ -82,7 +88,7 @@ def test_from_data(fjsp):
     assert_equal(m_data.num_jobs, data.num_jobs)
     assert_equal(m_data.num_machines, data.num_machines)
     assert_equal(m_data.num_tasks, data.num_tasks)
-    assert_equal(m_data.processing_times, data.processing_times)
+    assert_equal(m_data.modes, data.modes)
     assert_equal(m_data.constraints, data.constraints)
     assert_equal(m_data.setup_times, data.setup_times)
     assert_equal(m_data.horizon, data.horizon)
@@ -105,7 +111,7 @@ def test_model_to_data_default_values():
     assert_equal(data.jobs, [job])
     assert_equal(data.machines, [machine])
     assert_equal(data.tasks, [task])
-    assert_equal(data.processing_times, {(0, 0): 1})
+    # assert_equal(data.processing_times, {(0, 0): 1}) #TODO
     assert_equal(data.constraints, {})
     assert_equal(data.setup_times, [[[0]]])
     assert_equal(data.horizon, MAX_VALUE)

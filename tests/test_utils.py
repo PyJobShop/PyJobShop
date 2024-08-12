@@ -1,6 +1,6 @@
 from numpy.testing import assert_equal
 
-from pyjobshop.ProblemData import Job, Machine, ProblemData, Task
+from pyjobshop.ProblemData import Job, Machine, Mode, ProblemData, Task
 from pyjobshop.utils import compute_min_max_durations
 
 
@@ -12,7 +12,7 @@ def test_compute_min_max_durations():
         [Job()],
         [Machine(), Machine()],
         [Task(), Task()],
-        processing_times={(0, 0): 1, (0, 1): 10, (1, 1): 0},
+        modes=[Mode(0, 1, [0]), Mode(0, 10, [1]), Mode(1, 0, [1])],
         constraints={},
     )
 

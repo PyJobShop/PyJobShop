@@ -19,7 +19,8 @@ def compute_min_max_durations(
         The minimum and maximum durations for each task.
     """
     durations: list[list[int]] = [[] for _ in range(data.num_tasks)]
-    for (task, _), duration in data.processing_times.items():
+    for mode in data.modes:
+        task, duration = mode.task, mode.duration
         durations[task].append(duration)
 
     min_durations = [min(durations[task]) for task in range(data.num_tasks)]

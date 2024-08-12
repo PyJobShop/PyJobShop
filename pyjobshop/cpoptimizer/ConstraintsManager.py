@@ -21,7 +21,7 @@ class ConstraintsManager:
         self._data = data
         self._job_vars = vars_manager.job_vars
         self._task_vars = vars_manager.task_vars
-        self._task_alt_vars = vars_manager.task_alt_vars
+        self._mode_vars = vars_manager.mode_vars
         self._sequence_vars = vars_manager.sequence_vars
 
     def _job_spans_tasks(self):
@@ -36,17 +36,19 @@ class ConstraintsManager:
 
             model.add(model.span(job_var, job_task_vars))
 
-    def _select_one_task_alternative(self):
+    def _select_one_mode(self):
         """
-        Selects one task alternative for each main task, ensuring that each
-        task is assigned to exactly one machine.
+        Selects one mode for each task, ensuring that each task performs
+        exactly one mode.
         """
         model, data = self._model, self._data
 
         for task in range(data.num_tasks):
-            machines = data.task2machines[task]
-            alts = [self._task_alt_vars[task, machine] for machine in machines]
-            model.add(model.alternative(self._task_vars[task], alts))
+            mode_vars = [
+                self._mode_vars[task, data.modes[mode].machine]
+                for mode in data._task2modes[task]
+            ]
+            model.add(model.alternative(self._task_vars[task], mode_vars))
 
     def _no_overlap_and_setup_times(self):
         """
@@ -125,8 +127,8 @@ class ConstraintsManager:
 
             for machine in machines:
                 seq_var = self._sequence_vars[machine]
-                var1 = self._task_alt_vars[task1, machine]
-                var2 = self._task_alt_vars[task2, machine]
+                var1 = self._mode_vars[task1, machine]
+                var2 = self._mode_vars[task2, machine]
 
                 for constraint in task_alt_constraints:
                     if constraint == "previous":
@@ -150,6 +152,6 @@ class ConstraintsManager:
         """
         self._job_spans_tasks()
         self._no_overlap_and_setup_times()
-        self._select_one_task_alternative()
+        self._select_one_mode()
         self._task_graph()
         self._task_alt_graph()
