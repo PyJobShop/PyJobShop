@@ -98,9 +98,9 @@ class VariablesManager:
         model, data = self._model, self._data
         variables = []
 
-        for mode in self._data.modes:
+        for mode in data.modes:
             var = model.interval_var(
-                optional=True, name=f"A{mode.task}_{mode.machine}"
+                optional=True, name=f"M{mode.task}_{mode.machine}"
             )
             task = data.tasks[mode.task]
 

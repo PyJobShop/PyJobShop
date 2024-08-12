@@ -27,7 +27,7 @@ class Model:
         self._jobs: list[Job] = []
         self._machines: list[Machine] = []
         self._tasks: list[Task] = []
-        self._modes = []
+        self._modes: list[Mode] = []
         self._constraints: dict[tuple[int, int], list[Constraint]] = (
             defaultdict(list)
         )

@@ -63,7 +63,7 @@ class Solver:
     def solve(
         self,
         time_limit: float = float("inf"),
-        log: bool = False,
+        display: bool = False,
         num_workers: Optional[int] = None,
         initial_solution: Optional[Solution] = None,
         **kwargs,
@@ -75,8 +75,8 @@ class Solver:
         ----------
         time_limit
             The time limit for the solver in seconds.
-        log
-            Whether to log the solver output.
+        display
+            Whether to display the solver output. Default ``False``.
         num_workers
             The number of workers to use for parallel solving. If not set, all
             available CPU cores are used.
@@ -99,7 +99,7 @@ class Solver:
 
         params = {
             "max_time_in_seconds": time_limit,
-            "log_search_progress": log,
+            "log_search_progress": display,
             # 0 means using all available CPU cores.
             "num_workers": num_workers if num_workers is not None else 0,
         }

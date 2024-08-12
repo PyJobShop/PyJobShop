@@ -30,10 +30,39 @@ class Solver:
         self._constraints = ConstraintsManager(self._model, data, self._vars)
         self._objective = ObjectiveManager(self._model, data, self._vars)
 
+    def _get_solve_status(self, status: str) -> SolveStatus:
+        if status == "Optimal":
+            return SolveStatus.OPTIMAL
+        elif status == "Feasible":
+            return SolveStatus.FEASIBLE
+        elif status == "Infeasible":
+            return SolveStatus.INFEASIBLE
+        else:
+            return SolveStatus.TIME_LIMIT
+
+    def _convert_to_solution(self, result: CpoSolveResult) -> Solution:
+        """
+        Converts an CpoSolveResult object to a solution.
+        """
+        tasks = {}
+
+        for var in result.get_all_var_solutions():  # type: ignore
+            name = var.get_name()
+
+            # Scheduled tasks are inferred from present mode variables.
+            if name.startswith("M") and var.is_present():
+                task, machine = [int(num) for num in name[1:].split("_")]
+                start = var.start
+                duration = var.size
+                end = var.end
+                tasks[task] = TaskData(machine, start, duration, end)
+
+        return Solution([tasks[idx] for idx in range(self._data.num_tasks)])
+
     def solve(
         self,
         time_limit: float = float("inf"),
-        log: bool = False,
+        display: bool = False,
         num_workers: Optional[int] = None,
         initial_solution: Optional[Solution] = None,
         **kwargs,
@@ -45,8 +74,8 @@ class Solver:
         ----------
         time_limit
             The time limit for the solver in seconds.
-        log
-            Whether to log the solver output.
+        display
+            Whether to display the solver output. Default ``False``.
         num_workers
             The number of workers to use for parallel solving. If not set, all
             available CPU cores are used.
@@ -69,7 +98,7 @@ class Solver:
 
         params = {
             "TimeLimit": time_limit,
-            "LogVerbosity": "Terse" if log else "Quiet",
+            "LogVerbosity": "Terse" if display else "Quiet",
             "Workers": num_workers if num_workers is not None else "Auto",
         }
         params.update(kwargs)  # this will override existing parameters!
@@ -78,7 +107,7 @@ class Solver:
         status = cp_result.get_solve_status()
 
         if status in ["Optimal", "Feasible"]:
-            solution = _result2solution(self._data, cp_result)
+            solution = self._convert_to_solution(cp_result)
             objective: float = cp_result.get_objective_value()  # type: ignore
         else:
             # No feasible solution due to infeasible instance or time limit.
@@ -86,40 +115,8 @@ class Solver:
             objective = float("inf")
 
         return Result(
-            _get_solve_status(status),
+            self._get_solve_status(status),
             cp_result.get_solve_time(),
             solution,
             objective,
         )
-
-
-def _get_solve_status(status):
-    if status == "Optimal":
-        return SolveStatus.OPTIMAL
-    elif status == "Feasible":
-        return SolveStatus.FEASIBLE
-    elif status == "Infeasible":
-        return SolveStatus.INFEASIBLE
-    else:
-        return SolveStatus.TIME_LIMIT
-
-
-def _result2solution(data: ProblemData, result: CpoSolveResult) -> Solution:
-    """
-    Converts an CpoSolveResult object to a solution.
-    """
-    tasks = {}
-
-    for var in result.get_all_var_solutions():  # type: ignore
-        name = var.get_name()
-
-        # Scheduled tasks are inferred from variables start with an "A"
-        # (assignment) and that are present in the solution.
-        if name.startswith("A") and var.is_present():
-            task, machine = [int(num) for num in name[1:].split("_")]
-            start = var.start
-            duration = var.size
-            end = var.end
-            tasks[task] = TaskData(machine, start, duration, end)
-
-    return Solution([tasks[idx] for idx in range(data.num_tasks)])
