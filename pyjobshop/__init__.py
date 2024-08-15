@@ -8,4 +8,6 @@ from .ProblemData import Objective as Objective
 from .ProblemData import ProblemData as ProblemData
 from .ProblemData import Task as Task
 from .read import read as read
+from .Solution import Solution as Solution
+from .Solution import TaskData as TaskData
 from .solve import solve as solve
