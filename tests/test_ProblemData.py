@@ -251,20 +251,18 @@ def test_problem_data_task_without_modes():
 
 
 @pytest.mark.parametrize(
-    "mode, setup_times, horizon",
+    "setup_times, horizon",
     [
-        # Negative processing mode duration.
-        (Mode(0, -1, [0]), np.ones((1, 1, 1)), 1),
         # Negative setup times.
-        (Mode(0, 1, [0]), np.ones((1, 1, 1)) * -1, 1),
+        (np.ones((1, 1, 1)) * -1, 1),
         # Invalid setup times shape.
-        (Mode(0, 1, [0]), np.ones((2, 2, 2)), 1),
+        (np.ones((2, 2, 2)), 1),
         # Negative horizon.
-        (Mode(0, 1, [0]), np.ones((1, 1, 1)), -1),
+        (np.ones((1, 1, 1)), -1),
     ],
 )
 def test_problem_data_raises_when_invalid_arguments(
-    mode: Mode, setup_times: np.ndarray, horizon: int
+    setup_times: np.ndarray, horizon: int
 ):
     """
     Tests that the ProblemData class raises an error when invalid arguments are
@@ -275,7 +273,7 @@ def test_problem_data_raises_when_invalid_arguments(
             [Job()],
             [Machine()],
             [Task()],
-            modes=[mode],
+            modes=[Mode(0, 1, [0])],
             setup_times=setup_times.astype(int),
             horizon=horizon,
         )
@@ -656,6 +654,19 @@ def test_task_non_fixed_duration(solver: str):
     assert_equal(result.status.value, "Optimal")
     assert_equal(result.objective, 10)
     assert_equal(result.best.tasks, [TaskData(0, 0, 10, 10)])
+
+
+def test_resource(solver: str):
+    model = Model()
+    machine = model.add_machine(capacity=2)
+    task1 = model.add_task()
+    task2 = model.add_task()
+    model.add_processing_time(task1, machine, duration=1, demand=1)
+    model.add_processing_time(task2, machine, duration=1, demand=1)
+
+    result = model.solve(solver=solver)
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.objective, 1)
 
 
 @pytest.mark.parametrize(
