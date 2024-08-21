@@ -309,28 +309,28 @@ class Objective:
     @classmethod
     def total_completion_time(cls):
         """
-        Minimizes the total weighted completion time.
+        Minimizes the total completion time.
         """
         return cls(weight_total_completion_time=1)
 
     @classmethod
     def tardy_jobs(cls):
         """
-        Minimizes the weighted number of tardy jobs.
+        Minimizes the number of tardy jobs.
         """
         return cls(weight_tardy_jobs=1)
 
     @classmethod
     def total_tardiness(cls):
         """
-        Minimizes the total weighted tardiness.
+        Minimizes the total tardiness.
         """
         return cls(weight_total_tardiness=1)
 
     @classmethod
     def total_earliness(cls):
         """
-        Minimizes the total weighted earliness.
+        Minimizes the total earliness.
         """
         return cls(weight_total_earliness=1)
 
