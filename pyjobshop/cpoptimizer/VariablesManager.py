@@ -4,7 +4,7 @@ from docplex.cp.model import CpoModel
 import pyjobshop.utils as utils
 from pyjobshop.ProblemData import ProblemData
 from pyjobshop.Solution import Solution
-from pyjobshop.utils import compute_min_max_durations
+from pyjobshop.utils import compute_task_durations
 
 
 class VariablesManager:
@@ -71,7 +71,7 @@ class VariablesManager:
         """
         model, data = self._model, self._data
         variables = []
-        min_durations, max_durations = compute_min_max_durations(self._data)
+        task_durations = compute_task_durations(self._data)
 
         for idx, task in enumerate(data.tasks):
             var = model.interval_var(name=f"T{task}")
@@ -82,9 +82,11 @@ class VariablesManager:
             var.set_end_min(task.earliest_end)
             var.set_end_max(min(task.latest_end, data.horizon))
 
-            var.set_size_min(min_durations[idx])
+            var.set_size_min(min(task_durations[idx]))
             var.set_size_max(
-                max_durations[idx] if task.fixed_duration else data.horizon
+                max(task_durations[idx])
+                if task.fixed_duration
+                else data.horizon
             )
 
             variables.append(var)

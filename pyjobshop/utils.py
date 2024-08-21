@@ -3,12 +3,10 @@ import bisect
 from pyjobshop.ProblemData import ProblemData
 
 
-def compute_min_max_durations(
-    data: ProblemData,
-) -> tuple[list[int], list[int]]:
+def compute_task_durations(data: ProblemData) -> list[list[int]]:
     """
-    Compute the minimum and maximum durations for each task. This is used to
-    improve the duration bounds of the corresponding interval variables.
+    Computes the set of processing time durations belong to each task. This is
+    used to restrict the domain of the corresponding interval variables.
 
     Parameters
     ----------
@@ -22,13 +20,9 @@ def compute_min_max_durations(
     """
     durations: list[list[int]] = [[] for _ in range(data.num_tasks)]
     for mode in data.modes:
-        task, duration = mode.task, mode.duration
-        durations[task].append(duration)
+        durations[mode.task].append(mode.duration)
 
-    min_durations = [min(durations[task]) for task in range(data.num_tasks)]
-    max_durations = [max(durations[task]) for task in range(data.num_tasks)]
-
-    return min_durations, max_durations
+    return durations
 
 
 def machine2modes(data):

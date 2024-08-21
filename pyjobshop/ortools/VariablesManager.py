@@ -3,6 +3,7 @@ from dataclasses import dataclass, field
 from ortools.sat.python.cp_model import (
     BoolVarT,
     CpModel,
+    Domain,
     IntervalVar,
     IntVar,
 )
@@ -10,7 +11,7 @@ from ortools.sat.python.cp_model import (
 import pyjobshop.utils as utils
 from pyjobshop.ProblemData import ProblemData
 from pyjobshop.Solution import Solution
-from pyjobshop.utils import compute_min_max_durations
+from pyjobshop.utils import compute_task_durations
 
 
 @dataclass
@@ -228,7 +229,7 @@ class VariablesManager:
         """
         model, data = self._model, self._data
         variables = []
-        min_durations, max_durations = compute_min_max_durations(data)
+        task_durations = compute_task_durations(data)
 
         for idx, task in enumerate(data.tasks):
             name = f"T{idx}"
@@ -237,11 +238,16 @@ class VariablesManager:
                 ub=min(task.latest_start, data.horizon),
                 name=f"{name}_start",
             )
-            duration = model.new_int_var(
-                lb=min_durations[idx],
-                ub=max_durations[idx] if task.fixed_duration else data.horizon,
-                name=f"{name}_duration",
-            )
+            if task.fixed_duration:
+                duration = model.new_int_var_from_domain(
+                    Domain.from_values(task_durations[idx]), f"{name}_duration"
+                )
+            else:
+                duration = model.new_int_var(
+                    lb=min(task_durations[idx]),
+                    ub=data.horizon,
+                    name=f"{name}_duration",
+                )
             end = model.new_int_var(
                 lb=task.earliest_end,
                 ub=min(task.latest_end, data.horizon),
