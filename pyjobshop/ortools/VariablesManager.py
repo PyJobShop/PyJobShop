@@ -198,8 +198,8 @@ class VariablesManager:
         model, data = self._model, self._data
         variables = []
 
-        for job in data.jobs:
-            name = f"J{job}"
+        for idx, job in enumerate(data.jobs):
+            name = f"J{idx}"
             start = model.new_int_var(
                 lb=job.release_date,
                 ub=data.horizon,
@@ -231,7 +231,7 @@ class VariablesManager:
         min_durations, max_durations = compute_min_max_durations(data)
 
         for idx, task in enumerate(data.tasks):
-            name = f"T{task}"
+            name = f"T{idx}"
             start = model.new_int_var(
                 lb=task.earliest_start,
                 ub=min(task.latest_start, data.horizon),
@@ -265,8 +265,7 @@ class VariablesManager:
 
         for mode in data.modes:
             task = data.tasks[mode.task]
-            machine = data.machines[mode.machine]
-            name = f"A{task}_{machine}"
+            name = f"M{mode.task}_{mode.machine}"
             start = model.new_int_var(
                 lb=task.earliest_start,
                 ub=min(task.latest_start, data.horizon),

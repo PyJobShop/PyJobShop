@@ -428,9 +428,10 @@ class ProblemData:
         if any(mode.duration < 0 for mode in self.modes):
             raise ValueError("Processing mode duration must be non-negative.")
 
-        tasks_with_processing = {mode.task for mode in self.modes}
-        if set(range(num_tasks)) != tasks_with_processing:
-            raise ValueError("Processing modes missing for some tasks.")
+        without = set(range(num_tasks)) - {mode.task for mode in self.modes}
+        names = [self.tasks[idx].name or idx for idx in sorted(without)]
+        if names:  # task indices if names are not available
+            raise ValueError(f"Processing modes missing for tasks {without}.")
 
         if np.any(self.setup_times < 0):
             raise ValueError("Setup times must be non-negative.")
