@@ -72,6 +72,22 @@ class ObjectiveManager:
         weights = [job.weight for job in data.jobs]
         return LinearExpr.weighted_sum(tardiness_vars, weights)
 
+    def _total_earliness_expr(self) -> LinearExprT:
+        """
+        Returns an expression representing the total earliness of jobs.
+        """
+        model, data = self._model, self._data
+        earliness_vars = []
+
+        for job, var in zip(data.jobs, self._job_vars):
+            assert job.due_date is not None
+            earliness = model.new_int_var(0, data.horizon, f"earliness_{job}")
+            model.add_max_equality(earliness, [0, job.due_date - var.end])
+            earliness_vars.append(earliness)
+
+        weights = [job.weight for job in data.jobs]
+        return LinearExpr.weighted_sum(earliness_vars, weights)
+
     def _objective_expr(self, objective: Objective) -> LinearExprT:
         """
         Returns the expression corresponding to the given objective.
@@ -93,6 +109,11 @@ class ObjectiveManager:
             expr += (
                 objective.weight_total_completion_time
                 * self._total_completion_time_expr()
+            )
+
+        if objective.weight_total_earliness > 0:
+            expr += (
+                objective.weight_total_earliness * self._total_earliness_expr()
             )
 
         return expr

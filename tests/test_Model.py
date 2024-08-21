@@ -200,12 +200,14 @@ def test_model_set_objective():
         weight_tardy_jobs=2,
         weight_total_tardiness=3,
         weight_total_completion_time=4,
+        weight_total_earliness=5,
     )
 
     assert_equal(model.objective.weight_makespan, 1)
     assert_equal(model.objective.weight_tardy_jobs, 2)
     assert_equal(model.objective.weight_total_tardiness, 3)
     assert_equal(model.objective.weight_total_completion_time, 4)
+    assert_equal(model.objective.weight_total_earliness, 5)
 
 
 def test_solve(solver: str):

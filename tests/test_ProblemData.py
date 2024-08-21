@@ -282,7 +282,12 @@ def test_problem_data_raises_when_invalid_arguments(
 
 
 @pytest.mark.parametrize(
-    "objective", [Objective.tardy_jobs(), Objective.total_tardiness()]
+    "objective",
+    [
+        Objective.tardy_jobs(),
+        Objective.total_tardiness(),
+        Objective.total_earliness(),
+    ],
 )
 def test_problem_data_tardy_objective_without_job_due_dates(
     objective: Objective,
@@ -778,10 +783,11 @@ def test_tight_horizon_results_in_infeasiblity(solver: str):
 @pytest.mark.parametrize(
     "objective, weights",
     [
-        (Objective.makespan, (1, 0, 0, 0)),
-        (Objective.tardy_jobs, (0, 1, 0, 0)),
-        (Objective.total_tardiness, (0, 0, 1, 0)),
-        (Objective.total_completion_time, (0, 0, 0, 1)),
+        (Objective.makespan, (1, 0, 0, 0, 0)),
+        (Objective.tardy_jobs, (0, 1, 0, 0, 0)),
+        (Objective.total_tardiness, (0, 0, 1, 0, 0)),
+        (Objective.total_completion_time, (0, 0, 0, 1, 0)),
+        (Objective.total_earliness, (0, 0, 0, 0, 1)),
     ],
 )
 def test_objective_classmethods_set_attributes_correctly(objective, weights):
@@ -794,6 +800,7 @@ def test_objective_classmethods_set_attributes_correctly(objective, weights):
     assert_equal(obj.weight_tardy_jobs, weights[1])
     assert_equal(obj.weight_total_tardiness, weights[2])
     assert_equal(obj.weight_total_completion_time, weights[3])
+    assert_equal(obj.weight_total_earliness, weights[4])
 
 
 def test_makespan_objective(solver: str):
@@ -888,6 +895,42 @@ def test_total_tardiness(solver: str):
     # times (6, 4) and thus a total tardiness of 2 * 4 + 10 * 2 = 28.
     assert_equal(result.objective, 28)
     assert_equal(result.status.value, "Optimal")
+
+
+def test_total_earliness(solver: str):
+    """
+    Tests that the total earliness objective function is correctly optimized.
+    """
+    model = Model()
+    machine = model.add_machine()
+    job = model.add_job(weight=1, due_date=2)
+    task = model.add_task(job=job)
+
+    model.add_processing_time(task, machine, duration=1)
+    model.set_objective(weight_total_earliness=1)
+
+    result = model.solve(solver=solver)
+
+    # Due date is 2, so we the task starts at 1 with duration 1 to incur
+    # no earliness.
+    assert_equal(result.objective, 0)
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.best.tasks[0].start, 1)
+    assert_equal(result.best.tasks[0].end, 2)
+
+    # Now let's another job that cannot finish without earliness.
+    job2 = model.add_job(weight=10, deadline=1, due_date=2)
+    task2 = model.add_task(job=job2)
+    model.add_processing_time(task2, machine, duration=1)
+
+    result = model.solve(solver=solver)
+
+    # The second job completes at time 1, which is 1 time unit too early.
+    # Together with the job weight, this results in an objective value of 10.
+    assert_equal(result.objective, 10)
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.best.tasks[1].start, 0)
+    assert_equal(result.best.tasks[1].end, 1)
 
 
 def test_combined_objective(solver: str):

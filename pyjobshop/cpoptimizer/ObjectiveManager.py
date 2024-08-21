@@ -70,6 +70,19 @@ class ObjectiveManager:
 
         return m.sum(total)
 
+    def _total_earliness_expr(self) -> CpoExpr:
+        """
+        Returns an expression representing the total earliness of jobs.
+        """
+        m, data = self._model, self._data
+        total = []
+
+        for job, var in zip(data.jobs, self._job_vars):
+            earliness = m.max(0, job.due_date - m.end_of(var))
+            total.append(job.weight * earliness)
+
+        return m.sum(total)
+
     def _objective_expr(self, objective: Objective) -> CpoExpr:
         """
         Returns the expression corresponding to the given objective.
@@ -92,6 +105,11 @@ class ObjectiveManager:
             expr += (
                 objective.weight_total_completion_time
                 * self._total_completion_time_expr()
+            )
+
+        if objective.weight_total_earliness > 0:
+            expr += (
+                objective.weight_total_earliness * self._total_earliness_expr()
             )
 
         return self._model.minimize(expr)
