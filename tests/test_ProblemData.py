@@ -898,7 +898,39 @@ def test_total_tardiness(solver: str):
 
 
 def test_total_earliness(solver: str):
-    pass  # TODO
+    """
+    Tests that the total earliness objective function is correctly optimized.
+    """
+    model = Model()
+    machine = model.add_machine()
+    job = model.add_job(weight=1, due_date=2)
+    task = model.add_task(job=job)
+
+    model.add_processing_time(task, machine, duration=1)
+    model.set_objective(weight_total_earliness=1)
+
+    result = model.solve(solver=solver)
+
+    # Due date is 2, so we the task starts at 1 with duration 1 to incur
+    # no earliness.
+    assert_equal(result.objective, 0)
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.best.tasks[0].start, 1)
+    assert_equal(result.best.tasks[0].end, 2)
+
+    # Now let's another job that cannot finish without earliness.
+    job2 = model.add_job(weight=10, deadline=1, due_date=2)
+    task2 = model.add_task(job=job2)
+    model.add_processing_time(task2, machine, duration=1)
+
+    result = model.solve(solver=solver)
+
+    # The second job completes at time 1, which is 1 time unit too early.
+    # Together with the job weight, this results in an objective value of 10.
+    assert_equal(result.objective, 10)
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.best.tasks[1].start, 0)
+    assert_equal(result.best.tasks[1].end, 1)
 
 
 def test_combined_objective(solver: str):
