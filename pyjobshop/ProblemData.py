@@ -289,8 +289,7 @@ class Objective:
     * Total earliness
 
     .. note::
-        To set the weight for a specific job, use :attr:`Job.weight`. This
-        weight is used in calculating the job-specific contribution to the
+        Use :attr:`Job.weight` to set a specific job's contribution to the
         objective function.
     """
 
