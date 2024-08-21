@@ -286,6 +286,7 @@ class Objective:
     * Number of tardy jobs
     * Total completion time
     * Total tardiness
+    * Total earliness
 
     .. note::
         To set the weight for a specific job, use :attr:`Job.weight`. This
@@ -297,6 +298,7 @@ class Objective:
     weight_tardy_jobs: int = 0
     weight_total_completion_time: int = 0
     weight_total_tardiness: int = 0
+    weight_total_earliness: int = 0
 
     @classmethod
     def makespan(cls):
@@ -325,6 +327,13 @@ class Objective:
         Minimizes the total weighted tardiness.
         """
         return cls(weight_total_tardiness=1)
+
+    @classmethod
+    def total_earliness(cls):
+        """
+        Minimizes the total weighted earliness.
+        """
+        return cls(weight_total_earliness=1)
 
 
 @dataclass
@@ -446,9 +455,10 @@ class ProblemData:
         if (
             self.objective.weight_tardy_jobs > 0
             or self.objective.weight_total_tardiness > 0
+            or self.objective.weight_total_earliness > 0
         ):
             if any(job.due_date is None for job in self.jobs):
-                msg = "Job due dates required for tardiness-based objectives."
+                msg = "Job due dates required for due date-based objectives."
                 raise ValueError(msg)
 
     def replace(

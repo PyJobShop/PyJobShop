@@ -282,7 +282,12 @@ def test_problem_data_raises_when_invalid_arguments(
 
 
 @pytest.mark.parametrize(
-    "objective", [Objective.tardy_jobs(), Objective.total_tardiness()]
+    "objective",
+    [
+        Objective.tardy_jobs(),
+        Objective.total_tardiness(),
+        Objective.total_earliness(),
+    ],
 )
 def test_problem_data_tardy_objective_without_job_due_dates(
     objective: Objective,
@@ -778,10 +783,11 @@ def test_tight_horizon_results_in_infeasiblity(solver: str):
 @pytest.mark.parametrize(
     "objective, weights",
     [
-        (Objective.makespan, (1, 0, 0, 0)),
-        (Objective.tardy_jobs, (0, 1, 0, 0)),
-        (Objective.total_tardiness, (0, 0, 1, 0)),
-        (Objective.total_completion_time, (0, 0, 0, 1)),
+        (Objective.makespan, (1, 0, 0, 0, 0)),
+        (Objective.tardy_jobs, (0, 1, 0, 0, 0)),
+        (Objective.total_tardiness, (0, 0, 1, 0, 0)),
+        (Objective.total_completion_time, (0, 0, 0, 1, 0)),
+        (Objective.total_earliness, (0, 0, 0, 0, 1)),
     ],
 )
 def test_objective_classmethods_set_attributes_correctly(objective, weights):
@@ -794,6 +800,7 @@ def test_objective_classmethods_set_attributes_correctly(objective, weights):
     assert_equal(obj.weight_tardy_jobs, weights[1])
     assert_equal(obj.weight_total_tardiness, weights[2])
     assert_equal(obj.weight_total_completion_time, weights[3])
+    assert_equal(obj.weight_total_earliness, weights[4])
 
 
 def test_makespan_objective(solver: str):
@@ -888,6 +895,10 @@ def test_total_tardiness(solver: str):
     # times (6, 4) and thus a total tardiness of 2 * 4 + 10 * 2 = 28.
     assert_equal(result.objective, 28)
     assert_equal(result.status.value, "Optimal")
+
+
+def test_total_earliness(solver: str):
+    pass  # TODO
 
 
 def test_combined_objective(solver: str):

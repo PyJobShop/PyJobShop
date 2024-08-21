@@ -466,6 +466,7 @@ class Model:
         weight_tardy_jobs: int = 0,
         weight_total_tardiness: int = 0,
         weight_total_completion_time: int = 0,
+        weight_total_earliness: int = 0,
     ):
         """
         Sets the objective function in this model.
@@ -480,12 +481,15 @@ class Model:
             Weight of the total tardiness objective. Default 0.
         weight_total_completion_time
             Weight of the total completion time objective. Default 0.
+        weight_total_earliness
+            Weight of the total earliness objective. Default 0.
         """
         self._objective = Objective(
             weight_makespan=weight_makespan,
             weight_tardy_jobs=weight_tardy_jobs,
             weight_total_tardiness=weight_total_tardiness,
             weight_total_completion_time=weight_total_completion_time,
+            weight_total_earliness=weight_total_earliness,
         )
 
     def solve(
