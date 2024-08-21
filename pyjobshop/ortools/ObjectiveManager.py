@@ -83,7 +83,6 @@ class ObjectiveManager:
             assert job.due_date is not None
             earliness = model.new_int_var(0, data.horizon, f"earliness_{job}")
             model.add_max_equality(earliness, [0, job.due_date - var.end])
-            print(job.due_date)
             earliness_vars.append(earliness)
 
         weights = [job.weight for job in data.jobs]
