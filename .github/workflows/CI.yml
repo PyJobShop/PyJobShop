@@ -36,7 +36,9 @@ jobs:
       - name: Run pre-commit
         run: uv run pre-commit run --all-files
       - name: Run tests
-        run: uv run pytest --solvers ortools cpoptimizer
+        run: |
+          uv add cplex
+          uv run pytest --solvers ortools cpoptimizer
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v3
         env:
