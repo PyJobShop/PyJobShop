@@ -6,9 +6,8 @@ build:
     python: "3.10"
   jobs:
     post_create_environment:
-      - pip install poetry
-      - poetry config virtualenvs.create false
+      - pip install uv
     post_install:
-      - VIRTUAL_ENV=$READTHEDOCS_VIRTUALENV_PATH python -m poetry install --with docs,examples --all-extras
+      - VIRTUAL_ENV=$READTHEDOCS_VIRTUALENV_PATH python -m uv sync --all-extras --dev
 sphinx:
   configuration: docs/source/conf.py
