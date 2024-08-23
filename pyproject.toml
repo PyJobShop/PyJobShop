@@ -1,29 +1,12 @@
-[tool.poetry]
-name = "pyjobshop"
-version = "0.0.2a"
-description = "Solving shop scheduling problems with constraint programming."
-authors = ["Leon Lan <l.lan@vu.nl>"]
-license = "MIT"
-readme = "README.md"
-packages = [
-    { include = "pyjobshop" }
-]
-
-
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
-
 [project]
 name = "pyjobshop"
 version = "0.0.2a"
 description = "Solving shop scheduling problems with constraint programming."
-authors = ["Leon Lan <l.lan@vu.nl>"]
+authors = [
+    { name = "Leon Lan", email = "l.lan@vu.nl"},
+]
 license = { text = "MIT" }
 readme = "README.md"
-packages = [
-    { include = "pyjobshop" }
-]
 requires-python = ">=3.9"
 dependencies = [
     "ortools>=9.10.4067",
@@ -59,10 +42,6 @@ dev-dependencies = [
 
 [tool.uv.sources]
 fjsplib = { git = "https://github.com/PyJobShop/FJSPLIB.git", rev = "75b2d18" }
-
-
-# [tool.poetry.scripts]
-# pyjobshop = "pyjobshop.cli:main"
 
 
 [tool.mypy]
@@ -115,3 +94,8 @@ omit = [
     "pyjobshop/ortools/*",
     "pyjobshop/cli.py"
 ]
+
+
+[build-system]
+requires = ["setuptools >= 61.0"]
+build-backend = "setuptools.build_meta"
