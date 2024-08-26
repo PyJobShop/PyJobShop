@@ -9,7 +9,7 @@ authors = "Leon Lan"
 copyright = f"2023 - {now.year}, {authors}"
 
 print("Copying example notebooks into docs/source/examples/")
-shutil.copytree("../../examples", "examples/", dirs_exist_ok=True)
+shutil.copytree("../examples", "examples/", dirs_exist_ok=True)
 
 
 # -- General configuration
