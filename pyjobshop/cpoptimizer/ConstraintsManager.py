@@ -86,16 +86,15 @@ class ConstraintsManager:
                 continue
 
             modes = machine2modes[idx]
-            pulses = [
-                model.pulse(
-                    self._mode_vars[mode],
-                    # TODO simplify
-                    data.modes[mode].demands[
-                        data.modes[mode].resources.index(idx)
-                    ],
-                )
+            demands = [
+                data.modes[mode].demands[data.modes[mode].resources.index(idx)]
                 for mode in modes
             ]
+            pulses = []
+            for mode, demand in zip(modes, demands):
+                if demand > 0:
+                    pulses.append(model.pulse(self._mode_vars[mode], demand))
+
             model.add(model.sum(pulses) <= resource.capacity)
 
     def _task_graph(self):
