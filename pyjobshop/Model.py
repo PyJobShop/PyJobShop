@@ -111,10 +111,11 @@ class Model:
             )
 
         for mode in data.modes:
-            model.add_processing_time(
+            model.add_mode(
                 task=model.tasks[mode.task],
-                machine=model.machines[mode.machine],
+                machines=[model.machines[r] for r in mode.resources],
                 duration=mode.duration,
+                demands=mode.demands,
             )
 
         for (idx1, idx2), constraints in data.constraints.items():

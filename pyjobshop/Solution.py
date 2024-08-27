@@ -8,15 +8,18 @@ class TaskData:
 
     Parameters
     ----------
-    machine
-        The selected machine.
+    mode
+        The selected mode.
+    machines
+        The selected machines.
     start
         The start time.
     end
         The end time.
     """
 
-    machine: int
+    mode: int
+    machines: list[int]
     start: int
     end: int
 

@@ -60,23 +60,25 @@ def plot(
             "alpha": 0.75,
         }
         duration = task_data.end - task_data.start
+        for machine in task_data.machines:
+            if machine not in order:
+                continue  # skip machines not in the order
 
-        if task_data.machine in order:
             ax.barh(
-                order[task_data.machine],
+                order[machine],
                 duration,
                 left=task_data.start,
                 **kwargs,
             )
 
-        if plot_labels:
-            ax.text(
-                task_data.start + duration / 2,
-                order[task_data.machine],
-                data.tasks[idx].name,
-                ha="center",
-                va="center",
-            )
+            if plot_labels:
+                ax.text(
+                    task_data.start + duration / 2,
+                    order[machine],
+                    data.tasks[idx].name,
+                    ha="center",
+                    va="center",
+                )
 
     labels = [data.machines[idx].name for idx in order.keys()]
 

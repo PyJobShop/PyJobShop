@@ -465,8 +465,10 @@ class ProblemData:
             if mode.task < 0 or mode.task >= num_tasks:
                 raise ValueError("Mode references to unknown task index.")
 
-            if mode.machine < 0 or mode.machine >= num_mach:
-                raise ValueError("Mode references to unknown machine index.")
+            for resource in mode.resources:
+                if resource < 0 or resource >= num_mach:
+                    msg = "Mode references to unknown resource index."
+                    raise ValueError(msg)
 
         without = set(range(num_tasks)) - {mode.task for mode in self.modes}
         names = [self.tasks[idx].name or idx for idx in sorted(without)]

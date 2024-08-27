@@ -269,9 +269,9 @@ class VariablesManager:
         model, data = self._model, self._data
         variables = []
 
-        for mode in data.modes:
+        for idx, mode in enumerate(data.modes):
             task = data.tasks[mode.task]
-            name = f"M{mode.task}_{mode.machine}"
+            name = f"M{idx}_{mode.task}"
             start = model.new_int_var(
                 lb=task.earliest_start,
                 ub=min(task.latest_start, data.horizon),
@@ -359,4 +359,4 @@ class VariablesManager:
             model.add_hint(var.start, sol_task.start)
             model.add_hint(var.duration, sol_task.end - sol_task.start)
             model.add_hint(var.end, sol_task.end)
-            model.add_hint(var.is_present, mode.machine == sol_task.machine)
+            model.add_hint(var.is_present, idx == sol_task.mode)

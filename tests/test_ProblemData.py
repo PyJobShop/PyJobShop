@@ -201,8 +201,6 @@ def test_mode_attributes():
     assert_equal(mode.duration, 1)
     assert_equal(mode.resources, [0])
     assert_equal(mode.demands, [1])
-    assert_equal(mode.machine, 0)
-    assert_equal(mode.demand, 1)
 
 
 @pytest.mark.parametrize(
@@ -706,7 +704,7 @@ def test_task_non_fixed_duration(solver: str):
     result = model.solve(solver=solver)
     assert_equal(result.status.value, "Optimal")
     assert_equal(result.objective, 10)
-    assert_equal(result.best.tasks, [TaskData(0, 0, 10)])
+    assert_equal(result.best.tasks, [TaskData(0, [0], 0, 10)])
 
 
 def test_machine_with_resource_faster_than_no_overlap(solver: str):
