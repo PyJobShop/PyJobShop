@@ -87,7 +87,13 @@ class ConstraintsManager:
 
             modes = machine2modes[idx]
             pulses = [
-                model.pulse(self._mode_vars[mode], data.modes[mode].demand)
+                model.pulse(
+                    self._mode_vars[mode],
+                    # TODO simplify
+                    data.modes[mode].demands[
+                        data.modes[mode].resources.index(idx)
+                    ],
+                )
                 for mode in modes
             ]
             model.add(model.sum(pulses) <= resource.capacity)

@@ -62,6 +62,13 @@ class Model:
         return self._tasks
 
     @property
+    def modes(self) -> list[Mode]:
+        """
+        Returns the list of modes in the model.
+        """
+        return self._modes
+
+    @property
     def objective(self) -> Objective:
         """
         Returns the objective function in this model.
@@ -327,14 +334,27 @@ class Model:
         machines: list[Machine],
         duration: int,
         demands: Optional[list[int]],
-    ):
+    ) -> Mode:
         """
-        Adds
+        Adds a processing mode.
+
+        Parameters
+        ----------
+        task
+            The task associated with the mode.
+        machines
+            The machines that the task must be processed on.
+        duration
+            The duration of the mode.
+        demands
+            The resource demands per machine, if any.
         """
         task_idx = self._id2task[id(task)]
         machine_idcs = [self._id2machine[id(machine)] for machine in machines]
+        mode = Mode(task_idx, duration, machine_idcs, demands)
+        self._modes.append(mode)
 
-        self._modes.append(Mode(task_idx, duration, machine_idcs, demands))
+        return mode
 
     def add_start_at_start(self, first: Task, second: Task):
         """

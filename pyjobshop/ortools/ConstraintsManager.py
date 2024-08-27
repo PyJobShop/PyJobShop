@@ -100,7 +100,15 @@ class ConstraintsManager:
 
             modes = machine2modes[idx]
             intervals = [self._mode_vars[mode].interval for mode in modes]
-            demands = [data.modes[mode].demand for mode in modes]
+
+            # TODO simplify
+            demands = []
+            for mode in modes:
+                mode_data = data.modes[mode]
+                resource_index = mode_data.resources.index(idx)
+                demand = mode_data.demands[resource_index]
+                demands.append(demand)
+
             model.add_cumulative(intervals, demands, machine.capacity)
 
     def _task_graph(self):
