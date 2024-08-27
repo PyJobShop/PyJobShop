@@ -18,8 +18,11 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-cpoptimizer = [
+docplex = [
     "docplex>=2.28.240",
+]
+cplex = [
+    "cplex>=22.1.1.2",
 ]
 
 [tool.uv]
