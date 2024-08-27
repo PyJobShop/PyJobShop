@@ -74,7 +74,7 @@ class ConstraintsManager:
             else:
                 model.add(model.no_overlap(seq_var, setups))
 
-    def _resource_consumption_constraints(self):
+    def _resource_capacity(self):
         """
         Creates constraints for the resource capacity.
         """
@@ -183,6 +183,6 @@ class ConstraintsManager:
         self._job_spans_tasks()
         self._select_one_mode()
         self._no_overlap_and_setup_times()
-        self._resource_consumption_constraints()
+        self._resource_capacity()
         self._task_graph()
         self._task_alt_graph()

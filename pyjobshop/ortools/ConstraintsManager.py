@@ -87,9 +87,9 @@ class ConstraintsManager:
             if machine.capacity == 0 and np.any(data.setup_times[idx]):
                 self._sequence_vars[idx].activate(model)
 
-    def _resource_consumption(self):
+    def _resource_capacity(self):
         """
-        Creates the resource consumption constraints for each machine.
+        Creates constraints for the resource capacity.
         """
         model, data = self._model, self._data
         machine2modes = utils.machine2modes(data)
@@ -283,7 +283,7 @@ class ConstraintsManager:
         self._job_spans_tasks()
         self._select_one_mode()
         self._no_overlap_machines()
-        self._resource_consumption()
+        self._resource_capacity()
         self._activate_setup_times()
         self._task_graph()
         self._task_alt_graph()
