@@ -191,6 +191,36 @@ def test_problem_data_input_parameter_attributes():
     assert_equal(data.objective, objective)
 
 
+def test_mode_attributes():
+    """
+    Tests that the attributes of the Mode class are set correctly.
+    """
+    mode = Mode(task=0, duration=1, resources=[0], demands=[1])
+
+    assert_equal(mode.task, 0)
+    assert_equal(mode.duration, 1)
+    assert_equal(mode.resources, [0])
+    assert_equal(mode.demands, [1])
+    assert_equal(mode.machine, 0)
+    assert_equal(mode.demand, 1)
+
+
+@pytest.mark.parametrize(
+    "duration, demands",
+    [
+        (-1, [0]),  # duration < 0
+        (0, [-1]),  # demand < 0
+    ],
+)
+def test_mode_raises_invalid_parameters(duration, demands):
+    """
+    Tests that a ValueError is raised when invalid parameters are passed to
+    the Mode class.
+    """
+    with assert_raises(ValueError):
+        Mode(task=0, duration=duration, resources=[0], demands=demands)
+
+
 def test_problem_data_non_input_parameter_attributes():
     """
     Tests that attributes that are not input parameters of the ProblemData
@@ -239,6 +269,29 @@ def test_problem_data_job_references_unknown_task():
             [Machine()],
             [Task()],
             [Mode(0, 1, [0])],
+        )
+
+
+def test_problem_data_mode_references_unknown_data():
+    """
+    Tests that an error is raised when a mode references unknown data.
+    """
+    with assert_raises(ValueError):
+        # Task 42 does not exist.
+        ProblemData(
+            [Job()],
+            [Machine()],
+            [Task()],
+            [Mode(42, 1, [0])],
+        )
+
+    with assert_raises(ValueError):
+        # Machine 42 does not exist.
+        ProblemData(
+            [Job()],
+            [Machine()],
+            [Task()],
+            [Mode(0, 1, [42])],
         )
 
 
@@ -656,7 +709,10 @@ def test_task_non_fixed_duration(solver: str):
     assert_equal(result.best.tasks, [TaskData(0, 0, 10, 10)])
 
 
-def test_resource(solver: str):
+def test_machine_with_resource_faster_than_no_overlap(solver: str):
+    """
+    Tests that a machine with capacity constraint is respected.
+    """
     model = Model()
     machine = model.add_machine(capacity=2)
     task1 = model.add_task()
@@ -664,9 +720,37 @@ def test_resource(solver: str):
     model.add_processing_time(task1, machine, duration=1, demand=1)
     model.add_processing_time(task2, machine, duration=1, demand=1)
 
+    # The machine has capacity 2, so both tasks can be scheduled at the same
+    # time. This results in a makespan of 1 instead of 2 in the case where
+    # machines can only process one task at a time.
     result = model.solve(solver=solver)
     assert_equal(result.status.value, "Optimal")
     assert_equal(result.objective, 1)
+
+
+def test_machine_capacity_is_respected(solver: str):
+    """
+    Tests that a machine without enough capacity is not selected
+    for scheduling.
+    """
+    model = Model()
+    machine = model.add_machine(capacity=1)
+    task = model.add_task()
+    model.add_processing_time(task, machine, duration=1, demand=2)
+
+    # The machine has capacity 1, but the task requires 2 units of
+    # capacity, so the task cannot be scheduled.
+    result = model.solve(solver=solver)
+    assert_equal(result.status.value, "Infeasible")
+
+    machine2 = model.add_machine(capacity=2)
+    model.add_processing_time(task, machine2, duration=10, demand=2)
+
+    # The machine has capacity 2, and the task requires 2 units of
+    # capacity, so the task can be scheduled.
+    result = model.solve(solver=solver)
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.objective, 10)
 
 
 @pytest.mark.parametrize(

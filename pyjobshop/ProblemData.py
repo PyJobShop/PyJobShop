@@ -387,7 +387,7 @@ class Mode:
 
     @property
     def demand(self):
-        return self.demands[0] if len(self.demands) > 1 else 0
+        return self.demands[0] if len(self.demands) > 0 else 0
 
 
 class ProblemData:
@@ -458,8 +458,15 @@ class ProblemData:
         num_tasks = self.num_tasks
 
         for job in self.jobs:
-            if any(task >= num_tasks for task in job.tasks):
-                raise ValueError("Job references to unknown task.")
+            if any(task < 0 or task >= num_tasks for task in job.tasks):
+                raise ValueError("Job references to unknown task index.")
+
+        for mode in self.modes:
+            if mode.task < 0 or mode.task >= num_tasks:
+                raise ValueError("Mode references to unknown task index.")
+
+            if mode.machine < 0 or mode.machine >= num_mach:
+                raise ValueError("Mode references to unknown machine index.")
 
         without = set(range(num_tasks)) - {mode.task for mode in self.modes}
         names = [self.tasks[idx].name or idx for idx in sorted(without)]

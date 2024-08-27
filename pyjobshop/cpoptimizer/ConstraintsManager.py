@@ -181,7 +181,8 @@ class ConstraintsManager:
         Adds all the constraints to the CP model.
         """
         self._job_spans_tasks()
-        self._no_overlap_and_setup_times()
         self._select_one_mode()
+        self._no_overlap_and_setup_times()
+        self._resource_consumption_constraints()
         self._task_graph()
         self._task_alt_graph()
