@@ -85,7 +85,7 @@ class Model:
             )
 
         for machine in data.machines:
-            model.add_machine(name=machine.name)
+            model.add_machine(capacity=machine.capacity, name=machine.name)
 
         task2job = {}
         for job_idx, job in enumerate(data.jobs):
@@ -221,12 +221,14 @@ class Model:
 
         return job
 
-    def add_machine(self, name: str = "") -> Machine:
+    def add_machine(self, capacity: int = 0, name: str = "") -> Machine:
         """
         Adds a machine to the model.
 
         Parameters
         ----------
+        capacity
+            The capacity of the machine.
         name
             Name of the machine.
 
@@ -235,7 +237,7 @@ class Model:
         Machine
             The created machine.
         """
-        machine = Machine(name=name)
+        machine = Machine(capacity=capacity, name=name)
 
         self._id2machine[id(machine)] = len(self.machines)
         self._machines.append(machine)
@@ -296,7 +298,9 @@ class Model:
 
         return task
 
-    def add_processing_time(self, task: Task, machine: Machine, duration: int):
+    def add_processing_time(
+        self, task: Task, machine: Machine, duration: int, demand: int = 0
+    ):
         """
         Adds a processing time for a given task on a machine.
 
@@ -308,14 +312,14 @@ class Model:
             The machine on which the task is processed.
         duration
             Processing time of the task on the machine.
+        demand
+            Resource demand of the task on the machine. Default 0.
         """
-        if duration < 0:
-            raise ValueError("Processing time must be non-negative.")
 
         task_idx = self._id2task[id(task)]
         machine_idx = self._id2machine[id(machine)]
 
-        self._modes.append(Mode(task_idx, duration, [machine_idx]))
+        self._modes.append(Mode(task_idx, duration, [machine_idx], [demand]))
 
     def add_start_at_start(self, first: Task, second: Task):
         """

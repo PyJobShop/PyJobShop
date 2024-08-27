@@ -62,6 +62,9 @@ class ConstraintsManager:
             if not (modes := machine2modes[machine]):
                 continue  # skip if no modes for this machine
 
+            if data.machines[machine].capacity > 0:
+                continue  # skip since machine is resource
+
             tasks = [data.modes[mode].task for mode in modes]
             setups = data.setup_times[machine, :, :][np.ix_(tasks, tasks)]
             seq_var = self._sequence_vars[machine]
@@ -70,6 +73,24 @@ class ConstraintsManager:
                 model.add(model.no_overlap(seq_var))
             else:
                 model.add(model.no_overlap(seq_var, setups))
+
+    def _resource_capacity(self):
+        """
+        Creates constraints for the resource capacity.
+        """
+        model, data = self._model, self._data
+        machine2modes = utils.machine2modes(data)
+
+        for idx, resource in enumerate(data.machines):
+            if resource.capacity == 0:
+                continue
+
+            modes = machine2modes[idx]
+            pulses = [
+                model.pulse(self._mode_vars[mode], data.modes[mode].demand)
+                for mode in modes
+            ]
+            model.add(model.sum(pulses) <= resource.capacity)
 
     def _task_graph(self):
         """
@@ -160,7 +181,8 @@ class ConstraintsManager:
         Adds all the constraints to the CP model.
         """
         self._job_spans_tasks()
-        self._no_overlap_and_setup_times()
         self._select_one_mode()
+        self._no_overlap_and_setup_times()
+        self._resource_capacity()
         self._task_graph()
         self._task_alt_graph()

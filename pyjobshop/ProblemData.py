@@ -1,5 +1,5 @@
 from copy import deepcopy
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
 from typing import Optional, TypeVar
 
@@ -130,12 +130,24 @@ class Machine:
 
     Parameters
     ----------
+    capacity
+        Capacity of the machine. Default 0. If the capacity is nonzero, then
+        the machine can process a number of tasks at the same time, which is
+        determined by the task mode demands.
     name
         Name of the machine.
     """
 
-    def __init__(self, name: str = ""):
+    def __init__(self, capacity: int = 0, name: str = ""):
+        self._capacity = capacity
         self._name = name
+
+    @property
+    def capacity(self) -> int:
+        """
+        Capacity of the machine.
+        """
+        return self._capacity
 
     @property
     def name(self) -> str:
@@ -264,6 +276,8 @@ class Constraint(str, Enum):
     #: Task :math:`i` must end before task :math:`j` ends.
     END_BEFORE_END = "end_before_end"
 
+    # TODO how do sequence and assignment constraints work in the context
+    # of renewable resources and modes?
     #: Sequence :math:`i` right before :math:`j` (if assigned to same machine).
     PREVIOUS = "previous"
 
@@ -355,11 +369,25 @@ class Mode:
     task: int
     duration: int
     resources: list[int]
-    demands: list[int] = field(default_factory=list)
+    demands: Optional[list[int]] = None
+
+    def __post_init__(self):
+        if self.demands is None:
+            self.demands = [0] * len(self.resources)
+
+        if self.duration < 0:
+            raise ValueError("Processing mode duration must be non-negative.")
+
+        if self.demand < 0:
+            raise ValueError("Demand must be non-negative.")
 
     @property
     def machine(self):
         return self.resources[0]
+
+    @property
+    def demand(self):
+        return self.demands[0] if len(self.demands) > 0 else 0
 
 
 class ProblemData:
@@ -430,11 +458,15 @@ class ProblemData:
         num_tasks = self.num_tasks
 
         for job in self.jobs:
-            if any(task >= num_tasks for task in job.tasks):
-                raise ValueError("Job references to unknown task.")
+            if any(task < 0 or task >= num_tasks for task in job.tasks):
+                raise ValueError("Job references to unknown task index.")
 
-        if any(mode.duration < 0 for mode in self.modes):
-            raise ValueError("Processing mode duration must be non-negative.")
+        for mode in self.modes:
+            if mode.task < 0 or mode.task >= num_tasks:
+                raise ValueError("Mode references to unknown task index.")
+
+            if mode.machine < 0 or mode.machine >= num_mach:
+                raise ValueError("Mode references to unknown machine index.")
 
         without = set(range(num_tasks)) - {mode.task for mode in self.modes}
         names = [self.tasks[idx].name or idx for idx in sorted(without)]
