@@ -9,18 +9,15 @@ class TaskData:
     Parameters
     ----------
     machine
-        The assigned machine index.
+        The selected machine.
     start
         The start time.
-    duration
-        The duration.
     end
         The end time.
     """
 
     machine: int
     start: int
-    duration: int
     end: int
 
 

@@ -167,7 +167,7 @@ class VariablesManager:
                 task_var,
                 start=sol_task.start,
                 end=sol_task.end,
-                size=sol_task.duration,
+                size=sol_task.end - sol_task.start,
             )
 
         for idx, mode in enumerate(data.modes):
@@ -179,7 +179,7 @@ class VariablesManager:
                 presence=mode.machine == sol_task.machine,
                 start=sol_task.start,
                 end=sol_task.end,
-                size=sol_task.duration,
+                size=sol_task.end - sol_task.start,
             )
 
         model.set_starting_point(stp)

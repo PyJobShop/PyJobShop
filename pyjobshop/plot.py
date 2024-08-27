@@ -59,18 +59,19 @@ def plot(
             "edgecolor": "black",
             "alpha": 0.75,
         }
+        duration = task_data.end - task_data.start
 
         if task_data.machine in order:
             ax.barh(
                 order[task_data.machine],
-                task_data.duration,
+                duration,
                 left=task_data.start,
                 **kwargs,
             )
 
         if plot_labels:
             ax.text(
-                task_data.start + task_data.duration / 2,
+                task_data.start + duration / 2,
                 order[task_data.machine],
                 data.tasks[idx].name,
                 ha="center",
