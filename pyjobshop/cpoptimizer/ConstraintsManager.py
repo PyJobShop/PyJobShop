@@ -1,3 +1,4 @@
+import docplex.cp.modeler as cpo
 import numpy as np
 from docplex.cp.model import CpoModel
 
@@ -35,7 +36,7 @@ class ConstraintsManager:
             job_var = self._job_vars[idx]
             job_task_vars = [self._task_vars[task] for task in job.tasks]
 
-            model.add(model.span(job_var, job_task_vars))
+            model.add(cpo.span(job_var, job_task_vars))
 
     def _select_one_mode(self):
         """
@@ -47,7 +48,7 @@ class ConstraintsManager:
 
         for task in range(data.num_tasks):
             mode_vars = [self._mode_vars[mode] for mode in task2modes[task]]
-            model.add(model.alternative(self._task_vars[task], mode_vars))
+            model.add(cpo.alternative(self._task_vars[task], mode_vars))
 
     def _no_overlap_and_setup_times(self):
         """
@@ -70,9 +71,9 @@ class ConstraintsManager:
             seq_var = self._sequence_vars[machine]
 
             if np.all(setups == 0):  # no setup times
-                model.add(model.no_overlap(seq_var))
+                model.add(cpo.no_overlap(seq_var))
             else:
-                model.add(model.no_overlap(seq_var, setups))
+                model.add(cpo.no_overlap(seq_var, setups))
 
     def _resource_capacity(self):
         """
@@ -87,10 +88,10 @@ class ConstraintsManager:
 
             modes = machine2modes[idx]
             pulses = [
-                model.pulse(self._mode_vars[mode], data.modes[mode].demand)
+                cpo.pulse(self._mode_vars[mode], data.modes[mode].demand)
                 for mode in modes
             ]
-            model.add(model.sum(pulses) <= resource.capacity)
+            model.add(cpo.sum(pulses) <= resource.capacity)
 
     def _task_graph(self):
         """
@@ -104,21 +105,21 @@ class ConstraintsManager:
 
             for constraint in constraints:
                 if constraint == "start_at_start":
-                    expr = model.start_at_start(task1, task2)
+                    expr = cpo.start_at_start(task1, task2)
                 elif constraint == "start_at_end":
-                    expr = model.start_at_end(task1, task2)
+                    expr = cpo.start_at_end(task1, task2)
                 elif constraint == "start_before_start":
-                    expr = model.start_before_start(task1, task2)
+                    expr = cpo.start_before_start(task1, task2)
                 elif constraint == "start_before_end":
-                    expr = model.start_before_end(task1, task2)
+                    expr = cpo.start_before_end(task1, task2)
                 elif constraint == "end_at_start":
-                    expr = model.end_at_start(task1, task2)
+                    expr = cpo.end_at_start(task1, task2)
                 elif constraint == "end_at_end":
-                    expr = model.end_at_end(task1, task2)
+                    expr = cpo.end_at_end(task1, task2)
                 elif constraint == "end_before_start":
-                    expr = model.end_before_start(task1, task2)
+                    expr = cpo.end_before_start(task1, task2)
                 elif constraint == "end_before_end":
-                    expr = model.end_before_end(task1, task2)
+                    expr = cpo.end_before_end(task1, task2)
                 else:
                     continue
 
@@ -162,16 +163,16 @@ class ConstraintsManager:
 
                 for constraint in task_alt_constraints:
                     if constraint == "previous":
-                        expr = model.previous(seq_var, var1, var2)
+                        expr = cpo.previous(seq_var, var1, var2)
                     elif constraint == "before":
-                        expr = model.before(seq_var, var1, var2)
+                        expr = cpo.before(seq_var, var1, var2)
                     elif constraint == "same_machine":
-                        presence1 = model.presence_of(var1)
-                        presence2 = model.presence_of(var2)
+                        presence1 = cpo.presence_of(var1)
+                        presence2 = cpo.presence_of(var2)
                         expr = presence1 == presence2
                     elif constraint == "different_machine":
-                        presence1 = model.presence_of(var1)
-                        presence2 = model.presence_of(var2)
+                        presence1 = cpo.presence_of(var1)
+                        presence2 = cpo.presence_of(var2)
                         expr = presence1 != presence2
 
                     model.add(expr)
