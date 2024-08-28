@@ -12,7 +12,7 @@ def test_compute_task_durations():
         [Job()],
         [Machine(), Machine()],
         [Task(), Task()],
-        modes=[Mode(0, 1, [0]), Mode(0, 10, [1]), Mode(1, 0, [1])],
+        modes=[Mode(0, [0], 1), Mode(0, [1], 10), Mode(1, [1], 0)],
         constraints={},
     )
 

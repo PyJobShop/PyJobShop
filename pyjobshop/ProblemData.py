@@ -358,36 +358,28 @@ class Mode:
     ----------
     task
         Task index that this mode belongs to.
-    duration
-        Processing duration of this mode.
     resources
         List of resources that are required for this mode.
+    duration
+        Processing duration of this mode.
     demands
         List of resource demands for this mode.
     """
 
     task: int
-    duration: int
     resources: list[int]
+    duration: int
     demands: Optional[list[int]] = None
 
     def __post_init__(self):
-        if self.demands is None:
-            self.demands = [0] * len(self.resources)
-
         if self.duration < 0:
             raise ValueError("Processing mode duration must be non-negative.")
 
-        if self.demand < 0:
-            raise ValueError("Demand must be non-negative.")
+        if self.demands is None:
+            self.demands = [0] * len(self.resources)
 
-    @property
-    def machine(self):
-        return self.resources[0]
-
-    @property
-    def demand(self):
-        return self.demands[0] if len(self.demands) > 0 else 0
+        if any(dem < 0 for dem in self.demands):
+            raise ValueError("Demands must be non-negative.")
 
 
 class ProblemData:

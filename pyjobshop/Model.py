@@ -327,7 +327,7 @@ class Model:
         task_idx = self._id2task[id(task)]
         machine_idx = self._id2machine[id(machine)]
 
-        self._modes.append(Mode(task_idx, duration, [machine_idx], [demand]))
+        self._modes.append(Mode(task_idx, [machine_idx], duration, [demand]))
 
     def add_mode(
         self,
@@ -352,7 +352,7 @@ class Model:
         """
         task_idx = self._id2task[id(task)]
         machine_idcs = [self._id2machine[id(machine)] for machine in machines]
-        mode = Mode(task_idx, duration, machine_idcs, demands)
+        mode = Mode(task_idx, machine_idcs, duration, demands)
         self._modes.append(mode)
 
         return mode

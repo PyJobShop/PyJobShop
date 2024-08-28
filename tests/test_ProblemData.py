@@ -159,7 +159,7 @@ def test_problem_data_input_parameter_attributes():
     machines = [Machine() for _ in range(5)]
     tasks = [Task() for _ in range(5)]
     modes = [
-        Mode(task=task, duration=1, resources=[machine])
+        Mode(task=task, resources=[machine], duration=1)
         for task in range(5)
         for machine in range(5)
     ]
@@ -195,7 +195,7 @@ def test_mode_attributes():
     """
     Tests that the attributes of the Mode class are set correctly.
     """
-    mode = Mode(task=0, duration=1, resources=[0], demands=[1])
+    mode = Mode(task=0, resources=[0], duration=1, demands=[1])
 
     assert_equal(mode.task, 0)
     assert_equal(mode.duration, 1)
@@ -216,7 +216,7 @@ def test_mode_raises_invalid_parameters(duration, demands):
     the Mode class.
     """
     with assert_raises(ValueError):
-        Mode(task=0, duration=duration, resources=[0], demands=demands)
+        Mode(task=0, resources=[0], duration=duration, demands=demands)
 
 
 def test_problem_data_non_input_parameter_attributes():
@@ -228,10 +228,10 @@ def test_problem_data_non_input_parameter_attributes():
     machines = [Machine() for _ in range(3)]
     tasks = [Task() for _ in range(3)]
     modes = [
-        Mode(task=2, duration=1, resources=[1]),
-        Mode(task=1, duration=1, resources=[2]),
-        Mode(task=1, duration=1, resources=[0]),
-        Mode(task=0, duration=1, resources=[2]),
+        Mode(task=2, resources=[1], duration=1),
+        Mode(task=1, resources=[2], duration=1),
+        Mode(task=1, resources=[0], duration=1),
+        Mode(task=0, resources=[2], duration=1),
     ]
 
     data = ProblemData(jobs, machines, tasks, modes)
@@ -248,7 +248,7 @@ def test_problem_data_default_values():
     jobs = [Job(tasks=[0])]
     machines = [Machine()]
     tasks = [Task()]
-    modes = [Mode(task=0, duration=1, resources=[0])]
+    modes = [Mode(task=0, resources=[0], duration=1)]
     data = ProblemData(jobs, machines, tasks, modes)
 
     assert_equal(data.constraints, {})
@@ -266,7 +266,13 @@ def test_problem_data_job_references_unknown_task():
             [Job(tasks=[42])],
             [Machine()],
             [Task()],
-            [Mode(0, 1, [0])],
+            [
+                Mode(
+                    0,
+                    [0],
+                    1,
+                )
+            ],
         )
 
 
@@ -280,7 +286,13 @@ def test_problem_data_mode_references_unknown_data():
             [Job()],
             [Machine()],
             [Task()],
-            [Mode(42, 1, [0])],
+            [
+                Mode(
+                    42,
+                    [0],
+                    1,
+                )
+            ],
         )
 
     with assert_raises(ValueError):
@@ -289,7 +301,13 @@ def test_problem_data_mode_references_unknown_data():
             [Job()],
             [Machine()],
             [Task()],
-            [Mode(0, 1, [42])],
+            [
+                Mode(
+                    0,
+                    [42],
+                    1,
+                )
+            ],
         )
 
 
@@ -324,7 +342,13 @@ def test_problem_data_raises_when_invalid_arguments(
             [Job()],
             [Machine()],
             [Task()],
-            modes=[Mode(0, 1, [0])],
+            modes=[
+                Mode(
+                    0,
+                    [0],
+                    1,
+                )
+            ],
             setup_times=setup_times.astype(int),
             horizon=horizon,
         )
@@ -350,7 +374,13 @@ def test_problem_data_tardy_objective_without_job_due_dates(
             [Job()],
             [Machine()],
             [Task()],
-            [Mode(0, 0, [0])],
+            [
+                Mode(
+                    0,
+                    [0],
+                    0,
+                )
+            ],
             objective=objective,
         )
 
@@ -366,8 +396,8 @@ def describe_problem_data_replace():
         machines = [Machine(name="machine"), Machine(name="machine")]
         tasks = [Task(earliest_start=1), Task(earliest_start=1)]
         modes = [
-            Mode(task=0, duration=1, resources=[0]),
-            Mode(task=1, duration=2, resources=[1]),
+            Mode(task=0, resources=[0], duration=1),
+            Mode(task=1, resources=[1], duration=2),
         ]
         constraints = {(0, 1): [Constraint.END_BEFORE_START]}
         setup_times = np.zeros((2, 2, 2))
@@ -426,8 +456,8 @@ def describe_problem_data_replace():
             machines=[Machine(name="new"), Machine(name="new")],
             tasks=[Task(earliest_start=2), Task(earliest_start=2)],
             modes=[
-                Mode(task=0, duration=2, resources=[0]),
-                Mode(task=1, duration=1, resources=[1]),
+                Mode(task=0, resources=[0], duration=2),
+                Mode(task=1, resources=[1], duration=1),
             ],
             constraints={(1, 0): [Constraint.END_BEFORE_START]},
             setup_times=np.ones((2, 2, 2)),
@@ -785,7 +815,7 @@ def test_constraints(solver, prec_type: Constraint, expected_makespan: int):
     machines = [model.add_machine() for _ in range(2)]
     tasks = [model.add_task(job=job) for _ in range(2)]
     modes = [
-        Mode(task=task, duration=2, resources=[machine])
+        Mode(task=task, resources=[machine], duration=2)
         for machine in range(len(machines))
         for task in range(len(tasks))
     ]

@@ -168,8 +168,16 @@ class ConstraintsManager:
             # how to deal with modes and assignment constraints.
             modes1 = task2modes[task1]
             modes2 = task2modes[task2]
-            machines1 = [data.modes[mode].machine for mode in modes1]
-            machines2 = [data.modes[mode].machine for mode in modes2]
+            machines1 = [
+                machine
+                for mode in modes1
+                for machine in data.modes[mode].resources
+            ]
+            machines2 = [
+                machine
+                for mode in modes2
+                for machine in data.modes[mode].resources
+            ]
             machines = set(machines1) & set(machines2)
 
             for machine in machines:
