@@ -266,13 +266,7 @@ def test_problem_data_job_references_unknown_task():
             [Job(tasks=[42])],
             [Machine()],
             [Task()],
-            [
-                Mode(
-                    0,
-                    [0],
-                    1,
-                )
-            ],
+            [Mode(0, [0], 1)],
         )
 
 
@@ -286,13 +280,7 @@ def test_problem_data_mode_references_unknown_data():
             [Job()],
             [Machine()],
             [Task()],
-            [
-                Mode(
-                    42,
-                    [0],
-                    1,
-                )
-            ],
+            [Mode(42, [0], 1)],
         )
 
     with assert_raises(ValueError):
@@ -301,13 +289,7 @@ def test_problem_data_mode_references_unknown_data():
             [Job()],
             [Machine()],
             [Task()],
-            [
-                Mode(
-                    0,
-                    [42],
-                    1,
-                )
-            ],
+            [Mode(0, [42], 1)],
         )
 
 
@@ -342,13 +324,7 @@ def test_problem_data_raises_when_invalid_arguments(
             [Job()],
             [Machine()],
             [Task()],
-            modes=[
-                Mode(
-                    0,
-                    [0],
-                    1,
-                )
-            ],
+            modes=[Mode(0, [0], 1)],
             setup_times=setup_times.astype(int),
             horizon=horizon,
         )
@@ -374,13 +350,7 @@ def test_problem_data_tardy_objective_without_job_due_dates(
             [Job()],
             [Machine()],
             [Task()],
-            [
-                Mode(
-                    0,
-                    [0],
-                    0,
-                )
-            ],
+            [Mode(0, [0], 0)],
             objective=objective,
         )
 
