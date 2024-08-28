@@ -363,7 +363,7 @@ class Mode:
     duration
         Processing duration of this mode.
     demands
-        List of resource demands for this mode.
+        List of demands for each resource for this mode. Default is None.
     """
 
     task: int
@@ -372,14 +372,20 @@ class Mode:
     demands: Optional[list[int]] = None
 
     def __post_init__(self):
+        if len(set(self.resources)) != len(self.resources):
+            raise ValueError("Mode resources must be unique.")
+
         if self.duration < 0:
-            raise ValueError("Processing mode duration must be non-negative.")
+            raise ValueError("Mode duration must be non-negative.")
 
         if self.demands is None:
             self.demands = [0] * len(self.resources)
 
         if any(dem < 0 for dem in self.demands):
-            raise ValueError("Demands must be non-negative.")
+            raise ValueError("Mode demands must be non-negative.")
+
+        if len(self.resources) != len(self.demands):
+            raise ValueError("Resources and demands must have same length.")
 
 
 class ProblemData:

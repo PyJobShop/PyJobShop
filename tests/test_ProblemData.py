@@ -204,19 +204,21 @@ def test_mode_attributes():
 
 
 @pytest.mark.parametrize(
-    "duration, demands",
+    "resources, duration, demands",
     [
-        (-1, [0]),  # duration < 0
-        (0, [-1]),  # demand < 0
+        ([0, 0], -1, [0, 0]),  # resources not unique
+        ([0], -1, [0]),  # duration < 0
+        ([0], 0, [-1]),  # demand < 0
+        ([0], 0, [0, 0]),  # len(resources) != len(demands)
     ],
 )
-def test_mode_raises_invalid_parameters(duration, demands):
+def test_mode_raises_invalid_parameters(resources, duration, demands):
     """
     Tests that a ValueError is raised when invalid parameters are passed to
     the Mode class.
     """
     with assert_raises(ValueError):
-        Mode(task=0, resources=[0], duration=duration, demands=demands)
+        Mode(task=0, resources=resources, duration=duration, demands=demands)
 
 
 def test_problem_data_non_input_parameter_attributes():
