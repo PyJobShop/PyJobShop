@@ -330,6 +330,21 @@ def test_problem_data_raises_when_invalid_arguments(
         )
 
 
+def test_problem_data_raises_capacitated_machines_and_setup_times():
+    """
+    Tests that the ProblemData class raises an error when machines with
+    nonzero capacities have setup times.
+    """
+    with assert_raises(ValueError):
+        ProblemData(
+            [Job()],
+            [Machine(capacity=2)],
+            [Task()],
+            [Mode(0, [0], 0)],
+            setup_times=np.array([[[1]]]),
+        )
+
+
 @pytest.mark.parametrize(
     "objective",
     [

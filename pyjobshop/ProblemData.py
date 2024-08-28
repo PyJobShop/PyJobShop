@@ -474,6 +474,11 @@ class ProblemData:
             msg = "Setup times shape not (num_machines, num_tasks, num_tasks)."
             raise ValueError(msg)
 
+        for idx, machine in enumerate(self.machines):
+            if machine.capacity > 0 and np.any(self.setup_times[idx] > 0):
+                msg = "Setup times not allowed for machines with capacity."
+                raise ValueError(msg)
+
         if self.horizon < 0:
             raise ValueError("Horizon must be non-negative.")
 
