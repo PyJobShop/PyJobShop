@@ -8,13 +8,13 @@ To install it, simply run:
    pip install pyjobshop
 
 
-Installing from source¶
+Installing from source
 ----------------------
 To install the latest version of ``pyjobshop`` directly from the GitHub repository, run the following:
 
 .. code-block:: shell
 
-   pip install 'pyjobshop @ git+https://github.com/PyJobShop/PyJobShop
+   pip install 'pyjobshop @ git+https://github.com/PyJobShop/PyJobShop'
 
 This can be useful to get features that have not yet made it to the Python package index.
 
