@@ -21,28 +21,34 @@ This can be useful to get features that have not yet made it to the Python packa
 
 Installing CP Optimizer
 -----------------------
-By default, PyJobShop comes with OR-Tools' CP-SAT solver, which is an open-source constraint programming solver.
-PyJobShop can also be used with IBM ILOG CP Optimizer, which is a commercial constraint programming solver.
-To use PyJobShop with CP Optimizer, there are two different ways, depending on whether you have CP Optimizer installed or not.
+PyJobShop includes OR-Tools' CP-SAT solver by default, an open-source constraint programming solver.
+Additionally, PyJobShop can be integrated with IBM ILOG CP Optimizer, a commercial constraint programming solver.
+To use PyJobShop with CP Optimizer, follow one of the following two steps based on whether you already have CP Optimizer installed:
 
-If you already have CP Optimizer installed, then you only need the additional `docplex` dependency which can be installed together with PyJobShop as follows:
+1. **If you already have CP Optimizer installed:**
 
-.. code-block:: shell
+   Install the additional ``docplex`` dependency together with PyJobShop as follows:
 
-   pip install pyjobshop[docplex]
+   .. code-block:: shell
 
-If you don't have CP Optimizer, then you can install PyJobShop with the free community edition of CP Optimizer.
-This free edition is able to solve models with up to 1000 variables and 1000 constraints, beyond that size you need a paid version or academic version of CP Optimizer.
-
-.. code-block:: shell
-
-   pip install pyjobshop[docplex,cplex]
+      pip install pyjobshop[docplex]
 
 
-If you are a student or researcher, you can get a free academic version of CP Optimizer for non-commercial purposes.
-The steps below describe how you can install CP Optimizer through their academic program.
+   ``docplex`` is the Python modeling interface for CPLEX and CP Optimizer. It allows users to model constraint programming problems in Python. It looks for a local installation of CP Optimizer to solve these models.
 
-- Register at [ibm.com/academic](https://ibm.com/academic) and log in.
-- Go to [academic.ibm.com/a2mt/downloads/data_science](https://academic.ibm.com/a2mt/downloads/data_science) and download ILOG CPLEX Optimization Studio, which comes with CP Optimizer.
-- Follow the installation instructions and make sure to follow the Python installation instructions at the end.
-- Ensure that the path to `cpoptimizer(.exe)` is accessible and properly set in your system path.
+2. **If you don't have CP Optimizer installed:**
+
+   You can install PyJobShop with the free community edition of CP Optimizer by including the ``cplex`` dependency.
+
+   .. code-block:: shell
+
+      pip install pyjobshop[docplex,cplex]
+
+   The ``cplex`` library installs a free edition of CP Optimizer that is capable of solving models with up to 1000 variables and 1000 constraints. For larger models, you need a paid or academic version of CP Optimizer.
+
+   If you are a student or researcher, you can get a free academic version of CP Optimizer for non-commercial purposes by following these steps:
+
+   - Register at `ibm.com/academic <https://ibm.com/academic>`_ and log in.
+   - Go to `academic.ibm.com/a2mt/downloads/data_science <https://academic.ibm.com/a2mt/downloads/data_science>`_ and download ILOG CPLEX Optimization Studio, which includes CP Optimizer.
+   - Follow the installation instructions, making sure to complete the Python installation steps at the end.
+   - Ensure that the path to ``cpoptimizer(.exe)`` is accessible and properly set in your system path.
