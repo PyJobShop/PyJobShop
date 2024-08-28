@@ -70,9 +70,10 @@ class ConstraintsManager:
         """
         model, data = self._model, self._data
 
-        for machine in range(data.num_machines):
-            seq_var = self._sequence_vars[machine]
-            model.add_no_overlap([var.interval for var in seq_var.modes])
+        for idx, machine in enumerate(data.machines):
+            if machine.capacity == 0:  # skip if no capacity for this machine
+                seq_var = self._sequence_vars[idx]
+                model.add_no_overlap([var.interval for var in seq_var.modes])
 
     def _activate_setup_times(self):
         """
@@ -82,9 +83,25 @@ class ConstraintsManager:
         """
         model, data = self._model, self._data
 
-        for machine in range(data.num_machines):
-            if np.any(data.setup_times[machine]):
-                self._sequence_vars[machine].activate(model)
+        for idx, machine in enumerate(data.machines):
+            if machine.capacity == 0 and np.any(data.setup_times[idx]):
+                self._sequence_vars[idx].activate(model)
+
+    def _resource_capacity(self):
+        """
+        Creates constraints for the resource capacity.
+        """
+        model, data = self._model, self._data
+        machine2modes = utils.machine2modes(data)
+
+        for idx, machine in enumerate(data.machines):
+            if machine.capacity == 0:
+                continue
+
+            modes = machine2modes[idx]
+            intervals = [self._mode_vars[mode].interval for mode in modes]
+            demands = [data.modes[mode].demand for mode in modes]
+            model.add_cumulative(intervals, demands, machine.capacity)
 
     def _task_graph(self):
         """
@@ -266,6 +283,7 @@ class ConstraintsManager:
         self._job_spans_tasks()
         self._select_one_mode()
         self._no_overlap_machines()
+        self._resource_capacity()
         self._activate_setup_times()
         self._task_graph()
         self._task_alt_graph()

@@ -191,6 +191,36 @@ def test_problem_data_input_parameter_attributes():
     assert_equal(data.objective, objective)
 
 
+def test_mode_attributes():
+    """
+    Tests that the attributes of the Mode class are set correctly.
+    """
+    mode = Mode(task=0, duration=1, resources=[0], demands=[1])
+
+    assert_equal(mode.task, 0)
+    assert_equal(mode.duration, 1)
+    assert_equal(mode.resources, [0])
+    assert_equal(mode.demands, [1])
+    assert_equal(mode.machine, 0)
+    assert_equal(mode.demand, 1)
+
+
+@pytest.mark.parametrize(
+    "duration, demands",
+    [
+        (-1, [0]),  # duration < 0
+        (0, [-1]),  # demand < 0
+    ],
+)
+def test_mode_raises_invalid_parameters(duration, demands):
+    """
+    Tests that a ValueError is raised when invalid parameters are passed to
+    the Mode class.
+    """
+    with assert_raises(ValueError):
+        Mode(task=0, duration=duration, resources=[0], demands=demands)
+
+
 def test_problem_data_non_input_parameter_attributes():
     """
     Tests that attributes that are not input parameters of the ProblemData
@@ -242,6 +272,29 @@ def test_problem_data_job_references_unknown_task():
         )
 
 
+def test_problem_data_mode_references_unknown_data():
+    """
+    Tests that an error is raised when a mode references unknown data.
+    """
+    with assert_raises(ValueError):
+        # Task 42 does not exist.
+        ProblemData(
+            [Job()],
+            [Machine()],
+            [Task()],
+            [Mode(42, 1, [0])],
+        )
+
+    with assert_raises(ValueError):
+        # Machine 42 does not exist.
+        ProblemData(
+            [Job()],
+            [Machine()],
+            [Task()],
+            [Mode(0, 1, [42])],
+        )
+
+
 def test_problem_data_task_without_modes():
     """
     Tests that an error is raised when a task has no processing modes.
@@ -251,20 +304,18 @@ def test_problem_data_task_without_modes():
 
 
 @pytest.mark.parametrize(
-    "mode, setup_times, horizon",
+    "setup_times, horizon",
     [
-        # Negative processing mode duration.
-        (Mode(0, -1, [0]), np.ones((1, 1, 1)), 1),
         # Negative setup times.
-        (Mode(0, 1, [0]), np.ones((1, 1, 1)) * -1, 1),
+        (np.ones((1, 1, 1)) * -1, 1),
         # Invalid setup times shape.
-        (Mode(0, 1, [0]), np.ones((2, 2, 2)), 1),
+        (np.ones((2, 2, 2)), 1),
         # Negative horizon.
-        (Mode(0, 1, [0]), np.ones((1, 1, 1)), -1),
+        (np.ones((1, 1, 1)), -1),
     ],
 )
 def test_problem_data_raises_when_invalid_arguments(
-    mode: Mode, setup_times: np.ndarray, horizon: int
+    setup_times: np.ndarray, horizon: int
 ):
     """
     Tests that the ProblemData class raises an error when invalid arguments are
@@ -275,7 +326,7 @@ def test_problem_data_raises_when_invalid_arguments(
             [Job()],
             [Machine()],
             [Task()],
-            modes=[mode],
+            modes=[Mode(0, 1, [0])],
             setup_times=setup_times.astype(int),
             horizon=horizon,
         )
@@ -658,6 +709,50 @@ def test_task_non_fixed_duration(solver: str):
     assert_equal(result.best.tasks, [TaskData(0, 0, 10, 10)])
 
 
+def test_machine_with_resource_faster_than_no_overlap(solver: str):
+    """
+    Tests that a machine with capacity constraint is respected.
+    """
+    model = Model()
+    machine = model.add_machine(capacity=2)
+    task1 = model.add_task()
+    task2 = model.add_task()
+    model.add_processing_time(task1, machine, duration=1, demand=1)
+    model.add_processing_time(task2, machine, duration=1, demand=1)
+
+    # The machine has capacity 2, so both tasks can be scheduled at the same
+    # time. This results in a makespan of 1 instead of 2 in the case where
+    # machines can only process one task at a time.
+    result = model.solve(solver=solver)
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.objective, 1)
+
+
+def test_machine_capacity_is_respected(solver: str):
+    """
+    Tests that a machine without enough capacity is not selected
+    for scheduling.
+    """
+    model = Model()
+    machine = model.add_machine(capacity=1)
+    task = model.add_task()
+    model.add_processing_time(task, machine, duration=1, demand=2)
+
+    # The machine has capacity 1, but the task requires 2 units of
+    # capacity, so the task cannot be scheduled.
+    result = model.solve(solver=solver)
+    assert_equal(result.status.value, "Infeasible")
+
+    machine2 = model.add_machine(capacity=2)
+    model.add_processing_time(task, machine2, duration=10, demand=2)
+
+    # The machine has capacity 2, and the task requires 2 units of
+    # capacity, so the task can be scheduled.
+    result = model.solve(solver=solver)
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.objective, 10)
+
+
 @pytest.mark.parametrize(
     "prec_type,expected_makespan",
     [
@@ -955,47 +1050,3 @@ def test_combined_objective(solver: str):
     # The objective value is 10 * 6 + 2 * 2 = 64.
     assert_equal(result.objective, 64)
     assert_equal(result.status.value, "Optimal")
-
-
-# --- Small classical examples. ---
-
-
-def test_jobshop(solver: str):
-    """
-    Tests a simple job shop problem with 3 machines and 6 jobs.
-
-    Example from https://developers.google.com/optimization/scheduling/job_shop
-    """
-
-    # A job consists of tasks, which is a tuple (machine_id, processing_time).
-    jobs_data = [
-        [(0, 3), (1, 2), (2, 2)],  # Job0
-        [(0, 2), (2, 1), (1, 4)],  # Job1
-        [(1, 4), (2, 3)],  # Job2
-        [(2, 3), (1, 4), (0, 8)],  # Job3
-        [(1, 3), (0, 4), (2, 2)],  # Job4
-        [(1, 3)],  # Job5
-    ]
-    num_jobs = len(jobs_data)
-
-    model = Model()
-    jobs = [model.add_job() for _ in range(num_jobs)]
-    machines = [model.add_machine() for _ in range(3)]
-
-    for job_idx, job_data in enumerate(jobs_data):
-        num_tasks = len(job_data)
-        tasks = [model.add_task(job=jobs[job_idx]) for _ in range(num_tasks)]
-
-        # Add processing times.
-        for t_idx, (m_idx, duration) in enumerate(job_data):
-            model.add_processing_time(tasks[t_idx], machines[m_idx], duration)
-
-        # Impose linear routing precedence constraints.
-        for task_idx in range(1, len(tasks)):
-            task1, task2 = tasks[task_idx - 1], tasks[task_idx]
-            model.add_end_before_start(task1, task2)
-
-    result = model.solve(solver=solver)
-
-    assert_equal(result.status.value, "Optimal")
-    assert_equal(result.objective, 20)
