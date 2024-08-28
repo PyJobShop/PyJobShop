@@ -1,4 +1,9 @@
-from docplex.cp.expression import CpoIntervalVar, CpoSequenceVar
+from docplex.cp.expression import (
+    CpoIntervalVar,
+    CpoSequenceVar,
+    interval_var,
+    sequence_var,
+)
 from docplex.cp.model import CpoModel
 
 import pyjobshop.utils as utils
@@ -56,12 +61,13 @@ class VariablesManager:
         variables = []
 
         for job in self._data.jobs:
-            var = self._model.interval_var(name=f"J{job}")
+            var = interval_var(name=f"J{job}")
 
             var.set_start_min(job.release_date)
             var.set_end_max(min(job.deadline, self._data.horizon))
 
             variables.append(var)
+            self._model.add(var)
 
         return variables
 
@@ -69,12 +75,12 @@ class VariablesManager:
         """
         Creates an interval variable for each task.
         """
-        model, data = self._model, self._data
+        data = self._data
         variables = []
         task_durations = compute_task_durations(self._data)
 
         for idx, task in enumerate(data.tasks):
-            var = model.interval_var(name=f"T{task}")
+            var = interval_var(name=f"T{task}")
 
             var.set_start_min(task.earliest_start)
             var.set_start_max(min(task.latest_start, data.horizon))
@@ -90,6 +96,7 @@ class VariablesManager:
             )
 
             variables.append(var)
+            self._model.add(var)
 
         return variables
 
@@ -97,11 +104,11 @@ class VariablesManager:
         """
         Creates an optional interval variable for each mode variable.
         """
-        model, data = self._model, self._data
+        data = self._data
         variables = []
 
         for mode in data.modes:
-            var = model.interval_var(
+            var = interval_var(
                 optional=True, name=f"M{mode.task}_{mode.machine}"
             )
             task = data.tasks[mode.task]
@@ -119,6 +126,7 @@ class VariablesManager:
                 var.set_size_max(data.horizon)
 
             variables.append(var)
+            self._model.add(var)
 
         return variables
 
@@ -129,23 +137,24 @@ class VariablesManager:
         used for modeling machine setups and sequencing task constraints, such
         as previous, before, first, last and permutations.
         """
-        model, data = self._model, self._data
+        data = self._data
         machine2modes = utils.machine2modes(data)
         variables = []
 
         for machine, modes in enumerate(machine2modes):
             intervals = [self.mode_vars[mode] for mode in modes]
-            seq_var = model.sequence_var(name=f"S{machine}", vars=intervals)
+            seq_var = sequence_var(name=f"S{machine}", vars=intervals)
             variables.append(seq_var)
 
+        self._model.add(variables)
         return variables
 
     def warmstart(self, solution: Solution):
         """
         Warmstarts the variables based on the given solution.
         """
-        model, data = self._model, self._data
-        stp = model.create_empty_solution()
+        data = self._data
+        stp = self._model.create_empty_solution()
 
         for idx in range(data.num_jobs):
             job = data.jobs[idx]
@@ -182,4 +191,4 @@ class VariablesManager:
                 size=sol_task.duration,
             )
 
-        model.set_starting_point(stp)
+        self._model.set_starting_point(stp)

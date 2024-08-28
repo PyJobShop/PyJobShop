@@ -1,3 +1,4 @@
+import docplex.cp.modeler as cpo
 from docplex.cp.model import CpoExpr, CpoModel
 
 from pyjobshop.ProblemData import Objective, ProblemData
@@ -27,61 +28,59 @@ class ObjectiveManager:
         """
         Returns an expression representing the makespan of the model.
         """
-        return self._model.max(
-            self._model.end_of(var) for var in self._task_vars
-        )
+        return cpo.max(cpo.end_of(var) for var in self._task_vars)
 
     def _tardy_jobs_expr(self) -> CpoExpr:
         """
         Returns an expression representing the number of tardy jobs.
         """
-        m, data = self._model, self._data
+        data = self._data
         exprs = []
 
         for job, var in zip(data.jobs, self._job_vars):
-            is_tardy = m.greater(m.end_of(var) - job.due_date, 0)
+            is_tardy = cpo.greater(cpo.end_of(var) - job.due_date, 0)
             exprs.append(job.weight * is_tardy)
 
-        return m.sum(exprs)
+        return cpo.sum(exprs)  # type: ignore
 
     def _total_completion_time_expr(self) -> CpoExpr:
         """
         Returns an expression representing the total completion time of jobs.
         """
-        m, data = self._model, self._data
+        data = self._data
         total = []
 
         for job, var in zip(data.jobs, self._job_vars):
-            completion_time = m.end_of(var)
+            completion_time = cpo.end_of(var)
             total.append(job.weight * completion_time)
 
-        return m.sum(total)
+        return cpo.sum(total)  # type: ignore
 
     def _total_tardiness_expr(self) -> CpoExpr:
         """
         Returns an expression representing the total tardiness of jobs.
         """
-        m, data = self._model, self._data
+        data = self._data
         total = []
 
         for job, var in zip(data.jobs, self._job_vars):
-            tardiness = m.max(0, m.end_of(var) - job.due_date)
+            tardiness = cpo.max(0, cpo.end_of(var) - job.due_date)
             total.append(job.weight * tardiness)
 
-        return m.sum(total)
+        return cpo.sum(total)  # type: ignore
 
     def _total_earliness_expr(self) -> CpoExpr:
         """
         Returns an expression representing the total earliness of jobs.
         """
-        m, data = self._model, self._data
+        data = self._data
         total = []
 
         for job, var in zip(data.jobs, self._job_vars):
-            earliness = m.max(0, job.due_date - m.end_of(var))
+            earliness = cpo.max(0, job.due_date - cpo.end_of(var))
             total.append(job.weight * earliness)
 
-        return m.sum(total)
+        return cpo.sum(total)  # type: ignore
 
     def _objective_expr(self, objective: Objective) -> CpoExpr:
         """
