@@ -30,18 +30,7 @@ The documentation is available [here](https://pyjobshop.readthedocs.io/).
 
 ## Constraint programming solvers
 PyJobShop uses [OR-Tools'](https://github.com/google/or-tools) CP-SAT solver as its default constraint programming solver.
-CP-SAT is an open-source constraint programming solver and encompasses other technologies such as satisfiability and mixed-integer linear programming solvers.
-CP-SAT has consistently won the annual [MiniZinc Challenge](https://www.minizinc.org/challenge/), demonstrating its superior performance on constraint programming models.
-
-Besides OR-Tools' CP-SAT solver, PyJobShop also implements the IBM ILOG CP Optimizer, which is a commercial constraint programming solver.
-To try out CP Optimizer, you can install PyJobShop with the optional `cpoptimizer` dependency as follows: 
-
-``` shell
-pip install pyjobshop[cpoptimizer]
-```
-
-This installation comes with the free community edition of CP Optimizer, which only solves models with up to 1000 variables and 1000 constraints.
-Models beyond that size require the paid version or academic version. See [our documentation](https://pyjobshop.readthedocs.io/en/stable/setup/installation.html) for instructions on how to obtain the academic version of CP Optimizer.
+We also support CP Optimizer - see [our documentation](https://pyjobshop.readthedocs.io/en/stable/setup/installation.html) for instructions on how to install PyJobShop with CP Optimizer.
 
 ## Examples
 We provide example notebooks that show how PyJobShop may be used to solve scheduling problems.

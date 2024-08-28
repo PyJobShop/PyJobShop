@@ -36,7 +36,7 @@ PyJobShop
 
    .. autoclass:: TaskData
 
-.. automodule:: pyjobshop.Results
+.. automodule:: pyjobshop.Result
 
    .. autoclass:: Result
 
