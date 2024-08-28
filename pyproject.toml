@@ -1,6 +1,6 @@
 [project]
 name = "pyjobshop"
-version = "0.0.2a"
+version = "0.0.2b"
 description = "Solving shop scheduling problems with constraint programming."
 authors = [
     { name = "Leon Lan", email = "l.lan@vu.nl"},
