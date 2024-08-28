@@ -334,7 +334,7 @@ class Model:
         task: Task,
         machines: list[Machine],
         duration: int,
-        demands: Optional[list[int]],
+        demands: Optional[list[int]] = None,
     ) -> Mode:
         """
         Adds a processing mode.
