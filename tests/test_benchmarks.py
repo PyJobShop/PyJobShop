@@ -1,16 +1,18 @@
-from numpy.testing import assert_equal
+import pytest
+from numpy.testing import assert_, assert_equal
 
-from pyjobshop import Model
+from pyjobshop import Model, solve
+
+from .utils import read
 
 
-def test_jobshop_smoke_test_lawrence(solver: str):
+def test_jsp_lawrence(solver: str):
     """
-    https://github.com/tamy0612/JSPLIB
+    Job shop problem instance from https://github.com/tamy0612/JSPLIB
 
     Lawrence 10x5 instance la01 (Table 3, instance 1);
     also called (setf1) or (F1).
     """
-
     # A job consists of tasks, which is a tuple (machine_id, processing_time).
     jobs_data = [
         [(1, 21), (0, 53), (4, 95), (3, 55), (2, 34)],
@@ -46,3 +48,24 @@ def test_jobshop_smoke_test_lawrence(solver: str):
 
     assert_equal(result.status.value, "Optimal")
     assert_equal(result.objective, 666)
+
+
+@pytest.mark.parametrize(
+    "loc, objective",
+    [
+        ["data/MFJS1.fjs", 468],
+        ["data/Mk01.fjs", 40],
+        ["data/edata-car1.fjs", 6176],
+    ],
+)
+def test_fjsp_classic(solver: str, loc: str, objective: int):
+    """
+    Classic flexible job shop problem instances that are quickly solved to
+    optimality.
+    """
+    data = read(loc)
+    result = solve(data, solver=solver)
+
+    assert_equal(result.objective, objective)
+    assert_equal(result.status.value, "Optimal")
+    assert_(result.runtime < 1)
