@@ -169,6 +169,37 @@ def test_add_task_attributes():
     assert_equal(task.name, "task")
 
 
+def test_add_mode_attributes():
+    """
+    Tests that adding a mode to the model correctly sets the attributes.
+    """
+    model = Model()
+
+    task = model.add_task()
+    machines = [model.add_machine() for _ in range(3)]
+
+    mode = model.add_mode(task, machines, duration=1, demands=[1, 2, 3])
+
+    assert_equal(mode.task, 0)
+    assert_equal(mode.resources, [0, 1, 2])
+    assert_equal(mode.duration, 1)
+    assert_equal(mode.demands, [1, 2, 3])
+
+
+def test_model_processing_time_creates_correct_mode():
+    """
+    Tests that the processing time interface is creates the correct mode.
+    """
+    model = Model()
+
+    job = model.add_job()
+    machine = model.add_machine()
+    task = model.add_task(job=job)
+
+    model.add_processing_time(task, machine, 1)
+    assert_equal(model.modes[0], Mode(task=0, resources=[0], duration=1))
+
+
 def test_model_attributes():
     """
     Tests that the model attributes are correctly.
@@ -184,20 +215,6 @@ def test_model_attributes():
     assert_equal(model.machines, machines)
     assert_equal(model.tasks, tasks)
     assert_equal(model.modes, modes)
-
-
-def test_model_processing_time_creates_correct_mode():
-    """
-    Tests that the processing time interface is creates the correct mode.
-    """
-    model = Model()
-
-    job = model.add_job()
-    machine = model.add_machine()
-    task = model.add_task(job=job)
-
-    model.add_processing_time(task, machine, 1)
-    assert_equal(model.modes[0], Mode(task=0, resources=[0], duration=1))
 
 
 def test_model_set_objective():
