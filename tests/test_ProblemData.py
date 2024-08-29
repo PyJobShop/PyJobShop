@@ -427,7 +427,12 @@ def describe_problem_data_replace():
                 data.tasks[idx].earliest_start,
             )
 
-        assert_equal(new.modes, data.modes)
+        for idx in range(data.num_modes):
+            assert_(new.modes[idx] is not data.modes[idx])
+            assert_equal(new.modes[idx].task, data.modes[idx].task)
+            assert_equal(new.modes[idx].resources, data.modes[idx].resources)
+            assert_equal(new.modes[idx].duration, data.modes[idx].duration)
+
         assert_equal(new.constraints, data.constraints)
         assert_equal(new.setup_times, data.setup_times)
         assert_equal(new.horizon, data.horizon)
@@ -443,8 +448,8 @@ def describe_problem_data_replace():
             machines=[Machine(name="new"), Machine(name="new")],
             tasks=[Task(earliest_start=2), Task(earliest_start=2)],
             modes=[
-                Mode(task=0, resources=[0], duration=2),
-                Mode(task=1, resources=[1], duration=1),
+                Mode(task=0, resources=[0], duration=20),
+                Mode(task=1, resources=[1], duration=10),
             ],
             constraints={(1, 0): [Constraint.END_BEFORE_START]},
             setup_times=np.ones((2, 2, 2)),
@@ -468,7 +473,10 @@ def describe_problem_data_replace():
                 new.tasks[idx].earliest_start != data.tasks[idx].earliest_start
             )
 
-        assert_(new.modes != data.modes)
+        for idx in range(data.num_modes):
+            assert_(new.modes[idx] is not data.modes[idx])
+            assert_(new.modes[idx].duration != data.modes[idx].duration)
+
         assert_(new.constraints != data.constraints)
         assert_(not np.array_equal(new.setup_times, data.setup_times))
         assert_(new.horizon != data.horizon)
