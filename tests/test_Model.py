@@ -1,8 +1,17 @@
+import numpy as np
 from numpy.testing import assert_equal
 
 from pyjobshop.constants import MAX_VALUE
 from pyjobshop.Model import Model
-from pyjobshop.ProblemData import Constraint, Mode, Objective
+from pyjobshop.ProblemData import (
+    Constraint,
+    Job,
+    Machine,
+    Mode,
+    Objective,
+    ProblemData,
+    Task,
+)
 from pyjobshop.Solution import Solution, TaskData
 
 
@@ -76,12 +85,41 @@ def test_model_to_data():
     assert_equal(data.objective, Objective.total_completion_time())
 
 
-def test_from_data(fjsp):
+def test_from_data():
     """
     Tests that initializing from a data instance returns a valid model
     representation of that instance.
     """
-    data = fjsp
+    data = ProblemData(
+        [Job()],
+        [Machine(), Machine()],
+        [Task(), Task()],
+        modes=[Mode(0, [0], 1), Mode(1, [1], 2)],
+        constraints={
+            (0, 1): [
+                Constraint.START_AT_START,
+                Constraint.START_AT_END,
+                Constraint.START_BEFORE_START,
+                Constraint.START_BEFORE_END,
+                Constraint.END_AT_START,
+                Constraint.END_AT_END,
+                Constraint.END_BEFORE_START,
+                Constraint.END_BEFORE_END,
+                Constraint.PREVIOUS,
+                Constraint.BEFORE,
+                Constraint.SAME_MACHINE,
+                Constraint.DIFFERENT_MACHINE,
+            ]
+        },
+        setup_times=np.array(
+            [
+                [[0, 0], [0, 0]],
+                [[1, 1], [1, 1]],
+            ]
+        ),
+        horizon=100,
+        objective=Objective.total_completion_time(),
+    )
     model = Model.from_data(data)
     m_data = model.data()
 

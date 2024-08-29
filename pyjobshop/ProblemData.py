@@ -363,7 +363,9 @@ class Mode:
     duration
         Processing duration of this mode.
     demands
-        List of demands for each resource for this mode. Default is None.
+        List of demands for each resource for this mode. If ``None`` is given,
+        then the demands are initialized as list of zeros with the same length
+        as the resources.
     """
 
     task: int

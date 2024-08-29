@@ -113,7 +113,7 @@ class Model:
         for mode in data.modes:
             model.add_mode(
                 task=model.tasks[mode.task],
-                machines=[model.machines[r] for r in mode.resources],
+                machines=[model.machines[res] for res in mode.resources],
                 duration=mode.duration,
                 demands=mode.demands,
             )
@@ -346,9 +346,11 @@ class Model:
         machines
             The machines that the task must be processed on.
         duration
-            The duration of the mode.
+            Processing duration of this mode.
         demands
-            The resource demands per machine, if any.
+            List of demands for each resource for this mode. If ``None`` is
+            given, then the demands are initialized as list of zeros with the
+            same length as the resources.
         """
         task_idx = self._id2task[id(task)]
         machine_idcs = [self._id2machine[id(machine)] for machine in machines]
