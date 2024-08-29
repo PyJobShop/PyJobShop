@@ -178,10 +178,26 @@ def test_model_attributes():
     jobs = [model.add_job() for _ in range(10)]
     machines = [model.add_machine() for _ in range(20)]
     tasks = [model.add_task() for _ in range(30)]
+    modes = [model.add_mode(t, [m], 1) for t in tasks for m in machines]
 
     assert_equal(model.jobs, jobs)
     assert_equal(model.machines, machines)
     assert_equal(model.tasks, tasks)
+    assert_equal(model.modes, modes)
+
+
+def test_model_processing_time_creates_correct_mode():
+    """
+    Tests that the processing time interface is creates the correct mode.
+    """
+    model = Model()
+
+    job = model.add_job()
+    machine = model.add_machine()
+    task = model.add_task(job=job)
+
+    model.add_processing_time(task, machine, 1)
+    assert_equal(model.modes[0], Mode(task=0, resources=[0], duration=1))
 
 
 def test_model_set_objective():

@@ -96,7 +96,8 @@ omit = [
     "cpo_config.py",
     "pyjobshop/cpoptimizer/*",
     "pyjobshop/ortools/*",
-    "pyjobshop/cli.py"
+    "pyjobshop/cli.py",
+    "pyjobshop/plot.py"
 ]
 
 
