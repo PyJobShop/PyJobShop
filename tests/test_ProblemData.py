@@ -825,16 +825,18 @@ def test_same_machines_with_modes_and_multiple_machines(solver: str):
     task1 = model.add_task()
     task2 = model.add_task()
 
-    model.add_mode(task1, [machine1], duration=1)
-    model.add_mode(task2, [machine2], duration=1)
-    model.add_mode(task1, [machine1, machine2], duration=10)
-    model.add_mode(task2, [machine1, machine2], duration=10)
+    model.add_mode(task1, [machine1], duration=1)  # mode 0
+    model.add_mode(task2, [machine2], duration=1)  # mode 1
+    model.add_mode(task1, [machine1, machine2], duration=10)  # mode 2
+    model.add_mode(task2, [machine1, machine2], duration=10)  # mode 3
 
     # Selecting the single machine modes for both tasks is optimal, which
     # results in a makespan of 1.
     result = model.solve(solver=solver)
     assert_equal(result.objective, 1)
     assert_equal(result.status.value, "Optimal")
+    assert_equal(result.best.tasks[0].mode, 0)
+    assert_equal(result.best.tasks[1].mode, 1)
 
     # Now we add the same machine constraint...
     model.add_same_machine(task1, task2)
@@ -845,6 +847,8 @@ def test_same_machines_with_modes_and_multiple_machines(solver: str):
     result = model.solve(solver=solver)
     assert_equal(result.objective, 20)
     assert_equal(result.status.value, "Optimal")
+    assert_equal(result.best.tasks[0].mode, 2)
+    assert_equal(result.best.tasks[1].mode, 3)
 
 
 def test_different_machines_with_modes_and_multiple_machines(solver: str):
@@ -860,25 +864,28 @@ def test_different_machines_with_modes_and_multiple_machines(solver: str):
     task1 = model.add_task()
     task2 = model.add_task()
 
-    model.add_mode(task1, [machine1, machine2], duration=1)  # mode1
-    model.add_mode(task1, [machine1, machine3], duration=2)  # mode2
-    model.add_mode(task1, [machine3], duration=100)  # mode3
-    model.add_mode(task2, [machine1, machine2], duration=1)  # mode4
+    model.add_mode(task1, [machine1, machine2], duration=1)  # mode 0
+    model.add_mode(task1, [machine1, machine3], duration=2)  # mode 1
+    model.add_mode(task1, [machine3], duration=100)  # mode 2
+    model.add_mode(task2, [machine1, machine2], duration=1)  # mode 3
 
-    # Selecting mode 1 and mode 4 is optimal.
+    # Selecting mode 0 and mode 3 is optimal.
     result = model.solve(solver=solver)
     assert_equal(result.objective, 2)
     assert_equal(result.status.value, "Optimal")
+    assert_equal(result.best.tasks[0].mode, 0)
+    assert_equal(result.best.tasks[1].mode, 3)
 
     # Now we add the different machine constraint...
     model.add_different_machine(task1, task2)
 
-    # ...so mode 1 and mode 2 can no longer be selected. The only option
-    # is to select mode 3 for task 1 and mode 4 for task 2, which results in
-    # a makespan of 101.
+    # ...so mode 0 and mode 3 can no longer be selected. The only option
+    # is to select mode 2 for task 1 and mode 3 for task 2.
     result = model.solve(solver=solver)
-    assert_equal(result.objective, 101)
+    assert_equal(result.objective, 100)
     assert_equal(result.status.value, "Optimal")
+    assert_equal(result.best.tasks[0].mode, 2)
+    assert_equal(result.best.tasks[1].mode, 3)
 
 
 def test_previous_constraint(solver: str):

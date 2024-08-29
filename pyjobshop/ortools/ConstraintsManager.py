@@ -1,8 +1,10 @@
+from collections import defaultdict
+
 import numpy as np
 from ortools.sat.python.cp_model import CpModel
 
 import pyjobshop.utils as utils
-from pyjobshop.ProblemData import ProblemData
+from pyjobshop.ProblemData import Constraint, ProblemData
 
 from .VariablesManager import VariablesManager
 
@@ -111,9 +113,9 @@ class ConstraintsManager:
 
             model.add_cumulative(intervals, demands, machine.capacity)
 
-    def _task_graph(self):
+    def _timing_constraints(self):
         """
-        Creates constraints based on the task graph for task variables.
+        Creates constraints based on the timing relationship between tasks.
         """
         model, data = self._model, self._data
 
@@ -122,43 +124,37 @@ class ConstraintsManager:
             task_var2 = self._task_vars[idx2]
 
             for prec_type in constraints:
-                if prec_type == "start_at_start":
+                if prec_type == Constraint.START_AT_START:
                     expr = task_var1.start == task_var2.start
-                elif prec_type == "start_at_end":
+                elif prec_type == Constraint.START_AT_END:
                     expr = task_var1.start == task_var2.end
-                elif prec_type == "start_before_start":
+                elif prec_type == Constraint.START_BEFORE_START:
                     expr = task_var1.start <= task_var2.start
-                elif prec_type == "start_before_end":
+                elif prec_type == Constraint.START_BEFORE_END:
                     expr = task_var1.start <= task_var2.end
-                elif prec_type == "end_at_start":
+                elif prec_type == Constraint.END_AT_START:
                     expr = task_var1.end == task_var2.start
-                elif prec_type == "end_at_end":
+                elif prec_type == Constraint.END_AT_END:
                     expr = task_var1.end == task_var2.end
-                elif prec_type == "end_before_start":
+                elif prec_type == Constraint.END_BEFORE_START:
                     expr = task_var1.end <= task_var2.start
-                elif prec_type == "end_before_end":
+                elif prec_type == Constraint.END_BEFORE_END:
                     expr = task_var1.end <= task_var2.end
                 else:
                     continue
 
                 model.add(expr)
 
-    def _task_alt_graph(self):
+    def _previous_before_constraints(self):
         """
-        Creates constraints based on the task graph which involve task
-        alternative variables.
+        Creates the constraints for the previous and before constraints.
         """
         model, data = self._model, self._data
         task2modes = utils.task2modes(data)
-        relevant_constraints = {
-            "previous",
-            "before",
-            "same_machine",
-            "different_machine",
-        }
+        relevant = {Constraint.PREVIOUS, Constraint.BEFORE}
 
         for (task1, task2), constraints in data.constraints.items():
-            task_alt_constraints = set(constraints) & relevant_constraints
+            task_alt_constraints = set(constraints) & relevant
             if not task_alt_constraints:
                 continue
 
@@ -188,7 +184,7 @@ class ConstraintsManager:
                 var2 = self._mode_vars[mode2]
 
                 for constraint in task_alt_constraints:
-                    if constraint == "previous":
+                    if constraint == Constraint.PREVIOUS:
                         sequence.activate(model)
 
                         idx1 = sequence.modes.index(var1)
@@ -201,7 +197,7 @@ class ConstraintsManager:
                         )
                         model.add_implication(arc, var1.is_present)
                         model.add_implication(arc, var2.is_present)
-                    if constraint == "before":
+                    if constraint == Constraint.BEFORE:
                         sequence.activate(model)
                         both_present = model.new_bool_var("")
 
@@ -219,12 +215,55 @@ class ConstraintsManager:
                         rank2 = sequence.ranks[idx2]
 
                         model.add(rank1 <= rank2).only_enforce_if(both_present)
-                    elif constraint == "same_machine":
-                        expr = var1.is_present == var2.is_present
-                        model.add(expr)
-                    elif constraint == "different_machine":
-                        expr = var1.is_present != var2.is_present
-                        model.add(expr)
+
+    def _same_and_different_machine_constraints(self):
+        """
+        Creates the constraints for the same and different machine constraints.
+        """
+        model, data = self._model, self._data
+        task2modes = utils.task2modes(data)
+        relevant = {Constraint.SAME_MACHINE, Constraint.DIFFERENT_MACHINE}
+
+        for (task1, task2), constraints in data.constraints.items():
+            task_alt_constraints = set(constraints) & relevant
+            if not task_alt_constraints:
+                continue
+
+            modes1 = task2modes[task1]
+            modes2 = task2modes[task2]
+
+            # Find the modes of task 2 that use the same machines or disjoint
+            # machines with the modes of task 1.
+            same = defaultdict(list)
+            disjoint = defaultdict(list)
+            for idx1 in modes1:
+                resources1 = set(data.modes[idx1].resources)
+                for idx2 in modes2:
+                    resources2 = set(data.modes[idx2].resources)
+                    if resources1 == resources2:
+                        same[idx1].append(idx2)
+                    if resources1.isdisjoint(resources2):
+                        disjoint[idx1].append(idx2)
+
+            for constraint in task_alt_constraints:
+                if constraint == Constraint.SAME_MACHINE:
+                    for mode1 in modes1:
+                        same_modes2 = same[mode1]
+                        var1 = self._mode_vars[mode1].is_present
+                        vars2 = [
+                            self._mode_vars[mode2].is_present
+                            for mode2 in same_modes2
+                        ]
+                        model.add(sum(vars2) >= var1)
+                elif constraint == Constraint.DIFFERENT_MACHINE:
+                    for mode1 in modes1:
+                        disjoint_modes2 = disjoint[mode1]
+                        var1 = self._mode_vars[mode1].is_present
+                        vars2 = [
+                            self._mode_vars[mode2].is_present
+                            for mode2 in disjoint_modes2
+                        ]
+                        model.add(sum(vars2) >= var1)
 
     def _enforce_circuit(self):
         """
@@ -301,8 +340,9 @@ class ConstraintsManager:
         self._no_overlap_machines()
         self._resource_capacity()
         self._activate_setup_times()
-        self._task_graph()
-        self._task_alt_graph()
+        self._timing_constraints()
+        self._previous_before_constraints()
+        self._same_and_different_machine_constraints()
 
         # From here onwards we know which sequence constraints are active.
         self._enforce_circuit()

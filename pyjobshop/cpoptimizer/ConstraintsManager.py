@@ -1,9 +1,11 @@
+from collections import defaultdict
+
 import docplex.cp.modeler as cpo
 import numpy as np
 from docplex.cp.model import CpoModel
 
 import pyjobshop.utils as utils
-from pyjobshop.ProblemData import ProblemData
+from pyjobshop.ProblemData import Constraint, ProblemData
 
 from .VariablesManager import VariablesManager
 
@@ -98,7 +100,7 @@ class ConstraintsManager:
 
             model.add(model.sum(pulses) <= resource.capacity)
 
-    def _task_graph(self):
+    def _timing_constraints(self):
         """
         Creates constraints based on the task graph for task variables.
         """
@@ -109,28 +111,28 @@ class ConstraintsManager:
             task2 = self._task_vars[idx2]
 
             for constraint in constraints:
-                if constraint == "start_at_start":
+                if constraint == Constraint.START_AT_START:
                     expr = cpo.start_at_start(task1, task2)
-                elif constraint == "start_at_end":
+                elif constraint == Constraint.START_AT_END:
                     expr = cpo.start_at_end(task1, task2)
-                elif constraint == "start_before_start":
+                elif constraint == Constraint.START_BEFORE_START:
                     expr = cpo.start_before_start(task1, task2)
-                elif constraint == "start_before_end":
+                elif constraint == Constraint.START_BEFORE_END:
                     expr = cpo.start_before_end(task1, task2)
-                elif constraint == "end_at_start":
+                elif constraint == Constraint.END_AT_START:
                     expr = cpo.end_at_start(task1, task2)
-                elif constraint == "end_at_end":
+                elif constraint == Constraint.END_AT_END:
                     expr = cpo.end_at_end(task1, task2)
-                elif constraint == "end_before_start":
+                elif constraint == Constraint.END_BEFORE_START:
                     expr = cpo.end_before_start(task1, task2)
-                elif constraint == "end_before_end":
+                elif constraint == Constraint.END_BEFORE_END:
                     expr = cpo.end_before_end(task1, task2)
                 else:
                     continue
 
                 model.add(expr)
 
-    def _task_alt_graph(self):
+    def _previous_before_constraints(self):
         """
         Creates constraints based on the task graph which involve task
         alternative variables.
@@ -138,10 +140,8 @@ class ConstraintsManager:
         model, data = self._model, self._data
         task2modes = utils.task2modes(data)
         relevant_constraints = {
-            "previous",
-            "before",
-            "same_machine",
-            "different_machine",
+            Constraint.PREVIOUS,
+            Constraint.BEFORE,
         }
 
         for (task1, task2), constraints in data.constraints.items():
@@ -175,20 +175,61 @@ class ConstraintsManager:
                 var2 = self._mode_vars[mode2]
 
                 for constraint in task_alt_constraints:
-                    if constraint == "previous":
+                    if constraint == Constraint.PREVIOUS:
                         expr = cpo.previous(seq_var, var1, var2)
-                    elif constraint == "before":
+                    elif constraint == Constraint.BEFORE:
                         expr = cpo.before(seq_var, var1, var2)
-                    elif constraint == "same_machine":
-                        presence1 = cpo.presence_of(var1)
-                        presence2 = cpo.presence_of(var2)
-                        expr = presence1 == presence2
-                    elif constraint == "different_machine":
-                        presence1 = cpo.presence_of(var1)
-                        presence2 = cpo.presence_of(var2)
-                        expr = presence1 != presence2
 
                     model.add(expr)
+
+    def _same_and_different_machine_constraints(self):
+        """
+        Creates the constraints for the same and different machine constraints.
+        """
+        model, data = self._model, self._data
+        task2modes = utils.task2modes(data)
+        relevant = {Constraint.SAME_MACHINE, Constraint.DIFFERENT_MACHINE}
+
+        for (task1, task2), constraints in data.constraints.items():
+            task_alt_constraints = set(constraints) & relevant
+            if not task_alt_constraints:
+                continue
+
+            modes1 = task2modes[task1]
+            modes2 = task2modes[task2]
+
+            # Find the modes of task 2 that use the same machines or disjoint
+            # machines with the modes of task 1.
+            same = defaultdict(list)
+            disjoint = defaultdict(list)
+            for idx1 in modes1:
+                resources1 = set(data.modes[idx1].resources)
+                for idx2 in modes2:
+                    resources2 = set(data.modes[idx2].resources)
+                    if resources1 == resources2:
+                        same[idx1].append(idx2)
+                    if resources1.isdisjoint(resources2):
+                        disjoint[idx1].append(idx2)
+
+            for constraint in task_alt_constraints:
+                if constraint == Constraint.SAME_MACHINE:
+                    for mode1 in modes1:
+                        same_modes2 = same[mode1]
+                        var1 = cpo.presence_of(self._mode_vars[mode1])
+                        vars2 = [
+                            cpo.presence_of(self._mode_vars[mode2])
+                            for mode2 in same_modes2
+                        ]
+                        model.add(sum(vars2) >= var1)
+                elif constraint == Constraint.DIFFERENT_MACHINE:
+                    for mode1 in modes1:
+                        disjoint_modes2 = disjoint[mode1]
+                        var1 = cpo.presence_of(self._mode_vars[mode1])
+                        vars2 = [
+                            cpo.presence_of(self._mode_vars[mode2])
+                            for mode2 in disjoint_modes2
+                        ]
+                        model.add(sum(vars2) >= var1)
 
     def add_all_constraints(self):
         """
@@ -198,5 +239,6 @@ class ConstraintsManager:
         self._select_one_mode()
         self._no_overlap_and_setup_times()
         self._resource_capacity()
-        self._task_graph()
-        self._task_alt_graph()
+        self._timing_constraints()
+        self._previous_before_constraints()
+        self._same_and_different_machine_constraints()
