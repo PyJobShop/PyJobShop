@@ -25,16 +25,42 @@ def compute_task_durations(data: ProblemData) -> list[list[int]]:
     return durations
 
 
-def machine2modes(data):
-    result = [[] for _ in range(data.num_machines)]
+def machine2modes(data: ProblemData) -> list[list[int]]:
+    """
+    Returns the list of mode indices corresponding to each machine.
+
+    Parameters
+    ----------
+    data
+        The problem data instance.
+
+    Returns
+    -------
+    list[list[int]]
+        The list of mode indices for each machine.
+    """
+    result: list[list[int]] = [[] for _ in range(data.num_machines)]
     for idx, mode in enumerate(data.modes):
         for resource in mode.resources:
             bisect.insort(result[resource], idx)
     return result
 
 
-def task2modes(data):
-    result = [[] for _ in range(data.num_tasks)]
+def task2modes(data: ProblemData) -> list[list[int]]:
+    """
+    Returns the list of mode indices corresponding to each task.
+
+    Parameters
+    ----------
+    data
+        The problem data instance.
+
+    Returns
+    -------
+    list[list[int]]
+        The list of mode indices for each task.
+    """
+    result: list[list[int]] = [[] for _ in range(data.num_tasks)]
     for idx, mode in enumerate(data.modes):
         bisect.insort(result[mode.task], idx)
     return result
