@@ -640,3 +640,10 @@ class ProblemData:
         Returns the number of tasks in this instance.
         """
         return len(self._tasks)
+
+    @property
+    def num_modes(self) -> int:
+        """
+        Returns the number of modes in this instance.
+        """
+        return len(self._modes)

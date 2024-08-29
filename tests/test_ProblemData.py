@@ -241,6 +241,7 @@ def test_problem_data_non_input_parameter_attributes():
     assert_equal(data.num_jobs, 1)
     assert_equal(data.num_machines, 3)
     assert_equal(data.num_tasks, 3)
+    assert_equal(data.num_modes, 4)
 
 
 def test_problem_data_default_values():

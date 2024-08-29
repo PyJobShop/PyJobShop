@@ -88,6 +88,7 @@ def test_from_data(fjsp):
     assert_equal(m_data.num_jobs, data.num_jobs)
     assert_equal(m_data.num_machines, data.num_machines)
     assert_equal(m_data.num_tasks, data.num_tasks)
+    assert_equal(m_data.num_modes, data.num_modes)
     assert_equal(m_data.modes, data.modes)
     assert_equal(m_data.constraints, data.constraints)
     assert_equal(m_data.setup_times, data.setup_times)
