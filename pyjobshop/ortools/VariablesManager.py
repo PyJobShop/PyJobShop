@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from typing import Optional
 
 from ortools.sat.python.cp_model import (
     BoolVarT,
@@ -186,7 +187,7 @@ class VariablesManager:
         return self._mode_vars
 
     @property
-    def sequence_vars(self) -> list[SequenceVar]:
+    def sequence_vars(self) -> list[Optional[SequenceVar]]:
         """
         Returns the sequence variables.
         """
@@ -303,18 +304,19 @@ class VariablesManager:
 
         return variables
 
-    def _make_sequence_variables(self) -> list[SequenceVar]:
+    def _make_sequence_variables(self) -> list[Optional[SequenceVar]]:
         """
-        Creates a sequence variable for each machine. Sequence variables are
-        used to model the ordering of intervals on a given machine. This is
-        used for modeling machine setups and sequencing task constraints, such
-        as previous, before, first, last and permutations.
+        Creates a sequence variable for each uncapacitated machine. Machines
+        with capacity constraints do not get a sequence variable.
         """
-        variables = []
+        variables: list[Optional[SequenceVar]] = []
 
-        for modes in utils.machine2modes(self._data):
-            intervals = [self.mode_vars[mode] for mode in modes]
-            variables.append(SequenceVar(intervals))
+        for idx, modes in enumerate(utils.machine2modes(self._data)):
+            if self._data.machines[idx].capacity == 0:
+                intervals = [self.mode_vars[mode] for mode in modes]
+                variables.append(SequenceVar(intervals))
+            else:
+                variables.append(None)
 
         return variables
 

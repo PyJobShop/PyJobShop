@@ -134,51 +134,45 @@ class ConstraintsManager:
 
     def _previous_before_constraints(self):
         """
-        Creates constraints based on the task graph which involve task
-        alternative variables.
+        Creates the constraints for the previous and before constraints.
         """
         model, data = self._model, self._data
         task2modes = utils.task2modes(data)
-        relevant_constraints = {
-            Constraint.PREVIOUS,
-            Constraint.BEFORE,
-        }
+        relevant = {Constraint.PREVIOUS, Constraint.BEFORE}
 
         for (task1, task2), constraints in data.constraints.items():
-            task_alt_constraints = set(constraints) & relevant_constraints
-            if not task_alt_constraints:
+            sequencing_constraints = set(constraints) & relevant
+            if not sequencing_constraints:
                 continue
 
-            # Find the common modes for both tasks, because the constraints
-            # apply to the mode variables on the same machine.
-            # TODO this is super complex but I don't have a good idea yet
-            # how to deal with modes and assignment constraints.
+            # Find the modes of the task that have intersecting machines,
+            # because we need to enforce sequencing constraints on them.
             modes1 = task2modes[task1]
             modes2 = task2modes[task2]
-            machines1 = [
-                machine
-                for mode in modes1
-                for machine in data.modes[mode].resources
-            ]
-            machines2 = [
-                machine
-                for mode in modes2
-                for machine in data.modes[mode].resources
-            ]
-            machines = set(machines1) & set(machines2)
+            intersecting = []
 
-            for machine in machines:
-                seq_var = self._sequence_vars[machine]
-                mode1 = modes1[machines1.index(machine)]
-                mode2 = modes2[machines2.index(machine)]
+            for mode1 in modes1:
+                machines1 = set(data.modes[mode1].resources)
+                for mode2 in modes2:
+                    machines2 = set(data.modes[mode2].resources)
+                    for machine in machines1 & machines2:
+                        intersecting.append((mode1, mode2, machine))
+
+            for mode1, mode2, machine in intersecting:
+                sequence = self._sequence_vars[machine]
+                if sequence is None:
+                    raise ValueError(
+                        f"No sequence variable found for machine {machine}."
+                    )
+
                 var1 = self._mode_vars[mode1]
                 var2 = self._mode_vars[mode2]
 
-                for constraint in task_alt_constraints:
+                for constraint in sequencing_constraints:
                     if constraint == Constraint.PREVIOUS:
-                        expr = cpo.previous(seq_var, var1, var2)
-                    elif constraint == Constraint.BEFORE:
-                        expr = cpo.before(seq_var, var1, var2)
+                        expr = cpo.previous(sequence, var1, var2)
+                    if constraint == Constraint.BEFORE:
+                        expr = cpo.before(sequence, var1, var2)
 
                     model.add(expr)
 

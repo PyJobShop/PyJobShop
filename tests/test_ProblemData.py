@@ -333,6 +333,26 @@ def test_problem_data_raises_when_invalid_arguments(
         )
 
 
+@pytest.mark.parametrize(
+    "constraint", [Constraint.PREVIOUS, Constraint.BEFORE]
+)
+def test_problem_data_raises_capacitated_machines_and_sequencing_constraints(
+    constraint,
+):
+    """
+    Tests that the ProblemData class raises an error when tasks have sequencing
+    constraints with modes using machines with nonzero capacities.
+    """
+    with assert_raises(ValueError):
+        ProblemData(
+            [Job()],
+            [Machine(capacity=2), Machine()],
+            [Task(), Task()],
+            [Mode(0, [0], 0), Mode(1, [1], 0)],
+            constraints={(0, 1): [constraint]},
+        )
+
+
 def test_problem_data_raises_capacitated_machines_and_setup_times():
     """
     Tests that the ProblemData class raises an error when machines with
@@ -919,6 +939,38 @@ def test_previous_constraint(solver: str):
     # Task 2 must be scheduled before task 1, but the setup time
     # between them is 100, so the makespan is 1 + 100 + 1 = 102.
     assert_equal(result.objective, 102)
+
+
+def test_previous_multiple_machines(solver: str):
+    """
+    Test the previous constraint with tasks that have modes with multiple
+    machines.
+    """
+    model = Model()
+
+    machine1 = model.add_machine()
+    machine2 = model.add_machine()
+    task1 = model.add_task()
+    task2 = model.add_task()
+
+    model.add_mode(task1, [machine1, machine2], duration=1)
+    model.add_mode(task2, [machine1, machine2], duration=1)
+
+    model.add_setup_time(machine1, task2, task1, duration=10)
+    model.add_setup_time(machine2, task2, task1, duration=10)
+
+    result = model.solve(solver=solver)
+    assert_equal(result.objective, 2)
+    assert_equal(result.status.value, "Optimal")
+
+    # Now we add the previous constraint...
+    model.add_previous(task2, task1)
+
+    # ...so task 2 must be scheduled before task 1, but the setup time
+    # between them is 10, so the makespan is 1 + 10 + 1 = 2.
+    result = model.solve(solver=solver)
+    assert_equal(result.objective, 12)
+    assert_equal(result.status.value, "Optimal")
 
 
 def test_before_constraint(solver: str):

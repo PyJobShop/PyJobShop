@@ -1,7 +1,7 @@
 from collections import defaultdict
 
 import numpy as np
-from ortools.sat.python.cp_model import CpModel
+from ortools.sat.python.cp_model import BoolVarT, CpModel
 
 import pyjobshop.utils as utils
 from pyjobshop.ProblemData import Constraint, ProblemData
@@ -154,36 +154,34 @@ class ConstraintsManager:
         relevant = {Constraint.PREVIOUS, Constraint.BEFORE}
 
         for (task1, task2), constraints in data.constraints.items():
-            task_alt_constraints = set(constraints) & relevant
-            if not task_alt_constraints:
+            sequencing_constraints = set(constraints) & relevant
+            if not sequencing_constraints:
                 continue
 
-            # Find the common modes for both tasks, because the constraints
-            # apply to the mode variables on the same machine.
-            # TODO this is super complex but I don't have a good idea yet
-            # how to deal with modes and assignment constraints.
+            # Find the modes of the task that have intersecting machines,
+            # because we need to enforce sequencing constraints on them.
             modes1 = task2modes[task1]
             modes2 = task2modes[task2]
-            machines1 = [
-                machine
-                for mode in modes1
-                for machine in data.modes[mode].resources
-            ]
-            machines2 = [
-                machine
-                for mode in modes2
-                for machine in data.modes[mode].resources
-            ]
-            machines = set(machines1) & set(machines2)
+            intersecting = []
 
-            for machine in machines:
+            for mode1 in modes1:
+                machines1 = set(data.modes[mode1].resources)
+                for mode2 in modes2:
+                    machines2 = set(data.modes[mode2].resources)
+                    for machine in machines1 & machines2:
+                        intersecting.append((mode1, mode2, machine))
+
+            for mode1, mode2, machine in intersecting:
                 sequence = self._sequence_vars[machine]
-                mode1 = modes1[machines1.index(machine)]
-                mode2 = modes2[machines2.index(machine)]
+                if sequence is None:
+                    raise ValueError(
+                        f"No sequence variable found for machine {machine}."
+                    )
+
                 var1 = self._mode_vars[mode1]
                 var2 = self._mode_vars[mode2]
 
-                for constraint in task_alt_constraints:
+                for constraint in sequencing_constraints:
                     if constraint == Constraint.PREVIOUS:
                         sequence.activate(model)
 
@@ -275,7 +273,7 @@ class ConstraintsManager:
         for machine in range(data.num_machines):
             sequence = self._sequence_vars[machine]
 
-            if not sequence.is_active:
+            if sequence is None or not sequence.is_active:
                 # No sequencing constraints found. Skip the creation of
                 # (expensive) circuit constraints.
                 continue
@@ -288,7 +286,7 @@ class ConstraintsManager:
 
             # Add dummy node self-arc to allow empty circuits.
             empty = model.new_bool_var(f"empty_circuit_{machine}")
-            circuit = [(-1, -1, empty)]
+            circuit: list[tuple[int, int, BoolVarT]] = [(-1, -1, empty)]
 
             for idx1, var1 in enumerate(modes):
                 start = starts[idx1]  # "is start node" literal
@@ -296,14 +294,14 @@ class ConstraintsManager:
                 rank = ranks[idx1]
 
                 # Arcs from the dummy node to/from a task.
-                circuit.append([-1, idx1, start])
-                circuit.append([idx1, -1, end])
+                circuit.append((-1, idx1, start))
+                circuit.append((idx1, -1, end))
 
                 # Set rank for first task in the sequence.
                 model.add(rank == 0).only_enforce_if(start)
 
                 # Self arc if the task is not present on this machine.
-                circuit.append([idx1, idx1, ~var1.is_present])
+                circuit.append((idx1, idx1, ~var1.is_present))
                 model.add(rank == -1).only_enforce_if(~var1.is_present)
 
                 # If the circuit is empty then the var should not be present.
@@ -314,7 +312,7 @@ class ConstraintsManager:
                         continue
 
                     arc = arcs[idx1, idx2]
-                    circuit.append([idx1, idx2, arc])
+                    circuit.append((idx1, idx2, arc))
 
                     model.add_implication(arc, var1.is_present)
                     model.add_implication(arc, var2.is_present)

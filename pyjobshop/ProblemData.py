@@ -475,6 +475,24 @@ class ProblemData:
         if names:  # task indices if names are not available
             raise ValueError(f"Processing modes missing for tasks {without}.")
 
+        for (idx1, idx2), constraints in self.constraints.items():
+            modes = [mode for mode in self.modes if mode.task in (idx1, idx2)]
+            has_capacity = any(
+                self.machines[machine].capacity > 0
+                for mode in modes
+                for machine in mode.resources
+            )
+            has_sequencing = (
+                Constraint.PREVIOUS in constraints
+                or Constraint.BEFORE in constraints
+            )
+            if has_capacity and has_sequencing:
+                msg = (
+                    "Sequencing constraints cannot be used on tasks with "
+                    "modes that have capacity."
+                )
+                raise ValueError(msg)
+
         if np.any(self.setup_times < 0):
             raise ValueError("Setup times must be non-negative.")
 
