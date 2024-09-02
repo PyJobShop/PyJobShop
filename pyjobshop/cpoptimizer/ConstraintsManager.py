@@ -1,5 +1,3 @@
-from collections import defaultdict
-
 import docplex.cp.modeler as cpo
 import numpy as np
 from docplex.cp.model import CpoModel
@@ -137,7 +135,6 @@ class ConstraintsManager:
         Creates the constraints for the previous and before constraints.
         """
         model, data = self._model, self._data
-        task2modes = utils.task2modes(data)
         relevant = {Constraint.PREVIOUS, Constraint.BEFORE}
 
         for (task1, task2), constraints in data.constraints.items():
@@ -147,31 +144,23 @@ class ConstraintsManager:
 
             # Find the modes of the task that have intersecting machines,
             # because we need to enforce sequencing constraints on them.
-            modes1 = task2modes[task1]
-            modes2 = task2modes[task2]
-            intersecting = []
+            intersecting = utils.find_modes_with_intersecting_machines(
+                data, task1, task2
+            )
+            for mode1, mode2, machines in intersecting:
+                for machine in machines:
+                    sequence = self._sequence_vars[machine]
+                    if sequence is None:
+                        msg = f"No sequence var found for machine {machine}."
+                        raise ValueError(msg)
 
-            for mode1 in modes1:
-                machines1 = set(data.modes[mode1].resources)
-                for mode2 in modes2:
-                    machines2 = set(data.modes[mode2].resources)
-                    for machine in machines1 & machines2:
-                        intersecting.append((mode1, mode2, machine))
+                    var1 = self._mode_vars[mode1]
+                    var2 = self._mode_vars[mode2]
 
-            for mode1, mode2, machine in intersecting:
-                sequence = self._sequence_vars[machine]
-                if sequence is None:
-                    raise ValueError(
-                        f"No sequence variable found for machine {machine}."
-                    )
-
-                var1 = self._mode_vars[mode1]
-                var2 = self._mode_vars[mode2]
-
-                for constraint in sequencing_constraints:
-                    if constraint == Constraint.PREVIOUS:
+                    if Constraint.PREVIOUS in sequencing_constraints:
                         expr = cpo.previous(sequence, var1, var2)
-                    if constraint == Constraint.BEFORE:
+
+                    if Constraint.BEFORE in sequencing_constraints:
                         expr = cpo.before(sequence, var1, var2)
 
                     model.add(expr)
@@ -185,45 +174,36 @@ class ConstraintsManager:
         relevant = {Constraint.SAME_MACHINE, Constraint.DIFFERENT_MACHINE}
 
         for (task1, task2), constraints in data.constraints.items():
-            task_alt_constraints = set(constraints) & relevant
-            if not task_alt_constraints:
+            assignment_constraints = set(constraints) & relevant
+            if not assignment_constraints:
                 continue
 
+            identical = utils.find_modes_with_identical_machines(
+                data, task1, task2
+            )
+            disjoint = utils.find_modes_with_disjoint_machines(
+                data, task1, task2
+            )
+
             modes1 = task2modes[task1]
-            modes2 = task2modes[task2]
+            for mode1 in modes1:
+                if Constraint.SAME_MACHINE in assignment_constraints:
+                    identical_modes2 = identical[mode1]
+                    var1 = cpo.presence_of(self._mode_vars[mode1])
+                    vars2 = [
+                        cpo.presence_of(self._mode_vars[mode2])
+                        for mode2 in identical_modes2
+                    ]
+                    model.add(sum(vars2) >= var1)
 
-            # Find the modes of task 2 that use the same machines or disjoint
-            # machines with the modes of task 1.
-            same = defaultdict(list)
-            disjoint = defaultdict(list)
-            for idx1 in modes1:
-                resources1 = set(data.modes[idx1].resources)
-                for idx2 in modes2:
-                    resources2 = set(data.modes[idx2].resources)
-                    if resources1 == resources2:
-                        same[idx1].append(idx2)
-                    if resources1.isdisjoint(resources2):
-                        disjoint[idx1].append(idx2)
-
-            for constraint in task_alt_constraints:
-                if constraint == Constraint.SAME_MACHINE:
-                    for mode1 in modes1:
-                        same_modes2 = same[mode1]
-                        var1 = cpo.presence_of(self._mode_vars[mode1])
-                        vars2 = [
-                            cpo.presence_of(self._mode_vars[mode2])
-                            for mode2 in same_modes2
-                        ]
-                        model.add(sum(vars2) >= var1)
-                elif constraint == Constraint.DIFFERENT_MACHINE:
-                    for mode1 in modes1:
-                        disjoint_modes2 = disjoint[mode1]
-                        var1 = cpo.presence_of(self._mode_vars[mode1])
-                        vars2 = [
-                            cpo.presence_of(self._mode_vars[mode2])
-                            for mode2 in disjoint_modes2
-                        ]
-                        model.add(sum(vars2) >= var1)
+                if Constraint.DIFFERENT_MACHINE in assignment_constraints:
+                    disjoint_modes2 = disjoint[mode1]
+                    var1 = cpo.presence_of(self._mode_vars[mode1])
+                    vars2 = [
+                        cpo.presence_of(self._mode_vars[mode2])
+                        for mode2 in disjoint_modes2
+                    ]
+                    model.add(sum(vars2) >= var1)
 
     def add_all_constraints(self):
         """
