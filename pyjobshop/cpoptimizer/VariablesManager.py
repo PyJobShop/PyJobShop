@@ -107,10 +107,8 @@ class VariablesManager:
         data = self._data
         variables = []
 
-        for mode in data.modes:
-            var = interval_var(
-                optional=True, name=f"M{mode.task}_{mode.machine}"
-            )
+        for idx, mode in enumerate(data.modes):
+            var = interval_var(optional=True, name=f"M{idx}_{mode.task}")
             task = data.tasks[mode.task]
 
             var.set_start_min(task.earliest_start)
@@ -176,7 +174,7 @@ class VariablesManager:
                 task_var,
                 start=sol_task.start,
                 end=sol_task.end,
-                size=sol_task.duration,
+                size=sol_task.end - sol_task.start,
             )
 
         for idx, mode in enumerate(data.modes):
@@ -185,10 +183,10 @@ class VariablesManager:
 
             stp.add_interval_var_solution(
                 var,
-                presence=mode.machine == sol_task.machine,
+                presence=idx == sol_task.mode,
                 start=sol_task.start,
                 end=sol_task.end,
-                size=sol_task.duration,
+                size=sol_task.end - sol_task.start,
             )
 
         self._model.set_starting_point(stp)

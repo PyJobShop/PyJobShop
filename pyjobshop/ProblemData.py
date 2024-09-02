@@ -276,19 +276,17 @@ class Constraint(str, Enum):
     #: Task :math:`i` must end before task :math:`j` ends.
     END_BEFORE_END = "end_before_end"
 
-    # TODO how do sequence and assignment constraints work in the context
-    # of renewable resources and modes?
     #: Sequence :math:`i` right before :math:`j` (if assigned to same machine).
     PREVIOUS = "previous"
 
     #: Sequence :math:`i` before :math:`j` (if assigned to same machines).
     BEFORE = "before"
 
-    #: Assign tasks :math:`i` and :math:`j` to the same machine.
-    SAME_MACHINE = "same_machine"
+    #: Assign tasks :math:`i` and :math:`j` to modes with the same set of machines. # noqa
+    IDENTICAL_MACHINES = "identical_machines"
 
-    #: Assign tasks :math:`i` and :math:`j` to different machines.
-    DIFFERENT_MACHINE = "different_machine"
+    #: Assign tasks :math:`i` and :math:`j` to modes with disjoint sets of machines. # noqa
+    DIFFERENT_MACHINES = "different_machines"
 
 
 @dataclass
@@ -358,36 +356,36 @@ class Mode:
     ----------
     task
         Task index that this mode belongs to.
+    machines
+        List of machines that are required for this mode.
     duration
         Processing duration of this mode.
-    resources
-        List of resources that are required for this mode.
     demands
-        List of resource demands for this mode.
+        List of demands for each machine for this mode. If ``None`` is given,
+        then the demands are initialized as list of zeros with the same length
+        as the machines.
     """
 
     task: int
+    machines: list[int]
     duration: int
-    resources: list[int]
     demands: Optional[list[int]] = None
 
     def __post_init__(self):
-        if self.demands is None:
-            self.demands = [0] * len(self.resources)
+        if len(set(self.machines)) != len(self.machines):
+            raise ValueError("Mode machines must be unique.")
 
         if self.duration < 0:
-            raise ValueError("Processing mode duration must be non-negative.")
+            raise ValueError("Mode duration must be non-negative.")
 
-        if self.demand < 0:
-            raise ValueError("Demand must be non-negative.")
+        if self.demands is None:
+            self.demands = [0] * len(self.machines)
 
-    @property
-    def machine(self):
-        return self.resources[0]
+        if any(dem < 0 for dem in self.demands):
+            raise ValueError("Mode demands must be non-negative.")
 
-    @property
-    def demand(self):
-        return self.demands[0] if len(self.demands) > 0 else 0
+        if len(self.machines) != len(self.demands):
+            raise ValueError("machines and demands must have same length.")
 
 
 class ProblemData:
@@ -465,13 +463,33 @@ class ProblemData:
             if mode.task < 0 or mode.task >= num_tasks:
                 raise ValueError("Mode references to unknown task index.")
 
-            if mode.machine < 0 or mode.machine >= num_mach:
-                raise ValueError("Mode references to unknown machine index.")
+            for machine in mode.machines:
+                if machine < 0 or machine >= num_mach:
+                    msg = "Mode references to unknown machine index."
+                    raise ValueError(msg)
 
         without = set(range(num_tasks)) - {mode.task for mode in self.modes}
         names = [self.tasks[idx].name or idx for idx in sorted(without)]
         if names:  # task indices if names are not available
             raise ValueError(f"Processing modes missing for tasks {without}.")
+
+        for (idx1, idx2), constraints in self.constraints.items():
+            modes = [mode for mode in self.modes if mode.task in (idx1, idx2)]
+            has_capacity = any(
+                self.machines[machine].capacity > 0
+                for mode in modes
+                for machine in mode.machines
+            )
+            has_sequencing = (
+                Constraint.PREVIOUS in constraints
+                or Constraint.BEFORE in constraints
+            )
+            if has_capacity and has_sequencing:
+                msg = (
+                    "Sequencing constraints cannot be used on tasks with "
+                    "modes that have capacity."
+                )
+                raise ValueError(msg)
 
         if np.any(self.setup_times < 0):
             raise ValueError("Setup times must be non-negative.")
@@ -479,6 +497,11 @@ class ProblemData:
         if self.setup_times.shape != (num_mach, num_tasks, num_tasks):
             msg = "Setup times shape not (num_machines, num_tasks, num_tasks)."
             raise ValueError(msg)
+
+        for idx, machine in enumerate(self.machines):
+            if machine.capacity > 0 and np.any(self.setup_times[idx] > 0):
+                msg = "Setup times not allowed for machines with capacity."
+                raise ValueError(msg)
 
         if self.horizon < 0:
             raise ValueError("Horizon must be non-negative.")
@@ -635,3 +658,10 @@ class ProblemData:
         Returns the number of tasks in this instance.
         """
         return len(self._tasks)
+
+    @property
+    def num_modes(self) -> int:
+        """
+        Returns the number of modes in this instance.
+        """
+        return len(self._modes)

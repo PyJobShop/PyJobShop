@@ -1,8 +1,17 @@
+import numpy as np
 from numpy.testing import assert_equal
 
 from pyjobshop.constants import MAX_VALUE
 from pyjobshop.Model import Model
-from pyjobshop.ProblemData import Constraint, Mode, Objective
+from pyjobshop.ProblemData import (
+    Constraint,
+    Job,
+    Machine,
+    Mode,
+    Objective,
+    ProblemData,
+    Task,
+)
 from pyjobshop.Solution import Solution, TaskData
 
 
@@ -27,7 +36,7 @@ def test_model_to_data():
     model.add_end_at_end(task1, task2)
     model.add_end_before_end(task1, task2)
     model.add_end_before_start(task1, task2)
-    model.add_same_machine(task2, task1)
+    model.add_identical_machines(task2, task1)
     model.add_different_machine(task2, task1)
     model.add_previous(task2, task1)
     model.add_before(task2, task1)
@@ -46,8 +55,8 @@ def test_model_to_data():
     assert_equal(
         data.modes,
         [
-            Mode(task=0, duration=1, resources=[0]),
-            Mode(task=1, duration=2, resources=[1]),
+            Mode(task=0, machines=[0], duration=1),
+            Mode(task=1, machines=[1], duration=2),
         ],
     )
     assert_equal(
@@ -64,8 +73,8 @@ def test_model_to_data():
                 Constraint.END_BEFORE_START,
             ],
             (1, 0): [
-                Constraint.SAME_MACHINE,
-                Constraint.DIFFERENT_MACHINE,
+                Constraint.IDENTICAL_MACHINES,
+                Constraint.DIFFERENT_MACHINES,
                 Constraint.PREVIOUS,
                 Constraint.BEFORE,
             ],
@@ -76,18 +85,48 @@ def test_model_to_data():
     assert_equal(data.objective, Objective.total_completion_time())
 
 
-def test_from_data(fjsp):
+def test_from_data():
     """
     Tests that initializing from a data instance returns a valid model
     representation of that instance.
     """
-    data = fjsp
+    data = ProblemData(
+        [Job()],
+        [Machine(), Machine()],
+        [Task(), Task()],
+        modes=[Mode(0, [0], 1), Mode(1, [1], 2)],
+        constraints={
+            (0, 1): [
+                Constraint.START_AT_START,
+                Constraint.START_AT_END,
+                Constraint.START_BEFORE_START,
+                Constraint.START_BEFORE_END,
+                Constraint.END_AT_START,
+                Constraint.END_AT_END,
+                Constraint.END_BEFORE_START,
+                Constraint.END_BEFORE_END,
+                Constraint.PREVIOUS,
+                Constraint.BEFORE,
+                Constraint.IDENTICAL_MACHINES,
+                Constraint.DIFFERENT_MACHINES,
+            ]
+        },
+        setup_times=np.array(
+            [
+                [[0, 0], [0, 0]],
+                [[1, 1], [1, 1]],
+            ]
+        ),
+        horizon=100,
+        objective=Objective.total_completion_time(),
+    )
     model = Model.from_data(data)
     m_data = model.data()
 
     assert_equal(m_data.num_jobs, data.num_jobs)
     assert_equal(m_data.num_machines, data.num_machines)
     assert_equal(m_data.num_tasks, data.num_tasks)
+    assert_equal(m_data.num_modes, data.num_modes)
     assert_equal(m_data.modes, data.modes)
     assert_equal(m_data.constraints, data.constraints)
     assert_equal(m_data.setup_times, data.setup_times)
@@ -111,7 +150,7 @@ def test_model_to_data_default_values():
     assert_equal(data.jobs, [job])
     assert_equal(data.machines, [machine])
     assert_equal(data.tasks, [task])
-    assert_equal(data.modes, [Mode(task=0, duration=1, resources=[0])])
+    assert_equal(data.modes, [Mode(task=0, machines=[0], duration=1)])
     assert_equal(data.constraints, {})
     assert_equal(data.setup_times, [[[0]]])
     assert_equal(data.horizon, MAX_VALUE)
@@ -169,6 +208,37 @@ def test_add_task_attributes():
     assert_equal(task.name, "task")
 
 
+def test_add_mode_attributes():
+    """
+    Tests that adding a mode to the model correctly sets the attributes.
+    """
+    model = Model()
+
+    task = model.add_task()
+    machines = [model.add_machine() for _ in range(3)]
+
+    mode = model.add_mode(task, machines, duration=1, demands=[1, 2, 3])
+
+    assert_equal(mode.task, 0)
+    assert_equal(mode.machines, [0, 1, 2])
+    assert_equal(mode.duration, 1)
+    assert_equal(mode.demands, [1, 2, 3])
+
+
+def test_model_processing_time_creates_correct_mode():
+    """
+    Tests that the processing time interface creates the correct mode.
+    """
+    model = Model()
+
+    job = model.add_job()
+    machine = model.add_machine()
+    task = model.add_task(job=job)
+
+    model.add_processing_time(task, machine, 1)
+    assert_equal(model.modes[0], Mode(task=0, machines=[0], duration=1))
+
+
 def test_model_attributes():
     """
     Tests that the model attributes are correctly.
@@ -178,10 +248,12 @@ def test_model_attributes():
     jobs = [model.add_job() for _ in range(10)]
     machines = [model.add_machine() for _ in range(20)]
     tasks = [model.add_task() for _ in range(30)]
+    modes = [model.add_mode(t, [m], 1) for t in tasks for m in machines]
 
     assert_equal(model.jobs, jobs)
     assert_equal(model.machines, machines)
     assert_equal(model.tasks, tasks)
+    assert_equal(model.modes, modes)
 
 
 def test_model_set_objective():
@@ -229,13 +301,13 @@ def test_solve(solver: str):
     assert_equal(result.status.value, "Optimal")
 
 
-def test_solve_initial_solution_fixed(small):
+def test_solve_additional_kwargs_initial_solution_fixed(small):
     """
     Tests that Model.solve() correctly takes the initial solution and passes
     additional kwargs to the solver, fixing the solution.
     """
     model = Model.from_data(small)
-    init = Solution([TaskData(0, 0, 1, 1), TaskData(0, 3, 2, 5)])
+    init = Solution([TaskData(0, [0], 0, 1), TaskData(1, [0], 3, 5)])
     result = model.solve(
         "ortools",
         initial_solution=init,

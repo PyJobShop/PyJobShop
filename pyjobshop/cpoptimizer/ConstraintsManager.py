@@ -3,7 +3,7 @@ import numpy as np
 from docplex.cp.model import CpoModel
 
 import pyjobshop.utils as utils
-from pyjobshop.ProblemData import ProblemData
+from pyjobshop.ProblemData import Constraint, ProblemData
 
 from .VariablesManager import VariablesManager
 
@@ -64,7 +64,7 @@ class ConstraintsManager:
                 continue  # skip if no modes for this machine
 
             if data.machines[machine].capacity > 0:
-                continue  # skip since machine is resource
+                continue
 
             tasks = [data.modes[mode].task for mode in modes]
             setups = data.setup_times[machine, :, :][np.ix_(tasks, tasks)]
@@ -75,25 +75,31 @@ class ConstraintsManager:
             else:
                 model.add(cpo.no_overlap(seq_var, setups))
 
-    def _resource_capacity(self):
+    def _machine_capacity(self):
         """
-        Creates constraints for the resource capacity.
+        Creates constraints for the machine capacity.
         """
         model, data = self._model, self._data
-        machine2modes = utils.machine2modes(data)
 
-        for idx, resource in enumerate(data.machines):
-            if resource.capacity == 0:
+        # Map machines to the relevant modes and their demands.
+        mapper = [[] for _ in range(data.num_machines)]
+        for idx, mode in enumerate(data.modes):
+            for machine, demand in zip(mode.machines, mode.demands):
+                if demand > 0:
+                    mapper[machine].append((idx, demand))
+
+        for idx, machine in enumerate(data.machines):
+            if machine.capacity == 0:
                 continue
 
-            modes = machine2modes[idx]
             pulses = [
-                cpo.pulse(self._mode_vars[mode], data.modes[mode].demand)
-                for mode in modes
+                cpo.pulse(self._mode_vars[mode], demand)
+                for (mode, demand) in mapper[idx]
+                if demand > 0
             ]
-            model.add(cpo.sum(pulses) <= resource.capacity)
+            model.add(model.sum(pulses) <= machine.capacity)
 
-    def _task_graph(self):
+    def _timing_constraints(self):
         """
         Creates constraints based on the task graph for task variables.
         """
@@ -103,79 +109,105 @@ class ConstraintsManager:
             task1 = self._task_vars[idx1]
             task2 = self._task_vars[idx2]
 
-            for constraint in constraints:
-                if constraint == "start_at_start":
-                    expr = cpo.start_at_start(task1, task2)
-                elif constraint == "start_at_end":
-                    expr = cpo.start_at_end(task1, task2)
-                elif constraint == "start_before_start":
-                    expr = cpo.start_before_start(task1, task2)
-                elif constraint == "start_before_end":
-                    expr = cpo.start_before_end(task1, task2)
-                elif constraint == "end_at_start":
-                    expr = cpo.end_at_start(task1, task2)
-                elif constraint == "end_at_end":
-                    expr = cpo.end_at_end(task1, task2)
-                elif constraint == "end_before_start":
-                    expr = cpo.end_before_start(task1, task2)
-                elif constraint == "end_before_end":
-                    expr = cpo.end_before_end(task1, task2)
-                else:
-                    continue
+            if Constraint.START_AT_START in constraints:
+                model.add(cpo.start_at_start(task1, task2))
 
-                model.add(expr)
+            if Constraint.START_AT_END in constraints:
+                model.add(cpo.start_at_end(task1, task2))
 
-    def _task_alt_graph(self):
+            if Constraint.START_BEFORE_START in constraints:
+                model.add(cpo.start_before_start(task1, task2))
+
+            if Constraint.START_BEFORE_END in constraints:
+                model.add(cpo.start_before_end(task1, task2))
+
+            if Constraint.END_AT_START in constraints:
+                model.add(cpo.end_at_start(task1, task2))
+
+            if Constraint.END_AT_END in constraints:
+                model.add(cpo.end_at_end(task1, task2))
+
+            if Constraint.END_BEFORE_START in constraints:
+                model.add(cpo.end_before_start(task1, task2))
+
+            if Constraint.END_BEFORE_END in constraints:
+                model.add(cpo.end_before_end(task1, task2))
+
+    def _previous_before_constraints(self):
         """
-        Creates constraints based on the task graph which involve task
-        alternative variables.
+        Creates the constraints for the previous and before constraints.
+        """
+        model, data = self._model, self._data
+        relevant = {Constraint.PREVIOUS, Constraint.BEFORE}
+
+        for (task1, task2), constraints in data.constraints.items():
+            sequencing_constraints = set(constraints) & relevant
+            if not sequencing_constraints:
+                continue
+
+            # Find the modes of the task that have intersecting machines,
+            # because we need to enforce sequencing constraints on them.
+            intersecting = utils.find_modes_with_intersecting_machines(
+                data, task1, task2
+            )
+            for mode1, mode2, machines in intersecting:
+                for machine in machines:
+                    sequence = self._sequence_vars[machine]
+                    if sequence is None:
+                        msg = f"No sequence var found for machine {machine}."
+                        raise ValueError(msg)
+
+                    var1 = self._mode_vars[mode1]
+                    var2 = self._mode_vars[mode2]
+
+                    if Constraint.PREVIOUS in sequencing_constraints:
+                        model.add(cpo.previous(sequence, var1, var2))
+
+                    if Constraint.BEFORE in sequencing_constraints:
+                        model.add(cpo.before(sequence, var1, var2))
+
+    def _identical_and_different_machine_constraints(self):
+        """
+        Creates the constraints for the same and different machine constraints.
         """
         model, data = self._model, self._data
         task2modes = utils.task2modes(data)
-        relevant_constraints = {
-            "previous",
-            "before",
-            "same_machine",
-            "different_machine",
+        relevant = {
+            Constraint.IDENTICAL_MACHINES,
+            Constraint.DIFFERENT_MACHINES,
         }
 
         for (task1, task2), constraints in data.constraints.items():
-            task_alt_constraints = set(constraints) & relevant_constraints
-            if not task_alt_constraints:
+            assignment_constraints = set(constraints) & relevant
+            if not assignment_constraints:
                 continue
 
-            # Find the common modes for both tasks, because the constraints
-            # apply to the mode variables on the same machine.
-            # TODO this is super complex but I don't have a good idea yet
-            # how to deal with modes and assignment constraints.
+            identical = utils.find_modes_with_identical_machines(
+                data, task1, task2
+            )
+            disjoint = utils.find_modes_with_disjoint_machines(
+                data, task1, task2
+            )
+
             modes1 = task2modes[task1]
-            modes2 = task2modes[task2]
-            machines1 = [data.modes[mode].machine for mode in modes1]
-            machines2 = [data.modes[mode].machine for mode in modes2]
-            machines = set(machines1) & set(machines2)
+            for mode1 in modes1:
+                if Constraint.IDENTICAL_MACHINES in assignment_constraints:
+                    identical_modes2 = identical[mode1]
+                    var1 = cpo.presence_of(self._mode_vars[mode1])
+                    vars2 = [
+                        cpo.presence_of(self._mode_vars[mode2])
+                        for mode2 in identical_modes2
+                    ]
+                    model.add(sum(vars2) >= var1)
 
-            for machine in machines:
-                seq_var = self._sequence_vars[machine]
-                mode1 = modes1[machines1.index(machine)]
-                mode2 = modes2[machines2.index(machine)]
-                var1 = self._mode_vars[mode1]
-                var2 = self._mode_vars[mode2]
-
-                for constraint in task_alt_constraints:
-                    if constraint == "previous":
-                        expr = cpo.previous(seq_var, var1, var2)
-                    elif constraint == "before":
-                        expr = cpo.before(seq_var, var1, var2)
-                    elif constraint == "same_machine":
-                        presence1 = cpo.presence_of(var1)
-                        presence2 = cpo.presence_of(var2)
-                        expr = presence1 == presence2
-                    elif constraint == "different_machine":
-                        presence1 = cpo.presence_of(var1)
-                        presence2 = cpo.presence_of(var2)
-                        expr = presence1 != presence2
-
-                    model.add(expr)
+                if Constraint.DIFFERENT_MACHINES in assignment_constraints:
+                    disjoint_modes2 = disjoint[mode1]
+                    var1 = cpo.presence_of(self._mode_vars[mode1])
+                    vars2 = [
+                        cpo.presence_of(self._mode_vars[mode2])
+                        for mode2 in disjoint_modes2
+                    ]
+                    model.add(sum(vars2) >= var1)
 
     def add_all_constraints(self):
         """
@@ -184,6 +216,7 @@ class ConstraintsManager:
         self._job_spans_tasks()
         self._select_one_mode()
         self._no_overlap_and_setup_times()
-        self._resource_capacity()
-        self._task_graph()
-        self._task_alt_graph()
+        self._machine_capacity()
+        self._timing_constraints()
+        self._previous_before_constraints()
+        self._identical_and_different_machine_constraints()
