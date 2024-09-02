@@ -1,67 +1,50 @@
-[tool.poetry]
+[project]
 name = "pyjobshop"
-version = "0.0.1"
-description = "Job shop scheduling in Python."
-authors = ["Leon Lan <l.lan@vu.nl>"]
-license = "MIT"
+version = "0.0.2b"
+description = "Solving shop scheduling problems with constraint programming."
+authors = [
+    { name = "Leon Lan", email = "l.lan@vu.nl"},
+]
+license = { text = "MIT" }
 readme = "README.md"
-packages = [
-    { include = "pyjobshop" }
+requires-python = ">=3.9"
+dependencies = [
+    "ortools>=9.10.4067",
+    "matplotlib>=3.9.2",
+    "fjsplib",
+    "enum-tools>=0.12.0",
+    "tqdm>=4.66.5",
+    "tomli>=2.0.1",
 ]
 
+[project.optional-dependencies]
+docplex = [
+    "docplex>=2.28.240",
+]
+cplex = [
+    "cplex>=22.1.1.2",
+]
 
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+[tool.uv]
+dev-dependencies = [
+    # Dev
+    "pre-commit>=3.8.0",
+    "pytest>=8.3.2",
+    "pytest-cov>=5.0.0",
+    "pytest-describe>=2.2.0",
+    "codecov>=2.1.13",
+    # Docs
+    "sphinx>=7.4.7",
+    "nbsphinx>=0.9.5",
+    "numpydoc>=1.8.0",
+    "sphinx-immaterial>=0.12.2",
+    "enum-tools[sphinx]>=0.12.0",
+    # Examples
+    "jupyterlab>=4.2.4",
+]
 
-
-[tool.poetry.dependencies]
-python = ">=3.9, <4.0"
-numpy = "^1.24.2"
-matplotlib = "^3.7.1"
-ortools = "^9.10.4067"
-enum-tools = "^0.11.0"
-tqdm = "^4.66.4"
-tomli = "^2.0.1"
+[tool.uv.sources]
 fjsplib = { git = "https://github.com/PyJobShop/FJSPLIB.git", rev = "75b2d18" }
-cplex = { version = "22.1.1.2", optional = true, markers = "python_version < '3.12'"}
-docplex = { version = "^2.25.236", optional = true }
-
-
-[tool.poetry.extras]
-cpoptimizer = ["cplex", "docplex"]
-
-
-[tool.poetry.group.dev.dependencies]
-pre-commit = "^3.2.2"
-pytest = "^7.4.2"
-pytest-cov = "^4.1.0"
-pytest-describe = "^2.2.0"
-codecov = "^2.1.13"
-
-
-[tool.poetry.group.docs]
-optional = true
-
-
-[tool.poetry.group.docs.dependencies]
-sphinx = "^7.2.6"
-nbsphinx = "^0.9.3"
-numpydoc = "^1.6.0"
-sphinx-immaterial = "^0.11.10"
-enum-tools = { extras = ["sphinx"], version = "^0.11.0" }
-
-
-[tool.poetry.group.examples]
-optional = true
-
-
-[tool.poetry.group.examples.dependencies]
-jupyterlab = "^4.0.12"
-
-
-[tool.poetry.scripts]
-pyjobshop = "pyjobshop.cli:main"
 
 
 [tool.mypy]
@@ -109,8 +92,15 @@ addopts = "--cov=. --cov-report=xml"
 omit = [
     "docs/*",
     "tests/*",
+    "setup.py",
     "cpo_config.py",
     "pyjobshop/cpoptimizer/*",
     "pyjobshop/ortools/*",
-    "pyjobshop/cli.py"
+    "pyjobshop/cli.py",
+    "pyjobshop/plot.py"
 ]
+
+
+[build-system]
+requires = ["setuptools >= 61.0"]
+build-backend = "setuptools.build_meta"

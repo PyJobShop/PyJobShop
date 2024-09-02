@@ -1,7 +1,14 @@
 from numpy.testing import assert_equal
 
 from pyjobshop.ProblemData import Job, Machine, Mode, ProblemData, Task
-from pyjobshop.utils import compute_task_durations
+from pyjobshop.utils import (
+    compute_task_durations,
+    find_modes_with_disjoint_machines,
+    find_modes_with_identical_machines,
+    find_modes_with_intersecting_machines,
+    machine2modes,
+    task2modes,
+)
 
 
 def test_compute_task_durations():
@@ -12,7 +19,7 @@ def test_compute_task_durations():
         [Job()],
         [Machine(), Machine()],
         [Task(), Task()],
-        modes=[Mode(0, 1, [0]), Mode(0, 10, [1]), Mode(1, 0, [1])],
+        modes=[Mode(0, [0], 1), Mode(0, [1], 10), Mode(1, [1], 0)],
         constraints={},
     )
 
@@ -22,3 +29,106 @@ def test_compute_task_durations():
     # only one processing time of 0.
     assert_equal(task_durations[0], [1, 10])
     assert_equal(task_durations[1], [0])
+
+
+def test_machine2modes():
+    """
+    Tests that the mode indices corresponding to each machine are correctly
+    computed.
+    """
+    data = ProblemData(
+        [Job()],
+        [Machine(), Machine()],
+        [Task(), Task()],
+        modes=[Mode(0, [0], 1), Mode(0, [1], 10), Mode(1, [1], 0)],
+        constraints={},
+    )
+
+    mapper = machine2modes(data)
+    assert_equal(mapper[0], [0])
+    assert_equal(mapper[1], [1, 2])
+
+
+def test_task2modes():
+    """
+    Tests that the mode indices corresponding to each task are correctly
+    computed.
+    """
+    data = ProblemData(
+        [Job()],
+        [Machine(), Machine()],
+        [Task(), Task()],
+        modes=[Mode(0, [0], 1), Mode(0, [1], 10), Mode(1, [1], 0)],
+        constraints={},
+    )
+
+    mapper = task2modes(data)
+    assert_equal(mapper[0], [0, 1])
+    assert_equal(mapper[1], [2])
+
+
+def test_find_modes_with_intersecting_machines():
+    """
+    Tests that the intersecting modes between two tasks are correctly computed.
+    """
+    data = ProblemData(
+        [Job()],
+        [Machine(), Machine(), Machine()],
+        [Task(), Task()],
+        modes=[
+            Mode(0, [0], 1),
+            Mode(0, [0, 1], 10),
+            Mode(1, [0, 1], 0),
+            Mode(1, [2], 0),
+        ],
+    )
+    intersecting = find_modes_with_intersecting_machines(data, 0, 1)
+
+    # Task 1 has two modes, which both intersect with the first mode of task 2.
+    # The last mode of task 2 does not intersect with any mode of task 1, so
+    # it does not appear in the result.
+    assert_equal(intersecting, [(0, 2, [0]), (1, 2, [0, 1])])
+
+
+def test_find_modes_with_identical_machines():
+    """
+    Tests that the modes with identical machines are correctly computed.
+    """
+    data = ProblemData(
+        [Job()],
+        [Machine(), Machine(), Machine()],
+        [Task(), Task()],
+        modes=[
+            Mode(0, [0], 1),
+            Mode(0, [0, 1], 10),
+            Mode(1, [0, 1], 0),
+            Mode(1, [2], 0),
+        ],
+    )
+    identical = find_modes_with_identical_machines(data, 0, 1)
+
+    # The second mode of task 1 has the same machines as the first mode of
+    # task 2. The other modes do not have identical machines.
+    assert_equal(identical, {1: [2]})
+
+
+def test_find_disjoint_machines():
+    """
+    Tests that the modes with disjoint machines are correctly computed.
+    """
+    data = ProblemData(
+        [Job()],
+        [Machine(), Machine(), Machine()],
+        [Task(), Task()],
+        modes=[
+            Mode(0, [0], 1),
+            Mode(0, [0, 1], 10),
+            Mode(1, [0, 1], 0),
+            Mode(1, [2], 0),
+        ],
+    )
+    disjoint = find_modes_with_disjoint_machines(data, 0, 1)
+
+    # Both modes of task 1 have disjoint machines with the second mode of
+    # task 2.
+    assert_equal(disjoint, {0: [3], 1: [3]})

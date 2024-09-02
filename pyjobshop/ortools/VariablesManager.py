@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from typing import Optional
 
 from ortools.sat.python.cp_model import (
     BoolVarT,
@@ -186,7 +187,7 @@ class VariablesManager:
         return self._mode_vars
 
     @property
-    def sequence_vars(self) -> list[SequenceVar]:
+    def sequence_vars(self) -> list[Optional[SequenceVar]]:
         """
         Returns the sequence variables.
         """
@@ -269,9 +270,9 @@ class VariablesManager:
         model, data = self._model, self._data
         variables = []
 
-        for mode in data.modes:
+        for idx, mode in enumerate(data.modes):
             task = data.tasks[mode.task]
-            name = f"M{mode.task}_{mode.machine}"
+            name = f"M{idx}_{mode.task}"
             start = model.new_int_var(
                 lb=task.earliest_start,
                 ub=min(task.latest_start, data.horizon),
@@ -303,18 +304,19 @@ class VariablesManager:
 
         return variables
 
-    def _make_sequence_variables(self) -> list[SequenceVar]:
+    def _make_sequence_variables(self) -> list[Optional[SequenceVar]]:
         """
-        Creates a sequence variable for each machine. Sequence variables are
-        used to model the ordering of intervals on a given machine. This is
-        used for modeling machine setups and sequencing task constraints, such
-        as previous, before, first, last and permutations.
+        Creates a sequence variable for each uncapacitated machine. Machines
+        with capacity constraints do not get a sequence variable.
         """
-        variables = []
+        variables: list[Optional[SequenceVar]] = []
 
-        for modes in utils.machine2modes(self._data):
-            intervals = [self.mode_vars[mode] for mode in modes]
-            variables.append(SequenceVar(intervals))
+        for idx, modes in enumerate(utils.machine2modes(self._data)):
+            if self._data.machines[idx].capacity == 0:
+                intervals = [self.mode_vars[mode] for mode in modes]
+                variables.append(SequenceVar(intervals))
+            else:
+                variables.append(None)
 
         return variables
 
@@ -348,7 +350,7 @@ class VariablesManager:
             sol_task = solution.tasks[idx]
 
             model.add_hint(task_var.start, sol_task.start)
-            model.add_hint(task_var.duration, sol_task.duration)
+            model.add_hint(task_var.duration, sol_task.end - sol_task.start)
             model.add_hint(task_var.end, sol_task.end)
 
         for idx in range(len(data.modes)):
@@ -357,6 +359,6 @@ class VariablesManager:
             sol_task = solution.tasks[mode.task]
 
             model.add_hint(var.start, sol_task.start)
-            model.add_hint(var.duration, sol_task.duration)
+            model.add_hint(var.duration, sol_task.end - sol_task.start)
             model.add_hint(var.end, sol_task.end)
-            model.add_hint(var.is_present, mode.machine == sol_task.machine)
+            model.add_hint(var.is_present, idx == sol_task.mode)

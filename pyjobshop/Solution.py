@@ -8,19 +8,19 @@ class TaskData:
 
     Parameters
     ----------
-    machine
-        The assigned machine index.
+    mode
+        The selected mode.
+    machines
+        The selected machines.
     start
         The start time.
-    duration
-        The duration.
     end
         The end time.
     """
 
-    machine: int
+    mode: int
+    machines: list[int]
     start: int
-    duration: int
     end: int
 
 

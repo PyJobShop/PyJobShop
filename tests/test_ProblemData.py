@@ -159,7 +159,7 @@ def test_problem_data_input_parameter_attributes():
     machines = [Machine() for _ in range(5)]
     tasks = [Task() for _ in range(5)]
     modes = [
-        Mode(task=task, duration=1, resources=[machine])
+        Mode(task=task, machines=[machine], duration=1)
         for task in range(5)
         for machine in range(5)
     ]
@@ -195,30 +195,30 @@ def test_mode_attributes():
     """
     Tests that the attributes of the Mode class are set correctly.
     """
-    mode = Mode(task=0, duration=1, resources=[0], demands=[1])
+    mode = Mode(task=0, machines=[0], duration=1, demands=[1])
 
     assert_equal(mode.task, 0)
     assert_equal(mode.duration, 1)
-    assert_equal(mode.resources, [0])
+    assert_equal(mode.machines, [0])
     assert_equal(mode.demands, [1])
-    assert_equal(mode.machine, 0)
-    assert_equal(mode.demand, 1)
 
 
 @pytest.mark.parametrize(
-    "duration, demands",
+    "machines, duration, demands",
     [
-        (-1, [0]),  # duration < 0
-        (0, [-1]),  # demand < 0
+        ([0, 0], -1, [0, 0]),  # machines not unique
+        ([0], -1, [0]),  # duration < 0
+        ([0], 0, [-1]),  # demand < 0
+        ([0], 0, [0, 0]),  # len(machines) != len(demands)
     ],
 )
-def test_mode_raises_invalid_parameters(duration, demands):
+def test_mode_raises_invalid_parameters(machines, duration, demands):
     """
     Tests that a ValueError is raised when invalid parameters are passed to
     the Mode class.
     """
     with assert_raises(ValueError):
-        Mode(task=0, duration=duration, resources=[0], demands=demands)
+        Mode(task=0, machines=machines, duration=duration, demands=demands)
 
 
 def test_problem_data_non_input_parameter_attributes():
@@ -230,10 +230,10 @@ def test_problem_data_non_input_parameter_attributes():
     machines = [Machine() for _ in range(3)]
     tasks = [Task() for _ in range(3)]
     modes = [
-        Mode(task=2, duration=1, resources=[1]),
-        Mode(task=1, duration=1, resources=[2]),
-        Mode(task=1, duration=1, resources=[0]),
-        Mode(task=0, duration=1, resources=[2]),
+        Mode(task=2, machines=[1], duration=1),
+        Mode(task=1, machines=[2], duration=1),
+        Mode(task=1, machines=[0], duration=1),
+        Mode(task=0, machines=[2], duration=1),
     ]
 
     data = ProblemData(jobs, machines, tasks, modes)
@@ -241,6 +241,7 @@ def test_problem_data_non_input_parameter_attributes():
     assert_equal(data.num_jobs, 1)
     assert_equal(data.num_machines, 3)
     assert_equal(data.num_tasks, 3)
+    assert_equal(data.num_modes, 4)
 
 
 def test_problem_data_default_values():
@@ -250,7 +251,7 @@ def test_problem_data_default_values():
     jobs = [Job(tasks=[0])]
     machines = [Machine()]
     tasks = [Task()]
-    modes = [Mode(task=0, duration=1, resources=[0])]
+    modes = [Mode(task=0, machines=[0], duration=1)]
     data = ProblemData(jobs, machines, tasks, modes)
 
     assert_equal(data.constraints, {})
@@ -268,7 +269,7 @@ def test_problem_data_job_references_unknown_task():
             [Job(tasks=[42])],
             [Machine()],
             [Task()],
-            [Mode(0, 1, [0])],
+            [Mode(0, [0], 1)],
         )
 
 
@@ -282,7 +283,7 @@ def test_problem_data_mode_references_unknown_data():
             [Job()],
             [Machine()],
             [Task()],
-            [Mode(42, 1, [0])],
+            [Mode(42, [0], 1)],
         )
 
     with assert_raises(ValueError):
@@ -291,7 +292,7 @@ def test_problem_data_mode_references_unknown_data():
             [Job()],
             [Machine()],
             [Task()],
-            [Mode(0, 1, [42])],
+            [Mode(0, [42], 1)],
         )
 
 
@@ -326,9 +327,44 @@ def test_problem_data_raises_when_invalid_arguments(
             [Job()],
             [Machine()],
             [Task()],
-            modes=[Mode(0, 1, [0])],
+            modes=[Mode(0, [0], 1)],
             setup_times=setup_times.astype(int),
             horizon=horizon,
+        )
+
+
+@pytest.mark.parametrize(
+    "constraint", [Constraint.PREVIOUS, Constraint.BEFORE]
+)
+def test_problem_data_raises_capacitated_machines_and_sequencing_constraints(
+    constraint,
+):
+    """
+    Tests that the ProblemData class raises an error when tasks have sequencing
+    constraints with modes using machines with nonzero capacities.
+    """
+    with assert_raises(ValueError):
+        ProblemData(
+            [Job()],
+            [Machine(capacity=2), Machine()],
+            [Task(), Task()],
+            [Mode(0, [0], 0), Mode(1, [1], 0)],
+            constraints={(0, 1): [constraint]},
+        )
+
+
+def test_problem_data_raises_capacitated_machines_and_setup_times():
+    """
+    Tests that the ProblemData class raises an error when machines with
+    nonzero capacities have setup times.
+    """
+    with assert_raises(ValueError):
+        ProblemData(
+            [Job()],
+            [Machine(capacity=2)],
+            [Task()],
+            [Mode(0, [0], 0)],
+            setup_times=np.array([[[1]]]),
         )
 
 
@@ -352,7 +388,7 @@ def test_problem_data_tardy_objective_without_job_due_dates(
             [Job()],
             [Machine()],
             [Task()],
-            [Mode(0, 0, [0])],
+            [Mode(0, [0], 0)],
             objective=objective,
         )
 
@@ -368,8 +404,8 @@ def describe_problem_data_replace():
         machines = [Machine(name="machine"), Machine(name="machine")]
         tasks = [Task(earliest_start=1), Task(earliest_start=1)]
         modes = [
-            Mode(task=0, duration=1, resources=[0]),
-            Mode(task=1, duration=2, resources=[1]),
+            Mode(task=0, machines=[0], duration=1),
+            Mode(task=1, machines=[1], duration=2),
         ]
         constraints = {(0, 1): [Constraint.END_BEFORE_START]}
         setup_times = np.zeros((2, 2, 2))
@@ -412,7 +448,12 @@ def describe_problem_data_replace():
                 data.tasks[idx].earliest_start,
             )
 
-        assert_equal(new.modes, data.modes)
+        for idx in range(data.num_modes):
+            assert_(new.modes[idx] is not data.modes[idx])
+            assert_equal(new.modes[idx].task, data.modes[idx].task)
+            assert_equal(new.modes[idx].machines, data.modes[idx].machines)
+            assert_equal(new.modes[idx].duration, data.modes[idx].duration)
+
         assert_equal(new.constraints, data.constraints)
         assert_equal(new.setup_times, data.setup_times)
         assert_equal(new.horizon, data.horizon)
@@ -428,8 +469,8 @@ def describe_problem_data_replace():
             machines=[Machine(name="new"), Machine(name="new")],
             tasks=[Task(earliest_start=2), Task(earliest_start=2)],
             modes=[
-                Mode(task=0, duration=2, resources=[0]),
-                Mode(task=1, duration=1, resources=[1]),
+                Mode(task=0, machines=[0], duration=20),
+                Mode(task=1, machines=[1], duration=10),
             ],
             constraints={(1, 0): [Constraint.END_BEFORE_START]},
             setup_times=np.ones((2, 2, 2)),
@@ -453,7 +494,10 @@ def describe_problem_data_replace():
                 new.tasks[idx].earliest_start != data.tasks[idx].earliest_start
             )
 
-        assert_(new.modes != data.modes)
+        for idx in range(data.num_modes):
+            assert_(new.modes[idx] is not data.modes[idx])
+            assert_(new.modes[idx].duration != data.modes[idx].duration)
+
         assert_(new.constraints != data.constraints)
         assert_(not np.array_equal(new.setup_times, data.setup_times))
         assert_(new.horizon != data.horizon)
@@ -706,10 +750,10 @@ def test_task_non_fixed_duration(solver: str):
     result = model.solve(solver=solver)
     assert_equal(result.status.value, "Optimal")
     assert_equal(result.objective, 10)
-    assert_equal(result.best.tasks, [TaskData(0, 0, 10, 10)])
+    assert_equal(result.best.tasks, [TaskData(0, [0], 0, 10)])
 
 
-def test_machine_with_resource_faster_than_no_overlap(solver: str):
+def test_machine_with_machine_faster_than_no_overlap(solver: str):
     """
     Tests that a machine with capacity constraint is respected.
     """
@@ -772,8 +816,8 @@ def test_machine_capacity_is_respected(solver: str):
         (Constraint.END_BEFORE_START, 4),
         # end 2 <= end 2
         (Constraint.END_BEFORE_END, 2),
-        (Constraint.SAME_MACHINE, 4),
-        (Constraint.DIFFERENT_MACHINE, 2),
+        (Constraint.IDENTICAL_MACHINES, 4),
+        (Constraint.DIFFERENT_MACHINES, 2),
     ],
 )
 def test_constraints(solver, prec_type: Constraint, expected_makespan: int):
@@ -787,7 +831,7 @@ def test_constraints(solver, prec_type: Constraint, expected_makespan: int):
     machines = [model.add_machine() for _ in range(2)]
     tasks = [model.add_task(job=job) for _ in range(2)]
     modes = [
-        Mode(task=task, duration=2, resources=[machine])
+        Mode(task=task, machines=[machine], duration=2)
         for machine in range(len(machines))
         for task in range(len(tasks))
     ]
@@ -796,6 +840,81 @@ def test_constraints(solver, prec_type: Constraint, expected_makespan: int):
     result = solve(data, solver=solver)
 
     assert_equal(result.objective, expected_makespan)
+
+
+def test_identical_machines_with_modes_and_multiple_machines(solver: str):
+    """
+    Tests that the identical machines constraint is respected when tasks have
+    modes with multiple machines.
+    """
+    model = Model()
+
+    machine1 = model.add_machine()
+    machine2 = model.add_machine()
+    task1 = model.add_task()
+    task2 = model.add_task()
+
+    model.add_mode(task1, [machine1], duration=1)  # mode 0
+    model.add_mode(task2, [machine2], duration=1)  # mode 1
+    model.add_mode(task1, [machine1, machine2], duration=10)  # mode 2
+    model.add_mode(task2, [machine1, machine2], duration=10)  # mode 3
+
+    # Selecting the single machine modes for both tasks is optimal, which
+    # results in a makespan of 1.
+    result = model.solve(solver=solver)
+    assert_equal(result.objective, 1)
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.best.tasks[0].mode, 0)
+    assert_equal(result.best.tasks[1].mode, 1)
+
+    # Now we add the identical machines constraint...
+    model.add_identical_machines(task1, task2)
+
+    # ... which forces the tasks to be scheduled on identical machines:
+    # this results in the double-machine mode to be selected, which results
+    # in a makespan of 20.
+    result = model.solve(solver=solver)
+    assert_equal(result.objective, 20)
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.best.tasks[0].mode, 2)
+    assert_equal(result.best.tasks[1].mode, 3)
+
+
+def test_different_machines_with_modes_and_multiple_machines(solver: str):
+    """
+    Tests that the different machines constraint is respected when tasks have
+    modes with multiple machines.
+    """
+    model = Model()
+
+    machine1 = model.add_machine()
+    machine2 = model.add_machine()
+    machine3 = model.add_machine()
+    task1 = model.add_task()
+    task2 = model.add_task()
+
+    model.add_mode(task1, [machine1, machine2], duration=1)  # mode 0
+    model.add_mode(task1, [machine1, machine3], duration=2)  # mode 1
+    model.add_mode(task1, [machine3], duration=100)  # mode 2
+    model.add_mode(task2, [machine1, machine2], duration=1)  # mode 3
+
+    # Selecting mode 0 and mode 3 is optimal.
+    result = model.solve(solver=solver)
+    assert_equal(result.objective, 2)
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.best.tasks[0].mode, 0)
+    assert_equal(result.best.tasks[1].mode, 3)
+
+    # Now we add the different machine constraint...
+    model.add_different_machine(task1, task2)
+
+    # ...so mode 0 and mode 3 can no longer be selected. The only option
+    # is to select mode 2 for task 1 and mode 3 for task 2.
+    result = model.solve(solver=solver)
+    assert_equal(result.objective, 100)
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.best.tasks[0].mode, 2)
+    assert_equal(result.best.tasks[1].mode, 3)
 
 
 def test_previous_constraint(solver: str):
@@ -820,6 +939,38 @@ def test_previous_constraint(solver: str):
     # Task 2 must be scheduled before task 1, but the setup time
     # between them is 100, so the makespan is 1 + 100 + 1 = 102.
     assert_equal(result.objective, 102)
+
+
+def test_previous_multiple_machines(solver: str):
+    """
+    Test the previous constraint with tasks that have modes with multiple
+    machines.
+    """
+    model = Model()
+
+    machine1 = model.add_machine()
+    machine2 = model.add_machine()
+    task1 = model.add_task()
+    task2 = model.add_task()
+
+    model.add_mode(task1, [machine1, machine2], duration=1)
+    model.add_mode(task2, [machine1, machine2], duration=1)
+
+    model.add_setup_time(machine1, task2, task1, duration=10)
+    model.add_setup_time(machine2, task2, task1, duration=10)
+
+    result = model.solve(solver=solver)
+    assert_equal(result.objective, 2)
+    assert_equal(result.status.value, "Optimal")
+
+    # Now we add the previous constraint...
+    model.add_previous(task2, task1)
+
+    # ...so task 2 must be scheduled before task 1, but the setup time
+    # between them is 10, so the makespan is 1 + 10 + 1 = 2.
+    result = model.solve(solver=solver)
+    assert_equal(result.objective, 12)
+    assert_equal(result.status.value, "Optimal")
 
 
 def test_before_constraint(solver: str):
