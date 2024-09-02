@@ -108,27 +108,29 @@ class ConstraintsManager:
             task1 = self._task_vars[idx1]
             task2 = self._task_vars[idx2]
 
-            for constraint in constraints:
-                if constraint == Constraint.START_AT_START:
-                    expr = cpo.start_at_start(task1, task2)
-                elif constraint == Constraint.START_AT_END:
-                    expr = cpo.start_at_end(task1, task2)
-                elif constraint == Constraint.START_BEFORE_START:
-                    expr = cpo.start_before_start(task1, task2)
-                elif constraint == Constraint.START_BEFORE_END:
-                    expr = cpo.start_before_end(task1, task2)
-                elif constraint == Constraint.END_AT_START:
-                    expr = cpo.end_at_start(task1, task2)
-                elif constraint == Constraint.END_AT_END:
-                    expr = cpo.end_at_end(task1, task2)
-                elif constraint == Constraint.END_BEFORE_START:
-                    expr = cpo.end_before_start(task1, task2)
-                elif constraint == Constraint.END_BEFORE_END:
-                    expr = cpo.end_before_end(task1, task2)
-                else:
-                    continue
+            if Constraint.START_AT_START in constraints:
+                model.add(cpo.start_at_start(task1, task2))
 
-                model.add(expr)
+            if Constraint.START_AT_END in constraints:
+                model.add(cpo.start_at_end(task1, task2))
+
+            if Constraint.START_BEFORE_START in constraints:
+                model.add(cpo.start_before_start(task1, task2))
+
+            if Constraint.START_BEFORE_END in constraints:
+                model.add(cpo.start_before_end(task1, task2))
+
+            if Constraint.END_AT_START in constraints:
+                model.add(cpo.end_at_start(task1, task2))
+
+            if Constraint.END_AT_END in constraints:
+                model.add(cpo.end_at_end(task1, task2))
+
+            if Constraint.END_BEFORE_START in constraints:
+                model.add(cpo.end_before_start(task1, task2))
+
+            if Constraint.END_BEFORE_END in constraints:
+                model.add(cpo.end_before_end(task1, task2))
 
     def _previous_before_constraints(self):
         """
@@ -158,12 +160,10 @@ class ConstraintsManager:
                     var2 = self._mode_vars[mode2]
 
                     if Constraint.PREVIOUS in sequencing_constraints:
-                        expr = cpo.previous(sequence, var1, var2)
+                        model.add(cpo.previous(sequence, var1, var2))
 
                     if Constraint.BEFORE in sequencing_constraints:
-                        expr = cpo.before(sequence, var1, var2)
-
-                    model.add(expr)
+                        model.add(cpo.before(sequence, var1, var2))
 
     def _same_and_different_machine_constraints(self):
         """

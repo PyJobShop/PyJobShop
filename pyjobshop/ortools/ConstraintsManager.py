@@ -123,27 +123,29 @@ class ConstraintsManager:
             task_var1 = self._task_vars[idx1]
             task_var2 = self._task_vars[idx2]
 
-            for prec_type in constraints:
-                if prec_type == Constraint.START_AT_START:
-                    expr = task_var1.start == task_var2.start
-                elif prec_type == Constraint.START_AT_END:
-                    expr = task_var1.start == task_var2.end
-                elif prec_type == Constraint.START_BEFORE_START:
-                    expr = task_var1.start <= task_var2.start
-                elif prec_type == Constraint.START_BEFORE_END:
-                    expr = task_var1.start <= task_var2.end
-                elif prec_type == Constraint.END_AT_START:
-                    expr = task_var1.end == task_var2.start
-                elif prec_type == Constraint.END_AT_END:
-                    expr = task_var1.end == task_var2.end
-                elif prec_type == Constraint.END_BEFORE_START:
-                    expr = task_var1.end <= task_var2.start
-                elif prec_type == Constraint.END_BEFORE_END:
-                    expr = task_var1.end <= task_var2.end
-                else:
-                    continue
+            if Constraint.START_AT_START in constraints:
+                model.add(task_var1.start == task_var2.start)
 
-                model.add(expr)
+            if Constraint.START_AT_END in constraints:
+                model.add(task_var1.start == task_var2.end)
+
+            if Constraint.START_BEFORE_START in constraints:
+                model.add(task_var1.start <= task_var2.start)
+
+            if Constraint.START_BEFORE_END in constraints:
+                model.add(task_var1.start <= task_var2.end)
+
+            if Constraint.END_AT_START in constraints:
+                model.add(task_var1.end == task_var2.start)
+
+            if Constraint.END_AT_END in constraints:
+                model.add(task_var1.end == task_var2.end)
+
+            if Constraint.END_BEFORE_START in constraints:
+                model.add(task_var1.end <= task_var2.start)
+
+            if Constraint.END_BEFORE_END in constraints:
+                model.add(task_var1.end <= task_var2.end)
 
     def _previous_before_constraints(self):
         """
@@ -185,6 +187,7 @@ class ConstraintsManager:
                         )
                         model.add_implication(arc, var1.is_present)
                         model.add_implication(arc, var2.is_present)
+
                     if Constraint.BEFORE in sequencing_constraints:
                         sequence.activate(model)
                         both_present = model.new_bool_var("")
