@@ -227,7 +227,7 @@ def test_add_mode_attributes():
 
 def test_model_processing_time_creates_correct_mode():
     """
-    Tests that the processing time interface is creates the correct mode.
+    Tests that the processing time interface creates the correct mode.
     """
     model = Model()
 

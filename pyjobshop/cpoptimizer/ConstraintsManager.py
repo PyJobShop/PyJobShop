@@ -80,22 +80,23 @@ class ConstraintsManager:
         Creates constraints for the resource capacity.
         """
         model, data = self._model, self._data
-        machine2modes = utils.machine2modes(data)
+
+        # Map machines to the relevant modes and their demands.
+        mapper = [[] for _ in range(data.num_machines)]
+        for idx, mode in enumerate(data.modes):
+            for machine, demand in zip(mode.resources, mode.demands):
+                if demand > 0:
+                    mapper[machine].append((idx, demand))
 
         for idx, resource in enumerate(data.machines):
             if resource.capacity == 0:
                 continue
 
-            modes = machine2modes[idx]
-            demands = [
-                data.modes[mode].demands[data.modes[mode].resources.index(idx)]
-                for mode in modes
+            pulses = [
+                cpo.pulse(self._mode_vars[mode], demand)
+                for (mode, demand) in mapper[idx]
+                if demand > 0
             ]
-            pulses = []
-            for mode, demand in zip(modes, demands):
-                if demand > 0:
-                    pulses.append(cpo.pulse(self._mode_vars[mode], demand))
-
             model.add(model.sum(pulses) <= resource.capacity)
 
     def _timing_constraints(self):
