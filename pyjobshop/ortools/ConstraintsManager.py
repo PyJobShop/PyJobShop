@@ -89,16 +89,16 @@ class ConstraintsManager:
             if seq_var is not None and has_setup_times:
                 seq_var.activate(model)
 
-    def _resource_capacity(self):
+    def _machine_capacity(self):
         """
-        Creates constraints for the resource capacity.
+        Creates constraints for the machine capacity.
         """
         model, data = self._model, self._data
 
         # Map machines to the relevant modes and their demands.
         mapper = [[] for _ in range(data.num_machines)]
         for idx, mode in enumerate(data.modes):
-            for machine, demand in zip(mode.resources, mode.demands):
+            for machine, demand in zip(mode.machines, mode.demands):
                 if demand > 0:
                     mapper[machine].append((idx, demand))
 
@@ -204,13 +204,16 @@ class ConstraintsManager:
 
                         model.add(rank1 <= rank2).only_enforce_if(both_present)
 
-    def _same_and_different_machine_constraints(self):
+    def _identical_and_different_machine_constraints(self):
         """
         Creates the constraints for the same and different machine constraints.
         """
         model, data = self._model, self._data
         task2modes = utils.task2modes(data)
-        relevant = {Constraint.SAME_MACHINE, Constraint.DIFFERENT_MACHINE}
+        relevant = {
+            Constraint.IDENTICAL_MACHINES,
+            Constraint.DIFFERENT_MACHINES,
+        }
 
         for (task1, task2), constraints in data.constraints.items():
             assignment_constraints = set(constraints) & relevant
@@ -226,7 +229,7 @@ class ConstraintsManager:
 
             modes1 = task2modes[task1]
             for mode1 in modes1:
-                if Constraint.SAME_MACHINE in assignment_constraints:
+                if Constraint.IDENTICAL_MACHINES in assignment_constraints:
                     identical_modes2 = identical[mode1]
                     var1 = self._mode_vars[mode1].is_present
                     vars2 = [
@@ -235,7 +238,7 @@ class ConstraintsManager:
                     ]
                     model.add(sum(vars2) >= var1)
 
-                if Constraint.DIFFERENT_MACHINE in assignment_constraints:
+                if Constraint.DIFFERENT_MACHINES in assignment_constraints:
                     disjoint_modes2 = disjoint[mode1]
                     var1 = self._mode_vars[mode1].is_present
                     vars2 = [
@@ -317,11 +320,11 @@ class ConstraintsManager:
         self._job_spans_tasks()
         self._select_one_mode()
         self._no_overlap_machines()
-        self._resource_capacity()
+        self._machine_capacity()
         self._activate_setup_times()
         self._timing_constraints()
         self._previous_before_constraints()
-        self._same_and_different_machine_constraints()
+        self._identical_and_different_machine_constraints()
 
         # From here onwards we know which sequence constraints are active.
         self._enforce_circuit()

@@ -64,7 +64,7 @@ class ConstraintsManager:
                 continue  # skip if no modes for this machine
 
             if data.machines[machine].capacity > 0:
-                continue  # skip since machine is resource
+                continue
 
             tasks = [data.modes[mode].task for mode in modes]
             setups = data.setup_times[machine, :, :][np.ix_(tasks, tasks)]
@@ -75,21 +75,21 @@ class ConstraintsManager:
             else:
                 model.add(cpo.no_overlap(seq_var, setups))
 
-    def _resource_capacity(self):
+    def _machine_capacity(self):
         """
-        Creates constraints for the resource capacity.
+        Creates constraints for the machine capacity.
         """
         model, data = self._model, self._data
 
         # Map machines to the relevant modes and their demands.
         mapper = [[] for _ in range(data.num_machines)]
         for idx, mode in enumerate(data.modes):
-            for machine, demand in zip(mode.resources, mode.demands):
+            for machine, demand in zip(mode.machines, mode.demands):
                 if demand > 0:
                     mapper[machine].append((idx, demand))
 
-        for idx, resource in enumerate(data.machines):
-            if resource.capacity == 0:
+        for idx, machine in enumerate(data.machines):
+            if machine.capacity == 0:
                 continue
 
             pulses = [
@@ -97,7 +97,7 @@ class ConstraintsManager:
                 for (mode, demand) in mapper[idx]
                 if demand > 0
             ]
-            model.add(model.sum(pulses) <= resource.capacity)
+            model.add(model.sum(pulses) <= machine.capacity)
 
     def _timing_constraints(self):
         """
@@ -166,13 +166,16 @@ class ConstraintsManager:
                     if Constraint.BEFORE in sequencing_constraints:
                         model.add(cpo.before(sequence, var1, var2))
 
-    def _same_and_different_machine_constraints(self):
+    def _identical_and_different_machine_constraints(self):
         """
         Creates the constraints for the same and different machine constraints.
         """
         model, data = self._model, self._data
         task2modes = utils.task2modes(data)
-        relevant = {Constraint.SAME_MACHINE, Constraint.DIFFERENT_MACHINE}
+        relevant = {
+            Constraint.IDENTICAL_MACHINES,
+            Constraint.DIFFERENT_MACHINES,
+        }
 
         for (task1, task2), constraints in data.constraints.items():
             assignment_constraints = set(constraints) & relevant
@@ -188,7 +191,7 @@ class ConstraintsManager:
 
             modes1 = task2modes[task1]
             for mode1 in modes1:
-                if Constraint.SAME_MACHINE in assignment_constraints:
+                if Constraint.IDENTICAL_MACHINES in assignment_constraints:
                     identical_modes2 = identical[mode1]
                     var1 = cpo.presence_of(self._mode_vars[mode1])
                     vars2 = [
@@ -197,7 +200,7 @@ class ConstraintsManager:
                     ]
                     model.add(sum(vars2) >= var1)
 
-                if Constraint.DIFFERENT_MACHINE in assignment_constraints:
+                if Constraint.DIFFERENT_MACHINES in assignment_constraints:
                     disjoint_modes2 = disjoint[mode1]
                     var1 = cpo.presence_of(self._mode_vars[mode1])
                     vars2 = [
@@ -213,7 +216,7 @@ class ConstraintsManager:
         self._job_spans_tasks()
         self._select_one_mode()
         self._no_overlap_and_setup_times()
-        self._resource_capacity()
+        self._machine_capacity()
         self._timing_constraints()
         self._previous_before_constraints()
-        self._same_and_different_machine_constraints()
+        self._identical_and_different_machine_constraints()

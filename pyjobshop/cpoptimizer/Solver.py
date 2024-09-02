@@ -52,7 +52,7 @@ class Solver:
             # Scheduled tasks are inferred from present mode variables.
             if name.startswith("M") and var.is_present():
                 mode, task = map(int, name[1:].split("_"))
-                machines = self._data.modes[mode].resources
+                machines = self._data.modes[mode].machines
                 start = var.start
                 end = var.end
                 tasks[task] = TaskData(mode, machines, start, end)

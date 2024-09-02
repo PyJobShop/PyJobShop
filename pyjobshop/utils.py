@@ -43,8 +43,8 @@ def machine2modes(data: ProblemData) -> list[list[int]]:
     """
     result: list[list[int]] = [[] for _ in range(data.num_machines)]
     for idx, mode in enumerate(data.modes):
-        for resource in mode.resources:
-            bisect.insort(result[resource], idx)
+        for machine in mode.machines:
+            bisect.insort(result[machine], idx)
     return result
 
 
@@ -98,9 +98,9 @@ def find_modes_with_intersecting_machines(
     intersecting = []
 
     for mode1 in modes1:
-        machines1 = set(mode1.resources)
+        machines1 = set(mode1.machines)
         for mode2 in modes2:
-            in_common = sorted(machines1.intersection(set(mode2.resources)))
+            in_common = sorted(machines1.intersection(set(mode2.machines)))
             if in_common:
                 idx1 = data.modes.index(mode1)
                 idx2 = data.modes.index(mode2)
@@ -136,7 +136,7 @@ def find_modes_with_identical_machines(
 
     same = defaultdict(list)
     for mode1, mode2 in product(modes1, modes2):
-        if set(mode1.resources) == set(mode2.resources):
+        if set(mode1.machines) == set(mode2.machines):
             idx1 = data.modes.index(mode1)
             idx2 = data.modes.index(mode2)
             same[idx1].append(idx2)
@@ -171,7 +171,7 @@ def find_modes_with_disjoint_machines(
 
     disjoint = defaultdict(list)
     for mode1, mode2 in product(modes1, modes2):
-        if set(mode1.resources).isdisjoint(mode2.resources):
+        if set(mode1.machines).isdisjoint(mode2.machines):
             idx1 = data.modes.index(mode1)
             idx2 = data.modes.index(mode2)
             disjoint[idx1].append(idx2)

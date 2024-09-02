@@ -276,19 +276,17 @@ class Constraint(str, Enum):
     #: Task :math:`i` must end before task :math:`j` ends.
     END_BEFORE_END = "end_before_end"
 
-    # TODO how do sequence and assignment constraints work in the context
-    # of renewable resources and modes?
     #: Sequence :math:`i` right before :math:`j` (if assigned to same machine).
     PREVIOUS = "previous"
 
     #: Sequence :math:`i` before :math:`j` (if assigned to same machines).
     BEFORE = "before"
 
-    #: Assign tasks :math:`i` and :math:`j` to the same machine.
-    SAME_MACHINE = "same_machine"
+    #: Assign tasks :math:`i` and :math:`j` to modes with the same set of machines. # noqa
+    IDENTICAL_MACHINES = "identical_machines"
 
-    #: Assign tasks :math:`i` and :math:`j` to different machines.
-    DIFFERENT_MACHINE = "different_machine"
+    #: Assign tasks :math:`i` and :math:`j` to modes with disjoint sets of machines. # noqa
+    DIFFERENT_MACHINES = "different_machines"
 
 
 @dataclass
@@ -358,36 +356,36 @@ class Mode:
     ----------
     task
         Task index that this mode belongs to.
-    resources
-        List of resources that are required for this mode.
+    machines
+        List of machines that are required for this mode.
     duration
         Processing duration of this mode.
     demands
-        List of demands for each resource for this mode. If ``None`` is given,
+        List of demands for each machine for this mode. If ``None`` is given,
         then the demands are initialized as list of zeros with the same length
-        as the resources.
+        as the machines.
     """
 
     task: int
-    resources: list[int]
+    machines: list[int]
     duration: int
     demands: Optional[list[int]] = None
 
     def __post_init__(self):
-        if len(set(self.resources)) != len(self.resources):
-            raise ValueError("Mode resources must be unique.")
+        if len(set(self.machines)) != len(self.machines):
+            raise ValueError("Mode machines must be unique.")
 
         if self.duration < 0:
             raise ValueError("Mode duration must be non-negative.")
 
         if self.demands is None:
-            self.demands = [0] * len(self.resources)
+            self.demands = [0] * len(self.machines)
 
         if any(dem < 0 for dem in self.demands):
             raise ValueError("Mode demands must be non-negative.")
 
-        if len(self.resources) != len(self.demands):
-            raise ValueError("Resources and demands must have same length.")
+        if len(self.machines) != len(self.demands):
+            raise ValueError("machines and demands must have same length.")
 
 
 class ProblemData:
@@ -465,9 +463,9 @@ class ProblemData:
             if mode.task < 0 or mode.task >= num_tasks:
                 raise ValueError("Mode references to unknown task index.")
 
-            for resource in mode.resources:
-                if resource < 0 or resource >= num_mach:
-                    msg = "Mode references to unknown resource index."
+            for machine in mode.machines:
+                if machine < 0 or machine >= num_mach:
+                    msg = "Mode references to unknown machine index."
                     raise ValueError(msg)
 
         without = set(range(num_tasks)) - {mode.task for mode in self.modes}
@@ -480,7 +478,7 @@ class ProblemData:
             has_capacity = any(
                 self.machines[machine].capacity > 0
                 for mode in modes
-                for machine in mode.resources
+                for machine in mode.machines
             )
             has_sequencing = (
                 Constraint.PREVIOUS in constraints

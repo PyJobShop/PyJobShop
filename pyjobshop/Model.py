@@ -113,7 +113,7 @@ class Model:
         for mode in data.modes:
             model.add_mode(
                 task=model.tasks[mode.task],
-                machines=[model.machines[res] for res in mode.resources],
+                machines=[model.machines[res] for res in mode.machines],
                 duration=mode.duration,
                 demands=mode.demands,
             )
@@ -142,9 +142,9 @@ class Model:
                     model.add_previous(task1, task2)
                 elif constraint == Constraint.BEFORE:
                     model.add_before(task1, task2)
-                elif constraint == Constraint.SAME_MACHINE:
-                    model.add_same_machine(task1, task2)
-                elif constraint == Constraint.DIFFERENT_MACHINE:
+                elif constraint == Constraint.IDENTICAL_MACHINES:
+                    model.add_identical_machines(task1, task2)
+                elif constraint == Constraint.DIFFERENT_MACHINES:
                     model.add_different_machine(task1, task2)
 
         for (mach, idx1, idx2), duration in np.ndenumerate(data.setup_times):
@@ -321,7 +321,7 @@ class Model:
         duration
             Processing time of the task on the machine.
         demand
-            Resource demand of the task on the machine. Default 0.
+            Demand of the task on the machine. Default 0.
         """
 
         task_idx = self._id2task[id(task)]
@@ -348,9 +348,9 @@ class Model:
         duration
             Processing duration of this mode.
         demands
-            List of demands for each resource for this mode. If ``None`` is
+            List of demands for each machine for this mode. If ``None`` is
             given, then the demands are initialized as list of zeros with the
-            same length as the resources.
+            same length as the machines.
         """
         task_idx = self._id2task[id(task)]
         machine_idcs = [self._id2machine[id(machine)] for machine in machines]
@@ -450,22 +450,23 @@ class Model:
         task2 = self._id2task[id(second)]
         self._constraints[task1, task2].append(Constraint.BEFORE)
 
-    def add_same_machine(self, first: Task, second: Task):
+    def add_identical_machines(self, first: Task, second: Task):
         """
-        Adds a constraint that two tasks must be scheduled on the same machine.
+        Adds a constraint that two tasks must be scheduled with modes that
+        require the same machines.
         """
         task1 = self._id2task[id(first)]
         task2 = self._id2task[id(second)]
-        self._constraints[task1, task2].append(Constraint.SAME_MACHINE)
+        self._constraints[task1, task2].append(Constraint.IDENTICAL_MACHINES)
 
     def add_different_machine(self, first: Task, second: Task):
         """
-        Adds a constraint that the two tasks must be scheduled on different
-        machines.
+        Adds a constraint that the two tasks must be scheduled with modes that
+        require different machines.
         """
         task1 = self._id2task[id(first)]
         task2 = self._id2task[id(second)]
-        self._constraints[task1, task2].append(Constraint.DIFFERENT_MACHINE)
+        self._constraints[task1, task2].append(Constraint.DIFFERENT_MACHINES)
 
     def add_setup_time(
         self, machine: Machine, task1: Task, task2: Task, duration: int
