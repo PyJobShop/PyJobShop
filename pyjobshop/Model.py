@@ -113,7 +113,7 @@ class Model:
         for mode in data.modes:
             model.add_mode(
                 task=model.tasks[mode.task],
-                machines=[model.machines[res] for res in mode.machines],
+                machines=[model.machines[mach] for mach in mode.machines],
                 duration=mode.duration,
                 demands=mode.demands,
             )
