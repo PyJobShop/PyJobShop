@@ -92,12 +92,18 @@ class ConstraintsManager:
             if machine.capacity == 0:
                 continue
 
-            pulses = [
-                cpo.pulse(self._mode_vars[mode], demand)
-                for (mode, demand) in mapper[idx]
-                if demand > 0
-            ]
-            model.add(model.sum(pulses) <= machine.capacity)
+            if machine.renewable:
+                pulses = [
+                    cpo.pulse(self._mode_vars[mode], demand)
+                    for (mode, demand) in mapper[idx]
+                ]
+                model.add(model.sum(pulses) <= machine.capacity)
+            else:
+                usage = [
+                    cpo.presence_of(self._mode_vars[mode]) * demand
+                    for (mode, demand) in mapper[idx]
+                ]
+                model.add(model.sum(usage) <= machine.capacity)
 
     def _timing_constraints(self):
         """

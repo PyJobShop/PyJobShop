@@ -792,10 +792,9 @@ def test_machine_with_machine_faster_than_no_overlap(solver: str):
     assert_equal(result.objective, 1)
 
 
-def test_machine_capacity_is_respected(solver: str):
+def test_machine_renewable_capacity_is_respected(solver: str):
     """
-    Tests that a machine without enough capacity is not selected
-    for scheduling.
+    Tests that a machine with renewable capacity is respected.
     """
     model = Model()
     machine = model.add_machine(capacity=1)
@@ -815,6 +814,32 @@ def test_machine_capacity_is_respected(solver: str):
     result = model.solve(solver=solver)
     assert_equal(result.status.value, "Optimal")
     assert_equal(result.objective, 10)
+
+
+def test_machine_non_renewable_capacity(solver: str):
+    """
+    Tests that a machine with non-renewable capacity is respected.
+    """
+    model = Model()
+
+    machine = model.add_machine(capacity=1, renewable=False)
+    task1 = model.add_task()
+    model.add_mode(task1, [machine], duration=1, demands=[1])
+
+    # The machine has capacity 1 and the task requires 1 unit of
+    # capacity, so the task can be scheduled.
+    result = model.solve(solver=solver)
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.objective, 1)
+
+    # Now we add a second task that requires 1 unit of capacity.
+    task2 = model.add_task()
+    model.add_mode(task2, [machine], duration=1, demands=[1])
+
+    # Since the machine has non-renewable capacity, the second task
+    # cannot be scheduled.
+    result = model.solve(solver=solver)
+    assert_equal(result.status.value, "Infeasible")
 
 
 @pytest.mark.parametrize(
