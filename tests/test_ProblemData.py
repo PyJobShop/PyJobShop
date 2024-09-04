@@ -293,26 +293,37 @@ def test_problem_data_job_references_unknown_task():
         )
 
 
-def test_problem_data_mode_references_unknown_data():
+@pytest.mark.parametrize(
+    "mode",
+    [
+        Mode(42, [0], 1),  # Task 42 does not exist.
+        Mode(0, [42], 1),  # Machine 42 does not exist.
+    ],
+)
+def test_problem_data_mode_references_unknown_data(mode):
     """
     Tests that an error is raised when a mode references unknown data.
     """
     with assert_raises(ValueError):
-        # Task 42 does not exist.
         ProblemData(
             [Job()],
             [Machine()],
             [Task()],
-            [Mode(42, [0], 1)],
+            [mode],
         )
 
+
+def test_problem_data_mode_demand_exceeds_machine_capacity():
+    """
+    Tests that an error is raised when a mode's demand exceeds the machine
+    capacity.
+    """
     with assert_raises(ValueError):
-        # Machine 42 does not exist.
         ProblemData(
             [Job()],
-            [Machine()],
+            [Machine(capacity=1)],
             [Task()],
-            [Mode(0, [42], 1)],
+            [Mode(0, [0], 2, demands=[2])],
         )
 
 
@@ -797,23 +808,18 @@ def test_machine_renewable_capacity_is_respected(solver: str):
     Tests that a machine with renewable capacity is respected.
     """
     model = Model()
-    machine = model.add_machine(capacity=1)
-    task = model.add_task()
-    model.add_processing_time(task, machine, duration=1, demand=2)
+    machine = model.add_machine(capacity=2)
+    task1 = model.add_task()
+    task2 = model.add_task()
+    model.add_processing_time(task1, machine, duration=1, demand=2)
+    model.add_processing_time(task2, machine, duration=1, demand=2)
 
-    # The machine has capacity 1, but the task requires 2 units of
-    # capacity, so the task cannot be scheduled.
-    result = model.solve(solver=solver)
-    assert_equal(result.status.value, "Infeasible")
-
-    machine2 = model.add_machine(capacity=2)
-    model.add_processing_time(task, machine2, duration=10, demand=2)
-
-    # The machine has capacity 2, and the task requires 2 units of
-    # capacity, so the task can be scheduled.
+    # The machine has capacity 2, and each task requires 2 units of
+    # capacity, so only one task can be scheduled at a time. This results
+    # in a makespan of 2.
     result = model.solve(solver=solver)
     assert_equal(result.status.value, "Optimal")
-    assert_equal(result.objective, 10)
+    assert_equal(result.objective, 2)
 
 
 def test_machine_non_renewable_capacity(solver: str):

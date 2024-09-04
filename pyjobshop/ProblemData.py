@@ -465,6 +465,11 @@ class ProblemData:
                     msg = "Mode references to unknown machine index."
                     raise ValueError(msg)
 
+            for demand, machine in zip(mode.demands, mode.machines):
+                if demand > self.machines[machine].capacity:
+                    msg = "Mode demand exceeds machine capacity."
+                    raise ValueError(msg)
+
         without = set(range(num_tasks)) - {mode.task for mode in self.modes}
         names = [self.tasks[idx].name or idx for idx in sorted(without)]
         if names:  # task indices if names are not available
