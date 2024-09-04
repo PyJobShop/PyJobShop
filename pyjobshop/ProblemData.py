@@ -135,12 +135,23 @@ class Machine:
         Capacity of the machine. Default 0. If the capacity is nonzero, then
         the machine can process a number of tasks at the same time, which is
         determined by the task mode demands.
+    renewable
+        Whether the machine is renewable. A renewable machine replenishes
+        its capacity after each task completion. Default ``True``.
     name
         Name of the machine.
     """
 
     capacity: int = 0
+    renewable: bool = True
     name: str = ""
+
+    def __post_init__(self):
+        if self.capacity < 0:
+            raise ValueError("Capacity must be non-negative.")
+
+        if self.capacity == 0 and not self.renewable:
+            raise ValueError("Non-renewable machines must have capacity > 0.")
 
 
 class Task:

@@ -180,8 +180,10 @@ def test_add_machine_attributes():
     """
     model = Model()
 
-    machine = model.add_machine(name="machine")
+    machine = model.add_machine(capacity=1, renewable=False, name="machine")
 
+    assert_equal(machine.capacity, 1)
+    assert_equal(machine.renewable, False)
     assert_equal(machine.name, "machine")
 
 

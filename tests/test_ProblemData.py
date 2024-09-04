@@ -91,11 +91,31 @@ def test_machine_attributes():
     """
     # Let's first test the default values.
     machine = Machine()
+    assert_equal(machine.capacity, 0)
+    assert_equal(machine.renewable, True)
     assert_equal(machine.name, "")
 
     # Now test with some values.
-    machine = Machine(name="TestMachine")
+    machine = Machine(capacity=1, renewable=False, name="TestMachine")
+    assert_equal(machine.capacity, 1)
+    assert_equal(machine.renewable, False)
     assert_equal(machine.name, "TestMachine")
+
+
+@pytest.mark.parametrize(
+    "capacity, renewable",
+    [
+        (-1, True),  # capacity < 0
+        (0, False),  # capacity == 0 and not renewable
+    ],
+)
+def test_machine_raises_invalid_parameters(capacity: int, renewable: bool):
+    """
+    Tests that a ValueError is raised when invalid parameters are passed to
+    the Machine class.
+    """
+    with assert_raises(ValueError):
+        Machine(capacity=capacity, renewable=renewable)
 
 
 def test_task_attributes():
