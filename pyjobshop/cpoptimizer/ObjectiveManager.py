@@ -87,7 +87,6 @@ class ObjectiveManager:
         Returns the expression corresponding to the given objective.
         """
         expr = 0
-        objective = self._data.objective
 
         if objective.weight_makespan > 0:
             expr += objective.weight_makespan * self._makespan_expr()
