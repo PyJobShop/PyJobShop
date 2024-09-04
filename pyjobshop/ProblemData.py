@@ -296,7 +296,7 @@ class Objective:
 
     * Makespan
     * Number of tardy jobs
-    * Total completion time
+    * Total flow time
     * Total tardiness
     * Total earliness
 
@@ -307,7 +307,7 @@ class Objective:
 
     weight_makespan: int = 0
     weight_tardy_jobs: int = 0
-    weight_total_completion_time: int = 0
+    weight_total_flow_time: int = 0
     weight_total_tardiness: int = 0
     weight_total_earliness: int = 0
 
@@ -319,11 +319,11 @@ class Objective:
         return cls(weight_makespan=1)
 
     @classmethod
-    def total_completion_time(cls):
+    def total_flow_time(cls):
         """
-        Minimizes the total completion time.
+        Minimizes the total flow time.
         """
-        return cls(weight_total_completion_time=1)
+        return cls(weight_total_flow_time=1)
 
     @classmethod
     def tardy_jobs(cls):
