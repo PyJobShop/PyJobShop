@@ -124,6 +124,7 @@ class Job:
         self._tasks.append(idx)
 
 
+@dataclass(frozen=True)
 class Machine:
     """
     Simple dataclass for storing all machine-related data.
@@ -138,23 +139,8 @@ class Machine:
         Name of the machine.
     """
 
-    def __init__(self, capacity: int = 0, name: str = ""):
-        self._capacity = capacity
-        self._name = name
-
-    @property
-    def capacity(self) -> int:
-        """
-        Capacity of the machine.
-        """
-        return self._capacity
-
-    @property
-    def name(self) -> str:
-        """
-        Name of the machine.
-        """
-        return self._name
+    capacity: int = 0
+    name: str = ""
 
 
 class Task:
