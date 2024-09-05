@@ -43,16 +43,16 @@ class ObjectiveManager:
 
         return cpo.sum(exprs)  # type: ignore
 
-    def _total_completion_time_expr(self) -> CpoExpr:
+    def _total_flow_time_expr(self) -> CpoExpr:
         """
-        Returns an expression representing the total completion time of jobs.
+        Returns an expression representing the total flow time of jobs.
         """
         data = self._data
         total = []
 
         for job, var in zip(data.jobs, self._job_vars):
-            completion_time = cpo.end_of(var)
-            total.append(job.weight * completion_time)
+            flow_time = cpo.max(0, cpo.end_of(var) - job.release_date)
+            total.append(job.weight * flow_time)
 
         return cpo.sum(total)  # type: ignore
 
@@ -99,10 +99,9 @@ class ObjectiveManager:
                 objective.weight_total_tardiness * self._total_tardiness_expr()
             )
 
-        if objective.weight_total_completion_time > 0:
+        if objective.weight_total_flow_time > 0:
             expr += (
-                objective.weight_total_completion_time
-                * self._total_completion_time_expr()
+                objective.weight_total_flow_time * self._total_flow_time_expr()
             )
 
         if objective.weight_total_earliness > 0:

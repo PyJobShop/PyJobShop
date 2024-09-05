@@ -48,13 +48,20 @@ class ObjectiveManager:
         weights = [job.weight for job in data.jobs]
         return LinearExpr.weighted_sum(is_tardy_vars, weights)
 
-    def _total_completion_time_expr(self) -> LinearExprT:
+    def _total_flow_time_expr(self) -> LinearExprT:
         """
-        Returns an expression representing the total completion time of jobs.
+        Returns an expression representing the total flow time of jobs.
         """
-        completion_time_vars = [var.end for var in self._job_vars]
-        weights = [job.weight for job in self._data.jobs]
-        return LinearExpr.weighted_sum(completion_time_vars, weights)
+        model, data = self._model, self._data
+        flow_time_vars = []
+
+        for job, var in zip(data.jobs, self._job_vars):
+            flow_time = model.new_int_var(0, data.horizon, f"flow_time_{job}")
+            model.add_max_equality(flow_time, [0, var.end - job.release_date])
+            flow_time_vars.append(flow_time)
+
+        weights = [job.weight for job in data.jobs]
+        return LinearExpr.weighted_sum(flow_time_vars, weights)
 
     def _total_tardiness_expr(self) -> LinearExprT:
         """
@@ -105,10 +112,9 @@ class ObjectiveManager:
                 objective.weight_total_tardiness * self._total_tardiness_expr()
             )
 
-        if objective.weight_total_completion_time > 0:
+        if objective.weight_total_flow_time > 0:
             expr += (
-                objective.weight_total_completion_time
-                * self._total_completion_time_expr()
+                objective.weight_total_flow_time * self._total_flow_time_expr()
             )
 
         if objective.weight_total_earliness > 0:

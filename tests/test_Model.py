@@ -45,7 +45,7 @@ def test_model_to_data():
     model.add_setup_time(machine2, task1, task2, 4)
 
     model.set_horizon(100)
-    model.set_objective(weight_total_completion_time=1)
+    model.set_objective(weight_total_flow_time=1)
 
     data = model.data()
 
@@ -82,7 +82,7 @@ def test_model_to_data():
     )
     assert_equal(data.setup_times, [[[0, 3], [0, 0]], [[0, 4], [0, 0]]])
     assert_equal(data.horizon, 100)
-    assert_equal(data.objective, Objective.total_completion_time())
+    assert_equal(data.objective, Objective.total_flow_time())
 
 
 def test_from_data():
@@ -118,7 +118,7 @@ def test_from_data():
             ]
         ),
         horizon=100,
-        objective=Objective.total_completion_time(),
+        objective=Objective.total_flow_time(),
     )
     model = Model.from_data(data)
     m_data = model.data()
@@ -273,14 +273,14 @@ def test_model_set_objective():
         weight_makespan=1,
         weight_tardy_jobs=2,
         weight_total_tardiness=3,
-        weight_total_completion_time=4,
+        weight_total_flow_time=4,
         weight_total_earliness=5,
     )
 
     assert_equal(model.objective.weight_makespan, 1)
     assert_equal(model.objective.weight_tardy_jobs, 2)
     assert_equal(model.objective.weight_total_tardiness, 3)
-    assert_equal(model.objective.weight_total_completion_time, 4)
+    assert_equal(model.objective.weight_total_flow_time, 4)
     assert_equal(model.objective.weight_total_earliness, 5)
 
 

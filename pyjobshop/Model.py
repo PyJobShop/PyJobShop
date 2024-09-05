@@ -161,7 +161,7 @@ class Model:
             weight_makespan=data.objective.weight_makespan,
             weight_tardy_jobs=data.objective.weight_tardy_jobs,
             weight_total_tardiness=data.objective.weight_total_tardiness,
-            weight_total_completion_time=data.objective.weight_total_completion_time,
+            weight_total_flow_time=data.objective.weight_total_flow_time,
         )
 
         return model
@@ -512,7 +512,7 @@ class Model:
         weight_makespan: int = 0,
         weight_tardy_jobs: int = 0,
         weight_total_tardiness: int = 0,
-        weight_total_completion_time: int = 0,
+        weight_total_flow_time: int = 0,
         weight_total_earliness: int = 0,
     ):
         """
@@ -526,8 +526,8 @@ class Model:
             Weight of the tardy jobs objective. Default 0.
         weight_total_tardiness
             Weight of the total tardiness objective. Default 0.
-        weight_total_completion_time
-            Weight of the total completion time objective. Default 0.
+        weight_total_flow_time
+            Weight of the total flow time objective. Default 0.
         weight_total_earliness
             Weight of the total earliness objective. Default 0.
         """
@@ -535,7 +535,7 @@ class Model:
             weight_makespan=weight_makespan,
             weight_tardy_jobs=weight_tardy_jobs,
             weight_total_tardiness=weight_total_tardiness,
-            weight_total_completion_time=weight_total_completion_time,
+            weight_total_flow_time=weight_total_flow_time,
             weight_total_earliness=weight_total_earliness,
         )
 

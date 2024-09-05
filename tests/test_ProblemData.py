@@ -188,7 +188,7 @@ def test_problem_data_input_parameter_attributes():
     }
     setup_times = np.ones((5, 5, 5), dtype=int)
     horizon = 100
-    objective = Objective.total_completion_time()
+    objective = Objective.total_flow_time()
 
     data = ProblemData(
         jobs,
@@ -1083,7 +1083,7 @@ def test_tight_horizon_results_in_infeasiblity(solver: str):
         (Objective.makespan, (1, 0, 0, 0, 0)),
         (Objective.tardy_jobs, (0, 1, 0, 0, 0)),
         (Objective.total_tardiness, (0, 0, 1, 0, 0)),
-        (Objective.total_completion_time, (0, 0, 0, 1, 0)),
+        (Objective.total_flow_time, (0, 0, 0, 1, 0)),
         (Objective.total_earliness, (0, 0, 0, 0, 1)),
     ],
 )
@@ -1096,7 +1096,7 @@ def test_objective_classmethods_set_attributes_correctly(objective, weights):
     assert_equal(obj.weight_makespan, weights[0])
     assert_equal(obj.weight_tardy_jobs, weights[1])
     assert_equal(obj.weight_total_tardiness, weights[2])
-    assert_equal(obj.weight_total_completion_time, weights[3])
+    assert_equal(obj.weight_total_flow_time, weights[3])
     assert_equal(obj.weight_total_earliness, weights[4])
 
 
@@ -1133,17 +1133,16 @@ def test_tardy_jobs(solver: str):
 
     model.set_objective(weight_tardy_jobs=1)
 
-    result = model.solve(solver=solver)
-
     # Only one job can be scheduled on time. The other two are tardy.
     # Both jobs have weight 2, so the objective value is 4.
+    result = model.solve(solver=solver)
     assert_equal(result.objective, 4)
     assert_equal(result.status.value, "Optimal")
 
 
-def test_total_completion_time(solver: str):
+def test_total_flow_time(solver: str):
     """
-    Tests that the total completion time objective is correctly optimized.
+    Tests that the total flow time objective is correctly optimized.
     """
     model = Model()
 
@@ -1151,17 +1150,19 @@ def test_total_completion_time(solver: str):
     weights = [2, 10]
 
     for idx in range(2):
-        job = model.add_job(weight=weights[idx])
+        job = model.add_job(weight=weights[idx], release_date=1)
         task = model.add_task(job=job)
         model.add_processing_time(task, machine, duration=idx + 1)
 
-    model.set_objective(weight_total_completion_time=1)
+    model.set_objective(weight_total_flow_time=1)
 
     result = model.solve(solver=solver)
 
     # One machine and two jobs (A, B) with processing times (1, 2) and weights
-    # (2, 10). Because of these weights, it's optimal to schedule B for A with
-    # completion times (3, 2) and objective 2 * 3 + 10 * 2 = 26.
+    # (2, 10). Because of these weights, it's optimal to schedule B before A.
+    # Release date is 1, so task B ends at time 3 and task A ends at time 4.
+    # But the flow time is 2 and 3 for B and A, respectively, so we get an
+    # objective of 2 * 1 + 3 * 2 = 26.
     assert_equal(result.objective, 26)
     assert_equal(result.status.value, "Optimal")
 
