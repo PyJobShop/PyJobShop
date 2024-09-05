@@ -60,3 +60,7 @@ Contents
    :caption: Developing PyJobShop
 
    dev/contributing
+
+.. toctree::
+
+   resources
