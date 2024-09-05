@@ -1,4 +1,5 @@
 import datetime
+import os
 import shutil
 
 # Project information
@@ -51,7 +52,8 @@ intersphinx_mapping = {
 intersphinx_disabled_domains = ["std"]
 
 # -- nbsphinx
-nbsphinx_execute = "always"  # change to "never" to avoid running notebooks
+skip_notebooks = os.getenv("SKIP_NOTEBOOKS", False)
+nbsphinx_execute = "never" if skip_notebooks else "always"
 
 
 # -- Options for HTML output -------------------------------------------------
