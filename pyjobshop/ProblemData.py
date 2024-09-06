@@ -124,6 +124,7 @@ class Job:
         self._tasks.append(idx)
 
 
+@dataclass(frozen=True)
 class Machine:
     """
     Simple dataclass for storing all machine-related data.
@@ -134,27 +135,23 @@ class Machine:
         Capacity of the machine. Default 0. If the capacity is nonzero, then
         the machine can process a number of tasks at the same time, which is
         determined by the task mode demands.
+    renewable
+        Whether the machine is renewable. A renewable machine replenishes
+        its capacity after each task completion. Default ``True``.
     name
         Name of the machine.
     """
 
-    def __init__(self, capacity: int = 0, name: str = ""):
-        self._capacity = capacity
-        self._name = name
+    capacity: int = 0
+    renewable: bool = True
+    name: str = ""
 
-    @property
-    def capacity(self) -> int:
-        """
-        Capacity of the machine.
-        """
-        return self._capacity
+    def __post_init__(self):
+        if self.capacity < 0:
+            raise ValueError("Capacity must be non-negative.")
 
-    @property
-    def name(self) -> str:
-        """
-        Name of the machine.
-        """
-        return self._name
+        if self.capacity == 0 and not self.renewable:
+            raise ValueError("Non-renewable machines must have capacity > 0.")
 
 
 class Task:
@@ -296,7 +293,7 @@ class Objective:
 
     * Makespan
     * Number of tardy jobs
-    * Total completion time
+    * Total flow time
     * Total tardiness
     * Total earliness
 
@@ -307,7 +304,7 @@ class Objective:
 
     weight_makespan: int = 0
     weight_tardy_jobs: int = 0
-    weight_total_completion_time: int = 0
+    weight_total_flow_time: int = 0
     weight_total_tardiness: int = 0
     weight_total_earliness: int = 0
 
@@ -319,11 +316,11 @@ class Objective:
         return cls(weight_makespan=1)
 
     @classmethod
-    def total_completion_time(cls):
+    def total_flow_time(cls):
         """
-        Minimizes the total completion time.
+        Minimizes the total flow time.
         """
-        return cls(weight_total_completion_time=1)
+        return cls(weight_total_flow_time=1)
 
     @classmethod
     def tardy_jobs(cls):
@@ -466,6 +463,11 @@ class ProblemData:
             for machine in mode.machines:
                 if machine < 0 or machine >= num_mach:
                     msg = "Mode references to unknown machine index."
+                    raise ValueError(msg)
+
+            for demand, machine in zip(mode.demands, mode.machines):
+                if demand > self.machines[machine].capacity:
+                    msg = "Mode demand exceeds machine capacity."
                     raise ValueError(msg)
 
         without = set(range(num_tasks)) - {mode.task for mode in self.modes}

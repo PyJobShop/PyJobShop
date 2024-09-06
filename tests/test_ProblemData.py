@@ -91,11 +91,31 @@ def test_machine_attributes():
     """
     # Let's first test the default values.
     machine = Machine()
+    assert_equal(machine.capacity, 0)
+    assert_equal(machine.renewable, True)
     assert_equal(machine.name, "")
 
     # Now test with some values.
-    machine = Machine(name="TestMachine")
+    machine = Machine(capacity=1, renewable=False, name="TestMachine")
+    assert_equal(machine.capacity, 1)
+    assert_equal(machine.renewable, False)
     assert_equal(machine.name, "TestMachine")
+
+
+@pytest.mark.parametrize(
+    "capacity, renewable",
+    [
+        (-1, True),  # capacity < 0
+        (0, False),  # capacity == 0 and not renewable
+    ],
+)
+def test_machine_raises_invalid_parameters(capacity: int, renewable: bool):
+    """
+    Tests that a ValueError is raised when invalid parameters are passed to
+    the Machine class.
+    """
+    with assert_raises(ValueError):
+        Machine(capacity=capacity, renewable=renewable)
 
 
 def test_task_attributes():
@@ -168,7 +188,7 @@ def test_problem_data_input_parameter_attributes():
     }
     setup_times = np.ones((5, 5, 5), dtype=int)
     horizon = 100
-    objective = Objective.total_completion_time()
+    objective = Objective.total_flow_time()
 
     data = ProblemData(
         jobs,
@@ -273,26 +293,37 @@ def test_problem_data_job_references_unknown_task():
         )
 
 
-def test_problem_data_mode_references_unknown_data():
+@pytest.mark.parametrize(
+    "mode",
+    [
+        Mode(42, [0], 1),  # Task 42 does not exist.
+        Mode(0, [42], 1),  # Machine 42 does not exist.
+    ],
+)
+def test_problem_data_mode_references_unknown_data(mode):
     """
     Tests that an error is raised when a mode references unknown data.
     """
     with assert_raises(ValueError):
-        # Task 42 does not exist.
         ProblemData(
             [Job()],
             [Machine()],
             [Task()],
-            [Mode(42, [0], 1)],
+            [mode],
         )
 
+
+def test_problem_data_mode_demand_exceeds_machine_capacity():
+    """
+    Tests that an error is raised when a mode's demand exceeds the machine
+    capacity.
+    """
     with assert_raises(ValueError):
-        # Machine 42 does not exist.
         ProblemData(
             [Job()],
-            [Machine()],
+            [Machine(capacity=1)],
             [Task()],
-            [Mode(0, [42], 1)],
+            [Mode(0, [0], 2, demands=[2])],
         )
 
 
@@ -772,29 +803,49 @@ def test_machine_with_machine_faster_than_no_overlap(solver: str):
     assert_equal(result.objective, 1)
 
 
-def test_machine_capacity_is_respected(solver: str):
+def test_machine_renewable_capacity_is_respected(solver: str):
     """
-    Tests that a machine without enough capacity is not selected
-    for scheduling.
+    Tests that a machine with renewable capacity is respected.
     """
     model = Model()
-    machine = model.add_machine(capacity=1)
-    task = model.add_task()
-    model.add_processing_time(task, machine, duration=1, demand=2)
+    machine = model.add_machine(capacity=2)
+    task1 = model.add_task()
+    task2 = model.add_task()
+    model.add_processing_time(task1, machine, duration=1, demand=2)
+    model.add_processing_time(task2, machine, duration=1, demand=2)
 
-    # The machine has capacity 1, but the task requires 2 units of
-    # capacity, so the task cannot be scheduled.
+    # The machine has capacity 2, and each task requires 2 units of
+    # capacity, so only one task can be scheduled at a time. This results
+    # in a makespan of 2.
     result = model.solve(solver=solver)
-    assert_equal(result.status.value, "Infeasible")
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.objective, 2)
 
-    machine2 = model.add_machine(capacity=2)
-    model.add_processing_time(task, machine2, duration=10, demand=2)
 
-    # The machine has capacity 2, and the task requires 2 units of
+def test_machine_non_renewable_capacity(solver: str):
+    """
+    Tests that a machine with non-renewable capacity is respected.
+    """
+    model = Model()
+
+    machine = model.add_machine(capacity=1, renewable=False)
+    task1 = model.add_task()
+    model.add_mode(task1, [machine], duration=1, demands=[1])
+
+    # The machine has capacity 1 and the task requires 1 unit of
     # capacity, so the task can be scheduled.
     result = model.solve(solver=solver)
     assert_equal(result.status.value, "Optimal")
-    assert_equal(result.objective, 10)
+    assert_equal(result.objective, 1)
+
+    # Now we add a second task that requires 1 unit of capacity.
+    task2 = model.add_task()
+    model.add_mode(task2, [machine], duration=1, demands=[1])
+
+    # Since the machine has non-renewable capacity, the second task
+    # cannot be scheduled.
+    result = model.solve(solver=solver)
+    assert_equal(result.status.value, "Infeasible")
 
 
 @pytest.mark.parametrize(
@@ -1032,7 +1083,7 @@ def test_tight_horizon_results_in_infeasiblity(solver: str):
         (Objective.makespan, (1, 0, 0, 0, 0)),
         (Objective.tardy_jobs, (0, 1, 0, 0, 0)),
         (Objective.total_tardiness, (0, 0, 1, 0, 0)),
-        (Objective.total_completion_time, (0, 0, 0, 1, 0)),
+        (Objective.total_flow_time, (0, 0, 0, 1, 0)),
         (Objective.total_earliness, (0, 0, 0, 0, 1)),
     ],
 )
@@ -1045,7 +1096,7 @@ def test_objective_classmethods_set_attributes_correctly(objective, weights):
     assert_equal(obj.weight_makespan, weights[0])
     assert_equal(obj.weight_tardy_jobs, weights[1])
     assert_equal(obj.weight_total_tardiness, weights[2])
-    assert_equal(obj.weight_total_completion_time, weights[3])
+    assert_equal(obj.weight_total_flow_time, weights[3])
     assert_equal(obj.weight_total_earliness, weights[4])
 
 
@@ -1082,17 +1133,16 @@ def test_tardy_jobs(solver: str):
 
     model.set_objective(weight_tardy_jobs=1)
 
-    result = model.solve(solver=solver)
-
     # Only one job can be scheduled on time. The other two are tardy.
     # Both jobs have weight 2, so the objective value is 4.
+    result = model.solve(solver=solver)
     assert_equal(result.objective, 4)
     assert_equal(result.status.value, "Optimal")
 
 
-def test_total_completion_time(solver: str):
+def test_total_flow_time(solver: str):
     """
-    Tests that the total completion time objective is correctly optimized.
+    Tests that the total flow time objective is correctly optimized.
     """
     model = Model()
 
@@ -1100,17 +1150,19 @@ def test_total_completion_time(solver: str):
     weights = [2, 10]
 
     for idx in range(2):
-        job = model.add_job(weight=weights[idx])
+        job = model.add_job(weight=weights[idx], release_date=1)
         task = model.add_task(job=job)
         model.add_processing_time(task, machine, duration=idx + 1)
 
-    model.set_objective(weight_total_completion_time=1)
+    model.set_objective(weight_total_flow_time=1)
 
     result = model.solve(solver=solver)
 
     # One machine and two jobs (A, B) with processing times (1, 2) and weights
-    # (2, 10). Because of these weights, it's optimal to schedule B for A with
-    # completion times (3, 2) and objective 2 * 3 + 10 * 2 = 26.
+    # (2, 10). Because of these weights, it's optimal to schedule B before A.
+    # Release date is 1, so task B ends at time 3 and task A ends at time 4.
+    # But the flow time is 2 and 3 for B and A, respectively, so we get an
+    # objective of 2 * 1 + 3 * 2 = 26.
     assert_equal(result.objective, 26)
     assert_equal(result.status.value, "Optimal")
 
