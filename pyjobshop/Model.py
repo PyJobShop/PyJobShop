@@ -229,7 +229,9 @@ class Model:
 
         return job
 
-    def add_machine(self, capacity: int = 0, name: str = "") -> Machine:
+    def add_machine(
+        self, capacity: int = 0, renewable: bool = True, name: str = ""
+    ) -> Machine:
         """
         Adds a machine to the model.
 
@@ -237,6 +239,8 @@ class Model:
         ----------
         capacity
             The capacity of the machine.
+        renewable
+            Whether the machine is renewable.
         name
             Name of the machine.
 
@@ -245,7 +249,7 @@ class Model:
         Machine
             The created machine.
         """
-        machine = Machine(capacity=capacity, name=name)
+        machine = Machine(capacity=capacity, renewable=renewable, name=name)
 
         self._id2machine[id(machine)] = len(self.machines)
         self._machines.append(machine)
