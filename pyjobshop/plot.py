@@ -47,7 +47,6 @@ def plot(
     # belong to a job are colored grey.
     task2color = defaultdict(lambda: "grey")
     colors = _get_colors()
-
     for job_idx, job in enumerate(data.jobs):
         for task in job.tasks:
             task2color[task] = colors[job_idx % len(colors)]

@@ -12,6 +12,8 @@ from ortools.sat.python.cp_model import (
 from pyjobshop.ProblemData import ProblemData
 from pyjobshop.Solution import Solution
 
+from . import utils
+
 
 @dataclass
 class Rectangle:
@@ -33,71 +35,11 @@ def plot_resource_gantt(
     """
     Plots a resource Gantt chart, which ...
     """
-    rectangles = solution2rectangles(solution, data)
-    _plot_resource_gantt(rectangles)
-
-    pass
+    rectangles = _solution2rectangles(solution, data)
+    _plot_resource_gantt(data, rectangles)
 
 
-def _plot_resource_gantt(rectangles: list[Rectangle]):
-    """
-    Helper function that takes rectangles.
-    """
-    # Organize rectangles by machine
-    machine_rectangles = defaultdict(list)
-    for rect in rectangles:
-        machine_rectangles[rect.machine].append(rect)
-
-    # Number of subplots
-    num_machines = len(machine_rectangles)
-
-    # Create subplots
-    fig, axes = plt.subplots(
-        num_machines, 1, figsize=(10, 6 * num_machines), sharex=True
-    )
-    if num_machines == 1:
-        axes = [axes]
-
-    # Plotting each machine in a separate subplot
-    for ax, (machine, rects) in zip(axes, machine_rectangles.items()):
-        for rect in rects:
-            x1, y1, x2, y2 = rect.start_x, rect.start_y, rect.end_x, rect.end_y
-            color = rect.task
-            rectPlot = patches.Rectangle(
-                (x1, y1),
-                x2 - x1,
-                y2 - y1,
-                edgecolor="black",
-                facecolor=plt.cm.rainbow(color / len(rectangles)),
-                zorder=3,
-            )
-            ax.add_patch(rectPlot)
-            ax.annotate(
-                str(rect.task),
-                (x1 + (x2 - x1) / 2.0, y1 + (y2 - y1) / 2.0),
-                color="black",
-                weight="bold",
-                fontsize=6,
-                ha="center",
-                va="center",
-                zorder=4,
-            )
-
-        # Set axis limits and labels
-        ax.set_xlim(0, max(rect.end_x for rect in rects) + 1)
-        ax.set_ylim(0, max(rect.end_y for rect in rects) + 1)
-        ax.set_xlabel("", zorder=2)
-        ax.set_ylabel(f"Machine {machine}", zorder=2)
-
-        # Set grid and axes behind the rectangles
-        ax.set_axisbelow(True)
-        ax.grid(True, zorder=1)
-
-    plt.tight_layout()
-    plt.show()
-
-
-def solution2rectangles(solution, data):
+def _solution2rectangles(solution, data):
     cp_model = CpModel()
 
     pairs_by_machine = defaultdict(list)
@@ -152,3 +94,69 @@ def solution2rectangles(solution, data):
             )
 
     return rectangles
+
+
+def _plot_resource_gantt(data: ProblemData, rectangles: list[Rectangle]):
+    """
+    Helper function that takes rectangles.
+    """
+    # Organize rectangles by machine
+    machine_rectangles = defaultdict(list)
+    for rect in rectangles:
+        machine_rectangles[rect.machine].append(rect)
+
+    num_machines = len(machine_rectangles)
+    _, axes = plt.subplots(
+        num_machines, 1, figsize=(10, 6 * num_machines), sharex=True
+    )
+    if num_machines == 1:
+        axes = [axes]
+
+    # Compute the maximum end time across all rectangles
+    max_end_time = max(rect.end_x for rect in rectangles)
+    x_limit = max_end_time * 1.005  # 0.5% larger than the maximum end time
+
+    # Tasks belonging to the same job get the same color. Task that do not
+    # belong to a job are colored grey.
+    task2color = defaultdict(lambda: "grey")
+    colors = utils.get_colors()
+    for job_idx, job in enumerate(data.jobs):
+        for task in job.tasks:
+            task2color[task] = colors[job_idx % len(colors)]
+
+    # Plotting each machine in a separate subplot
+    for ax, (machine, rects) in zip(axes, machine_rectangles.items()):
+        for rect in rects:
+            x1, y1, x2, y2 = rect.start_x, rect.start_y, rect.end_x, rect.end_y
+            rectPlot = patches.Rectangle(
+                (x1, y1),
+                x2 - x1,
+                y2 - y1,
+                edgecolor="black",
+                facecolor=task2color[rect.task],
+                zorder=3,
+            )
+            ax.add_patch(rectPlot)
+            ax.annotate(
+                str(rect.task),
+                (x1 + (x2 - x1) / 2.0, y1 + (y2 - y1) / 2.0),
+                color="black",
+                weight="bold",
+                fontsize=6,
+                ha="center",
+                va="center",
+                zorder=4,
+            )
+
+        # Set axis limits and labels
+        ax.set_xlim(0, x_limit)
+        ax.set_ylim(0, max(rect.end_y for rect in rects) + 1)
+        ax.set_xlabel("", zorder=2)
+        ax.set_ylabel(f"Machine {machine}", zorder=2)
+
+        # Set grid and axes behind the rectangles
+        ax.set_axisbelow(True)
+        ax.grid(True, zorder=1)
+
+    plt.tight_layout()
+    plt.show()
