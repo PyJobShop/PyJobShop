@@ -25,8 +25,9 @@ class Portfolio:
 
 
 def parse_rcmp(file_path: str) -> Portfolio:
-    with open(file_path, "r") as f:
-        lines = (line.strip() for line in f.readlines())
+    with open(file_path, "r") as fh:
+        # Strip all lines and ignore all empty lines.
+        lines = iter(line.strip() for line in fh.readlines() if line.strip())
 
     num_projects = int(next(lines))
     num_resources = int(next(lines))
@@ -34,11 +35,9 @@ def parse_rcmp(file_path: str) -> Portfolio:
     portfolio = Portfolio(num_projects, num_resources, capacities)
 
     for project_idx in range(1, num_projects + 1):
-        next(lines)  # empty line
         num_activities, release_date = map(int, next(lines).split())
         used_resources = list(map(int, next(lines).split()))
         project = Project(num_activities, release_date, used_resources)
-        next(lines)  # empty line
 
         for activity_idx in range(1, num_activities + 1):
             activity = next(lines).split()
@@ -58,12 +57,12 @@ def parse_rcmp(file_path: str) -> Portfolio:
 if __name__ == "__main__":
     from pathlib import Path
 
-    def _order(string):
-        return int(str(string).split("_")[2].split(".")[0])
+    import tqdm
 
-    DATA_DIR = Path("tmp/instances3")
-    for loc in sorted(DATA_DIR.glob("MPLIB1_*.rcmp"), key=_order):
+    DATA_DIR = Path("tmp/MPLIB")
+    for loc in tqdm.tqdm(sorted(DATA_DIR.rglob("MPLIB*.rcmp"))):
         portfolio = parse_rcmp(loc)
+        continue
 
         from pyjobshop import Model
 
