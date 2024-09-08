@@ -1,16 +1,6 @@
-# Patterson format
-# Project scheduling format
-# PSPLIB format
-
 import re
 from dataclasses import dataclass
 from typing import NamedTuple
-
-
-class Mode(NamedTuple):
-    job: int
-    duration: int
-    demands: list[int]
 
 
 def _find(lines: list[str], pattern: str) -> int:
@@ -21,12 +11,28 @@ def _find(lines: list[str], pattern: str) -> int:
     raise ValueError(f"Pattern '{pattern}' not found in lines.")
 
 
+@dataclass
+class Mode:
+    duration: int
+    demands: list[int]
+
+
+@dataclass
+class Activity:
+    successors: list[int]
+    modes: list[Mode]
+
+
+class Resource(NamedTuple):
+    capacity: int
+    renewable: bool
+
+
 @dataclass(frozen=True)
 class Instance:
     """
-    MMLIB - these are slightly different from the PSPlIB format
-
     Problem instance class based on PSPLIB files.
+    Multi-mode resource- project scheduling.
 
     Code taken from:
     https://alns.readthedocs.io/en/latest/examples/resource_constrained_project_scheduling_problem.html
@@ -34,11 +40,8 @@ class Instance:
 
     num_jobs: int  # jobs in RCPSP are tasks in PyJobshop
     num_resources: int
-    successors: list[list[int]]
-    predecessors: list[list[int]]
-    modes: list[Mode]
-    capacities: list[int]
-    renewable: list[bool]
+    resources: list[Resource]
+    activities: list[Activity]
 
     @classmethod
     def read_instance(cls, path: str) -> "Instance":
@@ -47,64 +50,46 @@ class Instance:
         Assumes the data is in the PSPLIB format.
         """
         with open(path) as fh:
-            lines = fh.readlines()
+            lines = [line.strip() for line in fh.readlines() if line.strip()]
 
         prec_idx = _find(lines, "PRECEDENCE RELATIONS")
         req_idx = _find(lines, "REQUESTS/DURATIONS")
         avail_idx = _find(lines, "AVAILABILITIES")
 
-        successors = []
-
-        for line in lines[prec_idx + 2 : req_idx - 1]:
-            _, _, _, *jobs = re.split(r"\s+", line)
-            successors.append([int(x) - 1 for x in jobs if x])
-
-        predecessors: list[list[int]] = [[] for _ in range(len(successors))]
-        for job in range(len(successors)):
-            for succ in successors[job]:
-                predecessors[succ].append(job)
+        capacities = list(map(int, re.split(r"\s+", lines[avail_idx + 2])))
+        renewable = [
+            char == "R"
+            for char in lines[avail_idx + 1].strip().split()
+            if char in ["R", "N"]  # R: renewable, N: non-renewable
+        ]
+        resources = [
+            Resource(capacity, is_renewable)
+            for capacity, is_renewable in zip(capacities, renewable)
+        ]
+        num_resources = len(resources)
 
         mode_data = [
-            re.split(r"\s+", line.strip())
-            for line in lines[req_idx + 3 : avail_idx - 2]
+            list(map(int, re.split(r"\s+", line)))
+            for line in lines[req_idx + 3 : avail_idx - 1]
         ]
 
-        # Prepend the job index to mode data lines if it is missing.
-        for idx in range(len(mode_data)):
-            if idx == 0:
-                continue
+        mode_idx = 0
+        activities = []
+        for line in lines[prec_idx + 2 : req_idx - 1]:
+            _, num_modes, _, *jobs = list(map(int, re.split(r"\s+", line)))
+            successors = [val - 1 for val in jobs if val]
 
-            prev = mode_data[idx - 1]
-            curr = mode_data[idx]
+            modes = []
+            for idx in range(mode_idx, mode_idx + num_modes):
+                data = mode_data[idx]
+                demands = data[-num_resources:]
+                duration = data[-num_resources - 1]
+                modes.append(Mode(duration, demands))
+                mode_idx += 1
 
-            if len(curr) < len(prev):
-                curr = prev[:1] + curr
-                mode_data[idx] = curr
+            activities.append(Activity(successors, modes))
 
-        modes = []
-        for mode in mode_data:
-            job_idx, _, duration, *consumption = mode
-            demands = list(map(int, consumption))
-            modes.append(Mode(int(job_idx) - 1, int(duration), demands))
-
-        _, *avail, _ = re.split(r"\s+", lines[avail_idx + 2])
-        capacities = list(map(int, avail))
-
-        renewable = [
-            x == "R"
-            for x in lines[avail_idx + 1].strip().split()
-            if x in ["R", "N"]  # R: renewable, N: non-renewable
-        ]
-
-        return Instance(
-            int(job_idx),
-            len(capacities),
-            successors,
-            predecessors,
-            modes,
-            capacities,
-            renewable,
-        )
+        return Instance(len(activities), len(resources), resources, activities)
 
 
 if __name__ == "__main__":
@@ -115,40 +100,41 @@ if __name__ == "__main__":
     from pyjobshop import Model
 
     instances = []
-    instances += list(Path("tmp/MMLIB/").rglob("*.mm"))
-    instances += list(Path("tmp/RCPLIB(1)/PSPLIB").rglob("*.sm"))
+    # instances += list(Path("tmp/MMLIB/").rglob("*.mm"))
+    # instances += list(Path("tmp/RCPLIB(1)/PSPLIB").rglob("*.sm"))
+    instances += list(Path("tmp/PSPLIB").rglob("*.[sm]m"))
 
     for loc in tqdm.tqdm(instances):
         if loc.name.startswith("."):  # dotfiles
             continue
 
+        if not loc.is_file():
+            continue
+
         instance = Instance.read_instance(loc)
-        continue
+        breakpoint()
         model = Model()
 
         # Not necessary to define jobs, but it will add coloring to the plot.
-        jobs = [model.add_job() for _ in range(instance.num_jobs)]
-        tasks = [
-            model.add_task(job=jobs[idx]) for idx in range(instance.num_jobs)
-        ]
         resources = [
-            model.add_machine(capacity=capacity, renewable=renewable)
-            for capacity, renewable in zip(
-                instance.capacities, instance.renewable
+            model.add_machine(
+                capacity=resource.capacity, renewable=resource.renewable
             )
+            for resource in (instance.resources)
         ]
-
-        for idx, duration, demands in instance.modes:
-            model.add_mode(tasks[idx], resources, duration, demands)
 
         for idx in range(instance.num_jobs):
-            task = tasks[idx]
+            job = model.add_job()
+            task = model.add_task(job=job)
 
-            for pred in instance.predecessors[idx]:
-                model.add_end_before_start(tasks[pred], task)
+            for mode in instance.activities[idx].modes:
+                model.add_mode(task, resources, mode.duration, mode.demands)
 
-            for succ in instance.successors[idx]:
-                model.add_end_before_start(task, tasks[succ])
+        for idx in range(instance.num_jobs):
+            task = model.tasks[idx]
+
+            for succ in instance.activities[idx].successors:
+                model.add_end_before_start(task, model.tasks[succ])
 
         data = model.data()
         result = model.solve(time_limit=10, display=False)
