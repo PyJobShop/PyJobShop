@@ -17,6 +17,9 @@ dependencies = [
     "tomli>=2.0.1",
 ]
 
+[project.scripts]
+pyjobshop = 'pyjobshop:cli.main'
+
 [project.optional-dependencies]
 docplex = [
     "docplex>=2.28.240",
@@ -24,6 +27,7 @@ docplex = [
 cplex = [
     "cplex>=22.1.1.2",
 ]
+
 
 [tool.uv]
 dev-dependencies = [
