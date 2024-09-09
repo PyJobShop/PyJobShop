@@ -15,8 +15,17 @@ def _find(lines: list[str], pattern: str) -> int:
 
 def parse_psplib(loc: Union[str, Path]) -> ProjectInstance:
     """
-    Reads an instance of the RCPSP from a file.
-    Assumes the data is in the PSPLIB format.
+    Parses an PSPLIB-formatted instance from a file.
+
+    Parameters
+    ----------
+    loc
+        The location of the instance.
+
+    Returns
+    -------
+    Instance
+        The parsed instance.
     """
     with open(loc) as fh:
         lines = [line.strip() for line in fh.readlines() if line.strip()]

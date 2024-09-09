@@ -6,7 +6,7 @@ from .ProjectInstance import Activity, Mode, Project, ProjectInstance, Resource
 
 def parse_patterson(loc: Union[str, Path]) -> ProjectInstance:
     """
-    Reads a Patterson-formatted instance. This format is used for pure
+    Parses a Patterson-formatted instance. This format is used for pure
     resource-constrained project scheduling problem (RCPSP) instances.
 
     Parameters
