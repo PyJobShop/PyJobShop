@@ -44,18 +44,3 @@ def parse_patterson(loc: Union[str, Path]) -> ProjectInstance:
 
     project = Project(list(range(num_activities)))  # only one project
     return ProjectInstance(resources, [project], activities)
-
-
-# Example usage
-if __name__ == "__main__":
-    from pathlib import Path
-
-    import tqdm
-
-    DATA_DIR = Path("/Users/leonlan/Dropbox/PyJobShop/tmp/RCPLIB(1)/ALL/ALL/")
-    for loc in tqdm.tqdm(DATA_DIR.rglob("*.rcp")):
-        try:
-            project = parse_patterson(loc)
-        except Exception as e:
-            print(f"Error parsing {loc}: {e}")
-            continue

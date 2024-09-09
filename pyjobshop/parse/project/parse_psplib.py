@@ -55,60 +55,9 @@ def read_instance(path: str) -> "ProjectInstance":
             modes.append(Mode(duration, demands))
             mode_idx += 1
 
-        activities.append(Activity(successors, modes))
+        activities.append(Activity(modes, successors))
 
     idcs = list(range(len(activities)))
     project = Project(idcs)  # only one project with all activities
 
     return ProjectInstance(resources, [project], activities)
-
-
-if __name__ == "__main__":
-    from pathlib import Path
-
-    import tqdm
-
-    from pyjobshop import Model
-
-    instances = []
-    instances += list(Path("tmp/MMLIB/").rglob("*.mm"))
-    instances += list(Path("tmp/RCPLIB(1)/PSPLIB").rglob("*.sm"))
-    instances += list(Path("tmp/PSPLIB").rglob("*.[sm]m"))
-
-    for loc in tqdm.tqdm(instances):
-        if loc.name.startswith("."):  # dotfiles
-            continue
-
-        if not loc.is_file():
-            continue
-
-        instance = read_instance(loc)
-        continue
-        model = Model()
-
-        # Not necessary to define jobs, but it will add coloring to the plot.
-        resources = [
-            model.add_machine(capacity=res.capacity, renewable=res.renewable)
-            for res in instance.resources
-        ]
-
-        for idx in range(instance.num_jobs):
-            job = model.add_job()
-            task = model.add_task(job=job)
-
-            for mode in instance.activities[idx].modes:
-                model.add_mode(task, resources, mode.duration, mode.demands)
-
-        for idx in range(instance.num_jobs):
-            task = model.tasks[idx]
-
-            for succ in instance.activities[idx].successors:
-                model.add_end_before_start(task, model.tasks[succ])
-
-        try:
-            data = model.data()
-        except:
-            breakpoint()
-        result = model.solve(time_limit=10, display=False)
-
-        print(loc, result.objective, result.runtime)
