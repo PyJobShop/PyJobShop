@@ -313,26 +313,42 @@ def test_problem_data_mode_references_unknown_data(mode):
         )
 
 
-def test_problem_data_mode_demand_exceeds_machine_capacity():
-    """
-    Tests that an error is raised when a mode's demand exceeds the machine
-    capacity.
-    """
-    with assert_raises(ValueError):
-        ProblemData(
-            [Job()],
-            [Machine(capacity=1)],
-            [Task()],
-            [Mode(0, [0], 2, demands=[2])],
-        )
-
-
 def test_problem_data_task_without_modes():
     """
     Tests that an error is raised when a task has no processing modes.
     """
     with assert_raises(ValueError):
         ProblemData([Job()], [Machine()], [Task()], [])
+
+
+def test_problem_data_all_modes_demand_infeasible():
+    """
+    Tests that an error is raised when all modes of a task have infeasible
+    demands.
+    """
+
+    # This is OK: at least one mode is feasible.
+    ProblemData(
+        [Job()],
+        [Machine(capacity=1)],
+        [Task()],
+        [
+            Mode(0, [0], 2, demands=[1]),  # feasible
+            Mode(0, [0], 2, demands=[2]),  # infeasible
+        ],
+    )
+
+    with assert_raises(ValueError):
+        # This is not OK: no mode is feasible.
+        ProblemData(
+            [Job()],
+            [Machine(capacity=1)],
+            [Task()],
+            [
+                Mode(0, [0], 2, demands=[2]),  # infeasible
+                Mode(0, [0], 2, demands=[2]),  # infeasible
+            ],
+        )
 
 
 @pytest.mark.parametrize(

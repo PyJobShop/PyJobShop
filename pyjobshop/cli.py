@@ -10,6 +10,7 @@ import tomli
 from tqdm.contrib.concurrent import process_map
 
 from pyjobshop import read, solve
+from pyjobshop.read import InstanceFormat
 
 
 def parse_args():
@@ -18,6 +19,14 @@ def parse_args():
     msg = "Location of the instance file."
     parser.add_argument("instances", nargs="+", type=Path, help=msg)
 
+    msg = "File format of the instance."
+    parser.add_argument(
+        "--instance_format",
+        type=InstanceFormat,
+        default=InstanceFormat.FJSPLIB,
+        choices=[f.value for f in InstanceFormat],
+        help=msg,
+    )
     msg = "Solver to use."
     parser.add_argument(
         "--solver",
@@ -80,6 +89,7 @@ def tabulate(headers: list[str], rows: np.ndarray) -> str:
 
 def _solve(
     instance_loc: Path,
+    instance_format: InstanceFormat,
     solver: str,
     time_limit: float,
     display: bool,
@@ -95,7 +105,7 @@ def _solve(
     else:
         params = {}
 
-    data = read(instance_loc)
+    data = read(instance_loc, instance_format=instance_format)
     result = solve(
         data, solver, time_limit, display, num_workers_per_instance, **params
     )
