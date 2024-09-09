@@ -1,6 +1,8 @@
 Introduction to constraint programming
 ======================================
 
+TODO: Work in progress.
+
 Outline
 -------
 
@@ -10,6 +12,8 @@ Outline
   * Comparison with other solving paradigms (e.g., linear programming, SAT solvers)
 
 * How does it work?
+
+  Very basic explanation of how constraint programming works.
 
   * Basic components
 
@@ -29,6 +33,8 @@ Outline
     * Heuristics for variable and value selection
 
 * CP for Scheduling
+
+  Very basic explanation of how constraint programming works for scheduling. Refer perhaps to https://www.ibm.com/docs/en/icos/22.1.0?topic=c-search-api-scheduling-in-cp-optimizer#82?
 
   * Interval variables
 

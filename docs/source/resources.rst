@@ -8,7 +8,7 @@ OR-Tools
 
 - `Python OR-Tools API reference <https://or-tools.github.io/docs/pdoc/ortools.html>`_: API documentation for Google OR-Tools.
 - `CP-SAT solver parameters <https://github.com/google/or-tools/blob/stable/ortools/sat/sat_parameters.proto>`_: Protobuf of OR-Tools parameters.
-- `CP-SAT lecipes <https://github.com/google/or-tools/blob/main/ortools/sat/docs/scheduling.md#scheduling-recipes-for-the-cp-sat-solver>`_: Modeling recipes for CP-SAT.
+- `CP-SAT recipes <https://github.com/google/or-tools/blob/main/ortools/sat/docs/scheduling.md#scheduling-recipes-for-the-cp-sat-solver>`_: Modeling recipes for CP-SAT.
 - `CP-SAT Primer <https://github.com/d-krupke/cpsat-primer>`_: Introductory book to OR-Tools' CP-SAT solver.
 - `Scheduling seminar on CP-SAT <https://www.youtube.com/watch?v=vvUxusrUcpU>`_: Talk by Laurent Perron on CP-SAT.
 - `Awesome OR-Tools <https://github.com/or-tools/awesome_or_tools>`_: Collection of libraries related to OR-Tools.

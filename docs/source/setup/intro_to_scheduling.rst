@@ -5,7 +5,7 @@ Introduction to scheduling
 
 Scheduling deals with allocating tasks to resources over time. The goal is to optimize some objective, often the makespan, while completing all tasks in a timely manner and respecting all constraints. Scheduling applications are numerous: car manufacturers, chemical plants, project managers - they all deal with scheduling on a daily basis.
 
-.. TODO placeholder: put machine environment here
+TODO: put machine environment here
 
 .. figure:: ../assets/hybrid-flow-shop.png
    :alt: A scheduling problem
@@ -22,7 +22,7 @@ Most scheduling problems include three key concepts: jobs, tasks, and resources.
 
 A solution to a scheduling problem includes the specific task-to-resource assignment and the determination of all task start and end times. Such a solution can be visualized using a Gantt chart.
 
-.. TODO placeholder: put Gantt here
+TODO: put Gantt chart here
 
 .. figure:: ../assets/hybrid-flow-shop.png
    :alt: A scheduling problem
