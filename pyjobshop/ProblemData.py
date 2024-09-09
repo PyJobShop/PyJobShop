@@ -1,3 +1,4 @@
+from collections import Counter
 from copy import deepcopy
 from dataclasses import dataclass
 from enum import Enum
@@ -465,15 +466,25 @@ class ProblemData:
                     msg = f"Mode {idx} references unknown machine index."
                     raise ValueError(msg)
 
-            for demand, machine in zip(mode.demands, mode.machines):
-                if demand > self.machines[machine].capacity:
-                    msg = f"Mode {idx} demand exceeds machine capacity."
-                    raise ValueError(msg)
-
         without = set(range(num_tasks)) - {mode.task for mode in self.modes}
         names = [self.tasks[idx].name or idx for idx in sorted(without)]
         if names:  # task indices if names are not available
             raise ValueError(f"Processing modes missing for tasks {without}.")
+
+        infeasible_modes = Counter()
+        num_modes = Counter()
+
+        for mode in self.modes:
+            num_modes[mode.task] += 1
+            infeasible_modes[mode.task] += any(
+                demand > self.machines[machine].capacity
+                for demand, machine in zip(mode.demands, mode.machines)
+            )
+
+        for task, count in num_modes.items():
+            if infeasible_modes[task] == count:
+                msg = f"All modes for task {task} have infeasible demands."
+                raise ValueError(msg)
 
         for (idx1, idx2), constraints in self.constraints.items():
             modes = [mode for mode in self.modes if mode.task in (idx1, idx2)]
