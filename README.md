@@ -26,7 +26,7 @@ pip install pyjobshop
 The documentation is available [here](https://pyjobshop.readthedocs.io/).
 
 > [!TIP]
-> If you are new to scheduling or constraint programming, you might benefit from first reading the [introduction to scheduling](https://pyjobshop.readthedocs.io/en/stable/setup/intro_to_scheduling.html) and [introduction to CP](https://pyjobshop.readthedocs.io/en/stable/setup/intro_to_cp.html) pages.
+> If you are new to scheduling or constraint programming, you might benefit from first reading the [introduction to scheduling](https://pyjobshop.readthedocs.io/en/stable/setup/intro_to_scheduling.html) and [introduction to constraint programming](https://pyjobshop.readthedocs.io/en/stable/setup/intro_to_cp.html) pages.
 
 ## Constraint programming solvers
 PyJobShop uses [OR-Tools'](https://github.com/google/or-tools) CP-SAT solver as its default constraint programming solver.

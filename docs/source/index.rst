@@ -60,3 +60,4 @@ Contents
    :caption: Developing PyJobShop
 
    dev/contributing
+   dev/resources
