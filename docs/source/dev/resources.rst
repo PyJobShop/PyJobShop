@@ -1,7 +1,7 @@
 Resources
 =========
 
-Below is a list of useful resources for OR-Tools and CP Optimizer.
+Below is a list of useful resources for OR-Tools and CP Optimizer, which may come handy when developing PyJobShop.
 
 OR-Tools
 --------
