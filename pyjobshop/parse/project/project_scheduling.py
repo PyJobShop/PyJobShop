@@ -1,43 +1,39 @@
-from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Union
+
+from .ProjectInstance import Activity, Mode, Project, ProjectInstance, Resource
 
 
-@dataclass
-class Activity:
-    duration: int
-    demands: list[int]
-    successors: list[str]
+def parse_mprcpsp(loc: Union[str, Path]) -> ProjectInstance:
+    """
+    Parses a multi-project resource-constrained project scheduling instance.
 
+    Parameters
+    ----------
+    loc
+        The location of the instance.
 
-@dataclass
-class Project:
-    num_activities: int
-    release_date: int
-    uses_resources: list[int]
-    activities: dict[str, Activity] = field(default_factory=dict)
-
-
-@dataclass
-class Portfolio:
-    num_projects: int
-    num_resources: int
-    capacities: list[int]
-    projects: dict[int, Project] = field(default_factory=dict)
-
-
-def parse_rcmp(file_path: str) -> Portfolio:
-    with open(file_path, "r") as fh:
+    Returns
+    -------
+    Instance
+        The parsed instance.
+    """
+    with open(loc, "r") as fh:
         # Strip all lines and ignore all empty lines.
         lines = iter(line.strip() for line in fh.readlines() if line.strip())
 
     num_projects = int(next(lines))
     num_resources = int(next(lines))
-    capacities = list(map(int, next(lines).split()))
-    portfolio = Portfolio(num_projects, num_resources, capacities)
 
+    capacities = list(map(int, next(lines).split()))
+    resources = [Resource(capacity=cap, renewable=False) for cap in capacities]
+
+    projects = []
+    activities = []
     for project_idx in range(1, num_projects + 1):
         num_activities, release_date = map(int, next(lines).split())
-        used_resources = list(map(int, next(lines).split()))
-        project = Project(num_activities, release_date, used_resources)
+        _ = list(map(int, next(lines).split()))  # used resources => demand > 0
+        idcs = [len(activities) + idx for idx in range(num_activities)]
 
         for activity_idx in range(1, num_activities + 1):
             activity = next(lines).split()
@@ -45,12 +41,13 @@ def parse_rcmp(file_path: str) -> Portfolio:
             duration, *demands, num_successors = list(map(int, activity[:idx]))
             successors = activity[idx:]
             assert len(successors) == num_successors
-            name = f"{project_idx}:{activity_idx}"
-            project.activities[name] = Activity(duration, demands, successors)
+            mode = Mode(duration, demands)
+            name = f"{project_idx}:{activity_idx}"  # original activity id
+            activities.append(Activity(mode, successors, name))
 
-        portfolio.projects[project_idx] = project
+        projects.append(Project(idcs, release_date))
 
-    return portfolio
+    return ProjectInstance(resources, projects, activities)
 
 
 # Example usage
@@ -61,7 +58,7 @@ if __name__ == "__main__":
 
     DATA_DIR = Path("tmp/MPLIB")
     for loc in tqdm.tqdm(sorted(DATA_DIR.rglob("MPLIB*.rcmp"))):
-        portfolio = parse_rcmp(loc)
+        portfolio = parse_mprcpsp(loc)
         continue
 
         from pyjobshop import Model

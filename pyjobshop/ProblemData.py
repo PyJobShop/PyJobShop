@@ -456,18 +456,18 @@ class ProblemData:
             if any(task < 0 or task >= num_tasks for task in job.tasks):
                 raise ValueError("Job references to unknown task index.")
 
-        for mode in self.modes:
+        for idx, mode in enumerate(self.modes):
             if mode.task < 0 or mode.task >= num_tasks:
-                raise ValueError("Mode references to unknown task index.")
+                raise ValueError(f"Mode {idx} references unknown task index.")
 
             for machine in mode.machines:
                 if machine < 0 or machine >= num_mach:
-                    msg = "Mode references to unknown machine index."
+                    msg = f"Mode {idx} references unknown machine index."
                     raise ValueError(msg)
 
             for demand, machine in zip(mode.demands, mode.machines):
                 if demand > self.machines[machine].capacity:
-                    msg = "Mode demand exceeds machine capacity."
+                    msg = f"Mode {idx} demand exceeds machine capacity."
                     raise ValueError(msg)
 
         without = set(range(num_tasks)) - {mode.task for mode in self.modes}
