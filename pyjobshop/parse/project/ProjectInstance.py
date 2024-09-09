@@ -55,6 +55,10 @@ class Activity:
     successors: list[int]
     name: str = ""
 
+    @property
+    def num_modes(self):
+        return len(self.modes)
+
 
 @dataclass
 class Project:

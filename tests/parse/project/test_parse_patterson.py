@@ -14,13 +14,13 @@ def test_rg300():
     capacities = [res.capacity for res in instance.resources]
     renewables = [res.renewable for res in instance.resources]
 
-    assert_equal(len(instance.resources), 4)
+    assert_equal(instance.num_resources, 4)
     assert_equal(capacities, [10, 10, 10, 10])
     assert_equal(renewables, [True, True, True, True])
 
-    assert_equal(len(instance.projects), 1)
-    assert_equal(len(instance.projects[0].activities), 302)
-    assert_equal(len(instance.activities), 302)
+    assert_equal(instance.num_projects, 1)
+    assert_equal(instance.projects[0].num_activities, 302)
+    assert_equal(instance.num_activities, 302)
 
     activity = instance.activities[1]  # second activity
 
@@ -32,5 +32,6 @@ def test_rg300():
     successors = list(map(int, successors.split(", ")))
     assert_equal(activity.successors, successors)
 
+    assert_equal(activity.num_modes, 1)
     assert_equal(activity.modes[0].demands, [0, 1, 0, 0])
     assert_equal(activity.modes[0].duration, 3)
