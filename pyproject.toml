@@ -90,7 +90,7 @@ known-third-party = ["ortools"]
 
 [tool.pytest.ini_options]
 addopts = "--cov=. --cov-report=xml"
-
+testpaths = ["tests"]
 
 [tool.coverage.run]
 omit = [
