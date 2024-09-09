@@ -1,5 +1,5 @@
 import numpy as np
-from ortools.sat.python.cp_model import BoolVarT, CpModel
+from ortools.sat.python.cp_model import BoolVarT, CpModel, LinearExpr
 
 import pyjobshop.utils as utils
 from pyjobshop.ProblemData import Constraint, ProblemData
@@ -94,6 +94,7 @@ class ConstraintsManager:
         Creates constraints for the machine capacity.
         """
         model, data = self._model, self._data
+        mode_vars = self._mode_vars
 
         # Map machines to the relevant modes and their demands.
         mapper = [[] for _ in range(data.num_machines)]
@@ -106,9 +107,16 @@ class ConstraintsManager:
             if machine.capacity == 0:
                 continue
 
-            intvs = [self._mode_vars[mode].interval for mode, _ in mapper[idx]]
             demands = [demand for _, demand in mapper[idx]]
-            model.add_cumulative(intvs, demands, machine.capacity)
+            if machine.renewable:
+                intvs = [mode_vars[mode].interval for mode, _ in mapper[idx]]
+                model.add_cumulative(intvs, demands, machine.capacity)
+            else:
+                precenses = [
+                    mode_vars[mode].is_present for mode, _ in mapper[idx]
+                ]
+                usage = LinearExpr.weighted_sum(precenses, demands)
+                model.add(usage <= machine.capacity)
 
     def _timing_constraints(self):
         """

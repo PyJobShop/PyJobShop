@@ -1,3 +1,4 @@
+from collections import Counter
 from copy import deepcopy
 from dataclasses import dataclass
 from enum import Enum
@@ -124,6 +125,7 @@ class Job:
         self._tasks.append(idx)
 
 
+@dataclass(frozen=True)
 class Machine:
     """
     Simple dataclass for storing all machine-related data.
@@ -134,27 +136,23 @@ class Machine:
         Capacity of the machine. Default 0. If the capacity is nonzero, then
         the machine can process a number of tasks at the same time, which is
         determined by the task mode demands.
+    renewable
+        Whether the machine is renewable. A renewable machine replenishes
+        its capacity after each task completion. Default ``True``.
     name
         Name of the machine.
     """
 
-    def __init__(self, capacity: int = 0, name: str = ""):
-        self._capacity = capacity
-        self._name = name
+    capacity: int = 0
+    renewable: bool = True
+    name: str = ""
 
-    @property
-    def capacity(self) -> int:
-        """
-        Capacity of the machine.
-        """
-        return self._capacity
+    def __post_init__(self):
+        if self.capacity < 0:
+            raise ValueError("Capacity must be non-negative.")
 
-    @property
-    def name(self) -> str:
-        """
-        Name of the machine.
-        """
-        return self._name
+        if self.capacity == 0 and not self.renewable:
+            raise ValueError("Non-renewable machines must have capacity > 0.")
 
 
 class Task:
@@ -459,19 +457,34 @@ class ProblemData:
             if any(task < 0 or task >= num_tasks for task in job.tasks):
                 raise ValueError("Job references to unknown task index.")
 
-        for mode in self.modes:
+        for idx, mode in enumerate(self.modes):
             if mode.task < 0 or mode.task >= num_tasks:
-                raise ValueError("Mode references to unknown task index.")
+                raise ValueError(f"Mode {idx} references unknown task index.")
 
             for machine in mode.machines:
                 if machine < 0 or machine >= num_mach:
-                    msg = "Mode references to unknown machine index."
+                    msg = f"Mode {idx} references unknown machine index."
                     raise ValueError(msg)
 
         without = set(range(num_tasks)) - {mode.task for mode in self.modes}
         names = [self.tasks[idx].name or idx for idx in sorted(without)]
         if names:  # task indices if names are not available
             raise ValueError(f"Processing modes missing for tasks {without}.")
+
+        infeasible_modes = Counter()
+        num_modes = Counter()
+
+        for mode in self.modes:
+            num_modes[mode.task] += 1
+            infeasible_modes[mode.task] += any(
+                demand > self.machines[machine].capacity
+                for demand, machine in zip(mode.demands, mode.machines)
+            )
+
+        for task, count in num_modes.items():
+            if infeasible_modes[task] == count:
+                msg = f"All modes for task {task} have infeasible demands."
+                raise ValueError(msg)
 
         for (idx1, idx2), constraints in self.constraints.items():
             modes = [mode for mode in self.modes if mode.task in (idx1, idx2)]

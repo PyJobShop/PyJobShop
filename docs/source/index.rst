@@ -46,7 +46,7 @@ Contents
    examples/simple_example
    examples/hybrid_flow_shop
    examples/flexible_job_shop
-   examples/resource_constrained_project_scheduling
+   examples/project_scheduling
    examples/quick_examples
 
 .. toctree::

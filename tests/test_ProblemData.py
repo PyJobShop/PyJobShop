@@ -91,11 +91,31 @@ def test_machine_attributes():
     """
     # Let's first test the default values.
     machine = Machine()
+    assert_equal(machine.capacity, 0)
+    assert_equal(machine.renewable, True)
     assert_equal(machine.name, "")
 
     # Now test with some values.
-    machine = Machine(name="TestMachine")
+    machine = Machine(capacity=1, renewable=False, name="TestMachine")
+    assert_equal(machine.capacity, 1)
+    assert_equal(machine.renewable, False)
     assert_equal(machine.name, "TestMachine")
+
+
+@pytest.mark.parametrize(
+    "capacity, renewable",
+    [
+        (-1, True),  # capacity < 0
+        (0, False),  # capacity == 0 and not renewable
+    ],
+)
+def test_machine_raises_invalid_parameters(capacity: int, renewable: bool):
+    """
+    Tests that a ValueError is raised when invalid parameters are passed to
+    the Machine class.
+    """
+    with assert_raises(ValueError):
+        Machine(capacity=capacity, renewable=renewable)
 
 
 def test_task_attributes():
@@ -273,26 +293,23 @@ def test_problem_data_job_references_unknown_task():
         )
 
 
-def test_problem_data_mode_references_unknown_data():
+@pytest.mark.parametrize(
+    "mode",
+    [
+        Mode(42, [0], 1),  # Task 42 does not exist.
+        Mode(0, [42], 1),  # Machine 42 does not exist.
+    ],
+)
+def test_problem_data_mode_references_unknown_data(mode):
     """
     Tests that an error is raised when a mode references unknown data.
     """
     with assert_raises(ValueError):
-        # Task 42 does not exist.
         ProblemData(
             [Job()],
             [Machine()],
             [Task()],
-            [Mode(42, [0], 1)],
-        )
-
-    with assert_raises(ValueError):
-        # Machine 42 does not exist.
-        ProblemData(
-            [Job()],
-            [Machine()],
-            [Task()],
-            [Mode(0, [42], 1)],
+            [mode],
         )
 
 
@@ -302,6 +319,36 @@ def test_problem_data_task_without_modes():
     """
     with assert_raises(ValueError):
         ProblemData([Job()], [Machine()], [Task()], [])
+
+
+def test_problem_data_all_modes_demand_infeasible():
+    """
+    Tests that an error is raised when all modes of a task have infeasible
+    demands.
+    """
+
+    # This is OK: at least one mode is feasible.
+    ProblemData(
+        [Job()],
+        [Machine(capacity=1)],
+        [Task()],
+        [
+            Mode(0, [0], 2, demands=[1]),  # feasible
+            Mode(0, [0], 2, demands=[2]),  # infeasible
+        ],
+    )
+
+    with assert_raises(ValueError):
+        # This is not OK: no mode is feasible.
+        ProblemData(
+            [Job()],
+            [Machine(capacity=1)],
+            [Task()],
+            [
+                Mode(0, [0], 2, demands=[2]),  # infeasible
+                Mode(0, [0], 2, demands=[2]),  # infeasible
+            ],
+        )
 
 
 @pytest.mark.parametrize(
@@ -772,29 +819,49 @@ def test_machine_with_machine_faster_than_no_overlap(solver: str):
     assert_equal(result.objective, 1)
 
 
-def test_machine_capacity_is_respected(solver: str):
+def test_machine_renewable_capacity_is_respected(solver: str):
     """
-    Tests that a machine without enough capacity is not selected
-    for scheduling.
+    Tests that a machine with renewable capacity is respected.
     """
     model = Model()
-    machine = model.add_machine(capacity=1)
-    task = model.add_task()
-    model.add_processing_time(task, machine, duration=1, demand=2)
+    machine = model.add_machine(capacity=2)
+    task1 = model.add_task()
+    task2 = model.add_task()
+    model.add_processing_time(task1, machine, duration=1, demand=2)
+    model.add_processing_time(task2, machine, duration=1, demand=2)
 
-    # The machine has capacity 1, but the task requires 2 units of
-    # capacity, so the task cannot be scheduled.
+    # The machine has capacity 2, and each task requires 2 units of
+    # capacity, so only one task can be scheduled at a time. This results
+    # in a makespan of 2.
     result = model.solve(solver=solver)
-    assert_equal(result.status.value, "Infeasible")
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.objective, 2)
 
-    machine2 = model.add_machine(capacity=2)
-    model.add_processing_time(task, machine2, duration=10, demand=2)
 
-    # The machine has capacity 2, and the task requires 2 units of
+def test_machine_non_renewable_capacity(solver: str):
+    """
+    Tests that a machine with non-renewable capacity is respected.
+    """
+    model = Model()
+
+    machine = model.add_machine(capacity=1, renewable=False)
+    task1 = model.add_task()
+    model.add_mode(task1, [machine], duration=1, demands=[1])
+
+    # The machine has capacity 1 and the task requires 1 unit of
     # capacity, so the task can be scheduled.
     result = model.solve(solver=solver)
     assert_equal(result.status.value, "Optimal")
-    assert_equal(result.objective, 10)
+    assert_equal(result.objective, 1)
+
+    # Now we add a second task that requires 1 unit of capacity.
+    task2 = model.add_task()
+    model.add_mode(task2, [machine], duration=1, demands=[1])
+
+    # Since the machine has non-renewable capacity, the second task
+    # cannot be scheduled.
+    result = model.solve(solver=solver)
+    assert_equal(result.status.value, "Infeasible")
 
 
 @pytest.mark.parametrize(
