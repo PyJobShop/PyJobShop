@@ -27,7 +27,7 @@ def parse_mplib(loc: Union[str, Path]) -> ProjectInstance:
     num_resources = int(next(lines))
 
     capacities = list(map(int, next(lines).split()))
-    resources = [Resource(capacity=cap, renewable=False) for cap in capacities]
+    resources = [Resource(capacity=cap, renewable=True) for cap in capacities]
 
     projects: list[Project] = []
     activities: list[Activity] = []

@@ -11,7 +11,7 @@ def _find(lines: list[str], pattern: str) -> int:
     raise ValueError(f"Pattern '{pattern}' not found in lines.")
 
 
-def read_instance(path: str) -> "ProjectInstance":
+def parse_psplib(path: str) -> "ProjectInstance":
     """
     Reads an instance of the RCPSP from a file.
     Assumes the data is in the PSPLIB format.

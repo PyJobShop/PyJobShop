@@ -27,7 +27,7 @@ def parse_patterson(loc: Union[str, Path]) -> ProjectInstance:
 
     # Instances without resources do not have an availability line.
     capacities = list(map(int, next(lines).split())) if num_resources else []
-    resources = [Resource(capacity=cap, renewable=False) for cap in capacities]
+    resources = [Resource(capacity=cap, renewable=True) for cap in capacities]
 
     # Most instances are not nicely formatted since a single activity data
     # may be split over multiple lines. The way to deal with this is to iterate
@@ -39,7 +39,7 @@ def parse_patterson(loc: Union[str, Path]) -> ProjectInstance:
         duration = int(next(values))
         demands = [int(next(values)) for _ in range(num_resources)]
         num_successors = int(next(values))
-        successors = [int(next(values)) for _ in range(num_successors)]
+        successors = [int(next(values)) - 1 for _ in range(num_successors)]
         activities.append(Activity([Mode(duration, demands)], successors))
 
     project = Project(list(range(num_activities)))  # only one project
