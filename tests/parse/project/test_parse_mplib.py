@@ -9,7 +9,7 @@ def test_mplib_set1():
     """
     Tests that the instance ``MPLIB1_Set1_0.rcmp`` is correctly parsed.
     """
-    instance = parse_mplib(relative("data/MPLIB1_SET1_0.rcmp"))
+    instance = parse_mplib(relative("data/MPLIB1_Set1_0.rcmp"))
 
     capacities = [res.capacity for res in instance.resources]
     renewables = [res.renewable for res in instance.resources]
@@ -37,7 +37,7 @@ def test_mplib_set2():
     """
     Tests that the instance ``MPLIB2_Set1_0.rcmp`` is correctly parsed.
     """
-    instance = parse_mplib(relative("data/MPLIB2_SET1_0.rcmp"))
+    instance = parse_mplib(relative("data/MPLIB2_Set1_0.rcmp"))
 
     capacities = [res.capacity for res in instance.resources]
     renewables = [res.renewable for res in instance.resources]
