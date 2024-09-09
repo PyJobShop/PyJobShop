@@ -1,4 +1,6 @@
 import re
+from pathlib import Path
+from typing import Union
 
 from .ProjectInstance import Activity, Mode, Project, ProjectInstance, Resource
 
@@ -11,12 +13,12 @@ def _find(lines: list[str], pattern: str) -> int:
     raise ValueError(f"Pattern '{pattern}' not found in lines.")
 
 
-def parse_psplib(path: str) -> "ProjectInstance":
+def parse_psplib(loc: Union[str, Path]) -> ProjectInstance:
     """
     Reads an instance of the RCPSP from a file.
     Assumes the data is in the PSPLIB format.
     """
-    with open(path) as fh:
+    with open(loc) as fh:
         lines = [line.strip() for line in fh.readlines() if line.strip()]
 
     prec_idx = _find(lines, "PRECEDENCE RELATIONS")
