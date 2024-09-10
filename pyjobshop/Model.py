@@ -87,8 +87,8 @@ class Model:
             model.add_job(
                 weight=job.weight,
                 release_date=job.release_date,
-                due_date=job.due_date,
                 deadline=job.deadline,
+                due_date=job.due_date,
                 name=job.name,
             )
 
@@ -97,7 +97,9 @@ class Model:
                 model.add_machine(name=resource.name)
             else:
                 model.add_resource(
-                    capacity=resource.capacity, name=resource.name
+                    capacity=resource.capacity,
+                    renewable=resource.renewable,
+                    name=resource.name,
                 )
 
         task2job = {}

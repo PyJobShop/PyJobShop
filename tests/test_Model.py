@@ -130,6 +130,7 @@ def test_from_data():
     assert_equal(m_data.num_resources, data.num_resources)
     assert_equal(m_data.num_tasks, data.num_tasks)
     assert_equal(m_data.num_modes, data.num_modes)
+    assert_equal(m_data.resources, data.resources)
     assert_equal(m_data.modes, data.modes)
     assert_equal(m_data.constraints, data.constraints)
     assert_equal(m_data.setup_times, data.setup_times)
