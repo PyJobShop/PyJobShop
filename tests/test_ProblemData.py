@@ -922,17 +922,17 @@ def test_identical_resources_with_modes_and_multiple_resources(solver: str):
     """
     model = Model()
 
-    resource1 = model.add_machine()
-    resource2 = model.add_machine()
+    machine1 = model.add_machine()
+    machine2 = model.add_machine()
     task1 = model.add_task()
     task2 = model.add_task()
 
-    model.add_mode(task1, [resource1], duration=1)  # mode 0
-    model.add_mode(task2, [resource2], duration=1)  # mode 1
-    model.add_mode(task1, [resource1, resource2], duration=10)  # mode 2
-    model.add_mode(task2, [resource1, resource2], duration=10)  # mode 3
+    model.add_mode(task1, [machine1], duration=1)  # mode 0
+    model.add_mode(task2, [machine2], duration=1)  # mode 1
+    model.add_mode(task1, [machine1, machine2], duration=10)  # mode 2
+    model.add_mode(task2, [machine1, machine2], duration=10)  # mode 3
 
-    # Selecting the single resource modes for both tasks is optimal, which
+    # Selecting the single machine modes for both tasks is optimal, which
     # results in a makespan of 1.
     result = model.solve(solver=solver)
     assert_equal(result.objective, 1)
@@ -960,16 +960,16 @@ def test_different_resources_with_modes_and_multiple_resources(solver: str):
     """
     model = Model()
 
-    resource1 = model.add_machine()
-    resource2 = model.add_machine()
-    resource3 = model.add_machine()
+    machine1 = model.add_machine()
+    machine2 = model.add_machine()
+    machine3 = model.add_machine()
     task1 = model.add_task()
     task2 = model.add_task()
 
-    model.add_mode(task1, [resource1, resource2], duration=1)  # mode 0
-    model.add_mode(task1, [resource1, resource3], duration=2)  # mode 1
-    model.add_mode(task1, [resource3], duration=100)  # mode 2
-    model.add_mode(task2, [resource1, resource2], duration=1)  # mode 3
+    model.add_mode(task1, [machine1, machine2], duration=1)  # mode 0
+    model.add_mode(task1, [machine1, machine3], duration=2)  # mode 1
+    model.add_mode(task1, [machine3], duration=100)  # mode 2
+    model.add_mode(task2, [machine1, machine2], duration=1)  # mode 3
 
     # Selecting mode 0 and mode 3 is optimal.
     result = model.solve(solver=solver)
