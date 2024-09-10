@@ -27,9 +27,9 @@ def compute_task_durations(data: ProblemData) -> list[list[int]]:
     return durations
 
 
-def machine2modes(data: ProblemData) -> list[list[int]]:
+def resource2modes(data: ProblemData) -> list[list[int]]:
     """
-    Returns the list of mode indices corresponding to each machine.
+    Returns the list of mode indices corresponding to each resource.
 
     Parameters
     ----------
@@ -39,12 +39,12 @@ def machine2modes(data: ProblemData) -> list[list[int]]:
     Returns
     -------
     list[list[int]]
-        The list of mode indices for each machine.
+        The list of mode indices for each resource.
     """
-    result: list[list[int]] = [[] for _ in range(data.num_machines)]
+    result: list[list[int]] = [[] for _ in range(data.num_resources)]
     for idx, mode in enumerate(data.modes):
-        for machine in mode.machines:
-            bisect.insort(result[machine], idx)
+        for resource in mode.resources:
+            bisect.insort(result[resource], idx)
     return result
 
 
@@ -71,11 +71,11 @@ def task2modes(data: ProblemData) -> list[list[int]]:
 # --- ConstraintManager utilities ---
 
 
-def find_modes_with_intersecting_machines(
+def find_modes_with_intersecting_resources(
     data: ProblemData, task1: int, task2: int
 ) -> list[tuple[int, int, list[int]]]:
     """
-    Finds the intersection of machines for modes associated with two tasks.
+    Finds the intersection of resources for modes associated with two tasks.
     Specific utility function for creating sequencing constraints.
 
     Parameters
@@ -91,16 +91,16 @@ def find_modes_with_intersecting_machines(
     -------
     list[tuple[int, int, list[int]]]
         A list of tuples containing the mode indices of the first and second
-        task and the machines they have in common.
+        task and the resources they have in common.
     """
     modes1 = [mode for mode in data.modes if mode.task == task1]
     modes2 = [mode for mode in data.modes if mode.task == task2]
     intersecting = []
 
     for mode1 in modes1:
-        machines1 = set(mode1.machines)
+        resources1 = set(mode1.resources)
         for mode2 in modes2:
-            in_common = sorted(machines1.intersection(set(mode2.machines)))
+            in_common = sorted(resources1.intersection(set(mode2.resources)))
             if in_common:
                 idx1 = data.modes.index(mode1)
                 idx2 = data.modes.index(mode2)
@@ -109,11 +109,11 @@ def find_modes_with_intersecting_machines(
     return intersecting
 
 
-def find_modes_with_identical_machines(
+def find_modes_with_identical_resources(
     data: ProblemData, task1: int, task2: int
 ) -> dict[int, list[int]]:
     """
-    Finds the modes with identical machines for two tasks.
+    Finds the modes with identical resources for two tasks.
 
     Parameters
     ----------
@@ -129,14 +129,14 @@ def find_modes_with_identical_machines(
     dict[int, list[int]]
         A dictionary where the keys are the mode indices of the first task
         and the values are the mode indices of the second task that have
-        identical machines.
+        identical resources.
     """
     modes1 = [mode for mode in data.modes if mode.task == task1]
     modes2 = [mode for mode in data.modes if mode.task == task2]
 
     same = defaultdict(list)
     for mode1, mode2 in product(modes1, modes2):
-        if set(mode1.machines) == set(mode2.machines):
+        if set(mode1.resources) == set(mode2.resources):
             idx1 = data.modes.index(mode1)
             idx2 = data.modes.index(mode2)
             same[idx1].append(idx2)
@@ -144,11 +144,11 @@ def find_modes_with_identical_machines(
     return same
 
 
-def find_modes_with_disjoint_machines(
+def find_modes_with_disjoint_resources(
     data: ProblemData, task1: int, task2: int
 ) -> dict[int, list[int]]:
     """
-    Finds the modes with disjoint machines for two tasks.
+    Finds the modes with disjoint resources for two tasks.
 
     Parameters
     ----------
@@ -164,14 +164,14 @@ def find_modes_with_disjoint_machines(
     dict[int, list[int]]
         A dictionary where the keys are the mode indices of the first task
         and the values are the mode indices of the second task that have
-        disjoint machines.
+        disjoint resources.
     """
     modes1 = [mode for mode in data.modes if mode.task == task1]
     modes2 = [mode for mode in data.modes if mode.task == task2]
 
     disjoint = defaultdict(list)
     for mode1, mode2 in product(modes1, modes2):
-        if set(mode1.machines).isdisjoint(mode2.machines):
+        if set(mode1.resources).isdisjoint(mode2.resources):
             idx1 = data.modes.index(mode1)
             idx2 = data.modes.index(mode2)
             disjoint[idx1].append(idx2)

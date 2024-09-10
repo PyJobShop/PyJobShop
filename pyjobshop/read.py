@@ -53,14 +53,14 @@ def _read_fjslib(loc: Path) -> ProblemData:
     m = Model()
 
     jobs = [m.add_job() for _ in range(instance.num_jobs)]
-    machines = [m.add_machine() for _ in range(instance.num_machines)]
+    resources = [m.add_resource() for _ in range(instance.num_machines)]
 
     for job_idx, tasks in enumerate(instance.jobs):
         for task_data in tasks:
             task = m.add_task(job=jobs[job_idx])
 
-            for machine_idx, duration in task_data:
-                m.add_processing_time(task, machines[machine_idx], duration)
+            for resource_idx, duration in task_data:
+                m.add_processing_time(task, resources[resource_idx], duration)
 
     for frm, to in instance.precedences:
         m.add_end_before_start(m.tasks[frm], m.tasks[to])
@@ -75,7 +75,7 @@ def _project_instance_to_data(instance: ProjectInstance) -> ProblemData:
     model = Model()
 
     resources = [
-        model.add_machine(capacity=res.capacity, renewable=res.renewable)
+        model.add_resource(capacity=res.capacity, renewable=res.renewable)
         for res in instance.resources
     ]
 
@@ -89,7 +89,7 @@ def _project_instance_to_data(instance: ProjectInstance) -> ProblemData:
         for mode in activity.modes:
             model.add_mode(
                 task=model.tasks[idx],
-                machines=resources,
+                resources=resources,
                 duration=mode.duration,
                 demands=mode.demands,
             )

@@ -5,7 +5,7 @@ Introduction to scheduling
 
 Scheduling deals with allocating tasks to resources over time. The goal is to optimize some objective, often the makespan, while completing all tasks in a timely manner and respecting all constraints. Scheduling applications are numerous: car manufacturers, chemical plants, project managers - they all deal with scheduling on a daily basis.
 
-TODO: put machine environment here
+TODO: put resource environment here
 
 .. figure:: ../assets/hybrid-flow-shop.png
    :alt: A scheduling problem

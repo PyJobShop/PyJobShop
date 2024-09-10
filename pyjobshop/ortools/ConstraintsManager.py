@@ -63,60 +63,60 @@ class ConstraintsManager:
             # Select exactly one optional interval variable for each task.
             model.add_exactly_one(presences)
 
-    def _no_overlap_machines(self):
+    def _no_overlap_resources(self):
         """
-        Creates the no overlap constraints for machines, ensuring that no two
+        Creates the no overlap constraints for resources, ensuring that no two
         intervals in a sequence variable are overlapping.
         """
         model, data = self._model, self._data
 
-        for idx in range(data.num_machines):
+        for idx in range(data.num_resources):
             if (seq_var := self._sequence_vars[idx]) is not None:
                 model.add_no_overlap([var.interval for var in seq_var.modes])
 
     def _activate_setup_times(self):
         """
-        Activates the sequence variables for machines that have setup times.
+        Activates the sequence variables for resources that have setup times.
         The ``circuit_constraints`` function will in turn add constraints to
         the CP-SAT model to enforce setup times.
         """
         model, data = self._model, self._data
 
-        for idx in range(data.num_machines):
+        for idx in range(data.num_resources):
             seq_var = self._sequence_vars[idx]
             has_setup_times = np.any(data.setup_times[idx])
 
             if seq_var is not None and has_setup_times:
                 seq_var.activate(model)
 
-    def _machine_capacity(self):
+    def _resource_capacity(self):
         """
-        Creates constraints for the machine capacity.
+        Creates constraints for the resource capacity.
         """
         model, data = self._model, self._data
         mode_vars = self._mode_vars
 
-        # Map machines to the relevant modes and their demands.
-        mapper = [[] for _ in range(data.num_machines)]
+        # Map resources to the relevant modes and their demands.
+        mapper = [[] for _ in range(data.num_resources)]
         for idx, mode in enumerate(data.modes):
-            for machine, demand in zip(mode.machines, mode.demands):
+            for resource, demand in zip(mode.resources, mode.demands):
                 if demand > 0:
-                    mapper[machine].append((idx, demand))
+                    mapper[resource].append((idx, demand))
 
-        for idx, machine in enumerate(data.machines):
-            if machine.capacity == 0:
+        for idx, resource in enumerate(data.resources):
+            if resource.capacity == 0:
                 continue
 
             demands = [demand for _, demand in mapper[idx]]
-            if machine.renewable:
+            if resource.renewable:
                 intvs = [mode_vars[mode].interval for mode, _ in mapper[idx]]
-                model.add_cumulative(intvs, demands, machine.capacity)
+                model.add_cumulative(intvs, demands, resource.capacity)
             else:
                 precenses = [
                     mode_vars[mode].is_present for mode, _ in mapper[idx]
                 ]
                 usage = LinearExpr.weighted_sum(precenses, demands)
-                model.add(usage <= machine.capacity)
+                model.add(usage <= resource.capacity)
 
     def _timing_constraints(self):
         """
@@ -164,16 +164,16 @@ class ConstraintsManager:
             if not sequencing_constraints:
                 continue
 
-            # Find the modes of the task that have intersecting machines,
+            # Find the modes of the task that have intersecting resources,
             # because we need to enforce sequencing constraints on them.
-            intersecting = utils.find_modes_with_intersecting_machines(
+            intersecting = utils.find_modes_with_intersecting_resources(
                 data, task1, task2
             )
-            for mode1, mode2, machines in intersecting:
-                for machine in machines:
-                    sequence = self._sequence_vars[machine]
+            for mode1, mode2, resources in intersecting:
+                for resource in resources:
+                    sequence = self._sequence_vars[resource]
                     if sequence is None:
-                        msg = f"No sequence var found for machine {machine}."
+                        msg = f"No sequence var found for resource {resource}."
                         raise ValueError(msg)
 
                     var1 = self._mode_vars[mode1]
@@ -212,15 +212,15 @@ class ConstraintsManager:
 
                         model.add(rank1 <= rank2).only_enforce_if(both_present)
 
-    def _identical_and_different_machine_constraints(self):
+    def _identical_and_different_resource_constraints(self):
         """
-        Creates the constraints for the same and different machine constraints.
+        Creates constraints for the same and different resource constraints.
         """
         model, data = self._model, self._data
         task2modes = utils.task2modes(data)
         relevant = {
-            Constraint.IDENTICAL_MACHINES,
-            Constraint.DIFFERENT_MACHINES,
+            Constraint.IDENTICAL_RESOURCES,
+            Constraint.DIFFERENT_RESOURCES,
         }
 
         for (task1, task2), constraints in data.constraints.items():
@@ -228,16 +228,16 @@ class ConstraintsManager:
             if not assignment_constraints:
                 continue
 
-            identical = utils.find_modes_with_identical_machines(
+            identical = utils.find_modes_with_identical_resources(
                 data, task1, task2
             )
-            disjoint = utils.find_modes_with_disjoint_machines(
+            disjoint = utils.find_modes_with_disjoint_resources(
                 data, task1, task2
             )
 
             modes1 = task2modes[task1]
             for mode1 in modes1:
-                if Constraint.IDENTICAL_MACHINES in assignment_constraints:
+                if Constraint.IDENTICAL_RESOURCES in assignment_constraints:
                     identical_modes2 = identical[mode1]
                     var1 = self._mode_vars[mode1].is_present
                     vars2 = [
@@ -246,7 +246,7 @@ class ConstraintsManager:
                     ]
                     model.add(sum(vars2) >= var1)
 
-                if Constraint.DIFFERENT_MACHINES in assignment_constraints:
+                if Constraint.DIFFERENT_RESOURCES in assignment_constraints:
                     disjoint_modes2 = disjoint[mode1]
                     var1 = self._mode_vars[mode1].is_present
                     vars2 = [
@@ -257,13 +257,13 @@ class ConstraintsManager:
 
     def _enforce_circuit(self):
         """
-        Enforce the circuit constraints for each machine, ensuring that the
+        Enforce the circuit constraints for each resource, ensuring that the
         sequencing constraints are respected.
         """
         model, data = self._model, self._data
 
-        for machine in range(data.num_machines):
-            sequence = self._sequence_vars[machine]
+        for resource in range(data.num_resources):
+            sequence = self._sequence_vars[resource]
 
             if sequence is None or not sequence.is_active:
                 # No sequencing constraints found. Skip the creation of
@@ -277,7 +277,7 @@ class ConstraintsManager:
             arcs = sequence.arcs
 
             # Add dummy node self-arc to allow empty circuits.
-            empty = model.new_bool_var(f"empty_circuit_{machine}")
+            empty = model.new_bool_var(f"empty_circuit_{resource}")
             circuit: list[tuple[int, int, BoolVarT]] = [(-1, -1, empty)]
 
             for idx1, var1 in enumerate(modes):
@@ -292,7 +292,7 @@ class ConstraintsManager:
                 # Set rank for first task in the sequence.
                 model.add(rank == 0).only_enforce_if(start)
 
-                # Self arc if the task is not present on this machine.
+                # Self arc if the task is not present on this resource.
                 circuit.append((idx1, idx1, ~var1.is_present))
                 model.add(rank == -1).only_enforce_if(~var1.is_present)
 
@@ -314,7 +314,7 @@ class ConstraintsManager:
 
                     # TODO Validate that this cannot be combined with overlap.
                     task1, task2 = var1.task_idx, var2.task_idx
-                    setup = data.setup_times[machine, task1, task2]
+                    setup = data.setup_times[resource, task1, task2]
                     model.add(var1.end + setup <= var2.start).only_enforce_if(
                         arc
                     )
@@ -327,12 +327,12 @@ class ConstraintsManager:
         """
         self._job_spans_tasks()
         self._select_one_mode()
-        self._no_overlap_machines()
-        self._machine_capacity()
+        self._no_overlap_resources()
+        self._resource_capacity()
         self._activate_setup_times()
         self._timing_constraints()
         self._previous_before_constraints()
-        self._identical_and_different_machine_constraints()
+        self._identical_and_different_resource_constraints()
 
         # From here onwards we know which sequence constraints are active.
         self._enforce_circuit()

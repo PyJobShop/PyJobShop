@@ -11,7 +11,7 @@ from .Solution import Solution
 def plot(
     data: ProblemData,
     solution: Solution,
-    machine_order: Optional[list[int]] = None,
+    resource_order: Optional[list[int]] = None,
     plot_labels: bool = False,
     ax: Optional[plt.Axes] = None,
 ):
@@ -25,9 +25,9 @@ def plot(
         The problem data instance.
     solution
         A solution to the problem.
-    machine_order
-        The machines (by index) to plot and in which order they should appear
-        (from top to bottom). Defaults to all machines in the data instance.
+    resource_order
+        The resources (by index) to plot and in which order they should appear
+        (from top to bottom). Defaults to all resources in the data instance.
     plot_labels
         Whether to plot the task names as labels.
     ax
@@ -37,11 +37,11 @@ def plot(
         _, ax = plt.subplots(1, 1, figsize=(12, 8))
         assert ax is not None  # for linting
 
-    # Custom ordering of machines to plot.
-    if machine_order is not None:
-        order = {machine: idx for idx, machine in enumerate(machine_order)}
+    # Custom ordering of resources to plot.
+    if resource_order is not None:
+        order = {resource: idx for idx, resource in enumerate(resource_order)}
     else:
-        order = {idx: idx for idx in range(len(data.machines))}
+        order = {idx: idx for idx in range(len(data.resources))}
 
     # Tasks belonging to the same job get the same color. Task that do not
     # belong to a job are colored grey.
@@ -60,12 +60,12 @@ def plot(
             "alpha": 0.75,
         }
         duration = task_data.end - task_data.start
-        for machine in task_data.machines:
-            if machine not in order:
-                continue  # skip machines not in the order
+        for resource in task_data.resources:
+            if resource not in order:
+                continue  # skip resources not in the order
 
             ax.barh(
-                order[machine],
+                order[resource],
                 duration,
                 left=task_data.start,
                 **kwargs,
@@ -74,13 +74,13 @@ def plot(
             if plot_labels:
                 ax.text(
                     task_data.start + duration / 2,
-                    order[machine],
+                    order[resource],
                     data.tasks[idx].name,
                     ha="center",
                     va="center",
                 )
 
-    labels = [data.machines[idx].name for idx in order.keys()]
+    labels = [data.resources[idx].name for idx in order.keys()]
 
     ax.set_yticks(ticks=range(len(labels)), labels=labels)
     ax.set_ylim(ax.get_ylim()[::-1])

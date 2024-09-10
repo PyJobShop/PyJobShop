@@ -10,8 +10,8 @@ class TaskData:
     ----------
     mode
         The selected mode.
-    machines
-        The selected machines.
+    resources
+        The selected resources.
     start
         The start time.
     end
@@ -19,7 +19,7 @@ class TaskData:
     """
 
     mode: int
-    machines: list[int]
+    resources: list[int]
     start: int
     end: int
 

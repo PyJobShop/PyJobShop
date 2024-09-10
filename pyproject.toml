@@ -98,6 +98,7 @@ omit = [
     "tests/*",
     "setup.py",
     "cpo_config.py",
+    "conftest.py",
     "pyjobshop/cpoptimizer/*",
     "pyjobshop/ortools/*",
     "pyjobshop/cli.py",

@@ -18,7 +18,7 @@ PyJobShop
     .. autoclass:: Task
        :members:
 
-    .. autoclass:: Machine
+    .. autoclass:: Resource
        :members:
 
     .. autoclass:: Job
