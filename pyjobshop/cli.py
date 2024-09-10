@@ -9,7 +9,7 @@ import numpy as np
 import tomli
 from tqdm.contrib.concurrent import process_map
 
-from pyjobshop import read, solve
+from pyjobshop import ProblemData, Result, read, solve
 from pyjobshop.read import InstanceFormat
 
 
@@ -27,6 +27,10 @@ def parse_args():
         choices=[f.value for f in InstanceFormat],
         help=msg,
     )
+
+    msg = "Directory to store best-found solutions (one file per instance)."
+    parser.add_argument("--sol_dir", type=Path, help=msg)
+
     msg = "Solver to use."
     parser.add_argument(
         "--solver",
@@ -87,6 +91,18 @@ def tabulate(headers: list[str], rows: np.ndarray) -> str:
     return "\n".join(header + content)
 
 
+def write_solution(where: Path, data: ProblemData, result: Result):
+    with open(where, "w") as fh:
+        fh.write(f"status: {result.status.value}\n")
+        fh.write(f"objective: {result.objective}\n")
+        fh.write(f"runtime: {result.runtime}\n")
+        fh.write("\n")
+
+        fh.write("task,mode,start,end\n")
+        for idx, task in enumerate(result.best.tasks):
+            fh.write(f"{idx},{task.mode},{task.start},{task.end}\n")
+
+
 def _solve(
     instance_loc: Path,
     instance_format: InstanceFormat,
@@ -95,6 +111,7 @@ def _solve(
     display: bool,
     num_workers_per_instance: int,
     config_loc: Optional[Path],
+    sol_dir: Optional[Path],
 ) -> tuple[str, str, float, float]:
     """
     Solves a single instance.
@@ -107,8 +124,16 @@ def _solve(
 
     data = read(instance_loc, instance_format=instance_format)
     result = solve(
-        data, solver, time_limit, display, num_workers_per_instance, **params
+        data=data,
+        solver=solver,
+        time_limit=time_limit,
+        display=display,
+        num_workers=num_workers_per_instance,
+        **params,
     )
+    if sol_dir:
+        sol_dir.mkdir(parents=True, exist_ok=True)  # just in case
+        write_solution(sol_dir / (instance_loc.stem + ".sol"), data, result)
 
     return (
         instance_loc.name,
