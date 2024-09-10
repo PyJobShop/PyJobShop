@@ -15,19 +15,24 @@ PyJobShop
     .. autoclass:: ProblemData
        :members:
 
-    .. autoclass:: Task
+    .. autoclass:: Job
        :members:
 
     .. autoclass:: Resource
        :members:
 
-    .. autoclass:: Job
+    .. autoclass:: Machine
        :members:
+
+    .. autoclass:: Task
+       :members:
+
+    .. autoenum:: Constraint
 
     .. autoclass:: Objective
        :members:
 
-    .. autoenum:: Constraint
+
 
 
 .. automodule:: pyjobshop.Solution
