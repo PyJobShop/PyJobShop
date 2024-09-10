@@ -9,7 +9,7 @@ import numpy as np
 import tomli
 from tqdm.contrib.concurrent import process_map
 
-from pyjobshop import ProblemData, Result, read, solve
+from pyjobshop import Result, read, solve
 from pyjobshop.read import InstanceFormat
 
 
@@ -91,8 +91,9 @@ def tabulate(headers: list[str], rows: np.ndarray) -> str:
     return "\n".join(header + content)
 
 
-def write_solution(where: Path, data: ProblemData, result: Result):
+def write_solution(where: Path, result: Result):
     with open(where, "w") as fh:
+        fh.write(f"instance: {where.stem}\n")
         fh.write(f"status: {result.status.value}\n")
         fh.write(f"objective: {result.objective}\n")
         fh.write(f"runtime: {result.runtime}\n")
@@ -100,7 +101,10 @@ def write_solution(where: Path, data: ProblemData, result: Result):
 
         fh.write("task,mode,start,end\n")
         for idx, task in enumerate(result.best.tasks):
-            fh.write(f"{idx},{task.mode},{task.start},{task.end}\n")
+            if task is not None:
+                fh.write(f"{idx},{task.mode},{task.start},{task.end}\n")
+            else:
+                fh.write(f"{idx},-1,-1,-1\n")
 
 
 def _solve(
@@ -133,7 +137,7 @@ def _solve(
     )
     if sol_dir:
         sol_dir.mkdir(parents=True, exist_ok=True)  # just in case
-        write_solution(sol_dir / (instance_loc.stem + ".sol"), data, result)
+        write_solution(sol_dir / (instance_loc.stem + ".sol"), result)
 
     return (
         instance_loc.name,
