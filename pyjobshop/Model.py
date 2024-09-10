@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import Optional
+from typing import Optional, Sequence
 
 import numpy as np
 
@@ -361,7 +361,7 @@ class Model:
     def add_mode(
         self,
         task: Task,
-        resources: list[Resource],
+        resources: Sequence[Resource],
         duration: int,
         demands: Optional[list[int]] = None,
     ) -> Mode:

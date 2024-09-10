@@ -2,7 +2,7 @@ from collections import Counter
 from copy import deepcopy
 from dataclasses import dataclass
 from enum import Enum
-from typing import Optional, TypeVar
+from typing import Optional, Sequence, TypeVar
 
 import enum_tools.documentation
 import numpy as np
@@ -435,7 +435,7 @@ class ProblemData:
     def __init__(
         self,
         jobs: list[Job],
-        resources: list[Resource],
+        resources: Sequence[Resource],  # not list because of type invariance
         tasks: list[Task],
         modes: list[Mode],
         constraints: Optional[_CONSTRAINTS_TYPE] = None,
@@ -553,7 +553,7 @@ class ProblemData:
     def replace(
         self,
         jobs: Optional[list[Job]] = None,
-        resources: Optional[list[Resource]] = None,
+        resources: Optional[Sequence[Resource]] = None,
         tasks: Optional[list[Task]] = None,
         modes: Optional[list[Mode]] = None,
         constraints: Optional[_CONSTRAINTS_TYPE] = None,
@@ -621,7 +621,7 @@ class ProblemData:
         return self._jobs
 
     @property
-    def resources(self) -> list[Resource]:
+    def resources(self) -> Sequence[Resource]:
         """
         Returns the resource data of this problem instance.
         """
