@@ -1,6 +1,6 @@
 from collections import Counter
 from copy import deepcopy
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 from typing import Optional, Sequence, TypeVar
 
@@ -13,6 +13,7 @@ _CONSTRAINTS_TYPE = dict[tuple[int, int], list["Constraint"]]
 _T = TypeVar("_T")
 
 
+@dataclass(frozen=True)
 class Job:
     """
     Simple dataclass for storing all job-related data.
@@ -38,80 +39,28 @@ class Job:
         Name of the job.
     """
 
-    def __init__(
-        self,
-        weight: int = 1,
-        release_date: int = 0,
-        deadline: int = MAX_VALUE,
-        due_date: Optional[int] = None,
-        tasks: Optional[list[int]] = None,
-        name: str = "",
-    ):
-        if weight < 0:
+    weight: int = 1
+    release_date: int = 0
+    deadline: int = MAX_VALUE
+    due_date: Optional[int] = None
+    tasks: list[int] = field(default_factory=list)
+    name: str = ""
+
+    def __post_init__(self):
+        if self.weight < 0:
             raise ValueError("Weight must be non-negative.")
 
-        if release_date < 0:
+        if self.release_date < 0:
             raise ValueError("Release date must be non-negative.")
 
-        if deadline < 0:
+        if self.deadline < 0:
             raise ValueError("Deadline must be non-negative.")
 
-        if release_date > deadline:
+        if self.release_date > self.deadline:
             raise ValueError("Must have release_date <= deadline.")
 
-        if due_date is not None and due_date < 0:
+        if self.due_date is not None and self.due_date < 0:
             raise ValueError("Due date must be non-negative.")
-
-        self._weight = weight
-        self._release_date = release_date
-        self._deadline = deadline
-        self._due_date = due_date
-        self._tasks = [] if tasks is None else tasks
-        self._name = name
-
-    @property
-    def weight(self) -> int:
-        """
-        The job importance weight, used as multiplicative factor in the
-        objective function.
-        """
-        return self._weight
-
-    @property
-    def release_date(self) -> int:
-        """
-        The earliest time that the job may start.
-        """
-        return self._release_date
-
-    @property
-    def deadline(self) -> int:
-        """
-        The latest time by which the job must be completed.
-        """
-        return self._deadline
-
-    @property
-    def due_date(self) -> Optional[int]:
-        """
-        The latest time that the job should be completed before incurring
-        penalties.
-        """
-        return self._due_date
-
-    @property
-    def tasks(self) -> list[int]:
-        """
-        List of task indices that belong to this job.
-        """
-        return self._tasks
-
-    @property
-    def name(self) -> str:
-        """
-        Name of the job.
-        """
-        return self._name
 
     def add_task(self, idx: int):
         """
@@ -122,7 +71,7 @@ class Job:
         idx
             Task index to add.
         """
-        self._tasks.append(idx)
+        self.tasks.append(idx)
 
 
 @dataclass(frozen=True)
@@ -168,6 +117,7 @@ class Machine(Resource):
         super().__init__(capacity=0, renewable=True, name=name)
 
 
+@dataclass(frozen=True)
 class Task:
     """
     Simple dataclass for storing all task related data.
@@ -192,69 +142,19 @@ class Task:
         Name of the task.
     """
 
-    def __init__(
-        self,
-        earliest_start: int = 0,
-        latest_start: int = MAX_VALUE,
-        earliest_end: int = 0,
-        latest_end: int = MAX_VALUE,
-        fixed_duration: bool = True,
-        name: str = "",
-    ):
-        if earliest_start > latest_start:
+    earliest_start: int = 0
+    latest_start: int = MAX_VALUE
+    earliest_end: int = 0
+    latest_end: int = MAX_VALUE
+    fixed_duration: bool = True
+    name: str = ""
+
+    def __post_init__(self):
+        if self.earliest_start > self.latest_start:
             raise ValueError("earliest_start must be <= latest_start.")
 
-        if earliest_end > latest_end:
+        if self.earliest_end > self.latest_end:
             raise ValueError("earliest_end must be <= latest_end.")
-
-        self._earliest_start = earliest_start
-        self._latest_start = latest_start
-        self._earliest_end = earliest_end
-        self._latest_end = latest_end
-        self._fixed_duration = fixed_duration
-        self._name = name
-
-    @property
-    def earliest_start(self) -> int:
-        """
-        Earliest start time of the task.
-        """
-        return self._earliest_start
-
-    @property
-    def latest_start(self) -> int:
-        """
-        Latest start time of the task.
-        """
-        return self._latest_start
-
-    @property
-    def earliest_end(self) -> int:
-        """
-        Earliest end time of the task.
-        """
-        return self._earliest_end
-
-    @property
-    def latest_end(self) -> int:
-        """
-        Latest end time of the task.
-        """
-        return self._latest_end
-
-    @property
-    def fixed_duration(self) -> bool:
-        """
-        Whether the task has a fixed duration.
-        """
-        return self._fixed_duration
-
-    @property
-    def name(self) -> str:
-        """
-        Name of the task.
-        """
-        return self._name
 
 
 @enum_tools.documentation.document_enum
