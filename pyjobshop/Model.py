@@ -363,114 +363,114 @@ class Model:
 
         return mode
 
-    def add_start_at_start(self, first: Task, second: Task):
+    def add_start_at_start(self, task1: Task, task2: Task):
         """
         Adds a constraint that the first task must start at the same time as
         the second task starts.
         """
-        task1 = self._id2task[id(first)]
-        task2 = self._id2task[id(second)]
-        self._constraints[task1, task2].append(Constraint.START_AT_START)
+        idx1 = self._id2task[id(task1)]
+        idx2 = self._id2task[id(task2)]
+        self._constraints[idx1, idx2].append(Constraint.START_AT_START)
 
-    def add_start_at_end(self, first: Task, second: Task):
+    def add_start_at_end(self, task1: Task, task2: Task):
         """
         Adds a constraint that the first task must start at the same time as
         the second task ends.
         """
-        task1 = self._id2task[id(first)]
-        task2 = self._id2task[id(second)]
-        self._constraints[task1, task2].append(Constraint.START_AT_END)
+        idx1 = self._id2task[id(task1)]
+        idx2 = self._id2task[id(task2)]
+        self._constraints[idx1, idx2].append(Constraint.START_AT_END)
 
-    def add_start_before_start(self, first: Task, second: Task):
+    def add_start_before_start(self, task1: Task, task2: Task):
         """
         Adds a constraint that the first task must start before the second task
         starts.
         """
-        task1 = self._id2task[id(first)]
-        task2 = self._id2task[id(second)]
-        self._constraints[task1, task2].append(Constraint.START_BEFORE_START)
+        idx1 = self._id2task[id(task1)]
+        idx2 = self._id2task[id(task2)]
+        self._constraints[idx1, idx2].append(Constraint.START_BEFORE_START)
 
-    def add_start_before_end(self, first: Task, second: Task):
+    def add_start_before_end(self, task1: Task, task2: Task):
         """
         Adds a constraint that the first task must start before the second task
         ends.
         """
-        task1 = self._id2task[id(first)]
-        task2 = self._id2task[id(second)]
-        self._constraints[task1, task2].append(Constraint.START_BEFORE_END)
+        idx1 = self._id2task[id(task1)]
+        idx2 = self._id2task[id(task2)]
+        self._constraints[idx1, idx2].append(Constraint.START_BEFORE_END)
 
-    def add_end_at_end(self, first: Task, second: Task):
+    def add_end_at_end(self, task1: Task, task2: Task):
         """
         Adds a constraint that the first task must end at the same time as the
         second task ends.
         """
-        task1 = self._id2task[id(first)]
-        task2 = self._id2task[id(second)]
-        self._constraints[task1, task2].append(Constraint.END_AT_END)
+        idx1 = self._id2task[id(task1)]
+        idx2 = self._id2task[id(task2)]
+        self._constraints[idx1, idx2].append(Constraint.END_AT_END)
 
-    def add_end_at_start(self, first: Task, second: Task):
+    def add_end_at_start(self, task1: Task, task2: Task):
         """
         Adds a constraint that the first task must end at the same time as the
         second task starts.
         """
-        task1 = self._id2task[id(first)]
-        task2 = self._id2task[id(second)]
-        self._constraints[task1, task2].append(Constraint.END_AT_START)
+        idx1 = self._id2task[id(task1)]
+        idx2 = self._id2task[id(task2)]
+        self._constraints[idx1, idx2].append(Constraint.END_AT_START)
 
-    def add_end_before_start(self, first: Task, second: Task):
+    def add_end_before_start(self, task1: Task, task2: Task):
         """
         Adds a constraint that the first task must end before the second task
         starts.
         """
-        task1 = self._id2task[id(first)]
-        task2 = self._id2task[id(second)]
-        self._constraints[task1, task2].append(Constraint.END_BEFORE_START)
+        idx1 = self._id2task[id(task1)]
+        idx2 = self._id2task[id(task2)]
+        self._constraints[idx1, idx2].append(Constraint.END_BEFORE_START)
 
-    def add_end_before_end(self, first: Task, second: Task):
+    def add_end_before_end(self, task1: Task, task2: Task):
         """
         Adds a constraint that the first task must end before the second task
         ends.
         """
-        task1 = self._id2task[id(first)]
-        task2 = self._id2task[id(second)]
-        self._constraints[task1, task2].append(Constraint.END_BEFORE_END)
+        idx1 = self._id2task[id(task1)]
+        idx2 = self._id2task[id(task2)]
+        self._constraints[idx1, idx2].append(Constraint.END_BEFORE_END)
 
-    def add_previous(self, first: Task, second: Task):
+    def add_previous(self, task1: Task, task2: Task):
         """
         Adds a constraint that the first task must be scheduled right before
         the second task, meaning that no task is allowed to schedule between,
         if they are scheduled on the same resource.
         """
-        task1 = self._id2task[id(first)]
-        task2 = self._id2task[id(second)]
-        self._constraints[task1, task2].append(Constraint.PREVIOUS)
+        idx1 = self._id2task[id(task1)]
+        idx2 = self._id2task[id(task2)]
+        self._constraints[idx1, idx2].append(Constraint.PREVIOUS)
 
-    def add_before(self, first: Task, second: Task):
+    def add_before(self, task1: Task, task2: Task):
         """
         Adds a constraint that the first task must be scheduled before the
         second task, if they are scheduled on the same resource.
         """
-        task1 = self._id2task[id(first)]
-        task2 = self._id2task[id(second)]
-        self._constraints[task1, task2].append(Constraint.BEFORE)
+        idx1 = self._id2task[id(task1)]
+        idx2 = self._id2task[id(task2)]
+        self._constraints[idx1, idx2].append(Constraint.BEFORE)
 
-    def add_identical_resources(self, first: Task, second: Task):
+    def add_identical_resources(self, task1: Task, task2: Task):
         """
         Adds a constraint that two tasks must be scheduled with modes that
         require the same resources.
         """
-        task1 = self._id2task[id(first)]
-        task2 = self._id2task[id(second)]
-        self._constraints[task1, task2].append(Constraint.IDENTICAL_RESOURCES)
+        idx1 = self._id2task[id(task1)]
+        idx2 = self._id2task[id(task2)]
+        self._constraints[idx1, idx2].append(Constraint.IDENTICAL_RESOURCES)
 
-    def add_different_resource(self, first: Task, second: Task):
+    def add_different_resource(self, task1: Task, task2: Task):
         """
         Adds a constraint that the two tasks must be scheduled with modes that
         require different resources.
         """
-        task1 = self._id2task[id(first)]
-        task2 = self._id2task[id(second)]
-        self._constraints[task1, task2].append(Constraint.DIFFERENT_RESOURCES)
+        idx1 = self._id2task[id(task1)]
+        idx2 = self._id2task[id(task2)]
+        self._constraints[idx1, idx2].append(Constraint.DIFFERENT_RESOURCES)
 
     def add_setup_time(
         self, resource: Resource, task1: Task, task2: Task, duration: int
