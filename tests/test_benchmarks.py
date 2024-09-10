@@ -13,7 +13,7 @@ def test_jsp_lawrence(solver: str):
     Lawrence 10x5 instance la01 (Table 3, instance 1);
     also called (setf1) or (F1).
     """
-    # A job consists of tasks, which is a tuple (machine_id, processing_time).
+    # A job consists of tasks, which is a tuple (resource_id, processing_time).
     jobs_data = [
         [(1, 21), (0, 53), (4, 95), (3, 55), (2, 34)],
         [(0, 21), (3, 52), (4, 16), (2, 26), (1, 71)],
@@ -30,14 +30,14 @@ def test_jsp_lawrence(solver: str):
 
     model = Model()
     jobs = [model.add_job() for _ in range(num_jobs)]
-    machines = [model.add_machine() for _ in range(5)]
+    resources = [model.add_resource() for _ in range(5)]
 
     for job_idx, tasks_data in enumerate(jobs_data):
         num_tasks = len(tasks_data)
         tasks = [model.add_task(job=jobs[job_idx]) for _ in range(num_tasks)]
 
         for t_idx, (m_idx, duration) in enumerate(tasks_data):
-            model.add_processing_time(tasks[t_idx], machines[m_idx], duration)
+            model.add_processing_time(tasks[t_idx], resources[m_idx], duration)
 
         # Linear routing precedence constraints.
         for task_idx in range(1, len(tasks)):

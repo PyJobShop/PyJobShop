@@ -7,10 +7,10 @@ from pyjobshop.constants import MAX_VALUE
 from pyjobshop.ProblemData import (
     Constraint,
     Job,
-    Machine,
     Mode,
     Objective,
     ProblemData,
+    Resource,
     Task,
 )
 from pyjobshop.Result import Result
@@ -25,7 +25,7 @@ class Model:
 
     def __init__(self):
         self._jobs: list[Job] = []
-        self._machines: list[Machine] = []
+        self._resources: list[Resource] = []
         self._tasks: list[Task] = []
         self._modes: list[Mode] = []
         self._constraints: dict[tuple[int, int], list[Constraint]] = (
@@ -37,7 +37,7 @@ class Model:
         self._objective: Objective = Objective.makespan()
 
         self._id2job: dict[int, int] = {}
-        self._id2machine: dict[int, int] = {}
+        self._id2resource: dict[int, int] = {}
         self._id2task: dict[int, int] = {}
 
     @property
@@ -48,11 +48,11 @@ class Model:
         return self._jobs
 
     @property
-    def machines(self) -> list[Machine]:
+    def resources(self) -> list[Resource]:
         """
-        Returns the list of machines in the model.
+        Returns the list of resources in the model.
         """
-        return self._machines
+        return self._resources
 
     @property
     def tasks(self) -> list[Task]:
@@ -91,8 +91,8 @@ class Model:
                 name=job.name,
             )
 
-        for machine in data.machines:
-            model.add_machine(capacity=machine.capacity, name=machine.name)
+        for resource in data.resources:
+            model.add_resource(capacity=resource.capacity, name=resource.name)
 
         task2job = {}
         for job_idx, job in enumerate(data.jobs):
@@ -113,7 +113,7 @@ class Model:
         for mode in data.modes:
             model.add_mode(
                 task=model.tasks[mode.task],
-                machines=[model.machines[mach] for mach in mode.machines],
+                resources=[model.resources[res] for res in mode.resources],
                 duration=mode.duration,
                 demands=mode.demands,
             )
@@ -142,15 +142,15 @@ class Model:
                     model.add_previous(task1, task2)
                 elif constraint == Constraint.BEFORE:
                     model.add_before(task1, task2)
-                elif constraint == Constraint.IDENTICAL_MACHINES:
-                    model.add_identical_machines(task1, task2)
-                elif constraint == Constraint.DIFFERENT_MACHINES:
-                    model.add_different_machine(task1, task2)
+                elif constraint == Constraint.IDENTICAL_RESOURCES:
+                    model.add_identical_resources(task1, task2)
+                elif constraint == Constraint.DIFFERENT_RESOURCES:
+                    model.add_different_resource(task1, task2)
 
-        for (mach, idx1, idx2), duration in np.ndenumerate(data.setup_times):
+        for (res, idx1, idx2), duration in np.ndenumerate(data.setup_times):
             if duration != 0:
                 model.add_setup_time(
-                    machine=model.machines[mach],
+                    resource=model.resources[res],
                     task1=model.tasks[idx1],
                     task2=model.tasks[idx2],
                     duration=duration,
@@ -171,16 +171,16 @@ class Model:
         Returns a ProblemData object containing the problem instance.
         """
         num_tasks = len(self.tasks)
-        num_machines = len(self.machines)
+        num_res = len(self.resources)
 
         # Convert setup times into a 3D array with zero as default.
-        setup_times = np.zeros((num_machines, num_tasks, num_tasks), dtype=int)
-        for (machine, task1, task2), duration in self._setup_times.items():
-            setup_times[machine, task1, task2] = duration
+        setup_times = np.zeros((num_res, num_tasks, num_tasks), dtype=int)
+        for (resource, task1, task2), duration in self._setup_times.items():
+            setup_times[resource, task1, task2] = duration
 
         return ProblemData(
             jobs=self.jobs,
-            machines=self.machines,
+            resources=self.resources,
             tasks=self.tasks,
             modes=self._modes,
             constraints=self._constraints,
@@ -229,32 +229,32 @@ class Model:
 
         return job
 
-    def add_machine(
+    def add_resource(
         self, capacity: int = 0, renewable: bool = True, name: str = ""
-    ) -> Machine:
+    ) -> Resource:
         """
-        Adds a machine to the model.
+        Adds a resource to the model.
 
         Parameters
         ----------
         capacity
-            The capacity of the machine.
+            The capacity of the resource.
         renewable
-            Whether the machine is renewable.
+            Whether the resource is renewable.
         name
-            Name of the machine.
+            Name of the resource.
 
         Returns
         -------
-        Machine
-            The created machine.
+        Resource
+            The created resource.
         """
-        machine = Machine(capacity=capacity, renewable=renewable, name=name)
+        resource = Resource(capacity=capacity, renewable=renewable, name=name)
 
-        self._id2machine[id(machine)] = len(self.machines)
-        self._machines.append(machine)
+        self._id2resource[id(resource)] = len(self.resources)
+        self._resources.append(resource)
 
-        return machine
+        return resource
 
     def add_task(
         self,
@@ -311,32 +311,32 @@ class Model:
         return task
 
     def add_processing_time(
-        self, task: Task, machine: Machine, duration: int, demand: int = 0
+        self, task: Task, resource: Resource, duration: int, demand: int = 0
     ):
         """
-        Adds a processing time for a given task on a machine.
+        Adds a processing time for a given task on a resource.
 
         Parameters
         ----------
         task
             The task to be processed.
-        machine
-            The machine on which the task is processed.
+        resource
+            The resource on which the task is processed.
         duration
-            Processing time of the task on the machine.
+            Processing time of the task on the resource.
         demand
-            Demand of the task on the machine. Default 0.
+            Demand of the task on the resource. Default 0.
         """
 
         task_idx = self._id2task[id(task)]
-        machine_idx = self._id2machine[id(machine)]
+        resource_idx = self._id2resource[id(resource)]
 
-        self._modes.append(Mode(task_idx, [machine_idx], duration, [demand]))
+        self._modes.append(Mode(task_idx, [resource_idx], duration, [demand]))
 
     def add_mode(
         self,
         task: Task,
-        machines: list[Machine],
+        resources: list[Resource],
         duration: int,
         demands: Optional[list[int]] = None,
     ) -> Mode:
@@ -347,18 +347,18 @@ class Model:
         ----------
         task
             The task associated with the mode.
-        machines
-            The machines that the task must be processed on.
+        resources
+            The resources that the task must be processed on.
         duration
             Processing duration of this mode.
         demands
-            List of demands for each machine for this mode. If ``None`` is
+            List of demands for each resource for this mode. If ``None`` is
             given, then the demands are initialized as list of zeros with the
-            same length as the machines.
+            same length as the resources.
         """
         task_idx = self._id2task[id(task)]
-        machine_idcs = [self._id2machine[id(machine)] for machine in machines]
-        mode = Mode(task_idx, machine_idcs, duration, demands)
+        resource_idcs = [self._id2resource[id(res)] for res in resources]
+        mode = Mode(task_idx, resource_idcs, duration, demands)
         self._modes.append(mode)
 
         return mode
@@ -439,7 +439,7 @@ class Model:
         """
         Adds a constraint that the first task must be scheduled right before
         the second task, meaning that no task is allowed to schedule between,
-        if they are scheduled on the same machine.
+        if they are scheduled on the same resource.
         """
         task1 = self._id2task[id(first)]
         task2 = self._id2task[id(second)]
@@ -448,53 +448,53 @@ class Model:
     def add_before(self, first: Task, second: Task):
         """
         Adds a constraint that the first task must be scheduled before the
-        second task, if they are scheduled on the same machine.
+        second task, if they are scheduled on the same resource.
         """
         task1 = self._id2task[id(first)]
         task2 = self._id2task[id(second)]
         self._constraints[task1, task2].append(Constraint.BEFORE)
 
-    def add_identical_machines(self, first: Task, second: Task):
+    def add_identical_resources(self, first: Task, second: Task):
         """
         Adds a constraint that two tasks must be scheduled with modes that
-        require the same machines.
+        require the same resources.
         """
         task1 = self._id2task[id(first)]
         task2 = self._id2task[id(second)]
-        self._constraints[task1, task2].append(Constraint.IDENTICAL_MACHINES)
+        self._constraints[task1, task2].append(Constraint.IDENTICAL_RESOURCES)
 
-    def add_different_machine(self, first: Task, second: Task):
+    def add_different_resource(self, first: Task, second: Task):
         """
         Adds a constraint that the two tasks must be scheduled with modes that
-        require different machines.
+        require different resources.
         """
         task1 = self._id2task[id(first)]
         task2 = self._id2task[id(second)]
-        self._constraints[task1, task2].append(Constraint.DIFFERENT_MACHINES)
+        self._constraints[task1, task2].append(Constraint.DIFFERENT_RESOURCES)
 
     def add_setup_time(
-        self, machine: Machine, task1: Task, task2: Task, duration: int
+        self, resource: Resource, task1: Task, task2: Task, duration: int
     ):
         """
-        Adds a setup time between two tasks on a machine.
+        Adds a setup time between two tasks on a resource.
 
         Parameters
         ----------
-        machine
-            Machine on which the setup time occurs.
+        resource
+            Resource on which the setup time occurs.
         task1
             First task.
         task2
             Second task.
         duration
             Duration of the setup time when switching from the first task
-            to the second task on the machine.
+            to the second task on the resource.
         """
-        machine_idx = self._id2machine[id(machine)]
+        resource_idx = self._id2resource[id(resource)]
         task_idx1 = self._id2task[id(task1)]
         task_idx2 = self._id2task[id(task2)]
 
-        self._setup_times[machine_idx, task_idx1, task_idx2] = duration
+        self._setup_times[resource_idx, task_idx1, task_idx2] = duration
 
     def set_horizon(self, horizon: int):
         """

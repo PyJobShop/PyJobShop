@@ -130,18 +130,18 @@ class VariablesManager:
 
     def _make_sequence_variables(self) -> list[CpoSequenceVar]:
         """
-        Creates a sequence variable for each machine. Sequence variables are
-        used to model the ordering of intervals on a given machine. This is
-        used for modeling machine setups and sequencing task constraints, such
+        Creates a sequence variable for each resource. Sequence variables are
+        used to model the ordering of intervals on a given resource. This is
+        used for modeling resource setups and sequencing task constraints, such
         as previous, before, first, last and permutations.
         """
         data = self._data
-        machine2modes = utils.machine2modes(data)
+        resource2modes = utils.resource2modes(data)
         variables = []
 
-        for machine, modes in enumerate(machine2modes):
+        for resource, modes in enumerate(resource2modes):
             intervals = [self.mode_vars[mode] for mode in modes]
-            seq_var = sequence_var(name=f"S{machine}", vars=intervals)
+            seq_var = sequence_var(name=f"S{resource}", vars=intervals)
             variables.append(seq_var)
 
         self._model.add(variables)
