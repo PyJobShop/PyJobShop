@@ -1,6 +1,6 @@
 from collections import Counter
 from copy import deepcopy
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
 from typing import Optional, Sequence, TypeVar
 
@@ -13,7 +13,6 @@ _CONSTRAINTS_TYPE = dict[tuple[int, int], list["Constraint"]]
 _T = TypeVar("_T")
 
 
-@dataclass(frozen=True)
 class Job:
     """
     Simple dataclass for storing all job-related data.
@@ -39,28 +38,80 @@ class Job:
         Name of the job.
     """
 
-    weight: int = 1
-    release_date: int = 0
-    deadline: int = MAX_VALUE
-    due_date: Optional[int] = None
-    tasks: list[int] = field(default_factory=list)
-    name: str = ""
-
-    def __post_init__(self):
-        if self.weight < 0:
+    def __init__(
+        self,
+        weight: int = 1,
+        release_date: int = 0,
+        deadline: int = MAX_VALUE,
+        due_date: Optional[int] = None,
+        tasks: Optional[list[int]] = None,
+        name: str = "",
+    ):
+        if weight < 0:
             raise ValueError("Weight must be non-negative.")
 
-        if self.release_date < 0:
+        if release_date < 0:
             raise ValueError("Release date must be non-negative.")
 
-        if self.deadline < 0:
+        if deadline < 0:
             raise ValueError("Deadline must be non-negative.")
 
-        if self.release_date > self.deadline:
+        if release_date > deadline:
             raise ValueError("Must have release_date <= deadline.")
 
-        if self.due_date is not None and self.due_date < 0:
+        if due_date is not None and due_date < 0:
             raise ValueError("Due date must be non-negative.")
+
+        self._weight = weight
+        self._release_date = release_date
+        self._deadline = deadline
+        self._due_date = due_date
+        self._tasks = [] if tasks is None else tasks
+        self._name = name
+
+    @property
+    def weight(self) -> int:
+        """
+        The job importance weight, used as multiplicative factor in the
+        objective function.
+        """
+        return self._weight
+
+    @property
+    def release_date(self) -> int:
+        """
+        The earliest time that the job may start.
+        """
+        return self._release_date
+
+    @property
+    def deadline(self) -> int:
+        """
+        The latest time by which the job must be completed.
+        """
+        return self._deadline
+
+    @property
+    def due_date(self) -> Optional[int]:
+        """
+        The latest time that the job should be completed before incurring
+        penalties.
+        """
+        return self._due_date
+
+    @property
+    def tasks(self) -> list[int]:
+        """
+        List of task indices that belong to this job.
+        """
+        return self._tasks
+
+    @property
+    def name(self) -> str:
+        """
+        Name of the job.
+        """
+        return self._name
 
     def add_task(self, idx: int):
         """
@@ -71,7 +122,7 @@ class Job:
         idx
             Task index to add.
         """
-        self.tasks.append(idx)
+        self._tasks.append(idx)
 
 
 @dataclass(frozen=True)
