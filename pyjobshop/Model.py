@@ -238,7 +238,7 @@ class Model:
         return job
 
     def add_resource(
-        self, capacity: int = 0, renewable: bool = True, name: str = ""
+        self, capacity: int, renewable: bool = True, name: str = ""
     ) -> Resource:
         """
         Adds a resource to the model.

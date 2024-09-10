@@ -133,9 +133,7 @@ class Resource:
     Parameters
     ----------
     capacity
-        Capacity of the resource. Default 0. If the capacity is nonzero, then
-        the resource can process a number of tasks at the same time, which is
-        determined by the task mode demands.
+        Capacity of the resource.
     renewable
         Whether the resource is renewable. A renewable resource replenishes
         its capacity after each task completion. Default ``True``.
@@ -143,16 +141,13 @@ class Resource:
         Name of the resource.
     """
 
-    capacity: int = 0
+    capacity: int
     renewable: bool = True
     name: str = ""
 
     def __post_init__(self):
         if self.capacity < 0:
             raise ValueError("Capacity must be non-negative.")
-
-        if self.capacity == 0 and not self.renewable:
-            raise ValueError("Non-renewable resources must have capacity > 0.")
 
 
 @dataclass(frozen=True)

@@ -93,7 +93,7 @@ def test_from_data():
     """
     data = ProblemData(
         [Job()],
-        [Resource(), Machine()],
+        [Resource(1), Machine()],
         [Task(), Task(), Task()],
         modes=[Mode(0, [0], 1), Mode(1, [1], 2), Mode(2, [1], 2)],
         constraints={
