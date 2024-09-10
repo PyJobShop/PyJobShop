@@ -91,9 +91,9 @@ def tabulate(headers: list[str], rows: np.ndarray) -> str:
     return "\n".join(header + content)
 
 
-def write_solution(where: Path, result: Result):
-    with open(where, "w") as fh:
-        fh.write(f"instance: {where.stem}\n")
+def write_solution(instance_loc: Path, sol_dir: Path, result: Result):
+    with open(sol_dir / (instance_loc.stem + ".sol"), "w") as fh:
+        fh.write(f"instance: {instance_loc.name}\n")
         fh.write(f"status: {result.status.value}\n")
         fh.write(f"objective: {result.objective}\n")
         fh.write(f"runtime: {result.runtime}\n")
@@ -137,7 +137,7 @@ def _solve(
     )
     if sol_dir:
         sol_dir.mkdir(parents=True, exist_ok=True)  # just in case
-        write_solution(sol_dir / (instance_loc.stem + ".sol"), result)
+        write_solution(instance_loc, sol_dir, result)
 
     return (
         instance_loc.name,
