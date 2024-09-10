@@ -2,7 +2,7 @@ from collections import Counter
 from copy import deepcopy
 from dataclasses import dataclass
 from enum import Enum
-from typing import Optional, TypeVar
+from typing import Optional, Sequence, TypeVar
 
 import enum_tools.documentation
 import numpy as np
@@ -153,6 +153,24 @@ class Resource:
 
         if self.capacity == 0 and not self.renewable:
             raise ValueError("Non-renewable resources must have capacity > 0.")
+
+
+@dataclass(frozen=True)
+class Machine(Resource):
+    """
+    Simple dataclass for storing all machine-related data. A machine is a
+    specialized resource that allows for sequencing constraints.
+
+    Parameters
+    ----------
+    name
+        Name of the machine.
+    """
+
+    name: str = ""
+
+    def __init__(self, name: str = ""):
+        super().__init__(capacity=0, renewable=True, name=name)
 
 
 class Task:
@@ -417,7 +435,7 @@ class ProblemData:
     def __init__(
         self,
         jobs: list[Job],
-        resources: list[Resource],
+        resources: Sequence[Resource],
         tasks: list[Task],
         modes: list[Mode],
         constraints: Optional[_CONSTRAINTS_TYPE] = None,
@@ -488,19 +506,19 @@ class ProblemData:
 
         for (idx1, idx2), constraints in self.constraints.items():
             modes = [mode for mode in self.modes if mode.task in (idx1, idx2)]
-            has_capacity = any(
-                self.resources[resource].capacity > 0
+            all_machines = all(
+                isinstance(self.resources[resource], Machine)
                 for mode in modes
                 for resource in mode.resources
             )
-            has_sequencing = (
+            requires_sequencing = (
                 Constraint.PREVIOUS in constraints
                 or Constraint.BEFORE in constraints
             )
-            if has_capacity and has_sequencing:
+            if not all_machines and requires_sequencing:
                 msg = (
-                    "Sequencing constraints cannot be used on tasks with "
-                    "modes that have capacity."
+                    "Sequencing constraints can only be used on tasks that "
+                    "are processed exclusively on machines."
                 )
                 raise ValueError(msg)
 
@@ -513,8 +531,11 @@ class ProblemData:
             )
 
         for idx, resource in enumerate(self.resources):
-            if resource.capacity > 0 and np.any(self.setup_times[idx] > 0):
-                msg = "Setup times not allowed for resources with capacity."
+            is_machine = isinstance(resource, Machine)
+            has_setup_times = np.any(self.setup_times[idx] > 0)
+
+            if not is_machine and has_setup_times:
+                msg = "Setup times only allowed for machines."
                 raise ValueError(msg)
 
         if self.horizon < 0:
@@ -532,7 +553,7 @@ class ProblemData:
     def replace(
         self,
         jobs: Optional[list[Job]] = None,
-        resources: Optional[list[Resource]] = None,
+        resources: Optional[Sequence[Resource]] = None,
         tasks: Optional[list[Task]] = None,
         modes: Optional[list[Mode]] = None,
         constraints: Optional[_CONSTRAINTS_TYPE] = None,
@@ -600,7 +621,7 @@ class ProblemData:
         return self._jobs
 
     @property
-    def resources(self) -> list[Resource]:
+    def resources(self) -> Sequence[Resource]:
         """
         Returns the resource data of this problem instance.
         """

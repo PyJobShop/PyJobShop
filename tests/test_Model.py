@@ -6,6 +6,7 @@ from pyjobshop.Model import Model
 from pyjobshop.ProblemData import (
     Constraint,
     Job,
+    Machine,
     Mode,
     Objective,
     ProblemData,
@@ -22,11 +23,11 @@ def test_model_to_data():
     model = Model()
 
     job = model.add_job()
-    resource1, resource2 = [model.add_resource() for _ in range(2)]
+    machine1, machine2 = [model.add_machine() for _ in range(2)]
     task1, task2 = [model.add_task(job=job) for _ in range(2)]
 
-    model.add_processing_time(task1, resource1, 1)
-    model.add_processing_time(task2, resource2, 2)
+    model.add_processing_time(task1, machine1, 1)
+    model.add_processing_time(task2, machine2, 2)
 
     model.add_start_at_start(task1, task2)
     model.add_start_at_end(task1, task2)
@@ -41,8 +42,8 @@ def test_model_to_data():
     model.add_previous(task2, task1)
     model.add_before(task2, task1)
 
-    model.add_setup_time(resource1, task1, task2, 3)
-    model.add_setup_time(resource2, task1, task2, 4)
+    model.add_setup_time(machine1, task1, task2, 3)
+    model.add_setup_time(machine2, task1, task2, 4)
 
     model.set_horizon(100)
     model.set_objective(weight_total_flow_time=1)
@@ -50,7 +51,7 @@ def test_model_to_data():
     data = model.data()
 
     assert_equal(data.jobs, [job])
-    assert_equal(data.resources, [resource1, resource2])
+    assert_equal(data.resources, [machine1, machine2])
     assert_equal(data.tasks, [task1, task2])
     assert_equal(
         data.modes,
@@ -92,9 +93,9 @@ def test_from_data():
     """
     data = ProblemData(
         [Job()],
-        [Resource(), Resource()],
-        [Task(), Task()],
-        modes=[Mode(0, [0], 1), Mode(1, [1], 2)],
+        [Resource(), Machine()],
+        [Task(), Task(), Task()],
+        modes=[Mode(0, [0], 1), Mode(1, [1], 2), Mode(2, [1], 2)],
         constraints={
             (0, 1): [
                 Constraint.START_AT_START,
@@ -105,16 +106,18 @@ def test_from_data():
                 Constraint.END_AT_END,
                 Constraint.END_BEFORE_START,
                 Constraint.END_BEFORE_END,
-                Constraint.PREVIOUS,
-                Constraint.BEFORE,
                 Constraint.IDENTICAL_RESOURCES,
                 Constraint.DIFFERENT_RESOURCES,
-            ]
+            ],
+            (1, 2): [
+                Constraint.PREVIOUS,
+                Constraint.BEFORE,
+            ],
         },
         setup_times=np.array(
             [
-                [[0, 0], [0, 0]],
-                [[1, 1], [1, 1]],
+                np.zeros((3, 3)),  # resource
+                np.ones((3, 3)),  # machine
             ]
         ),
         horizon=100,
@@ -141,14 +144,14 @@ def test_model_to_data_default_values():
     model = Model()
 
     job = model.add_job()
-    resource = model.add_resource()
+    machine = model.add_machine()
     task = model.add_task(job=job)
-    model.add_processing_time(task, resource, 1)
+    model.add_processing_time(task, machine, 1)
 
     data = model.data()
 
     assert_equal(data.jobs, [job])
-    assert_equal(data.resources, [resource])
+    assert_equal(data.resources, [machine])
     assert_equal(data.tasks, [task])
     assert_equal(data.modes, [Mode(task=0, resources=[0], duration=1)])
     assert_equal(data.constraints, {})
@@ -234,10 +237,10 @@ def test_model_processing_time_creates_correct_mode():
     model = Model()
 
     job = model.add_job()
-    resource = model.add_resource()
+    machine = model.add_machine()
     task = model.add_task(job=job)
 
-    model.add_processing_time(task, resource, 1)
+    model.add_processing_time(task, machine, 1)
     assert_equal(model.modes[0], Mode(task=0, resources=[0], duration=1))
 
 
@@ -291,11 +294,11 @@ def test_solve(solver: str):
     model = Model()
 
     job = model.add_job()
-    resource = model.add_resource()
+    machine = model.add_machine()
     tasks = [model.add_task(job=job) for _ in range(2)]
 
     for task, duration in zip(tasks, [1, 2]):
-        model.add_processing_time(task, resource, duration)
+        model.add_processing_time(task, machine, duration)
 
     result = model.solve(solver=solver)
 

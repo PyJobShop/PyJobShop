@@ -7,6 +7,7 @@ from pyjobshop.constants import MAX_VALUE
 from pyjobshop.ProblemData import (
     Constraint,
     Job,
+    Machine,
     Mode,
     Objective,
     ProblemData,
@@ -92,7 +93,12 @@ class Model:
             )
 
         for resource in data.resources:
-            model.add_resource(capacity=resource.capacity, name=resource.name)
+            if isinstance(resource, Machine):
+                model.add_machine(name=resource.name)
+            else:
+                model.add_resource(
+                    capacity=resource.capacity, name=resource.name
+                )
 
         task2job = {}
         for job_idx, job in enumerate(data.jobs):
@@ -256,6 +262,27 @@ class Model:
 
         return resource
 
+    def add_machine(self, name: str = "") -> Machine:
+        """
+        Adds a machine to the model.
+
+        Parameters
+        ----------
+        name
+            Name of the machine.
+
+        Returns
+        -------
+        Machine
+            The created machine.
+        """
+        machine = Machine(name=name)
+
+        self._id2resource[id(machine)] = len(self.resources)
+        self._resources.append(machine)
+
+        return machine
+
     def add_task(
         self,
         job: Optional[Job] = None,
@@ -310,28 +337,24 @@ class Model:
 
         return task
 
-    def add_processing_time(
-        self, task: Task, resource: Resource, duration: int, demand: int = 0
-    ):
+    def add_processing_time(self, task: Task, machine: Machine, duration: int):
         """
-        Adds a processing time for a given task on a resource.
+        Adds a processing time for a given task on a machine.
 
         Parameters
         ----------
         task
             The task to be processed.
-        resource
-            The resource on which the task is processed.
+        machine
+            The machine on which the task is processed.
         duration
-            Processing time of the task on the resource.
-        demand
-            Demand of the task on the resource. Default 0.
+            Processing time of the task on the machine.
         """
 
         task_idx = self._id2task[id(task)]
-        resource_idx = self._id2resource[id(resource)]
+        machine_idx = self._id2resource[id(machine)]
 
-        self._modes.append(Mode(task_idx, [resource_idx], duration, [demand]))
+        self._modes.append(Mode(task_idx, [machine_idx], duration, [0]))
 
     def add_mode(
         self,
