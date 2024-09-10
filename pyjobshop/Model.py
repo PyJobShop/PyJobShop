@@ -339,9 +339,12 @@ class Model:
 
         return task
 
-    def add_processing_time(self, task: Task, machine: Machine, duration: int):
+    def add_processing_time(
+        self, task: Task, machine: Machine, duration: int
+    ) -> Mode:
         """
-        Adds a processing time for a given task on a machine.
+        Adds a processing time for a given task on a machine. Simple interface
+        for machine scheduling problems.
 
         Parameters
         ----------
@@ -351,12 +354,13 @@ class Model:
             The machine on which the task is processed.
         duration
             Processing time of the task on the machine.
+
+        Returns
+        -------
+        Mode
+            The created mode.
         """
-
-        task_idx = self._id2task[id(task)]
-        machine_idx = self._id2resource[id(machine)]
-
-        self._modes.append(Mode(task_idx, [machine_idx], duration, [0]))
+        return self.add_mode(task, [machine], duration, [0])
 
     def add_mode(
         self,

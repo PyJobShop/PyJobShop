@@ -191,6 +191,16 @@ def test_add_resource_attributes():
     assert_equal(resource.name, "resource")
 
 
+def test_add_machine_attributes():
+    """
+    Tests that adding a machine to the model correctly sets the attributes.
+    """
+    model = Model()
+
+    machine = model.add_machine(name="machine")
+    assert_equal(machine.name, "machine")
+
+
 def test_add_task_attributes():
     """
     Tests that adding an task to the model correctly sets the attributes.
@@ -241,8 +251,11 @@ def test_model_processing_time_creates_correct_mode():
     machine = model.add_machine()
     task = model.add_task(job=job)
 
-    model.add_processing_time(task, machine, 1)
-    assert_equal(model.modes[0], Mode(task=0, resources=[0], duration=1))
+    mode = model.add_processing_time(task, machine, 1)
+    assert_equal(mode.task, 0)
+    assert_equal(mode.resources, [0])
+    assert_equal(mode.duration, 1)
+    assert_equal(mode.demands, [0])  # default
 
 
 def test_model_attributes():

@@ -117,6 +117,18 @@ def test_resource_raises_invalid_parameters(capacity: int):
         Resource(capacity=capacity)
 
 
+def test_machine_attributes():
+    """
+    Tests that the attributes of the Machine class are set correctly.
+    """
+    machine = Machine(name="Machine")
+
+    # Inherited attributes from Resource, but unsused.
+    assert_equal(machine.capacity, 0)
+    assert_equal(machine.renewable, True)
+    assert_equal(machine.name, "Machine")
+
+
 def test_task_attributes():
     """
     Tests that the attributes of the Task class are set correctly.
