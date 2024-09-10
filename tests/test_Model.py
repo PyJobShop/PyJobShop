@@ -221,7 +221,7 @@ def test_add_mode_attributes():
     model = Model()
 
     task = model.add_task()
-    resources = [model.add_resource() for _ in range(3)]
+    resources = [model.add_machine() for _ in range(3)]
 
     mode = model.add_mode(task, resources, duration=1, demands=[1, 2, 3])
 
@@ -252,7 +252,7 @@ def test_model_attributes():
     model = Model()
 
     jobs = [model.add_job() for _ in range(10)]
-    resources = [model.add_resource() for _ in range(20)]
+    resources = [model.add_machine() for _ in range(20)]
     tasks = [model.add_task() for _ in range(30)]
     modes = [model.add_mode(t, [m], 1) for t in tasks for m in resources]
 
