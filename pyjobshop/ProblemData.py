@@ -238,17 +238,17 @@ class Constraint(str, Enum):
     #: Task :math:`i` must end before task :math:`j` ends.
     END_BEFORE_END = "end_before_end"
 
-    #: Sequence :math:`i` right before :math:`j` (if assigned to same resource). # noqa
-    PREVIOUS = "previous"
-
-    #: Sequence :math:`i` before :math:`j` (if assigned to same resources).
-    BEFORE = "before"
-
     #: Assign tasks :math:`i` and :math:`j` to modes with the same set of resources. # noqa
     IDENTICAL_RESOURCES = "identical_resources"
 
     #: Assign tasks :math:`i` and :math:`j` to modes with disjoint sets of resources. # noqa
     DIFFERENT_RESOURCES = "different_resources"
+
+    #: Sequence :math:`i` right before :math:`j` (if assigned to same resource). # noqa
+    PREVIOUS = "previous"
+
+    #: Sequence :math:`i` before :math:`j` (if assigned to same resources).
+    BEFORE = "before"
 
 
 @dataclass

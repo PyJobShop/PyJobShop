@@ -158,7 +158,7 @@ class Model:
         for (res, idx1, idx2), duration in np.ndenumerate(data.setup_times):
             if duration != 0:
                 model.add_setup_time(
-                    resource=model.resources[res],
+                    machine=model.resources[res],
                     task1=model.tasks[idx1],
                     task2=model.tasks[idx2],
                     duration=duration,
@@ -464,6 +464,24 @@ class Model:
         idx2 = self._id2task[id(task2)]
         self._constraints[idx1, idx2].append(Constraint.END_BEFORE_END)
 
+    def add_identical_resources(self, task1: Task, task2: Task):
+        """
+        Adds a constraint that two tasks must be scheduled with modes that
+        require the same resources.
+        """
+        idx1 = self._id2task[id(task1)]
+        idx2 = self._id2task[id(task2)]
+        self._constraints[idx1, idx2].append(Constraint.IDENTICAL_RESOURCES)
+
+    def add_different_resource(self, task1: Task, task2: Task):
+        """
+        Adds a constraint that the two tasks must be scheduled with modes that
+        require different resources.
+        """
+        idx1 = self._id2task[id(task1)]
+        idx2 = self._id2task[id(task2)]
+        self._constraints[idx1, idx2].append(Constraint.DIFFERENT_RESOURCES)
+
     def add_previous(self, task1: Task, task2: Task):
         """
         Adds a constraint that the first task must be scheduled right before
@@ -483,47 +501,29 @@ class Model:
         idx2 = self._id2task[id(task2)]
         self._constraints[idx1, idx2].append(Constraint.BEFORE)
 
-    def add_identical_resources(self, task1: Task, task2: Task):
-        """
-        Adds a constraint that two tasks must be scheduled with modes that
-        require the same resources.
-        """
-        idx1 = self._id2task[id(task1)]
-        idx2 = self._id2task[id(task2)]
-        self._constraints[idx1, idx2].append(Constraint.IDENTICAL_RESOURCES)
-
-    def add_different_resource(self, task1: Task, task2: Task):
-        """
-        Adds a constraint that the two tasks must be scheduled with modes that
-        require different resources.
-        """
-        idx1 = self._id2task[id(task1)]
-        idx2 = self._id2task[id(task2)]
-        self._constraints[idx1, idx2].append(Constraint.DIFFERENT_RESOURCES)
-
     def add_setup_time(
-        self, resource: Resource, task1: Task, task2: Task, duration: int
+        self, machine: Machine, task1: Task, task2: Task, duration: int
     ):
         """
-        Adds a setup time between two tasks on a resource.
+        Adds a setup time between two tasks on a machine.
 
         Parameters
         ----------
-        resource
-            Resource on which the setup time occurs.
+        machine
+            The machine on which the setup time occurs.
         task1
             First task.
         task2
             Second task.
         duration
             Duration of the setup time when switching from the first task
-            to the second task on the resource.
+            to the second task on the machine.
         """
-        resource_idx = self._id2resource[id(resource)]
+        machine_idx = self._id2resource[id(machine)]
         task_idx1 = self._id2task[id(task1)]
         task_idx2 = self._id2task[id(task2)]
 
-        self._setup_times[resource_idx, task_idx1, task_idx2] = duration
+        self._setup_times[machine_idx, task_idx1, task_idx2] = duration
 
     def set_horizon(self, horizon: int):
         """
