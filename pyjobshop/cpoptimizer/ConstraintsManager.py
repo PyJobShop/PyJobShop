@@ -3,7 +3,7 @@ import numpy as np
 from docplex.cp.model import CpoModel
 
 import pyjobshop.utils as utils
-from pyjobshop.ProblemData import Constraint, ProblemData
+from pyjobshop.ProblemData import Constraint, Machine, ProblemData
 
 from .VariablesManager import VariablesManager
 
@@ -52,23 +52,27 @@ class ConstraintsManager:
 
     def _no_overlap_and_setup_times(self):
         """
-        Creates the no-overlap constraints for resources, ensuring that no two
+        Creates the no-overlap constraints for machines, ensuring that no two
         intervals in a sequence variable are overlapping. If setup times are
         available, the setup times are enforced as well.
         """
         model, data = self._model, self._data
         resource2modes = utils.resource2modes(data)
 
-        for resource in range(data.num_resources):
-            if not (modes := resource2modes[resource]):
-                continue  # skip if no modes for this resource
-
-            if data.resources[resource].capacity > 0:
+        for idx, resource in enumerate(data.resources):
+            if not isinstance(resource, Machine):
                 continue
 
+            if not (modes := resource2modes[idx]):
+                continue  # no modes for this machine
+
             tasks = [data.modes[mode].task for mode in modes]
-            setups = data.setup_times[resource, :, :][np.ix_(tasks, tasks)]
-            seq_var = self._sequence_vars[resource]
+            setups = data.setup_times[idx, :, :][np.ix_(tasks, tasks)]
+            seq_var = self._sequence_vars[idx]
+
+            if seq_var is None:
+                msg = f"No sequence var found for resource {idx}."
+                raise ValueError(msg)
 
             if np.all(setups == 0):  # no setup times
                 model.add(cpo.no_overlap(seq_var))
@@ -89,8 +93,8 @@ class ConstraintsManager:
                     mapper[resource].append((idx, demand))
 
         for idx, resource in enumerate(data.resources):
-            if resource.capacity == 0:
-                continue
+            if isinstance(resource, Machine):
+                continue  # handled by no-overlap constraints
 
             if resource.renewable:
                 pulses = [
@@ -157,9 +161,18 @@ class ConstraintsManager:
                 data, task1, task2
             )
             for mode1, mode2, resources in intersecting:
+                if any(
+                    not isinstance(data.resources[res], Machine)
+                    for res in resources
+                ):
+                    raise ValueError(
+                        "Resource must be machine for sequencing constraints."
+                    )
+
                 for resource in resources:
-                    sequence = self._sequence_vars[resource]
-                    if sequence is None:
+                    seq_var = self._sequence_vars[resource]
+
+                    if seq_var is None:
                         msg = f"No sequence var found for resource {resource}."
                         raise ValueError(msg)
 
@@ -167,10 +180,10 @@ class ConstraintsManager:
                     var2 = self._mode_vars[mode2]
 
                     if Constraint.PREVIOUS in sequencing_constraints:
-                        model.add(cpo.previous(sequence, var1, var2))
+                        model.add(cpo.previous(seq_var, var1, var2))
 
                     if Constraint.BEFORE in sequencing_constraints:
-                        model.add(cpo.before(sequence, var1, var2))
+                        model.add(cpo.before(seq_var, var1, var2))
 
     def _identical_and_different_resource_constraints(self):
         """

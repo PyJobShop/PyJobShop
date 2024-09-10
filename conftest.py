@@ -8,11 +8,11 @@ def small():
     model = Model()
 
     job = model.add_job()
-    resource = model.add_resource()
+    machine = model.add_machine()
     tasks = [model.add_task(job=job) for _ in range(2)]
 
     for task, duration in zip(tasks, [1, 2]):
-        model.add_processing_time(task, resource, duration)
+        model.add_processing_time(task, machine, duration)
 
     return model.data()
 
@@ -42,7 +42,7 @@ def fjsp():
 
     model = Model()
 
-    resources = [model.add_resource() for _ in range(3)]
+    machines = [model.add_machine() for _ in range(3)]
     jobs = {}
     tasks = {}
 
@@ -57,8 +57,8 @@ def fjsp():
             task = tasks[(job_idx, idx)]
 
             for duration, resource_idx in task_data:
-                resource = resources[resource_idx]
-                model.add_processing_time(task, resource, duration)
+                machine = machines[resource_idx]
+                model.add_processing_time(task, machine, duration)
 
         for idx in range(len(job_data) - 1):
             first = tasks[(job_idx, idx)]
