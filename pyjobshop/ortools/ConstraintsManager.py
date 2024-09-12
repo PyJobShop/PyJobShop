@@ -327,8 +327,6 @@ class ConstraintsManager:
                     # Maintain rank incrementally.
                     model.add(rank + 1 == ranks[idx2]).only_enforce_if(arc)
 
-                    # TODO Validate that this cannot be combined with overlap.
-                    # See #160.
                     task1, task2 = var1.task_idx, var2.task_idx
                     setup = data.setup_times[idx, task1, task2]
                     model.add(var1.end + setup <= var2.start).only_enforce_if(
