@@ -2,14 +2,15 @@ from collections import Counter
 from copy import deepcopy
 from dataclasses import dataclass
 from enum import Enum
-from typing import Optional, Sequence, TypeVar
+from typing import Optional, Sequence, TypeVar, Union
 
 import enum_tools.documentation
 import numpy as np
 
 from pyjobshop.constants import MAX_VALUE
 
-_CONSTRAINTS_TYPE = dict[tuple[int, int], list["Constraint"]]
+ResourceType = Union["Resource", "Machine"]
+_ConstraintsType = dict[tuple[int, int], list["Constraint"]]
 _T = TypeVar("_T")
 
 
@@ -125,7 +126,6 @@ class Job:
         self._tasks.append(idx)
 
 
-@dataclass(frozen=True)
 class Resource:
     """
     Simple dataclass for storing all resource-related data.
@@ -141,20 +141,40 @@ class Resource:
         Name of the resource.
     """
 
-    capacity: int
-    renewable: bool = True
-    name: str = ""
-
-    def __post_init__(self):
-        if self.capacity < 0:
+    def __init__(self, capacity: int, renewable: bool = True, name: str = ""):
+        if capacity < 0:
             raise ValueError("Capacity must be non-negative.")
 
+        self._capacity = capacity
+        self._renewable = renewable
+        self._name = name
 
-@dataclass(frozen=True)
+    @property
+    def capacity(self) -> int:
+        """
+        Capacity of the resource.
+        """
+        return self._capacity
+
+    @property
+    def renewable(self) -> bool:
+        """
+        Whether the resource is renewable.
+        """
+        return self._renewable
+
+    @property
+    def name(self) -> str:
+        """
+        Name of the resource.
+        """
+        return self._name
+
+
 class Machine(Resource):
     """
     Simple dataclass for storing all machine-related data. A machine is a
-    specialized resource that allows for sequencing constraints.
+    specialized resource type that allows for sequencing constraints.
 
     Parameters
     ----------
@@ -162,13 +182,17 @@ class Machine(Resource):
         Name of the machine.
     """
 
-    name: str = ""
-
     def __init__(self, name: str = ""):
         super().__init__(capacity=0, renewable=True, name=name)
 
+    @property
+    def name(self) -> str:
+        """
+        Name of the machine.
+        """
+        return self._name
 
-@dataclass(frozen=True)
+
 class Task:
     """
     Simple dataclass for storing all task related data.
@@ -193,19 +217,69 @@ class Task:
         Name of the task.
     """
 
-    earliest_start: int = 0
-    latest_start: int = MAX_VALUE
-    earliest_end: int = 0
-    latest_end: int = MAX_VALUE
-    fixed_duration: bool = True
-    name: str = ""
-
-    def __post_init__(self):
-        if self.earliest_start > self.latest_start:
+    def __init__(
+        self,
+        earliest_start: int = 0,
+        latest_start: int = MAX_VALUE,
+        earliest_end: int = 0,
+        latest_end: int = MAX_VALUE,
+        fixed_duration: bool = True,
+        name: str = "",
+    ):
+        if earliest_start > latest_start:
             raise ValueError("earliest_start must be <= latest_start.")
 
-        if self.earliest_end > self.latest_end:
+        if earliest_end > latest_end:
             raise ValueError("earliest_end must be <= latest_end.")
+
+        self._earliest_start = earliest_start
+        self._latest_start = latest_start
+        self._earliest_end = earliest_end
+        self._latest_end = latest_end
+        self._fixed_duration = fixed_duration
+        self._name = name
+
+    @property
+    def earliest_start(self) -> int:
+        """
+        Earliest start time of the task.
+        """
+        return self._earliest_start
+
+    @property
+    def latest_start(self) -> int:
+        """
+        Latest start time of the task.
+        """
+        return self._latest_start
+
+    @property
+    def earliest_end(self) -> int:
+        """
+        Earliest end time of the task.
+        """
+        return self._earliest_end
+
+    @property
+    def latest_end(self) -> int:
+        """
+        Latest end time of the task.
+        """
+        return self._latest_end
+
+    @property
+    def fixed_duration(self) -> bool:
+        """
+        Whether the task has a fixed duration.
+        """
+        return self._fixed_duration
+
+    @property
+    def name(self) -> str:
+        """
+        Name of the task.
+        """
+        return self._name
 
 
 @enum_tools.documentation.document_enum
@@ -381,10 +455,10 @@ class ProblemData:
     def __init__(
         self,
         jobs: list[Job],
-        resources: Sequence[Resource],  # not list because of type invariance
+        resources: Sequence[ResourceType],
         tasks: list[Task],
         modes: list[Mode],
-        constraints: Optional[_CONSTRAINTS_TYPE] = None,
+        constraints: Optional[_ConstraintsType] = None,
         setup_times: Optional[np.ndarray] = None,
         horizon: int = MAX_VALUE,
         objective: Optional[Objective] = None,
@@ -499,10 +573,10 @@ class ProblemData:
     def replace(
         self,
         jobs: Optional[list[Job]] = None,
-        resources: Optional[Sequence[Resource]] = None,
+        resources: Optional[Sequence[ResourceType]] = None,
         tasks: Optional[list[Task]] = None,
         modes: Optional[list[Mode]] = None,
-        constraints: Optional[_CONSTRAINTS_TYPE] = None,
+        constraints: Optional[_ConstraintsType] = None,
         setup_times: Optional[np.ndarray] = None,
         horizon: Optional[int] = None,
         objective: Optional[Objective] = None,
@@ -567,7 +641,7 @@ class ProblemData:
         return self._jobs
 
     @property
-    def resources(self) -> Sequence[Resource]:
+    def resources(self) -> Sequence[ResourceType]:
         """
         Returns the resource data of this problem instance.
         """
@@ -588,7 +662,7 @@ class ProblemData:
         return self._modes
 
     @property
-    def constraints(self) -> _CONSTRAINTS_TYPE:
+    def constraints(self) -> _ConstraintsType:
         """
         Dict indexed by task pairs with a list of constraints as values.
         Indexed by task pairs.

@@ -12,6 +12,7 @@ from pyjobshop.ProblemData import (
     Objective,
     ProblemData,
     Resource,
+    ResourceType,
     Task,
 )
 from pyjobshop.Result import Result
@@ -26,7 +27,7 @@ class Model:
 
     def __init__(self):
         self._jobs: list[Job] = []
-        self._resources: list[Resource] = []
+        self._resources: list[ResourceType] = []
         self._tasks: list[Task] = []
         self._modes: list[Mode] = []
         self._constraints: dict[tuple[int, int], list[Constraint]] = (
@@ -49,7 +50,7 @@ class Model:
         return self._jobs
 
     @property
-    def resources(self) -> list[Resource]:
+    def resources(self) -> list[ResourceType]:
         """
         Returns the list of resources in the model.
         """
@@ -95,12 +96,14 @@ class Model:
         for resource in data.resources:
             if isinstance(resource, Machine):
                 model.add_machine(name=resource.name)
-            else:
+            elif isinstance(resource, Resource):
                 model.add_resource(
                     capacity=resource.capacity,
                     renewable=resource.renewable,
                     name=resource.name,
                 )
+            else:
+                raise ValueError(f"Unknown resource type: {type(resource)}")
 
         task2job = {}
         for job_idx, job in enumerate(data.jobs):
@@ -365,7 +368,7 @@ class Model:
     def add_mode(
         self,
         task: Task,
-        resources: Sequence[Resource],
+        resources: Sequence[ResourceType],
         duration: int,
         demands: Optional[list[int]] = None,
     ) -> Mode:
