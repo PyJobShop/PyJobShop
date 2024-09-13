@@ -284,10 +284,9 @@ class Task:
         return self._name
 
 
-@dataclass
 class Mode:
     """
-    Simple dataclass for storing processing mode data.
+    Simpel dataclass for storing processing mode data.
 
     Parameters
     ----------
@@ -298,31 +297,59 @@ class Mode:
     duration
         Processing duration of this mode.
     demands
-        List of demands for each resource for this mode. If ``None`` is given,
-        then the demands are initialized as list of zeros with the same length
-        as the resources.
+        Optional list of demands for each resource for this mode. If ``None``
+        is given, then the demands are initialized as list of zeros with the
+        same length as the resources.
     """
 
-    task: int
-    resources: list[int]
-    duration: int
-    demands: Optional[list[int]] = None
-
-    def __post_init__(self):
-        if len(set(self.resources)) != len(self.resources):
+    def __init__(
+        self,
+        task: int,
+        resources: list[int],
+        duration: int,
+        demands: Optional[list[int]] = None,
+    ):
+        if len(set(resources)) != len(resources):
             raise ValueError("Mode resources must be unique.")
 
-        if self.duration < 0:
+        if duration < 0:
             raise ValueError("Mode duration must be non-negative.")
 
-        if self.demands is None:
-            self.demands = [0] * len(self.resources)
-
-        if any(dem < 0 for dem in self.demands):
+        demands = demands if demands is not None else [0] * len(resources)
+        if any(demand < 0 for demand in demands):
             raise ValueError("Mode demands must be non-negative.")
 
-        if len(self.resources) != len(self.demands):
+        if len(resources) != len(demands):
             raise ValueError("resources and demands must have same length.")
+
+        self._task = task
+        self._resources = resources
+        self._duration = duration
+        self._demands = demands
+
+    @property
+    def task(self) -> int:
+        return self._task
+
+    @property
+    def resources(self) -> list[int]:
+        return self._resources
+
+    @property
+    def duration(self) -> int:
+        return self._duration
+
+    @property
+    def demands(self) -> list[int]:
+        return self._demands
+
+    def __eq__(self, other) -> bool:
+        return (
+            self.task == other.task
+            and self.resources == other.resources
+            and self.duration == other.duration
+            and self.demands == other.demands
+        )
 
 
 @enum_tools.documentation.document_enum
