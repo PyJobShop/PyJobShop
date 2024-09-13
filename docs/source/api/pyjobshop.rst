@@ -27,6 +27,9 @@ PyJobShop
     .. autoclass:: Task
        :members:
 
+    .. autoclass:: Mode
+       :members:
+
     .. autoenum:: Constraint
 
     .. autoclass:: Objective
