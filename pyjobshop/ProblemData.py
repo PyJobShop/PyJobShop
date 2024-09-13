@@ -170,7 +170,7 @@ class Resource:
         return self._name
 
 
-class Machine:
+class Machine(Resource):
     """
     Simple dataclass for storing all machine-related data. A machine is a
     specialized resource type that allows for sequencing constraints.
@@ -182,7 +182,7 @@ class Machine:
     """
 
     def __init__(self, name: str = ""):
-        self._name = name
+        super().__init__(capacity=0, renewable=True, name=name)
 
     @property
     def name(self) -> str:
