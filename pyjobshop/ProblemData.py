@@ -9,7 +9,6 @@ import numpy as np
 
 from pyjobshop.constants import MAX_VALUE
 
-ResourceType = Union["Resource", "Machine"]
 _ConstraintsType = dict[tuple[int, int], list["Constraint"]]
 _T = TypeVar("_T")
 
@@ -193,6 +192,9 @@ class Machine:
         return self._name
 
 
+ResourceType = Union["Resource", "Machine"]
+
+
 class Task:
     """
     Simple dataclass for storing all task related data.
@@ -280,6 +282,47 @@ class Task:
         Name of the task.
         """
         return self._name
+
+
+@dataclass
+class Mode:
+    """
+    Simple dataclass for storing processing mode data.
+
+    Parameters
+    ----------
+    task
+        Task index that this mode belongs to.
+    resources
+        List of resources that are required for this mode.
+    duration
+        Processing duration of this mode.
+    demands
+        List of demands for each resource for this mode. If ``None`` is given,
+        then the demands are initialized as list of zeros with the same length
+        as the resources.
+    """
+
+    task: int
+    resources: list[int]
+    duration: int
+    demands: Optional[list[int]] = None
+
+    def __post_init__(self):
+        if len(set(self.resources)) != len(self.resources):
+            raise ValueError("Mode resources must be unique.")
+
+        if self.duration < 0:
+            raise ValueError("Mode duration must be non-negative.")
+
+        if self.demands is None:
+            self.demands = [0] * len(self.resources)
+
+        if any(dem < 0 for dem in self.demands):
+            raise ValueError("Mode demands must be non-negative.")
+
+        if len(self.resources) != len(self.demands):
+            raise ValueError("resources and demands must have same length.")
 
 
 @enum_tools.documentation.document_enum
@@ -381,47 +424,6 @@ class Objective:
         Minimizes the total earliness.
         """
         return cls(weight_total_earliness=1)
-
-
-@dataclass
-class Mode:
-    """
-    Simple dataclass for storing processing mode data.
-
-    Parameters
-    ----------
-    task
-        Task index that this mode belongs to.
-    resources
-        List of resources that are required for this mode.
-    duration
-        Processing duration of this mode.
-    demands
-        List of demands for each resource for this mode. If ``None`` is given,
-        then the demands are initialized as list of zeros with the same length
-        as the resources.
-    """
-
-    task: int
-    resources: list[int]
-    duration: int
-    demands: Optional[list[int]] = None
-
-    def __post_init__(self):
-        if len(set(self.resources)) != len(self.resources):
-            raise ValueError("Mode resources must be unique.")
-
-        if self.duration < 0:
-            raise ValueError("Mode duration must be non-negative.")
-
-        if self.demands is None:
-            self.demands = [0] * len(self.resources)
-
-        if any(dem < 0 for dem in self.demands):
-            raise ValueError("Mode demands must be non-negative.")
-
-        if len(self.resources) != len(self.demands):
-            raise ValueError("resources and demands must have same length.")
 
 
 class ProblemData:
