@@ -931,7 +931,7 @@ def test_constraints(solver, prec_type: Constraint, expected_makespan: int):
     model = Model()
 
     job = model.add_job()
-    resources: list[Resource] = [model.add_machine() for _ in range(2)]
+    resources = [model.add_machine() for _ in range(2)]
     tasks = [model.add_task(job=job) for _ in range(2)]
     modes = [
         Mode(task=task, resources=[resource], duration=2)
