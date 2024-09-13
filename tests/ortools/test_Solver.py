@@ -32,14 +32,14 @@ def test_empty_circuit_not_allowed_bug():
     model = Model()
 
     job = model.add_job()
-    resources = [model.add_resource() for _ in range(2)]
+    machines = [model.add_machine() for _ in range(2)]
     tasks = [model.add_task(job=job) for _ in range(2)]
 
     durations = [[2, 2], [5, 5]]
-    for resource_idx, resource in enumerate(resources):
+    for mach_idx, machine in enumerate(machines):
         for task_idx, task in enumerate(tasks):
-            duration = durations[resource_idx][task_idx]
-            model.add_processing_time(task, resource, duration)
+            duration = durations[mach_idx][task_idx]
+            model.add_processing_time(task, machine, duration)
 
     model.add_previous(*tasks)  # this activates the circuit constraints
 

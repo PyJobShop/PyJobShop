@@ -53,7 +53,7 @@ def _read_fjslib(loc: Path) -> ProblemData:
     m = Model()
 
     jobs = [m.add_job() for _ in range(instance.num_jobs)]
-    resources = [m.add_resource() for _ in range(instance.num_machines)]
+    resources = [m.add_machine() for _ in range(instance.num_machines)]
 
     for job_idx, tasks in enumerate(instance.jobs):
         for task_data in tasks:

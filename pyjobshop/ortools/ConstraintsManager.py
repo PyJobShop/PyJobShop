@@ -2,7 +2,7 @@ import numpy as np
 from ortools.sat.python.cp_model import BoolVarT, CpModel, LinearExpr
 
 import pyjobshop.utils as utils
-from pyjobshop.ProblemData import Constraint, ProblemData
+from pyjobshop.ProblemData import Constraint, Machine, ProblemData
 
 from .VariablesManager import VariablesManager
 
@@ -65,13 +65,15 @@ class ConstraintsManager:
 
     def _no_overlap_resources(self):
         """
-        Creates the no overlap constraints for resources, ensuring that no two
+        Creates the no overlap constraints for machines, ensuring that no two
         intervals in a sequence variable are overlapping.
         """
         model, data = self._model, self._data
 
-        for idx in range(data.num_resources):
-            if (seq_var := self._sequence_vars[idx]) is not None:
+        for idx, resource in enumerate(data.resources):
+            if isinstance(resource, Machine):
+                seq_var = self._sequence_vars[idx]
+                assert seq_var is not None
                 model.add_no_overlap([var.interval for var in seq_var.modes])
 
     def _activate_setup_times(self):
@@ -82,12 +84,13 @@ class ConstraintsManager:
         """
         model, data = self._model, self._data
 
-        for idx in range(data.num_resources):
-            seq_var = self._sequence_vars[idx]
-            has_setup_times = np.any(data.setup_times[idx])
+        for idx, resource in enumerate(data.resources):
+            if isinstance(resource, Machine):
+                seq_var = self._sequence_vars[idx]
+                has_setup_times = np.any(data.setup_times[idx])
 
-            if seq_var is not None and has_setup_times:
-                seq_var.activate(model)
+                if seq_var is not None and has_setup_times:
+                    seq_var.activate(model)
 
     def _resource_capacity(self):
         """
@@ -104,8 +107,8 @@ class ConstraintsManager:
                     mapper[resource].append((idx, demand))
 
         for idx, resource in enumerate(data.resources):
-            if resource.capacity == 0:
-                continue
+            if isinstance(resource, Machine):
+                continue  # handled by no-overlap constraints
 
             demands = [demand for _, demand in mapper[idx]]
             if resource.renewable:
@@ -170,9 +173,17 @@ class ConstraintsManager:
                 data, task1, task2
             )
             for mode1, mode2, resources in intersecting:
+                if any(
+                    not isinstance(data.resources[res], Machine)
+                    for res in resources
+                ):
+                    raise ValueError(
+                        "Resource must be machine for sequencing constraints."
+                    )
+
                 for resource in resources:
-                    sequence = self._sequence_vars[resource]
-                    if sequence is None:
+                    seq_var = self._sequence_vars[resource]
+                    if seq_var is None:
                         msg = f"No sequence var found for resource {resource}."
                         raise ValueError(msg)
 
@@ -180,11 +191,11 @@ class ConstraintsManager:
                     var2 = self._mode_vars[mode2]
 
                     if Constraint.PREVIOUS in sequencing_constraints:
-                        sequence.activate(model)
+                        seq_var.activate(model)
 
-                        idx1 = sequence.modes.index(var1)
-                        idx2 = sequence.modes.index(var2)
-                        arc = sequence.arcs[idx1, idx2]
+                        idx1 = seq_var.modes.index(var1)
+                        idx2 = seq_var.modes.index(var2)
+                        arc = seq_var.arcs[idx1, idx2]
 
                         # arc <=> var1.is_present & var2.is_present
                         model.add_bool_or(
@@ -194,7 +205,7 @@ class ConstraintsManager:
                         model.add_implication(arc, var2.is_present)
 
                     if Constraint.BEFORE in sequencing_constraints:
-                        sequence.activate(model)
+                        seq_var.activate(model)
                         both_present = model.new_bool_var("")
 
                         # both_present <=> var1.is_present & var2.is_present
@@ -205,10 +216,10 @@ class ConstraintsManager:
                         model.add_implication(both_present, var2.is_present)
 
                         # Schedule var1 before var2 when both are present.
-                        idx1 = sequence.modes.index(var1)
-                        idx2 = sequence.modes.index(var2)
-                        rank1 = sequence.ranks[idx1]
-                        rank2 = sequence.ranks[idx2]
+                        idx1 = seq_var.modes.index(var1)
+                        idx2 = seq_var.modes.index(var2)
+                        rank1 = seq_var.ranks[idx1]
+                        rank2 = seq_var.ranks[idx2]
 
                         model.add(rank1 <= rank2).only_enforce_if(both_present)
 
@@ -262,22 +273,26 @@ class ConstraintsManager:
         """
         model, data = self._model, self._data
 
-        for resource in range(data.num_resources):
-            sequence = self._sequence_vars[resource]
+        for idx, resource in enumerate(data.resources):
+            if not isinstance(resource, Machine):
+                continue
 
-            if sequence is None or not sequence.is_active:
+            seq_var = self._sequence_vars[idx]
+            assert seq_var is not None
+
+            if not seq_var.is_active:
                 # No sequencing constraints found. Skip the creation of
                 # (expensive) circuit constraints.
                 continue
 
-            modes = sequence.modes
-            starts = sequence.starts
-            ends = sequence.ends
-            ranks = sequence.ranks
-            arcs = sequence.arcs
+            modes = seq_var.modes
+            starts = seq_var.starts
+            ends = seq_var.ends
+            ranks = seq_var.ranks
+            arcs = seq_var.arcs
 
             # Add dummy node self-arc to allow empty circuits.
-            empty = model.new_bool_var(f"empty_circuit_{resource}")
+            empty = model.new_bool_var(f"empty_circuit_{idx}")
             circuit: list[tuple[int, int, BoolVarT]] = [(-1, -1, empty)]
 
             for idx1, var1 in enumerate(modes):
@@ -292,7 +307,7 @@ class ConstraintsManager:
                 # Set rank for first task in the sequence.
                 model.add(rank == 0).only_enforce_if(start)
 
-                # Self arc if the task is not present on this resource.
+                # Self arc if the task is not present on this machine.
                 circuit.append((idx1, idx1, ~var1.is_present))
                 model.add(rank == -1).only_enforce_if(~var1.is_present)
 
@@ -312,9 +327,8 @@ class ConstraintsManager:
                     # Maintain rank incrementally.
                     model.add(rank + 1 == ranks[idx2]).only_enforce_if(arc)
 
-                    # TODO Validate that this cannot be combined with overlap.
                     task1, task2 = var1.task_idx, var2.task_idx
-                    setup = data.setup_times[resource, task1, task2]
+                    setup = data.setup_times[idx, task1, task2]
                     model.add(var1.end + setup <= var2.start).only_enforce_if(
                         arc
                     )

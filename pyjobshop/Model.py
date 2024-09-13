@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import Optional
+from typing import Optional, Sequence
 
 import numpy as np
 
@@ -7,10 +7,12 @@ from pyjobshop.constants import MAX_VALUE
 from pyjobshop.ProblemData import (
     Constraint,
     Job,
+    Machine,
     Mode,
     Objective,
     ProblemData,
     Resource,
+    ResourceType,
     Task,
 )
 from pyjobshop.Result import Result
@@ -25,7 +27,7 @@ class Model:
 
     def __init__(self):
         self._jobs: list[Job] = []
-        self._resources: list[Resource] = []
+        self._resources: list[ResourceType] = []
         self._tasks: list[Task] = []
         self._modes: list[Mode] = []
         self._constraints: dict[tuple[int, int], list[Constraint]] = (
@@ -48,7 +50,7 @@ class Model:
         return self._jobs
 
     @property
-    def resources(self) -> list[Resource]:
+    def resources(self) -> list[ResourceType]:
         """
         Returns the list of resources in the model.
         """
@@ -86,13 +88,22 @@ class Model:
             model.add_job(
                 weight=job.weight,
                 release_date=job.release_date,
-                due_date=job.due_date,
                 deadline=job.deadline,
+                due_date=job.due_date,
                 name=job.name,
             )
 
         for resource in data.resources:
-            model.add_resource(capacity=resource.capacity, name=resource.name)
+            if isinstance(resource, Machine):
+                model.add_machine(name=resource.name)
+            elif isinstance(resource, Resource):
+                model.add_resource(
+                    capacity=resource.capacity,
+                    renewable=resource.renewable,
+                    name=resource.name,
+                )
+            else:
+                raise ValueError(f"Unknown resource type: {type(resource)}")
 
         task2job = {}
         for job_idx, job in enumerate(data.jobs):
@@ -150,7 +161,7 @@ class Model:
         for (res, idx1, idx2), duration in np.ndenumerate(data.setup_times):
             if duration != 0:
                 model.add_setup_time(
-                    resource=model.resources[res],
+                    machine=model.resources[res],
                     task1=model.tasks[idx1],
                     task2=model.tasks[idx2],
                     duration=duration,
@@ -230,7 +241,7 @@ class Model:
         return job
 
     def add_resource(
-        self, capacity: int = 0, renewable: bool = True, name: str = ""
+        self, capacity: int, renewable: bool = True, name: str = ""
     ) -> Resource:
         """
         Adds a resource to the model.
@@ -255,6 +266,27 @@ class Model:
         self._resources.append(resource)
 
         return resource
+
+    def add_machine(self, name: str = "") -> Machine:
+        """
+        Adds a machine to the model.
+
+        Parameters
+        ----------
+        name
+            Name of the machine.
+
+        Returns
+        -------
+        Machine
+            The created machine.
+        """
+        machine = Machine(name=name)
+
+        self._id2resource[id(machine)] = len(self.resources)
+        self._resources.append(machine)
+
+        return machine
 
     def add_task(
         self,
@@ -311,32 +343,32 @@ class Model:
         return task
 
     def add_processing_time(
-        self, task: Task, resource: Resource, duration: int, demand: int = 0
-    ):
+        self, task: Task, machine: Machine, duration: int
+    ) -> Mode:
         """
-        Adds a processing time for a given task on a resource.
+        Adds a processing time for a given task on a machine. Simple interface
+        for machine scheduling problems.
 
         Parameters
         ----------
         task
             The task to be processed.
-        resource
-            The resource on which the task is processed.
+        machine
+            The machine on which the task is processed.
         duration
-            Processing time of the task on the resource.
-        demand
-            Demand of the task on the resource. Default 0.
+            Processing time of the task on the machine.
+
+        Returns
+        -------
+        Mode
+            The created mode.
         """
-
-        task_idx = self._id2task[id(task)]
-        resource_idx = self._id2resource[id(resource)]
-
-        self._modes.append(Mode(task_idx, [resource_idx], duration, [demand]))
+        return self.add_mode(task, [machine], duration, [0])
 
     def add_mode(
         self,
         task: Task,
-        resources: list[Resource],
+        resources: Sequence[ResourceType],
         duration: int,
         demands: Optional[list[int]] = None,
     ) -> Mode:
@@ -435,6 +467,24 @@ class Model:
         idx2 = self._id2task[id(task2)]
         self._constraints[idx1, idx2].append(Constraint.END_BEFORE_END)
 
+    def add_identical_resources(self, task1: Task, task2: Task):
+        """
+        Adds a constraint that two tasks must be scheduled with modes that
+        require the same resources.
+        """
+        idx1 = self._id2task[id(task1)]
+        idx2 = self._id2task[id(task2)]
+        self._constraints[idx1, idx2].append(Constraint.IDENTICAL_RESOURCES)
+
+    def add_different_resource(self, task1: Task, task2: Task):
+        """
+        Adds a constraint that the two tasks must be scheduled with modes that
+        require different resources.
+        """
+        idx1 = self._id2task[id(task1)]
+        idx2 = self._id2task[id(task2)]
+        self._constraints[idx1, idx2].append(Constraint.DIFFERENT_RESOURCES)
+
     def add_previous(self, task1: Task, task2: Task):
         """
         Adds a constraint that the first task must be scheduled right before
@@ -454,47 +504,29 @@ class Model:
         idx2 = self._id2task[id(task2)]
         self._constraints[idx1, idx2].append(Constraint.BEFORE)
 
-    def add_identical_resources(self, task1: Task, task2: Task):
-        """
-        Adds a constraint that two tasks must be scheduled with modes that
-        require the same resources.
-        """
-        idx1 = self._id2task[id(task1)]
-        idx2 = self._id2task[id(task2)]
-        self._constraints[idx1, idx2].append(Constraint.IDENTICAL_RESOURCES)
-
-    def add_different_resource(self, task1: Task, task2: Task):
-        """
-        Adds a constraint that the two tasks must be scheduled with modes that
-        require different resources.
-        """
-        idx1 = self._id2task[id(task1)]
-        idx2 = self._id2task[id(task2)]
-        self._constraints[idx1, idx2].append(Constraint.DIFFERENT_RESOURCES)
-
     def add_setup_time(
-        self, resource: Resource, task1: Task, task2: Task, duration: int
+        self, machine: Machine, task1: Task, task2: Task, duration: int
     ):
         """
-        Adds a setup time between two tasks on a resource.
+        Adds a setup time between two tasks on a machine.
 
         Parameters
         ----------
-        resource
-            Resource on which the setup time occurs.
+        machine
+            The machine on which the setup time occurs.
         task1
             First task.
         task2
             Second task.
         duration
             Duration of the setup time when switching from the first task
-            to the second task on the resource.
+            to the second task on the machine.
         """
-        resource_idx = self._id2resource[id(resource)]
+        machine_idx = self._id2resource[id(machine)]
         task_idx1 = self._id2task[id(task1)]
         task_idx2 = self._id2task[id(task2)]
 
-        self._setup_times[resource_idx, task_idx1, task_idx2] = duration
+        self._setup_times[machine_idx, task_idx1, task_idx2] = duration
 
     def set_horizon(self, horizon: int):
         """

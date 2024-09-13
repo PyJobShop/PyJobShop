@@ -10,7 +10,7 @@ from ortools.sat.python.cp_model import (
 )
 
 import pyjobshop.utils as utils
-from pyjobshop.ProblemData import ProblemData
+from pyjobshop.ProblemData import Machine, ProblemData
 from pyjobshop.Solution import Solution
 from pyjobshop.utils import compute_task_durations
 
@@ -312,7 +312,7 @@ class VariablesManager:
         variables: list[Optional[SequenceVar]] = []
 
         for idx, modes in enumerate(utils.resource2modes(self._data)):
-            if self._data.resources[idx].capacity == 0:
+            if isinstance(self._data.resources[idx], Machine):
                 intervals = [self.mode_vars[mode] for mode in modes]
                 variables.append(SequenceVar(intervals))
             else:

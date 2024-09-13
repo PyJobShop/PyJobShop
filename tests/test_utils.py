@@ -17,7 +17,7 @@ def test_compute_task_durations():
     """
     data = ProblemData(
         [Job()],
-        [Resource(), Resource()],
+        [Resource(0), Resource(0)],
         [Task(), Task()],
         modes=[Mode(0, [0], 1), Mode(0, [1], 10), Mode(1, [1], 0)],
         constraints={},
@@ -38,7 +38,7 @@ def test_resource2modes():
     """
     data = ProblemData(
         [Job()],
-        [Resource(), Resource()],
+        [Resource(0), Resource(0)],
         [Task(), Task()],
         modes=[Mode(0, [0], 1), Mode(0, [1], 10), Mode(1, [1], 0)],
         constraints={},
@@ -56,7 +56,7 @@ def test_task2modes():
     """
     data = ProblemData(
         [Job()],
-        [Resource(), Resource()],
+        [Resource(0), Resource(0)],
         [Task(), Task()],
         modes=[Mode(0, [0], 1), Mode(0, [1], 10), Mode(1, [1], 0)],
         constraints={},
@@ -73,7 +73,7 @@ def test_find_modes_with_intersecting_resources():
     """
     data = ProblemData(
         [Job()],
-        [Resource(), Resource(), Resource()],
+        [Resource(0), Resource(0), Resource(0)],
         [Task(), Task()],
         modes=[
             Mode(0, [0], 1),
@@ -96,7 +96,7 @@ def test_find_modes_with_identical_resources():
     """
     data = ProblemData(
         [Job()],
-        [Resource(), Resource(), Resource()],
+        [Resource(0), Resource(0), Resource(0)],
         [Task(), Task()],
         modes=[
             Mode(0, [0], 1),
@@ -118,7 +118,7 @@ def test_find_disjoint_resources():
     """
     data = ProblemData(
         [Job()],
-        [Resource(), Resource(), Resource()],
+        [Resource(0), Resource(0), Resource(0)],
         [Task(), Task()],
         modes=[
             Mode(0, [0], 1),
