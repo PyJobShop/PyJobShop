@@ -1,5 +1,7 @@
+from itertools import product
+
 import numpy as np
-from ortools.sat.python.cp_model import BoolVarT, CpModel, LinearExpr
+from ortools.sat.python.cp_model import CpModel, LinearExpr
 
 import pyjobshop.utils as utils
 from pyjobshop.ProblemData import Constraint, Machine, ProblemData
@@ -270,70 +272,49 @@ class ConstraintsManager:
         """
         Enforce the circuit constraints for each resource, ensuring that the
         sequencing constraints are respected.
+
+        IMPORTANT: This is specifically implemented for the experiments in the
+        paper and it is not meant to be used outside the scope of those
+        experiments because it may not be compatible with all other features.
         """
         model, data = self._model, self._data
 
-        for idx, resource in enumerate(data.resources):
-            if not isinstance(resource, Machine):
-                continue
+        if not data.permutation:
+            return  # not a permutation problem, skip
 
-            seq_var = self._sequence_vars[idx]
+        # Create arcs for circuit constraints.
+        arcs = []
+        for idx1 in range(data.num_jobs):
+            arcs.append((0, idx1 + 1, model.new_bool_var("start")))
+            arcs.append((idx1 + 1, 0, model.new_bool_var("end")))
+
+        lits = {}
+        for idx1, idx2 in product(range(data.num_jobs), repeat=2):
+            if idx1 != idx2:
+                lit = model.new_bool_var(f"{idx1} -> {idx2}")
+                lits[idx1, idx2] = lit
+                arcs.append((idx1 + 1, idx2 + 1, lit))
+
+        model.add_circuit(arcs)
+
+        for res_idx, resource in enumerate(data.resources):
+            if not isinstance(resource, Machine):
+                raise ValueError("Machines only in permutation problems.")
+
+            seq_var = self._sequence_vars[res_idx]
             assert seq_var is not None
 
-            if not seq_var.is_active:
-                # No sequencing constraints found. Skip the creation of
-                # (expensive) circuit constraints.
-                continue
+            for idx1, idx2 in product(range(data.num_jobs), repeat=2):
+                if idx1 == idx2:
+                    continue
 
-            modes = seq_var.modes
-            starts = seq_var.starts
-            ends = seq_var.ends
-            ranks = seq_var.ranks
-            arcs = seq_var.arcs
+                var1 = seq_var.modes[idx1]
+                var2 = seq_var.modes[idx2]
 
-            # Add dummy node self-arc to allow empty circuits.
-            empty = model.new_bool_var(f"empty_circuit_{idx}")
-            circuit: list[tuple[int, int, BoolVarT]] = [(-1, -1, empty)]
-
-            for idx1, var1 in enumerate(modes):
-                start = starts[idx1]  # "is start node" literal
-                end = ends[idx1]  # "is end node" literal
-                rank = ranks[idx1]
-
-                # Arcs from the dummy node to/from a task.
-                circuit.append((-1, idx1, start))
-                circuit.append((idx1, -1, end))
-
-                # Set rank for first task in the sequence.
-                model.add(rank == 0).only_enforce_if(start)
-
-                # Self arc if the task is not present on this machine.
-                circuit.append((idx1, idx1, ~var1.is_present))
-                model.add(rank == -1).only_enforce_if(~var1.is_present)
-
-                # If the circuit is empty then the var should not be present.
-                model.add_implication(empty, ~var1.is_present)
-
-                for idx2, var2 in enumerate(modes):
-                    if idx1 == idx2:
-                        continue
-
-                    arc = arcs[idx1, idx2]
-                    circuit.append((idx1, idx2, arc))
-
-                    model.add_implication(arc, var1.is_present)
-                    model.add_implication(arc, var2.is_present)
-
-                    # Maintain rank incrementally.
-                    model.add(rank + 1 == ranks[idx2]).only_enforce_if(arc)
-
-                    task1, task2 = var1.task_idx, var2.task_idx
-                    setup = data.setup_times[idx, task1, task2]
-                    model.add(var1.end + setup <= var2.start).only_enforce_if(
-                        arc
-                    )
-
-            model.add_circuit(circuit)
+                lit = lits[idx1, idx2]
+                setup = data.setup_times[res_idx, var1.task_idx, var2.task_idx]
+                expr = var1.end + setup <= var2.start
+                model.add(expr).only_enforce_if(lit)
 
     def add_all_constraints(self):
         """

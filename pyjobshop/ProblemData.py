@@ -462,6 +462,7 @@ class ProblemData:
         modes: list[Mode],
         constraints: Optional[_ConstraintsType] = None,
         setup_times: Optional[np.ndarray] = None,
+        permutation: Optional[bool] = None,
         horizon: int = MAX_VALUE,
         objective: Optional[Objective] = None,
     ):
@@ -479,6 +480,7 @@ class ProblemData:
             if setup_times is not None
             else np.zeros((num_res, num_tasks, num_tasks), dtype=int)
         )
+        self._permutation = permutation if permutation is not None else False
         self._horizon = horizon
         self._objective = (
             objective if objective is not None else Objective.makespan()
@@ -580,6 +582,7 @@ class ProblemData:
         modes: Optional[list[Mode]] = None,
         constraints: Optional[_ConstraintsType] = None,
         setup_times: Optional[np.ndarray] = None,
+        permutation: Optional[bool] = None,
         horizon: Optional[int] = None,
         objective: Optional[Objective] = None,
     ) -> "ProblemData":
@@ -601,6 +604,8 @@ class ProblemData:
             Optional constraints between tasks.
         setup_times
             Optional sequence-dependent setup times.
+        permutation
+            Optional permutation flag.
         horizon
             Optional horizon value.
         objective
@@ -621,6 +626,7 @@ class ProblemData:
         modes = _deepcopy_if_none(modes, self.modes)
         constraints = _deepcopy_if_none(constraints, self.constraints)
         setup_times = _deepcopy_if_none(setup_times, self.setup_times)
+        permutation = _deepcopy_if_none(permutation, self.permutation)
         horizon = _deepcopy_if_none(horizon, self.horizon)
         objective = _deepcopy_if_none(objective, self.objective)
 
@@ -631,6 +637,7 @@ class ProblemData:
             modes=modes,
             constraints=constraints,
             setup_times=setup_times,
+            permutation=permutation,
             horizon=horizon,
             objective=objective,
         )
@@ -679,6 +686,13 @@ class ProblemData:
         two dimensions of the array are indexed by task indices.
         """
         return self._setup_times
+
+    @property
+    def permutation(self) -> bool:
+        """
+        Enforces that all machines have the same sequence of intervals.
+        """
+        return self._permutation
 
     @property
     def horizon(self) -> int:

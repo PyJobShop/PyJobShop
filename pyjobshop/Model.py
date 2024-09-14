@@ -35,6 +35,7 @@ class Model:
         )
 
         self._setup_times: dict[tuple[int, int, int], int] = {}
+        self._permutation: bool = False
         self._horizon: int = MAX_VALUE
         self._objective: Objective = Objective.makespan()
 
@@ -93,17 +94,17 @@ class Model:
                 name=job.name,
             )
 
-        for resource in data.resources:
-            if isinstance(resource, Machine):
-                model.add_machine(name=resource.name)
-            elif isinstance(resource, Resource):
+        for machine in data.resources:
+            if isinstance(machine, Machine):
+                model.add_machine(name=machine.name)
+            elif isinstance(machine, Resource):
                 model.add_resource(
-                    capacity=resource.capacity,
-                    renewable=resource.renewable,
-                    name=resource.name,
+                    capacity=machine.capacity,
+                    renewable=machine.renewable,
+                    name=machine.name,
                 )
             else:
-                raise ValueError(f"Unknown resource type: {type(resource)}")
+                raise ValueError(f"Unknown resource type: {type(machine)}")
 
         task2job = {}
         for job_idx, job in enumerate(data.jobs):
@@ -160,13 +161,16 @@ class Model:
 
         for (res, idx1, idx2), duration in np.ndenumerate(data.setup_times):
             if duration != 0:
+                machine = model.resources[res]
+                assert isinstance(machine, Machine)
                 model.add_setup_time(
-                    machine=model.resources[res],
+                    machine=machine,
                     task1=model.tasks[idx1],
                     task2=model.tasks[idx2],
                     duration=duration,
                 )
 
+        model.set_permutation(data.permutation)
         model.set_horizon(data.horizon)
         model.set_objective(
             weight_makespan=data.objective.weight_makespan,
@@ -196,6 +200,7 @@ class Model:
             modes=self._modes,
             constraints=self._constraints,
             setup_times=setup_times,
+            permutation=self._permutation,
             horizon=self._horizon,
             objective=self._objective,
         )
@@ -527,6 +532,12 @@ class Model:
         task_idx2 = self._id2task[id(task2)]
 
         self._setup_times[machine_idx, task_idx1, task_idx2] = duration
+
+    def set_permutation(self, is_permutation: bool):
+        """
+        Sets whether the problem data problem is a permutation problem or not.
+        """
+        self._permutation = is_permutation
 
     def set_horizon(self, horizon: int):
         """

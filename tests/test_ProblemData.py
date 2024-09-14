@@ -202,14 +202,14 @@ def test_problem_data_input_parameter_attributes():
     objective = Objective.total_flow_time()
 
     data = ProblemData(
-        jobs,
-        resources,
-        tasks,
-        modes,
-        constraints,
-        setup_times,
-        horizon,
-        objective,
+        jobs=jobs,
+        resources=resources,
+        tasks=tasks,
+        modes=modes,
+        constraints=constraints,
+        setup_times=setup_times,
+        horizon=horizon,
+        objective=objective,
     )
 
     assert_equal(data.jobs, jobs)
@@ -474,14 +474,14 @@ def describe_problem_data_replace():
         objective = Objective.makespan()
 
         return ProblemData(
-            jobs,
-            resources,
-            tasks,
-            modes,
-            constraints,
-            setup_times,
-            horizon,
-            objective,
+            jobs=jobs,
+            resources=resources,
+            tasks=tasks,
+            modes=modes,
+            constraints=constraints,
+            setup_times=setup_times,
+            horizon=horizon,
+            objective=objective,
         )
 
     def no_changes(data):
