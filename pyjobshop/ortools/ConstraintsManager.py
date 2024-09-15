@@ -85,12 +85,13 @@ class ConstraintsManager:
         model, data = self._model, self._data
 
         for idx, resource in enumerate(data.resources):
-            if isinstance(resource, Machine):
-                seq_var = self._sequence_vars[idx]
-                has_setup_times = np.any(data.setup_times[idx])
+            if not isinstance(resource, Machine):
+                continue
 
-                if seq_var is not None and has_setup_times:
-                    seq_var.activate(model)
+            if data.setup_times is not None and np.any(data.setup_times[idx]):
+                seq_var = self._sequence_vars[idx]
+                assert seq_var is not None
+                seq_var.activate(model)
 
     def _resource_capacity(self):
         """
@@ -327,11 +328,14 @@ class ConstraintsManager:
                     # Maintain rank incrementally.
                     model.add(rank + 1 == ranks[idx2]).only_enforce_if(arc)
 
-                    task1, task2 = var1.task_idx, var2.task_idx
-                    setup = data.setup_times[idx, task1, task2]
-                    model.add(var1.end + setup <= var2.start).only_enforce_if(
-                        arc
+                    # Use the mode's task idx to get the correct setup times.
+                    setup = (
+                        data.setup_times[idx, var1.task_idx, var2.task_idx]
+                        if data.setup_times is not None
+                        else 0
                     )
+                    expr = var1.end + setup <= var2.start
+                    model.add(expr).only_enforce_if(arc)
 
             model.add_circuit(circuit)
 

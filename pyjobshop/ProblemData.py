@@ -497,15 +497,7 @@ class ProblemData:
         self._tasks = tasks
         self._modes = modes
         self._constraints = constraints if constraints is not None else {}
-
-        num_res = self.num_resources
-        num_tasks = self.num_tasks
-
-        self._setup_times = (
-            setup_times
-            if setup_times is not None
-            else np.zeros((num_res, num_tasks, num_tasks), dtype=int)
-        )
+        self._setup_times = setup_times
         self._horizon = horizon
         self._objective = (
             objective if objective is not None else Objective.makespan()
@@ -571,21 +563,21 @@ class ProblemData:
                 )
                 raise ValueError(msg)
 
-        if np.any(self.setup_times < 0):
-            raise ValueError("Setup times must be non-negative.")
+        if self.setup_times is not None:
+            if np.any(self.setup_times < 0):
+                raise ValueError("Setup times must be non-negative.")
 
-        if self.setup_times.shape != (num_res, num_tasks, num_tasks):
-            raise ValueError(
-                "Setup times shape not (num_resources, num_tasks, num_tasks)."
-            )
+            if self.setup_times.shape != (num_res, num_tasks, num_tasks):
+                shape = "(num_resources, num_tasks, num_tasks)"
+                raise ValueError(f"Setup times shape must be {shape}.")
 
-        for idx, resource in enumerate(self.resources):
-            is_machine = isinstance(resource, Machine)
-            has_setup_times = np.any(self.setup_times[idx] > 0)
+            for idx, resource in enumerate(self.resources):
+                is_machine = isinstance(resource, Machine)
+                has_setup_times = np.any(self.setup_times[idx] > 0)
 
-            if not is_machine and has_setup_times:
-                msg = "Setup times only allowed for machines."
-                raise ValueError(msg)
+                if not is_machine and has_setup_times:
+                    msg = "Setup times only allowed for machines."
+                    raise ValueError(msg)
 
         if self.horizon < 0:
             raise ValueError("Horizon must be non-negative.")
@@ -699,11 +691,11 @@ class ProblemData:
         return self._constraints
 
     @property
-    def setup_times(self) -> np.ndarray:
+    def setup_times(self) -> Optional[np.ndarray]:
         """
-        Sequence-dependent setup times between tasks on a given resource. The
-        first dimension of the array is indexed by the resource index. The last
-        two dimensions of the array are indexed by task indices.
+        Optional sequence-dependent setup times between tasks on a given
+        machine. The first index is the resource index and the last two
+        indices are the task indices.
         """
         return self._setup_times
 
