@@ -66,18 +66,20 @@ class ConstraintsManager:
             if not (modes := resource2modes[idx]):
                 continue  # no modes for this machine
 
-            tasks = [data.modes[mode].task for mode in modes]
-            setups = data.setup_times[idx, :, :][np.ix_(tasks, tasks)]
             seq_var = self._sequence_vars[idx]
 
             if seq_var is None:
                 msg = f"No sequence var found for resource {idx}."
                 raise ValueError(msg)
 
-            if np.all(setups == 0):  # no setup times
-                model.add(cpo.no_overlap(seq_var))
+            if (setups := data.setup_times) is not None:
+                # Use the mode's task indices to get the correct setup times.
+                tasks = [data.modes[mode].task for mode in modes]
+                matrix = setups[idx, :, :][np.ix_(tasks, tasks)]
+                if np.any(matrix > 0):
+                    model.add(cpo.no_overlap(seq_var, matrix))
             else:
-                model.add(cpo.no_overlap(seq_var, setups))
+                model.add(cpo.no_overlap(seq_var))
 
     def _resource_capacity(self):
         """

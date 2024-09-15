@@ -312,7 +312,11 @@ class ConstraintsManager:
                 var2 = seq_var.modes[idx2]
 
                 lit = lits[idx1, idx2]
-                setup = data.setup_times[res_idx, var1.task_idx, var2.task_idx]
+                setup = (
+                    data.setup_times[res_idx, var1.task_idx, var2.task_idx]
+                    if data.setup_times is not None
+                    else 0
+                )
                 expr = var1.end + setup <= var2.start
                 model.add(expr).only_enforce_if(lit)
 

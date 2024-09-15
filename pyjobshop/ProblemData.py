@@ -284,10 +284,9 @@ class Task:
         return self._name
 
 
-@dataclass
 class Mode:
     """
-    Simple dataclass for storing processing mode data.
+    Simpel dataclass for storing processing mode data.
 
     Parameters
     ----------
@@ -298,31 +297,59 @@ class Mode:
     duration
         Processing duration of this mode.
     demands
-        List of demands for each resource for this mode. If ``None`` is given,
-        then the demands are initialized as list of zeros with the same length
-        as the resources.
+        Optional list of demands for each resource for this mode. If ``None``
+        is given, then the demands are initialized as list of zeros with the
+        same length as the resources.
     """
 
-    task: int
-    resources: list[int]
-    duration: int
-    demands: Optional[list[int]] = None
-
-    def __post_init__(self):
-        if len(set(self.resources)) != len(self.resources):
+    def __init__(
+        self,
+        task: int,
+        resources: list[int],
+        duration: int,
+        demands: Optional[list[int]] = None,
+    ):
+        if len(set(resources)) != len(resources):
             raise ValueError("Mode resources must be unique.")
 
-        if self.duration < 0:
+        if duration < 0:
             raise ValueError("Mode duration must be non-negative.")
 
-        if self.demands is None:
-            self.demands = [0] * len(self.resources)
-
-        if any(dem < 0 for dem in self.demands):
+        demands = demands if demands is not None else [0] * len(resources)
+        if any(demand < 0 for demand in demands):
             raise ValueError("Mode demands must be non-negative.")
 
-        if len(self.resources) != len(self.demands):
+        if len(resources) != len(demands):
             raise ValueError("resources and demands must have same length.")
+
+        self._task = task
+        self._resources = resources
+        self._duration = duration
+        self._demands = demands
+
+    @property
+    def task(self) -> int:
+        return self._task
+
+    @property
+    def resources(self) -> list[int]:
+        return self._resources
+
+    @property
+    def duration(self) -> int:
+        return self._duration
+
+    @property
+    def demands(self) -> list[int]:
+        return self._demands
+
+    def __eq__(self, other) -> bool:
+        return (
+            self.task == other.task
+            and self.resources == other.resources
+            and self.duration == other.duration
+            and self.demands == other.demands
+        )
 
 
 @enum_tools.documentation.document_enum
@@ -471,15 +498,7 @@ class ProblemData:
         self._tasks = tasks
         self._modes = modes
         self._constraints = constraints if constraints is not None else {}
-
-        num_res = self.num_resources
-        num_tasks = self.num_tasks
-
-        self._setup_times = (
-            setup_times
-            if setup_times is not None
-            else np.zeros((num_res, num_tasks, num_tasks), dtype=int)
-        )
+        self._setup_times = setup_times
         self._permutation = permutation if permutation is not None else False
         self._horizon = horizon
         self._objective = (
@@ -546,21 +565,21 @@ class ProblemData:
                 )
                 raise ValueError(msg)
 
-        if np.any(self.setup_times < 0):
-            raise ValueError("Setup times must be non-negative.")
+        if self.setup_times is not None:
+            if np.any(self.setup_times < 0):
+                raise ValueError("Setup times must be non-negative.")
 
-        if self.setup_times.shape != (num_res, num_tasks, num_tasks):
-            raise ValueError(
-                "Setup times shape not (num_resources, num_tasks, num_tasks)."
-            )
+            if self.setup_times.shape != (num_res, num_tasks, num_tasks):
+                shape = "(num_resources, num_tasks, num_tasks)"
+                raise ValueError(f"Setup times shape must be {shape}.")
 
-        for idx, resource in enumerate(self.resources):
-            is_machine = isinstance(resource, Machine)
-            has_setup_times = np.any(self.setup_times[idx] > 0)
+            for idx, resource in enumerate(self.resources):
+                is_machine = isinstance(resource, Machine)
+                has_setup_times = np.any(self.setup_times[idx] > 0)
 
-            if not is_machine and has_setup_times:
-                msg = "Setup times only allowed for machines."
-                raise ValueError(msg)
+                if not is_machine and has_setup_times:
+                    msg = "Setup times only allowed for machines."
+                    raise ValueError(msg)
 
         if self.horizon < 0:
             raise ValueError("Horizon must be non-negative.")
@@ -679,11 +698,11 @@ class ProblemData:
         return self._constraints
 
     @property
-    def setup_times(self) -> np.ndarray:
+    def setup_times(self) -> Optional[np.ndarray]:
         """
-        Sequence-dependent setup times between tasks on a given resource. The
-        first dimension of the array is indexed by the resource index. The last
-        two dimensions of the array are indexed by task indices.
+        Optional sequence-dependent setup times between tasks on a given
+        machine. The first index is the resource index and the last two
+        indices are the task indices.
         """
         return self._setup_times
 
