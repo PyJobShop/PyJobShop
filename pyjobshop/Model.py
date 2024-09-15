@@ -158,14 +158,15 @@ class Model:
                 elif constraint == Constraint.DIFFERENT_RESOURCES:
                     model.add_different_resource(task1, task2)
 
-        for (res, idx1, idx2), duration in np.ndenumerate(data.setup_times):
-            if duration != 0:
-                model.add_setup_time(
-                    machine=model.resources[res],
-                    task1=model.tasks[idx1],
-                    task2=model.tasks[idx2],
-                    duration=duration,
-                )
+        if (setups := data.setup_times) is not None:
+            for (res, idx1, idx2), duration in np.ndenumerate(setups):
+                if duration != 0:
+                    model.add_setup_time(
+                        machine=model.resources[res],
+                        task1=model.tasks[idx1],
+                        task2=model.tasks[idx2],
+                        duration=duration,
+                    )
 
         model.set_horizon(data.horizon)
         model.set_objective(
@@ -184,10 +185,14 @@ class Model:
         num_tasks = len(self.tasks)
         num_res = len(self.resources)
 
-        # Convert setup times into a 3D array with zero as default.
-        setup_times = np.zeros((num_res, num_tasks, num_tasks), dtype=int)
-        for (resource, task1, task2), duration in self._setup_times.items():
-            setup_times[resource, task1, task2] = duration
+        # Convert setup times into a 3D array if there are any setup times,
+        # otherwise return None.
+        if self._setup_times:
+            setup = np.zeros((num_res, num_tasks, num_tasks), dtype=int)
+            for (res, task1, task2), duration in self._setup_times.items():
+                setup[res, task1, task2] = duration
+        else:
+            setup = None
 
         return ProblemData(
             jobs=self.jobs,
@@ -195,7 +200,7 @@ class Model:
             tasks=self.tasks,
             modes=self._modes,
             constraints=self._constraints,
-            setup_times=setup_times,
+            setup_times=setup,
             horizon=self._horizon,
             objective=self._objective,
         )
