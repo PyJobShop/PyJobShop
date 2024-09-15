@@ -87,12 +87,13 @@ class ConstraintsManager:
         model, data = self._model, self._data
 
         for idx, resource in enumerate(data.resources):
-            if isinstance(resource, Machine):
-                seq_var = self._sequence_vars[idx]
-                has_setup_times = np.any(data.setup_times[idx])
+            if not isinstance(resource, Machine):
+                continue
 
-                if seq_var is not None and has_setup_times:
-                    seq_var.activate(model)
+            if data.setup_times is not None and np.any(data.setup_times[idx]):
+                seq_var = self._sequence_vars[idx]
+                assert seq_var is not None
+                seq_var.activate(model)
 
     def _resource_capacity(self):
         """
