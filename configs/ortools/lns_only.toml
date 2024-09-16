@@ -1,0 +1,2 @@
+# See https://github.com/google/or-tools/blob/ed94162b910fa58896db99191378d3b71a5313af/ortools/sat/sat_parameters.proto#L1200
+use_lns_only = true
