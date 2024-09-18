@@ -1,3 +1,5 @@
+from typing import Optional
+
 from docplex.cp.expression import (
     CpoIntervalVar,
     CpoSequenceVar,
@@ -7,7 +9,7 @@ from docplex.cp.expression import (
 from docplex.cp.model import CpoModel
 
 import pyjobshop.utils as utils
-from pyjobshop.ProblemData import ProblemData
+from pyjobshop.ProblemData import Machine, ProblemData
 from pyjobshop.Solution import Solution
 from pyjobshop.utils import compute_task_durations
 
@@ -48,7 +50,7 @@ class VariablesManager:
         return self._mode_vars
 
     @property
-    def sequence_vars(self) -> list[CpoSequenceVar]:
+    def sequence_vars(self) -> list[Optional[CpoSequenceVar]]:
         """
         Returns the sequence variables.
         """
@@ -128,23 +130,24 @@ class VariablesManager:
 
         return variables
 
-    def _make_sequence_variables(self) -> list[CpoSequenceVar]:
+    def _make_sequence_variables(self) -> list[Optional[CpoSequenceVar]]:
         """
-        Creates a sequence variable for each machine. Sequence variables are
-        used to model the ordering of intervals on a given machine. This is
-        used for modeling machine setups and sequencing task constraints, such
-        as previous, before, first, last and permutations.
+        Creates a sequence variable for each machine, and no variable for
+        general resources.
         """
         data = self._data
-        machine2modes = utils.machine2modes(data)
-        variables = []
+        resource2modes = utils.resource2modes(data)
+        variables: list[Optional[CpoSequenceVar]] = []
 
-        for machine, modes in enumerate(machine2modes):
-            intervals = [self.mode_vars[mode] for mode in modes]
-            seq_var = sequence_var(name=f"S{machine}", vars=intervals)
-            variables.append(seq_var)
+        for resource, modes in enumerate(resource2modes):
+            if not isinstance(data.resources[resource], Machine):
+                variables.append(None)
+            else:
+                intervals = [self.mode_vars[mode] for mode in modes]
+                seq_var = sequence_var(name=f"S{resource}", vars=intervals)
+                self._model.add(seq_var)
+                variables.append(seq_var)
 
-        self._model.add(variables)
         return variables
 
     def warmstart(self, solution: Solution):

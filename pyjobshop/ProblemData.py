@@ -1,14 +1,15 @@
+from collections import Counter
 from copy import deepcopy
 from dataclasses import dataclass
 from enum import Enum
-from typing import Optional, TypeVar
+from typing import Optional, Sequence, TypeVar, Union
 
 import enum_tools.documentation
 import numpy as np
 
 from pyjobshop.constants import MAX_VALUE
 
-_CONSTRAINTS_TYPE = dict[tuple[int, int], list["Constraint"]]
+_ConstraintsType = dict[tuple[int, int], list["Constraint"]]
 _T = TypeVar("_T")
 
 
@@ -124,34 +125,74 @@ class Job:
         self._tasks.append(idx)
 
 
-@dataclass(frozen=True)
-class Machine:
+class Resource:
     """
-    Simple dataclass for storing all machine-related data.
+    Simple dataclass for storing all resource-related data.
 
     Parameters
     ----------
     capacity
-        Capacity of the machine. Default 0. If the capacity is nonzero, then
-        the machine can process a number of tasks at the same time, which is
-        determined by the task mode demands.
+        Capacity of the resource.
     renewable
-        Whether the machine is renewable. A renewable machine replenishes
+        Whether the resource is renewable. A renewable resource replenishes
         its capacity after each task completion. Default ``True``.
+    name
+        Name of the resource.
+    """
+
+    def __init__(self, capacity: int, renewable: bool = True, name: str = ""):
+        if capacity < 0:
+            raise ValueError("Capacity must be non-negative.")
+
+        self._capacity = capacity
+        self._renewable = renewable
+        self._name = name
+
+    @property
+    def capacity(self) -> int:
+        """
+        Capacity of the resource.
+        """
+        return self._capacity
+
+    @property
+    def renewable(self) -> bool:
+        """
+        Whether the resource is renewable.
+        """
+        return self._renewable
+
+    @property
+    def name(self) -> str:
+        """
+        Name of the resource.
+        """
+        return self._name
+
+
+class Machine(Resource):
+    """
+    Simple dataclass for storing all machine-related data. A machine is a
+    specialized resource type that allows for sequencing constraints.
+
+    Parameters
+    ----------
     name
         Name of the machine.
     """
 
-    capacity: int = 0
-    renewable: bool = True
-    name: str = ""
+    def __init__(self, name: str = ""):
+        super().__init__(capacity=0, renewable=True, name=name)
 
-    def __post_init__(self):
-        if self.capacity < 0:
-            raise ValueError("Capacity must be non-negative.")
+    @property
+    def name(self) -> str:
+        """
+        Name of the machine.
+        """
+        return self._name
 
-        if self.capacity == 0 and not self.renewable:
-            raise ValueError("Non-renewable machines must have capacity > 0.")
+
+ResourceType = Union["Resource", "Machine"]
 
 
 class Task:
@@ -171,7 +212,7 @@ class Task:
     fixed_duration
         Whether the task has a fixed duration. A fixed duration means that
         the task duration is precisely the processing time (on a given
-        machine). If the duration is not fixed, then the task duration
+        resource). If the duration is not fixed, then the task duration
         can take longer than the processing time, e.g., due to blocking.
         Default ``True``.
     name
@@ -243,6 +284,74 @@ class Task:
         return self._name
 
 
+class Mode:
+    """
+    Simpel dataclass for storing processing mode data.
+
+    Parameters
+    ----------
+    task
+        Task index that this mode belongs to.
+    resources
+        List of resources that are required for this mode.
+    duration
+        Processing duration of this mode.
+    demands
+        Optional list of demands for each resource for this mode. If ``None``
+        is given, then the demands are initialized as list of zeros with the
+        same length as the resources.
+    """
+
+    def __init__(
+        self,
+        task: int,
+        resources: list[int],
+        duration: int,
+        demands: Optional[list[int]] = None,
+    ):
+        if len(set(resources)) != len(resources):
+            raise ValueError("Mode resources must be unique.")
+
+        if duration < 0:
+            raise ValueError("Mode duration must be non-negative.")
+
+        demands = demands if demands is not None else [0] * len(resources)
+        if any(demand < 0 for demand in demands):
+            raise ValueError("Mode demands must be non-negative.")
+
+        if len(resources) != len(demands):
+            raise ValueError("resources and demands must have same length.")
+
+        self._task = task
+        self._resources = resources
+        self._duration = duration
+        self._demands = demands
+
+    @property
+    def task(self) -> int:
+        return self._task
+
+    @property
+    def resources(self) -> list[int]:
+        return self._resources
+
+    @property
+    def duration(self) -> int:
+        return self._duration
+
+    @property
+    def demands(self) -> list[int]:
+        return self._demands
+
+    def __eq__(self, other) -> bool:
+        return (
+            self.task == other.task
+            and self.resources == other.resources
+            and self.duration == other.duration
+            and self.demands == other.demands
+        )
+
+
 @enum_tools.documentation.document_enum
 class Constraint(str, Enum):
     """
@@ -273,17 +382,17 @@ class Constraint(str, Enum):
     #: Task :math:`i` must end before task :math:`j` ends.
     END_BEFORE_END = "end_before_end"
 
-    #: Sequence :math:`i` right before :math:`j` (if assigned to same machine).
+    #: Assign tasks :math:`i` and :math:`j` to modes with the same set of resources. # noqa
+    IDENTICAL_RESOURCES = "identical_resources"
+
+    #: Assign tasks :math:`i` and :math:`j` to modes with disjoint sets of resources. # noqa
+    DIFFERENT_RESOURCES = "different_resources"
+
+    #: Sequence :math:`i` right before :math:`j` (if assigned to same resource). # noqa
     PREVIOUS = "previous"
 
-    #: Sequence :math:`i` before :math:`j` (if assigned to same machines).
+    #: Sequence :math:`i` before :math:`j` (if assigned to same resources).
     BEFORE = "before"
-
-    #: Assign tasks :math:`i` and :math:`j` to modes with the same set of machines. # noqa
-    IDENTICAL_MACHINES = "identical_machines"
-
-    #: Assign tasks :math:`i` and :math:`j` to modes with disjoint sets of machines. # noqa
-    DIFFERENT_MACHINES = "different_machines"
 
 
 @dataclass
@@ -344,47 +453,6 @@ class Objective:
         return cls(weight_total_earliness=1)
 
 
-@dataclass
-class Mode:
-    """
-    Simple dataclass for storing processing mode data.
-
-    Parameters
-    ----------
-    task
-        Task index that this mode belongs to.
-    machines
-        List of machines that are required for this mode.
-    duration
-        Processing duration of this mode.
-    demands
-        List of demands for each machine for this mode. If ``None`` is given,
-        then the demands are initialized as list of zeros with the same length
-        as the machines.
-    """
-
-    task: int
-    machines: list[int]
-    duration: int
-    demands: Optional[list[int]] = None
-
-    def __post_init__(self):
-        if len(set(self.machines)) != len(self.machines):
-            raise ValueError("Mode machines must be unique.")
-
-        if self.duration < 0:
-            raise ValueError("Mode duration must be non-negative.")
-
-        if self.demands is None:
-            self.demands = [0] * len(self.machines)
-
-        if any(dem < 0 for dem in self.demands):
-            raise ValueError("Mode demands must be non-negative.")
-
-        if len(self.machines) != len(self.demands):
-            raise ValueError("machines and demands must have same length.")
-
-
 class ProblemData:
     """
     Creates a problem data instance. This instance contains all information
@@ -394,8 +462,8 @@ class ProblemData:
     ----------
     jobs
         List of jobs.
-    machines
-        List of machines.
+    resources
+        List of resources.
     tasks
         List of tasks.
     modes
@@ -404,8 +472,8 @@ class ProblemData:
         Dict indexed by task pairs with a list of constraints as values.
         Default is None, which initializes an empty dict.
     setup_times
-        Sequence-dependent setup times between tasks on a given machine. The
-        first dimension of the array is indexed by the machine index. The last
+        Sequence-dependent setup times between tasks on a given resource. The
+        first dimension of the array is indexed by the resource index. The last
         two dimensions of the array are indexed by task indices.
     horizon
         The horizon value. Default ``MAX_VALUE``.
@@ -416,28 +484,20 @@ class ProblemData:
     def __init__(
         self,
         jobs: list[Job],
-        machines: list[Machine],
+        resources: Sequence[ResourceType],
         tasks: list[Task],
         modes: list[Mode],
-        constraints: Optional[_CONSTRAINTS_TYPE] = None,
+        constraints: Optional[_ConstraintsType] = None,
         setup_times: Optional[np.ndarray] = None,
         horizon: int = MAX_VALUE,
         objective: Optional[Objective] = None,
     ):
         self._jobs = jobs
-        self._machines = machines
+        self._resources = resources
         self._tasks = tasks
         self._modes = modes
         self._constraints = constraints if constraints is not None else {}
-
-        num_mach = self.num_machines
-        num_tasks = self.num_tasks
-
-        self._setup_times = (
-            setup_times
-            if setup_times is not None
-            else np.zeros((num_mach, num_tasks, num_tasks), dtype=int)
-        )
+        self._setup_times = setup_times
         self._horizon = horizon
         self._objective = (
             objective if objective is not None else Objective.makespan()
@@ -449,25 +509,20 @@ class ProblemData:
         """
         Validates the problem data parameters.
         """
-        num_mach = self.num_machines
+        num_res = self.num_resources
         num_tasks = self.num_tasks
 
         for job in self.jobs:
             if any(task < 0 or task >= num_tasks for task in job.tasks):
                 raise ValueError("Job references to unknown task index.")
 
-        for mode in self.modes:
+        for idx, mode in enumerate(self.modes):
             if mode.task < 0 or mode.task >= num_tasks:
-                raise ValueError("Mode references to unknown task index.")
+                raise ValueError(f"Mode {idx} references unknown task index.")
 
-            for machine in mode.machines:
-                if machine < 0 or machine >= num_mach:
-                    msg = "Mode references to unknown machine index."
-                    raise ValueError(msg)
-
-            for demand, machine in zip(mode.demands, mode.machines):
-                if demand > self.machines[machine].capacity:
-                    msg = "Mode demand exceeds machine capacity."
+            for resource in mode.resources:
+                if resource < 0 or resource >= num_res:
+                    msg = f"Mode {idx} references unknown resource index."
                     raise ValueError(msg)
 
         without = set(range(num_tasks)) - {mode.task for mode in self.modes}
@@ -475,35 +530,54 @@ class ProblemData:
         if names:  # task indices if names are not available
             raise ValueError(f"Processing modes missing for tasks {without}.")
 
+        infeasible_modes = Counter()
+        num_modes = Counter()
+
+        for mode in self.modes:
+            num_modes[mode.task] += 1
+            infeasible_modes[mode.task] += any(
+                demand > self.resources[resource].capacity
+                for demand, resource in zip(mode.demands, mode.resources)
+            )
+
+        for task, count in num_modes.items():
+            if infeasible_modes[task] == count:
+                msg = f"All modes for task {task} have infeasible demands."
+                raise ValueError(msg)
+
         for (idx1, idx2), constraints in self.constraints.items():
             modes = [mode for mode in self.modes if mode.task in (idx1, idx2)]
-            has_capacity = any(
-                self.machines[machine].capacity > 0
+            all_machines = all(
+                isinstance(self.resources[resource], Machine)
                 for mode in modes
-                for machine in mode.machines
+                for resource in mode.resources
             )
-            has_sequencing = (
+            requires_sequencing = (
                 Constraint.PREVIOUS in constraints
                 or Constraint.BEFORE in constraints
             )
-            if has_capacity and has_sequencing:
+            if not all_machines and requires_sequencing:
                 msg = (
-                    "Sequencing constraints cannot be used on tasks with "
-                    "modes that have capacity."
+                    "Sequencing constraints can only be used on tasks that "
+                    "are processed exclusively on machines."
                 )
                 raise ValueError(msg)
 
-        if np.any(self.setup_times < 0):
-            raise ValueError("Setup times must be non-negative.")
+        if self.setup_times is not None:
+            if np.any(self.setup_times < 0):
+                raise ValueError("Setup times must be non-negative.")
 
-        if self.setup_times.shape != (num_mach, num_tasks, num_tasks):
-            msg = "Setup times shape not (num_machines, num_tasks, num_tasks)."
-            raise ValueError(msg)
+            if self.setup_times.shape != (num_res, num_tasks, num_tasks):
+                shape = "(num_resources, num_tasks, num_tasks)"
+                raise ValueError(f"Setup times shape must be {shape}.")
 
-        for idx, machine in enumerate(self.machines):
-            if machine.capacity > 0 and np.any(self.setup_times[idx] > 0):
-                msg = "Setup times not allowed for machines with capacity."
-                raise ValueError(msg)
+            for idx, resource in enumerate(self.resources):
+                is_machine = isinstance(resource, Machine)
+                has_setup_times = np.any(self.setup_times[idx] > 0)
+
+                if not is_machine and has_setup_times:
+                    msg = "Setup times only allowed for machines."
+                    raise ValueError(msg)
 
         if self.horizon < 0:
             raise ValueError("Horizon must be non-negative.")
@@ -520,10 +594,10 @@ class ProblemData:
     def replace(
         self,
         jobs: Optional[list[Job]] = None,
-        machines: Optional[list[Machine]] = None,
+        resources: Optional[Sequence[ResourceType]] = None,
         tasks: Optional[list[Task]] = None,
         modes: Optional[list[Mode]] = None,
-        constraints: Optional[_CONSTRAINTS_TYPE] = None,
+        constraints: Optional[_ConstraintsType] = None,
         setup_times: Optional[np.ndarray] = None,
         horizon: Optional[int] = None,
         objective: Optional[Objective] = None,
@@ -536,8 +610,8 @@ class ProblemData:
         ----------
         jobs
             Optional list of jobs.
-        machines
-            Optional list of machines.
+        resources
+            Optional list of resources.
         tasks
             Optional list of tasks.
         modes
@@ -561,7 +635,7 @@ class ProblemData:
             return value if value is not None else deepcopy(default)
 
         jobs = _deepcopy_if_none(jobs, self.jobs)
-        machines = _deepcopy_if_none(machines, self.machines)
+        resources = _deepcopy_if_none(resources, self.resources)
         tasks = _deepcopy_if_none(tasks, self.tasks)
         modes = _deepcopy_if_none(modes, self.modes)
         constraints = _deepcopy_if_none(constraints, self.constraints)
@@ -571,7 +645,7 @@ class ProblemData:
 
         return ProblemData(
             jobs=jobs,
-            machines=machines,
+            resources=resources,
             tasks=tasks,
             modes=modes,
             constraints=constraints,
@@ -588,11 +662,11 @@ class ProblemData:
         return self._jobs
 
     @property
-    def machines(self) -> list[Machine]:
+    def resources(self) -> Sequence[ResourceType]:
         """
-        Returns the machine data of this problem instance.
+        Returns the resource data of this problem instance.
         """
-        return self._machines
+        return self._resources
 
     @property
     def tasks(self) -> list[Task]:
@@ -609,7 +683,7 @@ class ProblemData:
         return self._modes
 
     @property
-    def constraints(self) -> _CONSTRAINTS_TYPE:
+    def constraints(self) -> _ConstraintsType:
         """
         Dict indexed by task pairs with a list of constraints as values.
         Indexed by task pairs.
@@ -617,11 +691,11 @@ class ProblemData:
         return self._constraints
 
     @property
-    def setup_times(self) -> np.ndarray:
+    def setup_times(self) -> Optional[np.ndarray]:
         """
-        Sequence-dependent setup times between tasks on a given machine. The
-        first dimension of the array is indexed by the machine index. The last
-        two dimensions of the array are indexed by task indices.
+        Optional sequence-dependent setup times between tasks on a given
+        machine. The first index is the resource index and the last two
+        indices are the task indices.
         """
         return self._setup_times
 
@@ -648,11 +722,11 @@ class ProblemData:
         return len(self._jobs)
 
     @property
-    def num_machines(self) -> int:
+    def num_resources(self) -> int:
         """
-        Returns the number of machines in this instance.
+        Returns the number of resources in this instance.
         """
-        return len(self._machines)
+        return len(self._resources)
 
     @property
     def num_tasks(self) -> int:

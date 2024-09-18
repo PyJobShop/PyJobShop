@@ -5,7 +5,7 @@ from pyjobshop.read import read as _read
 
 def read(where: str, *args, **kwargs):
     """
-    Lightweight wrapper around ``pyvrp.read.read()``, reading problem files
+    Lightweight wrapper around ``pyjobshop.read.read()``, reading problem files
     relative to the current directory.
     """
     this_dir = pathlib.Path(__file__).parent

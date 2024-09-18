@@ -1,7 +1,7 @@
 [project]
 name = "pyjobshop"
 version = "0.0.2b"
-description = "Solving shop scheduling problems with constraint programming."
+description = "Solving scheduling problems with constraint programming."
 authors = [
     { name = "Leon Lan", email = "l.lan@vu.nl"},
 ]
@@ -17,6 +17,9 @@ dependencies = [
     "tomli>=2.0.1",
 ]
 
+[project.scripts]
+pyjobshop = 'pyjobshop:cli.main'
+
 [project.optional-dependencies]
 docplex = [
     "docplex>=2.28.240",
@@ -24,6 +27,7 @@ docplex = [
 cplex = [
     "cplex>=22.1.1.2",
 ]
+
 
 [tool.uv]
 dev-dependencies = [
@@ -86,7 +90,7 @@ known-third-party = ["ortools"]
 
 [tool.pytest.ini_options]
 addopts = "--cov=. --cov-report=xml"
-
+testpaths = ["tests"]
 
 [tool.coverage.run]
 omit = [
@@ -94,10 +98,12 @@ omit = [
     "tests/*",
     "setup.py",
     "cpo_config.py",
+    "conftest.py",
     "pyjobshop/cpoptimizer/*",
     "pyjobshop/ortools/*",
     "pyjobshop/cli.py",
-    "pyjobshop/plot.py"
+    "pyjobshop/plot.py",
+    "pyjobshop/show_versions.py"
 ]
 
 

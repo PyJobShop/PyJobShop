@@ -27,7 +27,7 @@ def test_subsequent_solve_clears_hint(small):
 def test_empty_circuit_not_allowed_bug():
     """
     This solves the bug identified in #178, where it was not possible to leave
-    a machine empty because empty circuits were not allowed.
+    a resource empty because empty circuits were not allowed.
     """
     model = Model()
 
@@ -36,9 +36,9 @@ def test_empty_circuit_not_allowed_bug():
     tasks = [model.add_task(job=job) for _ in range(2)]
 
     durations = [[2, 2], [5, 5]]
-    for machine_idx, machine in enumerate(machines):
+    for mach_idx, machine in enumerate(machines):
         for task_idx, task in enumerate(tasks):
-            duration = durations[machine_idx][task_idx]
+            duration = durations[mach_idx][task_idx]
             model.add_processing_time(task, machine, duration)
 
     model.add_previous(*tasks)  # this activates the circuit constraints
@@ -46,7 +46,7 @@ def test_empty_circuit_not_allowed_bug():
     solver = Solver(model.data())
     result = solver.solve()
 
-    # Optimal solution schedules both tasks on machine 1, achieving makespan 4.
-    # Before the fix, empty circuits weren't allowed, forcing tasks onto
-    # separate machines and resulting in a longer makespan of 5.
+    # Optimal solution is to schedule both tasks on resource 1, achieving
+    # makespan 4. Before the fix, empty circuits weren't allowed, forcing
+    # tasks onto separate resources and resulting in a longer makespan of 5.
     assert_equal(result.objective, 4)
