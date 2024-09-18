@@ -60,7 +60,7 @@ def _read_fjslib(loc: Path) -> ProblemData:
             task = m.add_task(job=jobs[job_idx])
 
             for resource_idx, duration in task_data:
-                m.add_processing_time(task, resources[resource_idx], duration)
+                m.add_mode(task, resources[resource_idx], duration)
 
     for frm, to in instance.precedences:
         m.add_end_before_start(m.tasks[frm], m.tasks[to])

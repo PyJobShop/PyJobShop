@@ -37,7 +37,7 @@ def test_jsp_lawrence(solver: str):
         tasks = [model.add_task(job=jobs[job_idx]) for _ in range(num_tasks)]
 
         for t_idx, (m_idx, duration) in enumerate(tasks_data):
-            model.add_processing_time(tasks[t_idx], machines[m_idx], duration)
+            model.add_mode(tasks[t_idx], machines[m_idx], duration)
 
         # Linear routing precedence constraints.
         for task_idx in range(1, len(tasks)):
