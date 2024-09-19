@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import Optional, Sequence
+from typing import Optional, Sequence, Union
 
 import numpy as np
 
@@ -347,35 +347,12 @@ class Model:
 
         return task
 
-    def add_processing_time(
-        self, task: Task, machine: Machine, duration: int
-    ) -> Mode:
-        """
-        Adds a processing time for a given task on a machine. Simple interface
-        for machine scheduling problems.
-
-        Parameters
-        ----------
-        task
-            The task to be processed.
-        machine
-            The machine on which the task is processed.
-        duration
-            Processing time of the task on the machine.
-
-        Returns
-        -------
-        Mode
-            The created mode.
-        """
-        return self.add_mode(task, [machine], duration, [0])
-
     def add_mode(
         self,
         task: Task,
-        resources: Sequence[ResourceType],
+        resources: Union[ResourceType, Sequence[ResourceType]],
         duration: int,
-        demands: Optional[list[int]] = None,
+        demands: Optional[Union[int, list[int]]] = None,
     ) -> Mode:
         """
         Adds a processing mode.
@@ -385,14 +362,20 @@ class Model:
         task
             The task associated with the mode.
         resources
-            The resources that the task must be processed on.
+            The resource(s) that the task must be processed on.
         duration
             Processing duration of this mode.
         demands
-            List of demands for each resource for this mode. If ``None`` is
-            given, then the demands are initialized as list of zeros with the
-            same length as the resources.
+            Demands for each resource for this mode. If ``None``, then the
+            demands are initialized as list of zeros with the same length as
+            the resources.
         """
+        if isinstance(resources, (Resource, Machine)):
+            resources = [resources]
+
+        if isinstance(demands, int):
+            demands = [demands]
+
         task_idx = self._id2task[id(task)]
         resource_idcs = [self._id2resource[id(res)] for res in resources]
         mode = Mode(task_idx, resource_idcs, duration, demands)

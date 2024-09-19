@@ -56,3 +56,6 @@ PyJobShop
 
 .. automodule:: pyjobshop.solve
    :members:
+
+.. automodule:: pyjobshop.constants
+   :members:

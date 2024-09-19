@@ -10,6 +10,7 @@ from .ProblemData import Resource as Resource
 from .ProblemData import Task as Task
 from .read import read as read
 from .Result import Result as Result
+from .Result import SolveStatus as SolveStatus
 from .show_versions import show_versions as show_versions
 from .Solution import Solution as Solution
 from .Solution import TaskData as TaskData

@@ -584,7 +584,7 @@ def test_job_release_date(solver: str):
     machine = model.add_machine()
     task = model.add_task(job=job)
 
-    model.add_processing_time(task, machine, duration=1)
+    model.add_mode(task, machine, duration=1)
 
     result = model.solve(solver=solver)
 
@@ -609,7 +609,7 @@ def test_job_deadline(solver: str):
     task2 = model.add_task(job=job2)
 
     for task in [task1, task2]:
-        model.add_processing_time(task, machine, duration=2)
+        model.add_mode(task, machine, duration=2)
 
     model.add_setup_time(machine, task2, task1, 10)
 
@@ -633,7 +633,7 @@ def test_job_deadline_infeasible(solver: str):
     machine = model.add_machine()
     task = model.add_task(job=job)
 
-    model.add_processing_time(task, machine, duration=2)
+    model.add_mode(task, machine, duration=2)
 
     result = model.solve(solver=solver)
 
@@ -651,7 +651,7 @@ def test_task_earliest_start(solver: str):
     machine = model.add_machine()
     task = model.add_task(job=job, earliest_start=1)
 
-    model.add_processing_time(task, machine, duration=1)
+    model.add_mode(task, machine, duration=1)
 
     result = model.solve(solver=solver)
 
@@ -674,7 +674,7 @@ def test_task_latest_start(solver: str):
     ]
 
     for task in tasks:
-        model.add_processing_time(task, machine, duration=2)
+        model.add_mode(task, machine, duration=2)
 
     model.add_setup_time(machine, tasks[1], tasks[0], 10)
 
@@ -699,7 +699,7 @@ def test_task_fixed_start(solver: str):
     machine = model.add_machine()
     task = model.add_task(job=job, earliest_start=42, latest_start=42)
 
-    model.add_processing_time(task, machine, duration=1)
+    model.add_mode(task, machine, duration=1)
 
     result = model.solve(solver=solver)
 
@@ -718,7 +718,7 @@ def test_task_earliest_end(solver: str):
     machine = model.add_machine()
     task = model.add_task(job=job, earliest_end=2)
 
-    model.add_processing_time(task, machine, duration=1)
+    model.add_mode(task, machine, duration=1)
 
     result = model.solve(solver=solver)
 
@@ -742,7 +742,7 @@ def test_task_latest_end(solver: str):
     ]
 
     for task in tasks:
-        model.add_processing_time(task, machine, duration=2)
+        model.add_mode(task, machine, duration=2)
 
     model.add_setup_time(machine, tasks[1], tasks[0], 10)
 
@@ -767,7 +767,7 @@ def test_task_fixed_end(solver: str):
     machine = model.add_machine()
     task = model.add_task(job=job, earliest_end=42, latest_end=42)
 
-    model.add_processing_time(task, machine, duration=1)
+    model.add_mode(task, machine, duration=1)
 
     result = model.solve(solver=solver)
 
@@ -787,7 +787,7 @@ def test_task_fixed_duration_infeasible_with_timing_constraints(
 
     machine = model.add_machine()
     task = model.add_task(latest_start=0, earliest_end=10)
-    model.add_processing_time(task, machine, duration=1)
+    model.add_mode(task, machine, duration=1)
 
     # Because of the latest start and earliest end constraints, we cannot
     # schedule the task with fixed duration, since its processing time
@@ -808,7 +808,7 @@ def test_task_non_fixed_duration(solver: str):
         earliest_end=10,
         fixed_duration=False,
     )
-    model.add_processing_time(task, machine, duration=1)
+    model.add_mode(task, machine, duration=1)
 
     # Since the task's duration is not fixed, it can be scheduled in a
     # feasible way. In this case, it starts at 0 and ends at 10, which includes
@@ -1031,8 +1031,8 @@ def test_previous_constraint(solver: str):
     task1 = model.add_task(job=job)
     task2 = model.add_task(job=job)
 
-    model.add_processing_time(task1, machine, duration=1)
-    model.add_processing_time(task2, machine, duration=1)
+    model.add_mode(task1, machine, duration=1)
+    model.add_mode(task2, machine, duration=1)
 
     model.add_setup_time(machine, task2, task1, duration=100)
     model.add_previous(task2, task1)
@@ -1089,7 +1089,7 @@ def test_before_constraint(solver: str):
     task3 = model.add_task(job=job)
 
     for task in [task1, task2, task3]:
-        model.add_processing_time(task, machine, duration=1)
+        model.add_mode(task, machine, duration=1)
 
     model.add_setup_time(machine, task1, task2, 100)
     model.add_setup_time(machine, task2, task3, 100)
@@ -1120,7 +1120,7 @@ def test_tight_horizon_results_in_infeasiblity(solver: str):
     machine = model.add_machine()
     task = model.add_task(job=job)
 
-    model.add_processing_time(task, machine, duration=2)
+    model.add_mode(task, machine, duration=2)
     model.set_horizon(1)
 
     result = model.solve(solver=solver)
@@ -1163,7 +1163,7 @@ def test_makespan_objective(solver: str):
     tasks = [model.add_task(job=job) for _ in range(2)]
 
     for task in tasks:
-        model.add_processing_time(task, machine, duration=2)
+        model.add_mode(task, machine, duration=2)
 
     result = model.solve(solver=solver)
 
@@ -1181,7 +1181,7 @@ def test_tardy_jobs(solver: str):
     for _ in range(3):
         job = model.add_job(due_date=3, weight=2)
         task = model.add_task(job=job)
-        model.add_processing_time(task, machine, duration=3)
+        model.add_mode(task, machine, duration=3)
 
     model.set_objective(weight_tardy_jobs=1)
 
@@ -1204,7 +1204,7 @@ def test_total_flow_time(solver: str):
     for idx in range(2):
         job = model.add_job(weight=weights[idx], release_date=1)
         task = model.add_task(job=job)
-        model.add_processing_time(task, machine, duration=idx + 1)
+        model.add_mode(task, machine, duration=idx + 1)
 
     model.set_objective(weight_total_flow_time=1)
 
@@ -1233,7 +1233,7 @@ def test_total_tardiness(solver: str):
     for idx in range(2):
         job = model.add_job(weight=weights[idx], due_date=due_dates[idx])
         task = model.add_task(job=job)
-        model.add_processing_time(task, machine, durations[idx])
+        model.add_mode(task, machine, durations[idx])
 
     model.set_objective(weight_total_tardiness=1)
 
@@ -1256,7 +1256,7 @@ def test_total_earliness(solver: str):
     job = model.add_job(weight=1, due_date=2)
     task = model.add_task(job=job)
 
-    model.add_processing_time(task, machine, duration=1)
+    model.add_mode(task, machine, duration=1)
     model.set_objective(weight_total_earliness=1)
 
     result = model.solve(solver=solver)
@@ -1271,7 +1271,7 @@ def test_total_earliness(solver: str):
     # Now let's another job that cannot finish without earliness.
     job2 = model.add_job(weight=10, deadline=1, due_date=2)
     task2 = model.add_task(job=job2)
-    model.add_processing_time(task2, machine, duration=1)
+    model.add_mode(task2, machine, duration=1)
 
     result = model.solve(solver=solver)
 
@@ -1296,7 +1296,7 @@ def test_combined_objective(solver: str):
     for idx in range(2):
         job = model.add_job(due_date=0)
         task = model.add_task(job=job)
-        model.add_processing_time(task, machine, durations[idx])
+        model.add_mode(task, machine, durations[idx])
 
     model.set_objective(weight_makespan=10, weight_tardy_jobs=2)
     result = model.solve(solver=solver)

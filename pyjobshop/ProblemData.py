@@ -202,11 +202,11 @@ class Task:
     Parameters
     ----------
     earliest_start
-        Earliest start time of the task. Default 0.
+        Earliest start time of the task. Default ``0``.
     latest_start
         Latest start time of the task. Default ``MAX_VALUE``.
     earliest_end
-        Earliest end time of the task. Default 0.
+        Earliest end time of the task. Default ``0``.
     latest_end
         Latest end time of the task. Default ``MAX_VALUE``.
     fixed_duration
