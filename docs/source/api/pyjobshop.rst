@@ -36,8 +36,6 @@ PyJobShop
        :members:
 
 
-
-
 .. automodule:: pyjobshop.Solution
 
    .. autoclass:: Solution
@@ -51,11 +49,28 @@ PyJobShop
    .. autoclass:: SolveStatus
 
 
-.. automodule:: pyjobshop.plot
-   :members:
-
 .. automodule:: pyjobshop.solve
    :members:
 
 .. automodule:: pyjobshop.constants
    :members:
+
+.. automodule:: pyjobshop.plot.plot_resource_gantt
+   :members:
+
+   .. autofunction:: plot_resource_gantt
+
+.. automodule:: pyjobshop.plot.plot_machine_gantt
+   :members:
+
+   .. autofunction:: plot_machine_gantt
+
+.. automodule:: pyjobshop.plot.plot_task_gantt
+   :members:
+
+   .. autofunction:: plot_task_gantt
+
+.. automodule:: pyjobshop.plot.plot_resource_usage
+   :members:
+
+   .. autofunction:: plot_resource_usage
