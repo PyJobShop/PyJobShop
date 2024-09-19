@@ -39,7 +39,7 @@ def test_empty_circuit_not_allowed_bug():
     for mach_idx, machine in enumerate(machines):
         for task_idx, task in enumerate(tasks):
             duration = durations[mach_idx][task_idx]
-            model.add_processing_time(task, machine, duration)
+            model.add_mode(task, machine, duration)
 
     model.add_previous(*tasks)  # this activates the circuit constraints
 
