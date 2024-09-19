@@ -27,11 +27,7 @@ def plot_resource_usage(
         created.
     """
     if axes is None:
-        _, axes = plt.subplots(
-            data.num_resources,
-            figsize=(10, 2 * data.num_resources),
-            sharex=True,
-        )
+        _, axes = plt.subplots(data.num_resources, sharex=True)
         assert axes is not None  # make mypy happy
 
     if len(axes) < data.num_resources:

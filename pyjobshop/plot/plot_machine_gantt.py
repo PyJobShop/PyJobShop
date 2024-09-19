@@ -1,23 +1,24 @@
 from collections import defaultdict
 from typing import Optional
 
-import matplotlib
 import matplotlib.pyplot as plt
+from matplotlib.axes import Axes
 
-from .ProblemData import ProblemData
-from .Solution import Solution
+from pyjobshop.ProblemData import ProblemData
+from pyjobshop.Solution import Solution
+
+from .utils import get_colors as _get_colors
 
 
-def plot(
-    data: ProblemData,
+def plot_machine_gantt(
     solution: Solution,
+    data: ProblemData,
     resource_order: Optional[list[int]] = None,
     plot_labels: bool = False,
-    ax: Optional[plt.Axes] = None,
+    ax: Optional[Axes] = None,
 ):
     """
-    Plots a Gantt chart of the solution. Each unique job is associated with a
-    distinct color (up to 92 unique colors, after which the colors are cycled).
+    Plots a Gantt chart of the solution.
 
     Parameters
     ----------
@@ -37,7 +38,6 @@ def plot(
         _, ax = plt.subplots(1, 1, figsize=(12, 8))
         assert ax is not None  # for linting
 
-    # Custom ordering of resources to plot.
     if resource_order is not None:
         order = {resource: idx for idx, resource in enumerate(resource_order)}
     else:
@@ -74,12 +74,14 @@ def plot(
                 ax.text(
                     task_data.start + duration / 2,
                     order[resource],
-                    data.tasks[idx].name,
+                    data.tasks[idx].name or f"{idx}",
                     ha="center",
                     va="center",
                 )
 
-    labels = [data.resources[idx].name for idx in order.keys()]
+    labels = [
+        data.resources[idx].name or f"Machine {idx}" for idx in order.keys()
+    ]
 
     ax.set_yticks(ticks=range(len(labels)), labels=labels)
     ax.set_ylim(ax.get_ylim()[::-1])
@@ -87,14 +89,3 @@ def plot(
     ax.set_xlim(0, ax.get_xlim()[1])  # start time at zero
     ax.set_xlabel("Time")
     ax.set_title("Solution")
-
-
-def _get_colors() -> list[str]:
-    """
-    Color sequence based on concatenation of different common color maps.
-    """
-    names = ["tab20c", "Dark2", "Set1", "tab20b", "Set2", "tab20", "Accent"]
-    cmaps = [matplotlib.colormaps[name] for name in names]
-    colors = [color for cmap in cmaps for color in cmap.colors]
-
-    return list(dict.fromkeys(colors))  # unique colors

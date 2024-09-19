@@ -1,7 +1,5 @@
 from .constants import MAX_VALUE as MAX_VALUE
 from .Model import Model as Model
-from .plot import plot_resource_gantt as plot_resource_gantt
-from .plot import plot_task_gantt as plot_task_gantt
 from .ProblemData import Constraint as Constraint
 from .ProblemData import Job as Job
 from .ProblemData import Machine as Machine

@@ -48,7 +48,7 @@ def plot_resource_gantt(
     data: ProblemData,
     resource_order: Optional[list[int]] = None,
     plot_labels: bool = False,
-    ax: Optional[list[Axes]] = None,
+    axes: Optional[list[Axes]] = None,
 ):
     """
     Plots a resource Gantt chart, shows how resources are used over time
@@ -65,16 +65,20 @@ def plot_resource_gantt(
         resources are plotted in the order they appear in the data.
     plot_labels
         Whether to plot labels on the Gantt chart.
-    ax
-        The matplotlib axes to plot on. If not provided, a new figure is
+    axes
+        The matplotlib axes to use for plotting. It must have at least length
+        ``data.num_resources``. If not provided, a new set of axes will be
         created.
-
     """
     rectangles = _solution2rectangles(solution, data)
 
-    if ax is None:
+    if axes is None:
         _, axes = plt.subplots(data.num_resources, sharex=True)
         assert axes is not None
+
+    if len(axes) < data.num_resources:
+        msg = "The number of axes must be at least the number of resources."
+        raise ValueError(msg)
 
     if resource_order is None:
         resource_order = list(range(data.num_resources))
