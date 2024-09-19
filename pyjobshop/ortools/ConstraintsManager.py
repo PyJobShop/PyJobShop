@@ -197,30 +197,18 @@ class ConstraintsManager:
                         idx1 = seq_var.modes.index(var1)
                         idx2 = seq_var.modes.index(var2)
                         arc = seq_var.arcs[idx1, idx2]
+                        both_present = [var1.is_present, var2.is_present]
 
-                        # arc <=> var1.is_present & var2.is_present
-                        model.add_bool_or(
-                            [arc, ~var1.is_present, ~var2.is_present]
-                        )
-                        model.add_implication(arc, var1.is_present)
-                        model.add_implication(arc, var2.is_present)
+                        model.add(arc == 1).only_enforce_if(both_present)
 
                     if Constraint.BEFORE in sequencing_constraints:
                         seq_var.activate(model)
-                        both_present = model.new_bool_var("")
 
-                        # both_present <=> var1.is_present & var2.is_present
-                        model.add_bool_or(
-                            [both_present, ~var1.is_present, ~var2.is_present]
-                        )
-                        model.add_implication(both_present, var1.is_present)
-                        model.add_implication(both_present, var2.is_present)
-
-                        # Schedule var1 before var2 when both are present.
                         idx1 = seq_var.modes.index(var1)
                         idx2 = seq_var.modes.index(var2)
                         rank1 = seq_var.ranks[idx1]
                         rank2 = seq_var.ranks[idx2]
+                        both_present = [var1.is_present, var2.is_present]
 
                         model.add(rank1 <= rank2).only_enforce_if(both_present)
 
