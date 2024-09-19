@@ -1,73 +1,68 @@
 from typing import Optional
 
 import matplotlib.pyplot as plt
+from matplotlib.axes import Axes
 
 from pyjobshop.ProblemData import ProblemData
 from pyjobshop.Solution import Solution
 
 
 def plot_task_gantt(
-    data: ProblemData,
     solution: Solution,
+    data: ProblemData,
     task_order: Optional[list[int]] = None,
     plot_labels: bool = False,
-    ax: Optional[plt.Axes] = None,
+    ax: Optional[Axes] = None,
 ):
     """
-    Plots a task Gantt chart.
+    Plots a task Gantt chart, which shows each task as horizontal bar
+    on a separate row.
+
+    Parameters
+    ----------
+    solution
+        Solution to plot.
+    data
+        The corresponding problem data.
+    task_order
+        The order in which to plot the tasks. If ``None``, the tasks are
+        plotted in the order they appear in the data.
     """
     if ax is None:
-        fig, ax = plt.subplots(figsize=(12, 8))
+        _, ax = plt.subplots()
 
     if task_order is None:
         task_order = list(range(len(solution.tasks)))
 
     colors = plt.cm.tab20.colors  # Use a qualitative colormap for task colors
 
-    num_tasks = len(task_order)
-    dynamic_fontsize = max(4, 20 - num_tasks // 5)  # Adjust font size
-    dynamic_bar_height = max(
-        0.6, min(1.2, 6.0 / num_tasks)
-    )  # Adjust bar height
+    for row_idx, task_idx in enumerate(task_order):
+        task = solution.tasks[task_idx]
+        start = task.start
+        end = task.end
+        duration = task.end - task.start
 
-    for idx, task_id in enumerate(task_order):
-        task = solution.tasks[task_id]
-        start, end = task.start, task.end
         ax.barh(
-            idx,
-            end - start,
+            row_idx,
+            duration,
             left=start,
-            height=dynamic_bar_height,
             align="center",
-            color=colors[idx % len(colors)],
+            color=colors[row_idx % len(colors)],
             edgecolor="black",
-            linewidth=0.5,  # Thinner border
+            linewidth=0.5,
         )
 
         if plot_labels:
             ax.text(
                 x=(start + end) / 2,
-                y=idx,
-                s=f"{task_id}",
+                y=row_idx + 0.1,
+                s=data.tasks[task_idx].name or f"{task_idx}",
                 va="center",
                 ha="center",
                 color="black",
-                fontsize=dynamic_fontsize,  # Dynamic font size
-                weight="bold",
             )
 
-    ax.set_yticks(range(len(task_order)))
-    ax.set_yticklabels([f"{task_id}" for task_id in task_order])
-    ax.set_xlabel("Time", fontsize=12)
+    ax.set_xlim(0, solution.makespan)
     ax.set_ylabel("Tasks", fontsize=12)
     ax.set_title("Task Gantt Chart", fontsize=14)
     ax.invert_yaxis()
-    ax.grid(axis="x", linestyle="--", linewidth=0.5)
-
-    # Adjust x-limit
-    xlim = ax.get_xlim()
-    xlim_length = xlim[1] - xlim[0]
-    ax.set_xlim(xlim[0], xlim[1] + 0.01 * xlim_length)
-
-    plt.tight_layout()
-    plt.show()

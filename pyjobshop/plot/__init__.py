@@ -1,2 +1,3 @@
 from .plot_resource_gantt import plot_resource_gantt as plot_resource_gantt
+from .plot_resource_usage import plot_resource_usage as plot_resource_usage
 from .plot_task_gantt import plot_task_gantt as plot_task_gantt
