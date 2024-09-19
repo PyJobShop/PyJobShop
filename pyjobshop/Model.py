@@ -362,13 +362,13 @@ class Model:
         task
             The task associated with the mode.
         resources
-            The resources that the task must be processed on.
+            The resource(s) that the task must be processed on.
         duration
             Processing duration of this mode.
         demands
-            Demands for each resource for this mode. If ``None`` is given,
-            then the demands are initialized as list of zeros with the
-            same length as the resources.
+            Demands for each resource for this mode. If ``None``, then the
+            demands are initialized as list of zeros with the same length as
+            the resources.
         """
         if isinstance(resources, (Resource, Machine)):
             resources = [resources]

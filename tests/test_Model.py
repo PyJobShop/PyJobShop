@@ -240,9 +240,9 @@ def test_add_mode_attributes():
     assert_equal(mode.demands, [1, 2, 3])
 
 
-def test_model_processing_time_creates_correct_mode():
+def test_add_mode_single_resource():
     """
-    Tests that the processing time interface creates the correct mode.
+    Tests that adding a mode with single resource and demand is correctly set.
     """
     model = Model()
 
@@ -250,11 +250,11 @@ def test_model_processing_time_creates_correct_mode():
     machine = model.add_machine()
     task = model.add_task(job=job)
 
-    mode = model.add_mode(task, machine, 1)
+    mode = model.add_mode(task, machine, 1, 1)
     assert_equal(mode.task, 0)
     assert_equal(mode.resources, [0])
     assert_equal(mode.duration, 1)
-    assert_equal(mode.demands, [0])  # default
+    assert_equal(mode.demands, [1])  # default
 
 
 def test_model_attributes():
