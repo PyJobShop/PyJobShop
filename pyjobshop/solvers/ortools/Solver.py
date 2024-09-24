@@ -28,9 +28,9 @@ class Solver:
         self._data = data
 
         self._model = CpModel()
-        self._vars = Variables(self._model, data)
-        self._constraints = Constraints(self._model, data, self._vars)
-        self._objective = Objective(self._model, data, self._vars)
+        self._variables = Variables(self._model, data)
+        self._constraints = Constraints(self._model, data, self._variables)
+        self._objective = Objective(self._model, data, self._variables)
 
         self._constraints.add_constraints()
         self._objective.set_objective(self._data.objective)
@@ -53,7 +53,7 @@ class Solver:
         """
         tasks = {}
 
-        for idx, var in enumerate(self._vars.mode_vars):
+        for idx, var in enumerate(self._variables.mode_vars):
             if cp_solver.value(var.is_present):
                 start = cp_solver.value(var.start)
                 end = cp_solver.value(var.end)
@@ -94,7 +94,7 @@ class Solver:
             information about the solver run.
         """
         if initial_solution is not None:
-            self._vars.warmstart(initial_solution)
+            self._variables.warmstart(initial_solution)
 
         params = {
             "max_time_in_seconds": time_limit,

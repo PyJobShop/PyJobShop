@@ -26,9 +26,9 @@ class Solver:
         self._data = data
 
         self._model = CpoModel()
-        self._vars = Variables(self._model, data)
-        self._constraints = Constraints(self._model, data, self._vars)
-        self._objective = Objective(self._model, data, self._vars)
+        self._variables = Variables(self._model, data)
+        self._constraints = Constraints(self._model, data, self._variables)
+        self._objective = Objective(self._model, data, self._variables)
 
         self._constraints.add_constraints()
         self._objective.build(self._data.objective)
@@ -94,7 +94,7 @@ class Solver:
             information about the solver run.
         """
         if initial_solution is not None:
-            self._vars.warmstart(initial_solution)
+            self._variables.warmstart(initial_solution)
 
         params = {
             "TimeLimit": time_limit,
