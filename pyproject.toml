@@ -101,7 +101,6 @@ omit = [
     "conftest.py",
     "pyjobshop/cpoptimizer/*",
     "pyjobshop/ortools/*",
-    "pyjobshop/plot/*",
     "pyjobshop/cli.py",
     "pyjobshop/show_versions.py"
 ]
