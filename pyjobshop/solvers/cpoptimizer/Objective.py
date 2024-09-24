@@ -1,7 +1,8 @@
 import docplex.cp.modeler as cpo
 from docplex.cp.model import CpoExpr, CpoModel
 
-import pyjobshop.ProblemData as ProblemData
+from pyjobshop.ProblemData import Objective as DataObjective
+from pyjobshop.ProblemData import ProblemData
 
 from .Variables import Variables
 
@@ -14,7 +15,7 @@ class Objective:
     def __init__(
         self,
         model: CpoModel,
-        data: ProblemData.ProblemData,
+        data: ProblemData,
         vars_manager: Variables,
     ):
         self._model = model
@@ -82,7 +83,7 @@ class Objective:
 
         return cpo.sum(total)  # type: ignore
 
-    def _objective_expr(self, objective: ProblemData.Objective) -> CpoExpr:
+    def _objective_expr(self, objective: DataObjective) -> CpoExpr:
         """
         Returns the expression corresponding to the given objective.
         """
@@ -111,7 +112,7 @@ class Objective:
 
         return self._model.minimize(expr)
 
-    def build(self, objective: ProblemData.Objective):
+    def build(self, objective: DataObjective):
         """
         Builds the objective of the model.
         """
@@ -124,7 +125,7 @@ class Objective:
 
     def add_objective_as_constraint(
         self,
-        objective: ProblemData.Objective,
+        objective: DataObjective,
         value: int,
     ):
         """

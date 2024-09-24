@@ -4,7 +4,8 @@ from ortools.sat.python.cp_model import (
     LinearExprT,
 )
 
-import pyjobshop.ProblemData as ProblemData
+from pyjobshop.ProblemData import Objective as DataObjective
+from pyjobshop.ProblemData import ProblemData
 
 from .Variables import Variables
 
@@ -17,7 +18,7 @@ class Objective:
     def __init__(
         self,
         model: CpModel,
-        data: ProblemData.ProblemData,
+        data: ProblemData,
         vars_manager: Variables,
     ):
         self._model = model
@@ -98,7 +99,7 @@ class Objective:
         weights = [job.weight for job in data.jobs]
         return LinearExpr.weighted_sum(earliness_vars, weights)
 
-    def _objective_expr(self, objective: ProblemData.Objective) -> LinearExprT:
+    def _objective_expr(self, objective: DataObjective) -> LinearExprT:
         """
         Returns the expression corresponding to the given objective.
         """
@@ -127,7 +128,7 @@ class Objective:
 
         return expr
 
-    def set_objective(self, objective: ProblemData.Objective):
+    def set_objective(self, objective: DataObjective):
         """
         Sets the objective of the the model.
         """
@@ -135,7 +136,7 @@ class Objective:
         self._model.minimize(self._objective_expr(objective))
 
     def add_objective_as_constraint(
-        self, objective: ProblemData.Objective, value: int
+        self, objective: DataObjective, value: int
     ):
         """
         Adds the objective function as constraint to the model.

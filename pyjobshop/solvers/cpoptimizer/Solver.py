@@ -93,7 +93,7 @@ class Solver:
         if initial_solution is not None:
             self._vars.warmstart(initial_solution)
 
-        self._constraints.build()
+        self._constraints.add_constraints()
         self._objective.build(self._data.objective)
 
         params = {

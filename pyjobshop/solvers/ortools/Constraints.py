@@ -1,7 +1,7 @@
 import numpy as np
 from ortools.sat.python.cp_model import BoolVarT, CpModel, LinearExpr
 
-import pyjobshop.utils as utils
+import pyjobshop.solvers.utils as utils
 from pyjobshop.ProblemData import Constraint, Machine, ProblemData
 
 from .Variables import Variables
@@ -327,7 +327,7 @@ class Constraints:
 
             model.add_circuit(circuit)
 
-    def add_all_constraints(self):
+    def add_constraints(self):
         """
         Adds all the constraints to the CP model.
         """

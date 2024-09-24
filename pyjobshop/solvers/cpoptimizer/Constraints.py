@@ -2,7 +2,7 @@ import docplex.cp.modeler as cpo
 import numpy as np
 from docplex.cp.model import CpoModel
 
-import pyjobshop.utils as utils
+import pyjobshop.solvers.utils as utils
 from pyjobshop.ProblemData import Constraint, Machine, ProblemData
 
 from .Variables import Variables
@@ -230,7 +230,7 @@ class Constraints:
                     ]
                     model.add(sum(vars2) >= var1)
 
-    def build(self):
+    def add_constraints(self):
         """
         Adds all the constraints to the CP model.
         """
