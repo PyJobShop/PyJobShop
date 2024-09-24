@@ -4,23 +4,24 @@ from ortools.sat.python.cp_model import (
     LinearExprT,
 )
 
-from pyjobshop.ProblemData import Objective, ProblemData
+from pyjobshop.ProblemData import Objective as DataObjective
+from pyjobshop.ProblemData import ProblemData
 
-from .VariablesManager import VariablesManager
+from .Variables import Variables
 
 
-class ObjectiveManager:
+class Objective:
     """
-    Manages the objective expressions of the OR-Tools model.
+    Builds the objective expressions of the OR-Tools model.
     """
 
     def __init__(
-        self, model: CpModel, data: ProblemData, vars_manager: VariablesManager
+        self, model: CpModel, data: ProblemData, variables: Variables
     ):
         self._model = model
         self._data = data
-        self._task_vars = vars_manager.task_vars
-        self._job_vars = vars_manager.job_vars
+        self._task_vars = variables.task_vars
+        self._job_vars = variables.job_vars
 
     def _makespan_expr(self) -> LinearExprT:
         """
@@ -95,7 +96,7 @@ class ObjectiveManager:
         weights = [job.weight for job in data.jobs]
         return LinearExpr.weighted_sum(earliness_vars, weights)
 
-    def _objective_expr(self, objective: Objective) -> LinearExprT:
+    def _objective_expr(self, objective: DataObjective) -> LinearExprT:
         """
         Returns the expression corresponding to the given objective.
         """
@@ -124,15 +125,9 @@ class ObjectiveManager:
 
         return expr
 
-    def set_objective(self, objective: Objective):
+    def set_objective(self, objective: DataObjective):
         """
         Sets the objective of the the model.
         """
         self._model.clear_objective()
         self._model.minimize(self._objective_expr(objective))
-
-    def add_objective_as_constraint(self, objective: Objective, value: int):
-        """
-        Adds the objective function as constraint to the model.
-        """
-        self._model.add(self._objective_expr(objective) <= value)

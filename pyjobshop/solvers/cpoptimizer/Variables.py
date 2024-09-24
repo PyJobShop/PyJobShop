@@ -8,13 +8,12 @@ from docplex.cp.expression import (
 )
 from docplex.cp.model import CpoModel
 
-import pyjobshop.utils as utils
+import pyjobshop.solvers.utils as utils
 from pyjobshop.ProblemData import Machine, ProblemData
 from pyjobshop.Solution import Solution
-from pyjobshop.utils import compute_task_durations
 
 
-class VariablesManager:
+class Variables:
     """
     Manages the core variables of the CP Optimizer model.
     """
@@ -79,7 +78,7 @@ class VariablesManager:
         """
         data = self._data
         variables = []
-        task_durations = compute_task_durations(self._data)
+        task_durations = utils.compute_task_durations(self._data)
 
         for idx, task in enumerate(data.tasks):
             var = interval_var(name=f"T{task}")
