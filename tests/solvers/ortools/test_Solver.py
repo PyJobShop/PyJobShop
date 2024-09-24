@@ -1,8 +1,8 @@
 from numpy.testing import assert_equal
 
 from pyjobshop.Model import Model
-from pyjobshop.ortools.Solver import Solver
 from pyjobshop.Solution import Solution, TaskData
+from pyjobshop.solvers.ortools.Solver import Solver
 
 
 def test_subsequent_solve_clears_hint(small):

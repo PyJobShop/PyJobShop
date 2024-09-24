@@ -1,7 +1,7 @@
 from numpy.testing import assert_equal
 
 from pyjobshop.ProblemData import Job, Mode, ProblemData, Resource, Task
-from pyjobshop.utils import (
+from pyjobshop.solvers.utils import (
     compute_task_durations,
     find_modes_with_disjoint_resources,
     find_modes_with_identical_resources,

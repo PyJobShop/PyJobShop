@@ -1,9 +1,9 @@
 from typing import Optional
 
-from pyjobshop.ortools.Solver import Solver as ORToolsSolver
 from pyjobshop.ProblemData import ProblemData
 from pyjobshop.Result import Result
 from pyjobshop.Solution import Solution
+from pyjobshop.solvers.ortools.Solver import Solver as ORToolsSolver
 
 
 def solve(
@@ -58,7 +58,9 @@ def solve(
             **kwargs,
         )
     elif solver == "cpoptimizer":
-        from pyjobshop.cpoptimizer.Solver import Solver as CPOptimizerSolver
+        from pyjobshop.solvers.cpoptimizer.Solver import (
+            Solver as CPOptimizerSolver,
+        )
 
         cpoptimizer = CPOptimizerSolver(data)
         return cpoptimizer.solve(

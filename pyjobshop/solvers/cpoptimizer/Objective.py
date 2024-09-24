@@ -1,26 +1,24 @@
 import docplex.cp.modeler as cpo
 from docplex.cp.model import CpoExpr, CpoModel
 
-from pyjobshop.ProblemData import Objective, ProblemData
+from pyjobshop.ProblemData import Objective as DataObjective
+from pyjobshop.ProblemData import ProblemData
 
-from .VariablesManager import VariablesManager
+from .Variables import Variables
 
 
-class ObjectiveManager:
+class Objective:
     """
-    Manages the objective expressions of the CP Optimizer model.
+    Builds the objective expressions of the CP Optimizer model.
     """
 
     def __init__(
-        self,
-        model: CpoModel,
-        data: ProblemData,
-        vars_manager: VariablesManager,
+        self, model: CpoModel, data: ProblemData, variables: Variables
     ):
         self._model = model
         self._data = data
-        self._task_vars = vars_manager.task_vars
-        self._job_vars = vars_manager.job_vars
+        self._task_vars = variables.task_vars
+        self._job_vars = variables.job_vars
 
         self._current_objective_expr = None
 
@@ -82,7 +80,7 @@ class ObjectiveManager:
 
         return cpo.sum(total)  # type: ignore
 
-    def _objective_expr(self, objective: Objective) -> CpoExpr:
+    def _objective_expr(self, objective: DataObjective) -> CpoExpr:
         """
         Returns the expression corresponding to the given objective.
         """
@@ -111,9 +109,9 @@ class ObjectiveManager:
 
         return self._model.minimize(expr)
 
-    def set_objective(self, objective: Objective):
+    def build(self, objective: DataObjective):
         """
-        Sets the objective of the the model.
+        Builds the objective of the model.
         """
         if self._current_objective_expr is not None:
             self._model.remove(self._current_objective_expr)
@@ -121,9 +119,3 @@ class ObjectiveManager:
         obj_expr = self._objective_expr(objective)
         self._model.add(obj_expr)
         self._current_objective_expr = obj_expr
-
-    def add_objective_as_constraint(self, objective: Objective, value: int):
-        """
-        Adds the objective function as constraint to the model.
-        """
-        self._model.add(self._objective_expr(objective) <= value)

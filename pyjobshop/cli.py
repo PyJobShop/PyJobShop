@@ -200,9 +200,11 @@ def benchmark(instances: list[Path], num_parallel_instances: int, **kwargs):
 
     avg_objective = data["obj"].mean()
     avg_runtime = data["time"].mean()
+
+    num_instances = data["feas"].size
     num_optimal = np.count_nonzero(data["feas"] == "Optimal")
     num_feas = np.count_nonzero(data["feas"] == "Feasible") + num_optimal
-    num_infeas = np.count_nonzero(data["feas"].size - num_feas)
+    num_infeas = num_instances - num_feas
 
     print("\n", tabulate(headers, data), "\n", sep="")
     print(f"     Avg. objective: {avg_objective:.2f}")
