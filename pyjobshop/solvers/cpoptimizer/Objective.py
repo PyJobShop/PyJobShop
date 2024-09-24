@@ -122,13 +122,3 @@ class Objective:
         obj_expr = self._objective_expr(objective)
         self._model.add(obj_expr)
         self._current_objective_expr = obj_expr
-
-    def add_objective_as_constraint(
-        self,
-        objective: DataObjective,
-        value: int,
-    ):
-        """
-        Adds the objective function as constraint to the model.
-        """
-        self._model.add(self._objective_expr(objective) <= value)

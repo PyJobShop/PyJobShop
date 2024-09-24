@@ -134,11 +134,3 @@ class Objective:
         """
         self._model.clear_objective()
         self._model.minimize(self._objective_expr(objective))
-
-    def add_objective_as_constraint(
-        self, objective: DataObjective, value: int
-    ):
-        """
-        Adds the objective function as constraint to the model.
-        """
-        self._model.add(self._objective_expr(objective) <= value)

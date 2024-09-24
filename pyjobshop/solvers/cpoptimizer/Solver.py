@@ -30,6 +30,9 @@ class Solver:
         self._constraints = Constraints(self._model, data, self._vars)
         self._objective = Objective(self._model, data, self._vars)
 
+        self._constraints.add_constraints()
+        self._objective.build(self._data.objective)
+
     def _get_solve_status(self, status: str) -> SolveStatus:
         if status == "Optimal":
             return SolveStatus.OPTIMAL
@@ -92,9 +95,6 @@ class Solver:
         """
         if initial_solution is not None:
             self._vars.warmstart(initial_solution)
-
-        self._constraints.add_constraints()
-        self._objective.build(self._data.objective)
 
         params = {
             "TimeLimit": time_limit,
