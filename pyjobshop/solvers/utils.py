@@ -68,7 +68,7 @@ def task2modes(data: ProblemData) -> list[list[int]]:
     return result
 
 
-# --- ConstraintManager utilities ---
+# --- Constraints utilities ---
 
 
 def find_modes_with_intersecting_resources(

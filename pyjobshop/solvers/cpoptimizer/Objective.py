@@ -13,15 +13,12 @@ class Objective:
     """
 
     def __init__(
-        self,
-        model: CpoModel,
-        data: ProblemData,
-        vars_manager: Variables,
+        self, model: CpoModel, data: ProblemData, variables: Variables
     ):
         self._model = model
         self._data = data
-        self._task_vars = vars_manager.task_vars
-        self._job_vars = vars_manager.job_vars
+        self._task_vars = variables.task_vars
+        self._job_vars = variables.job_vars
 
         self._current_objective_expr = None
 
