@@ -4,16 +4,16 @@ from ortools.sat.python.cp_model import BoolVarT, CpModel, LinearExpr
 import pyjobshop.utils as utils
 from pyjobshop.ProblemData import Constraint, Machine, ProblemData
 
-from .VariablesManager import VariablesManager
+from .Variables import Variables
 
 
-class ConstraintsManager:
+class Constraints:
     """
-    Handles the core constraints of the OR-Tools model.
+    Builds the core constraints of the OR-Tools model.
     """
 
     def __init__(
-        self, model: CpModel, data: ProblemData, vars_manager: VariablesManager
+        self, model: CpModel, data: ProblemData, vars_manager: Variables
     ):
         self._model = model
         self._data = data

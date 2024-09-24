@@ -9,9 +9,9 @@ from pyjobshop.ProblemData import ProblemData
 from pyjobshop.Result import Result, SolveStatus
 from pyjobshop.Solution import Solution, TaskData
 
-from .ConstraintsManager import ConstraintsManager
-from .ObjectiveManager import ObjectiveManager
-from .VariablesManager import VariablesManager
+from .Constraints import Constraints
+from .Objective import Objective
+from .Variables import Variables
 
 
 class Solver:
@@ -28,9 +28,9 @@ class Solver:
         self._data = data
 
         self._model = CpModel()
-        self._vars = VariablesManager(self._model, data)
-        self._constraints = ConstraintsManager(self._model, data, self._vars)
-        self._objective = ObjectiveManager(self._model, data, self._vars)
+        self._vars = Variables(self._model, data)
+        self._constraints = Constraints(self._model, data, self._vars)
+        self._objective = Objective(self._model, data, self._vars)
 
     def _get_solve_status(self, status: str):
         if status == "OPTIMAL":

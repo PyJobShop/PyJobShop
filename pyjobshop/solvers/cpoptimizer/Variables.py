@@ -14,7 +14,7 @@ from pyjobshop.Solution import Solution
 from pyjobshop.utils import compute_task_durations
 
 
-class VariablesManager:
+class Variables:
     """
     Manages the core variables of the CP Optimizer model.
     """

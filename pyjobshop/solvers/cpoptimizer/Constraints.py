@@ -5,19 +5,19 @@ from docplex.cp.model import CpoModel
 import pyjobshop.utils as utils
 from pyjobshop.ProblemData import Constraint, Machine, ProblemData
 
-from .VariablesManager import VariablesManager
+from .Variables import Variables
 
 
-class ConstraintsManager:
+class Constraints:
     """
-    Handles the core constraints of the CP Optimizer model.
+    Builds the core constraints of the CP Optimizer model.
     """
 
     def __init__(
         self,
         model: CpoModel,
         data: ProblemData,
-        vars_manager: VariablesManager,
+        vars_manager: Variables,
     ):
         self._model = model
         self._data = data
@@ -230,7 +230,7 @@ class ConstraintsManager:
                     ]
                     model.add(sum(vars2) >= var1)
 
-    def add_all_constraints(self):
+    def build(self):
         """
         Adds all the constraints to the CP model.
         """

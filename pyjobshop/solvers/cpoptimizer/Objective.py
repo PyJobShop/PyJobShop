@@ -1,21 +1,21 @@
 import docplex.cp.modeler as cpo
 from docplex.cp.model import CpoExpr, CpoModel
 
-from pyjobshop.ProblemData import Objective, ProblemData
+import pyjobshop.ProblemData as ProblemData
 
-from .VariablesManager import VariablesManager
+from .Variables import Variables
 
 
-class ObjectiveManager:
+class Objective:
     """
-    Manages the objective expressions of the CP Optimizer model.
+    Builds the objective expressions of the CP Optimizer model.
     """
 
     def __init__(
         self,
         model: CpoModel,
-        data: ProblemData,
-        vars_manager: VariablesManager,
+        data: ProblemData.ProblemData,
+        vars_manager: Variables,
     ):
         self._model = model
         self._data = data
@@ -82,7 +82,7 @@ class ObjectiveManager:
 
         return cpo.sum(total)  # type: ignore
 
-    def _objective_expr(self, objective: Objective) -> CpoExpr:
+    def _objective_expr(self, objective: ProblemData.Objective) -> CpoExpr:
         """
         Returns the expression corresponding to the given objective.
         """
@@ -111,9 +111,9 @@ class ObjectiveManager:
 
         return self._model.minimize(expr)
 
-    def set_objective(self, objective: Objective):
+    def build(self, objective: ProblemData.Objective):
         """
-        Sets the objective of the the model.
+        Builds the objective of the model.
         """
         if self._current_objective_expr is not None:
             self._model.remove(self._current_objective_expr)
@@ -122,7 +122,11 @@ class ObjectiveManager:
         self._model.add(obj_expr)
         self._current_objective_expr = obj_expr
 
-    def add_objective_as_constraint(self, objective: Objective, value: int):
+    def add_objective_as_constraint(
+        self,
+        objective: ProblemData.Objective,
+        value: int,
+    ):
         """
         Adds the objective function as constraint to the model.
         """

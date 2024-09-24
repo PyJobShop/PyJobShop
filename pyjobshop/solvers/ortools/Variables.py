@@ -151,7 +151,7 @@ class SequenceVar:
         }
 
 
-class VariablesManager:
+class Variables:
     """
     Manages the core variables of the OR-Tools model.
     """
