@@ -51,7 +51,7 @@ def plot_resource_gantt(
     axes: Optional[list[Axes]] = None,
 ):
     """
-    Plots a resource Gantt chart, shows how resources are used over time
+    Plots a resource Gantt chart, which shows how resources are used over time
     for each task in the solution.
 
     Parameters

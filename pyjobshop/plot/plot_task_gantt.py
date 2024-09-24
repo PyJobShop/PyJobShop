@@ -15,8 +15,7 @@ def plot_task_gantt(
     ax: Optional[Axes] = None,
 ):
     """
-    Plots a task Gantt chart, which shows each task as horizontal bar
-    on a separate row.
+    Plots a task Gantt chart, which plots each task on a separate row.
 
     Parameters
     ----------
@@ -27,6 +26,10 @@ def plot_task_gantt(
     task_order
         The order in which to plot the tasks. If ``None``, the tasks are
         plotted in the order they appear in the data.
+    plot_labels
+        Whether to plot task labels on the chart.
+    ax
+        The matplotlib axes to plot on. If ``None``, a new figure is created.
     """
     if ax is None:
         _, ax = plt.subplots()

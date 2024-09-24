@@ -10,6 +10,7 @@ from pyjobshop import ProblemData, Solution
 def plot_resource_usage(
     solution: Solution,
     data: ProblemData,
+    resource_order: Optional[list[int]] = None,
     axes: Optional[list[Axes]] = None,
 ):
     """
@@ -34,8 +35,12 @@ def plot_resource_usage(
         msg = "The number of axes must be at least the number of resources."
         raise ValueError(msg)
 
+    if resource_order is None:
+        resource_order = list(range(data.num_resources))
+
     usages = _compute_usage(solution, data)
-    for resource, usage in enumerate(usages):
+    for resource in resource_order:
+        usage = usages[resource]
         ax = axes[resource]
         time = np.arange(len(usage))
         label = data.resources[resource].name or f"Resource {resource}"

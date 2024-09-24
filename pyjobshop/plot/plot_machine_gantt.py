@@ -18,7 +18,8 @@ def plot_machine_gantt(
     ax: Optional[Axes] = None,
 ):
     """
-    Plots a Gantt chart of the solution.
+    Plots a Gantt chart of the solution, where each row represents a machine
+    and each bar represents a task processed on that machine.
 
     Parameters
     ----------
