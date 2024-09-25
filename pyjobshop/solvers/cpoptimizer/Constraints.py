@@ -160,17 +160,11 @@ class Constraints:
                 data, task1, task2
             )
             for mode1, mode2, resources in intersecting:
-                if any(
-                    not isinstance(data.resources[res], Machine)
-                    for res in resources
-                ):
-                    raise ValueError(
-                        "Resource must be machine for sequencing constraints."
-                    )
-
                 for resource in resources:
-                    seq_var = self._sequence_vars[resource]
+                    if not isinstance(data.resources[resource], Machine):
+                        continue  # skip sequencing on non-machine resources
 
+                    seq_var = self._sequence_vars[resource]
                     if seq_var is None:
                         msg = f"No sequence var found for resource {resource}."
                         raise ValueError(msg)
