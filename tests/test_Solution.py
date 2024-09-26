@@ -23,3 +23,13 @@ def test_solution_eq():
     assert_equal(sol1, Solution(tasks))
     other = [TaskData(0, [0], 0, 0), TaskData(1, [0], 0, 3)]
     assert_(sol1 != Solution(other))
+
+
+def test_solution_makespan():
+    """
+    Tests the makespan calculation of a solution.
+    """
+    tasks = [TaskData(0, [0], 0, 0), TaskData(0, [1], 0, 100)]
+    sol = Solution(tasks)
+
+    assert_equal(sol.makespan, 100)

@@ -54,6 +54,7 @@ Contents
    :caption: API reference
 
    api/pyjobshop
+   api/plot
 
 .. toctree::
    :maxdepth: 1

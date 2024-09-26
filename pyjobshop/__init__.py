@@ -1,6 +1,5 @@
 from .constants import MAX_VALUE as MAX_VALUE
 from .Model import Model as Model
-from .plot import plot as plot
 from .ProblemData import Constraint as Constraint
 from .ProblemData import Job as Job
 from .ProblemData import Machine as Machine
