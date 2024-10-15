@@ -10,7 +10,7 @@ from pyjobshop.Solution import Solution
 def plot_task_gantt(
     solution: Solution,
     data: ProblemData,
-    task_order: Optional[list[int]] = None,
+    tasks: Optional[list[int]] = None,
     plot_labels: bool = False,
     ax: Optional[Axes] = None,
 ):
@@ -23,9 +23,9 @@ def plot_task_gantt(
         Solution to plot.
     data
         The corresponding problem data.
-    task_order
-        The order in which to plot the tasks. If ``None``, the tasks are
-        plotted in the order they appear in the data.
+    task
+        The tasks (by index) to plot and in which order they should appear
+        (from top to bottom). Defaults to all tasks in the data instance.
     plot_labels
         Whether to plot task labels on the chart.
     ax
@@ -34,12 +34,12 @@ def plot_task_gantt(
     if ax is None:
         _, ax = plt.subplots()
 
-    if task_order is None:
-        task_order = list(range(len(solution.tasks)))
+    if tasks is None:
+        tasks = list(range(len(solution.tasks)))
 
     colors = plt.cm.tab20.colors  # Use a qualitative colormap for task colors
 
-    for row_idx, task_idx in enumerate(task_order):
+    for row_idx, task_idx in enumerate(tasks):
         task = solution.tasks[task_idx]
         start = task.start
         end = task.end

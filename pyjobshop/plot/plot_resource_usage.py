@@ -10,7 +10,7 @@ from pyjobshop import ProblemData, Solution
 def plot_resource_usage(
     solution: Solution,
     data: ProblemData,
-    resource_order: Optional[list[int]] = None,
+    resources: Optional[list[int]] = None,
     axes: Optional[list[Axes]] = None,
 ):
     """
@@ -22,6 +22,9 @@ def plot_resource_usage(
         The solution to plot.
     data
         The problem data.
+    resources
+        The resources (by index) to plot and in which order they should appear
+        (from top to bottom). Defaults to all resources in the data instance.
     axes
         The matplotlib axes to use for plotting. It must have at least length
         ``data.num_resources``. If not provided, a new set of axes will be
@@ -35,11 +38,11 @@ def plot_resource_usage(
         msg = "The number of axes must be at least the number of resources."
         raise ValueError(msg)
 
-    if resource_order is None:
-        resource_order = list(range(data.num_resources))
+    if resources is None:
+        resources = list(range(data.num_resources))
 
     usages = _compute_usage(solution, data)
-    for resource in resource_order:
+    for resource in resources:
         usage = usages[resource]
         ax = axes[resource]
         time = np.arange(len(usage))

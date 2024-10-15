@@ -13,7 +13,7 @@ from .utils import get_colors as _get_colors
 def plot_machine_gantt(
     solution: Solution,
     data: ProblemData,
-    resource_order: Optional[list[int]] = None,
+    resources: Optional[list[int]] = None,
     plot_labels: bool = False,
     ax: Optional[Axes] = None,
 ):
@@ -27,7 +27,7 @@ def plot_machine_gantt(
         The problem data instance.
     solution
         A solution to the problem.
-    resource_order
+    resources
         The resources (by index) to plot and in which order they should appear
         (from top to bottom). Defaults to all resources in the data instance.
     plot_labels
@@ -39,10 +39,8 @@ def plot_machine_gantt(
         _, ax = plt.subplots(1, 1, figsize=(12, 8))
         assert ax is not None  # for linting
 
-    if resource_order is not None:
-        order = {resource: idx for idx, resource in enumerate(resource_order)}
-    else:
-        order = {idx: idx for idx in range(len(data.resources))}
+    if resources is None:
+        resources = list(range(data.num_resources))
 
     # Tasks belonging to the same job get the same color. Task that do not
     # belong to a job are colored grey.
@@ -61,11 +59,11 @@ def plot_machine_gantt(
         }
         duration = task_data.end - task_data.start
         for resource in task_data.resources:
-            if resource not in order:
+            if resource not in resources:
                 continue  # skip resources not in the order
 
             ax.barh(
-                order[resource],
+                resources.index(resource),
                 duration,
                 left=task_data.start,
                 **kwargs,
@@ -74,14 +72,14 @@ def plot_machine_gantt(
             if plot_labels:
                 ax.text(
                     task_data.start + duration / 2,
-                    order[resource],
+                    resources.index(resource),
                     data.tasks[idx].name or f"{idx}",
                     ha="center",
                     va="center",
                 )
 
     labels = [
-        data.resources[idx].name or f"Machine {idx}" for idx in order.keys()
+        data.resources[idx].name or f"Machine {idx}" for idx in resources
     ]
 
     ax.set_yticks(ticks=range(len(labels)), labels=labels)
