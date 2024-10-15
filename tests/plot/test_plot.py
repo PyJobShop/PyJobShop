@@ -1,6 +1,6 @@
 from matplotlib.testing.decorators import image_comparison as img_comp
 
-from pyjobshop import solve
+from pyjobshop import solve as _solve
 from pyjobshop.plot import (
     plot_machine_gantt,
     plot_resource_usage,
@@ -18,8 +18,8 @@ IMG_KWARGS = {
 
 @img_comp(["plot_machine_gantt"], **IMG_KWARGS)
 def test_plot_machine_gantt():
-    data = read("data/MFJS1.fjs")
-    result = solve(data, num_workers=1)  # parallel is not deterministic
+    data = read("data/small.fjs")
+    result = solve(data)
     sol = result.best
 
     plot_machine_gantt(sol, data)
@@ -28,7 +28,7 @@ def test_plot_machine_gantt():
 @img_comp(["plot_resource_usage"], **IMG_KWARGS)
 def test_plot_resource_usage():
     data = read("data/c154_3.mm", instance_format="psplib")
-    result = solve(data, num_workers=1)  # parallel is not deterministic
+    result = solve(data)
     sol = result.best
 
     plot_resource_usage(sol, data)
@@ -37,7 +37,15 @@ def test_plot_resource_usage():
 @img_comp(["plot_task_gantt"], **IMG_KWARGS)
 def test_plot_task_gantt():
     data = read("data/c154_3.mm", instance_format="psplib")
-    result = solve(data, num_workers=1)  # parallel is not deterministic
+    result = solve(data)
     sol = result.best
 
     plot_task_gantt(sol, data)
+
+
+def solve(data):
+    """
+    Wrapper around ``solve`` to provide deterministic results with
+    OR-Tools.
+    """
+    return _solve(data, num_workers=1)  # parallel is non-deterministic
