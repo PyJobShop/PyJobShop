@@ -391,26 +391,6 @@ def test_problem_data_raises_when_invalid_arguments(
         )
 
 
-@pytest.mark.parametrize(
-    "constraint", [Constraint.PREVIOUS, Constraint.BEFORE]
-)
-def test_problem_data_raises_capacitated_resources_and_sequencing_constraints(
-    constraint,
-):
-    """
-    Tests that the ProblemData class raises an error when tasks have sequencing
-    constraints with modes using resources with nonzero capacities.
-    """
-    with assert_raises(ValueError):
-        ProblemData(
-            [Job()],
-            [Resource(capacity=2), Resource(0)],
-            [Task(), Task()],
-            [Mode(0, [0], 0), Mode(1, [1], 0)],
-            constraints={(0, 1): [constraint]},
-        )
-
-
 def test_problem_data_raises_capacitated_resources_and_setup_times():
     """
     Tests that the ProblemData class raises an error when resources with

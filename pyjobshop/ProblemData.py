@@ -545,24 +545,6 @@ class ProblemData:
                 msg = f"All modes for task {task} have infeasible demands."
                 raise ValueError(msg)
 
-        for (idx1, idx2), constraints in self.constraints.items():
-            modes = [mode for mode in self.modes if mode.task in (idx1, idx2)]
-            all_machines = all(
-                isinstance(self.resources[resource], Machine)
-                for mode in modes
-                for resource in mode.resources
-            )
-            requires_sequencing = (
-                Constraint.PREVIOUS in constraints
-                or Constraint.BEFORE in constraints
-            )
-            if not all_machines and requires_sequencing:
-                msg = (
-                    "Sequencing constraints can only be used on tasks that "
-                    "are processed exclusively on machines."
-                )
-                raise ValueError(msg)
-
         if self.setup_times is not None:
             if np.any(self.setup_times < 0):
                 raise ValueError("Setup times must be non-negative.")
