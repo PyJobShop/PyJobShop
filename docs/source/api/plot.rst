@@ -19,7 +19,3 @@ TODO add image examples
 .. automodule:: pyjobshop.plot.plot_resource_usage
 
    .. autofunction:: plot_resource_usage
-
-.. automodule:: pyjobshop.plot.plot_resource_gantt
-
-   .. autofunction:: plot_resource_gantt
