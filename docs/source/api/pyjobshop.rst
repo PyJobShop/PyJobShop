@@ -36,8 +36,6 @@ PyJobShop
        :members:
 
 
-
-
 .. automodule:: pyjobshop.Solution
 
    .. autoclass:: Solution
@@ -50,9 +48,6 @@ PyJobShop
 
    .. autoclass:: SolveStatus
 
-
-.. automodule:: pyjobshop.plot
-   :members:
 
 .. automodule:: pyjobshop.solve
    :members:

@@ -46,3 +46,10 @@ class Solution:
 
     def __eq__(self, other) -> bool:
         return self.tasks == other.tasks
+
+    @property
+    def makespan(self) -> int:
+        """
+        Returns the makespan of the solution.
+        """
+        return max(task.end for task in self.tasks)
