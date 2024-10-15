@@ -7,9 +7,9 @@ from pyjobshop.ProblemData import ProblemData
 from pyjobshop.Result import Result, SolveStatus
 from pyjobshop.Solution import Solution, TaskData
 
-from .ConstraintsManager import ConstraintsManager
-from .ObjectiveManager import ObjectiveManager
-from .VariablesManager import VariablesManager
+from .Constraints import Constraints
+from .Objective import Objective
+from .Variables import Variables
 
 
 class Solver:
@@ -26,9 +26,12 @@ class Solver:
         self._data = data
 
         self._model = CpoModel()
-        self._vars = VariablesManager(self._model, data)
-        self._constraints = ConstraintsManager(self._model, data, self._vars)
-        self._objective = ObjectiveManager(self._model, data, self._vars)
+        self._variables = Variables(self._model, data)
+        self._constraints = Constraints(self._model, data, self._variables)
+        self._objective = Objective(self._model, data, self._variables)
+
+        self._constraints.add_constraints()
+        self._objective.build(self._data.objective)
 
     def _get_solve_status(self, status: str) -> SolveStatus:
         if status == "Optimal":
@@ -52,10 +55,10 @@ class Solver:
             # Scheduled tasks are inferred from present mode variables.
             if name.startswith("M") and var.is_present():
                 mode, task = map(int, name[1:].split("_"))
-                machines = self._data.modes[mode].machines
+                resources = self._data.modes[mode].resources
                 start = var.start
                 end = var.end
-                tasks[task] = TaskData(mode, machines, start, end)
+                tasks[task] = TaskData(mode, resources, start, end)
 
         return Solution([tasks[idx] for idx in range(self._data.num_tasks)])
 
@@ -91,10 +94,7 @@ class Solver:
             information about the solver run.
         """
         if initial_solution is not None:
-            self._vars.warmstart(initial_solution)
-
-        self._constraints.add_all_constraints()
-        self._objective.set_objective(self._data.objective)
+            self._variables.warmstart(initial_solution)
 
         params = {
             "TimeLimit": time_limit,

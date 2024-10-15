@@ -9,9 +9,9 @@ from pyjobshop.ProblemData import ProblemData
 from pyjobshop.Result import Result, SolveStatus
 from pyjobshop.Solution import Solution, TaskData
 
-from .ConstraintsManager import ConstraintsManager
-from .ObjectiveManager import ObjectiveManager
-from .VariablesManager import VariablesManager
+from .Constraints import Constraints
+from .Objective import Objective
+from .Variables import Variables
 
 
 class Solver:
@@ -28,9 +28,12 @@ class Solver:
         self._data = data
 
         self._model = CpModel()
-        self._vars = VariablesManager(self._model, data)
-        self._constraints = ConstraintsManager(self._model, data, self._vars)
-        self._objective = ObjectiveManager(self._model, data, self._vars)
+        self._variables = Variables(self._model, data)
+        self._constraints = Constraints(self._model, data, self._variables)
+        self._objective = Objective(self._model, data, self._variables)
+
+        self._constraints.add_constraints()
+        self._objective.set_objective(self._data.objective)
 
     def _get_solve_status(self, status: str):
         if status == "OPTIMAL":
@@ -50,12 +53,12 @@ class Solver:
         """
         tasks = {}
 
-        for idx, var in enumerate(self._vars.mode_vars):
+        for idx, var in enumerate(self._variables.mode_vars):
             if cp_solver.value(var.is_present):
                 start = cp_solver.value(var.start)
                 end = cp_solver.value(var.end)
                 mode = self._data.modes[idx]
-                tasks[mode.task] = TaskData(idx, mode.machines, start, end)
+                tasks[mode.task] = TaskData(idx, mode.resources, start, end)
 
         return Solution([tasks[idx] for idx in range(self._data.num_tasks)])
 
@@ -91,10 +94,7 @@ class Solver:
             information about the solver run.
         """
         if initial_solution is not None:
-            self._vars.warmstart(initial_solution)
-
-        self._constraints.add_all_constraints()
-        self._objective.set_objective(self._data.objective)
+            self._variables.warmstart(initial_solution)
 
         params = {
             "max_time_in_seconds": time_limit,

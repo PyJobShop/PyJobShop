@@ -9,10 +9,9 @@ from ortools.sat.python.cp_model import (
     IntVar,
 )
 
-import pyjobshop.utils as utils
-from pyjobshop.ProblemData import ProblemData
+import pyjobshop.solvers.utils as utils
+from pyjobshop.ProblemData import Machine, ProblemData
 from pyjobshop.Solution import Solution
-from pyjobshop.utils import compute_task_durations
 
 
 @dataclass
@@ -106,14 +105,14 @@ class SequenceVar:
     ends
         The end literals for each task.
     ranks
-        The rank variables of each interval on the machine. Used to define the
-        ordering of the intervals in the machine sequence.
+        The rank variables of each interval on the resource. Used to define the
+        ordering of the intervals in the resource sequence.
     arcs
         The arc literals between each pair of intervals in the sequence.
         Keys are tuples of indices.
     is_active
         A boolean that indicates whether the sequence is active, meaning that a
-        circuit constraint must be added for this machine. Default ``False``.
+        circuit constraint must be added for this resource. Default ``False``.
     """
 
     modes: list[ModeVar]
@@ -151,7 +150,7 @@ class SequenceVar:
         }
 
 
-class VariablesManager:
+class Variables:
     """
     Manages the core variables of the OR-Tools model.
     """
@@ -230,7 +229,7 @@ class VariablesManager:
         """
         model, data = self._model, self._data
         variables = []
-        task_durations = compute_task_durations(data)
+        task_durations = utils.compute_task_durations(data)
 
         for idx, task in enumerate(data.tasks):
             name = f"T{idx}"
@@ -306,13 +305,13 @@ class VariablesManager:
 
     def _make_sequence_variables(self) -> list[Optional[SequenceVar]]:
         """
-        Creates a sequence variable for each uncapacitated machine. Machines
+        Creates a sequence variable for each uncapacitated resource. Resources
         with capacity constraints do not get a sequence variable.
         """
         variables: list[Optional[SequenceVar]] = []
 
-        for idx, modes in enumerate(utils.machine2modes(self._data)):
-            if self._data.machines[idx].capacity == 0:
+        for idx, modes in enumerate(utils.resource2modes(self._data)):
+            if isinstance(self._data.resources[idx], Machine):
                 intervals = [self.mode_vars[mode] for mode in modes]
                 variables.append(SequenceVar(intervals))
             else:

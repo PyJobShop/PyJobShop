@@ -9,7 +9,8 @@ import numpy as np
 import tomli
 from tqdm.contrib.concurrent import process_map
 
-from pyjobshop import read, solve
+from pyjobshop import Result, read, solve
+from pyjobshop.read import InstanceFormat
 
 
 def parse_args():
@@ -17,6 +18,18 @@ def parse_args():
 
     msg = "Location of the instance file."
     parser.add_argument("instances", nargs="+", type=Path, help=msg)
+
+    msg = "File format of the instance."
+    parser.add_argument(
+        "--instance_format",
+        type=InstanceFormat,
+        default=InstanceFormat.FJSPLIB,
+        choices=[f.value for f in InstanceFormat],
+        help=msg,
+    )
+
+    msg = "Directory to store best-found solutions (one file per instance)."
+    parser.add_argument("--sol_dir", type=Path, help=msg)
 
     msg = "Solver to use."
     parser.add_argument(
@@ -78,13 +91,31 @@ def tabulate(headers: list[str], rows: np.ndarray) -> str:
     return "\n".join(header + content)
 
 
+def write_solution(instance_loc: Path, sol_dir: Path, result: Result):
+    with open(sol_dir / (instance_loc.stem + ".sol"), "w") as fh:
+        fh.write(f"instance: {instance_loc.name}\n")
+        fh.write(f"status: {result.status.value}\n")
+        fh.write(f"objective: {result.objective}\n")
+        fh.write(f"runtime: {result.runtime}\n")
+        fh.write("\n")
+
+        fh.write("task,mode,start,end\n")
+        for idx, task in enumerate(result.best.tasks):
+            if task is not None:
+                fh.write(f"{idx},{task.mode},{task.start},{task.end}\n")
+            else:
+                fh.write(f"{idx},-1,-1,-1\n")
+
+
 def _solve(
     instance_loc: Path,
+    instance_format: InstanceFormat,
     solver: str,
     time_limit: float,
     display: bool,
     num_workers_per_instance: int,
     config_loc: Optional[Path],
+    sol_dir: Optional[Path],
 ) -> tuple[str, str, float, float]:
     """
     Solves a single instance.
@@ -95,10 +126,18 @@ def _solve(
     else:
         params = {}
 
-    data = read(instance_loc)
+    data = read(instance_loc, instance_format=instance_format)
     result = solve(
-        data, solver, time_limit, display, num_workers_per_instance, **params
+        data=data,
+        solver=solver,
+        time_limit=time_limit,
+        display=display,
+        num_workers=num_workers_per_instance,
+        **params,
     )
+    if sol_dir:
+        sol_dir.mkdir(parents=True, exist_ok=True)  # just in case
+        write_solution(instance_loc, sol_dir, result)
 
     return (
         instance_loc.name,
@@ -161,9 +200,11 @@ def benchmark(instances: list[Path], num_parallel_instances: int, **kwargs):
 
     avg_objective = data["obj"].mean()
     avg_runtime = data["time"].mean()
+
+    num_instances = data["feas"].size
     num_optimal = np.count_nonzero(data["feas"] == "Optimal")
     num_feas = np.count_nonzero(data["feas"] == "Feasible") + num_optimal
-    num_infeas = np.count_nonzero(data["feas"].size - num_feas)
+    num_infeas = num_instances - num_feas
 
     print("\n", tabulate(headers, data), "\n", sep="")
     print(f"     Avg. objective: {avg_objective:.2f}")

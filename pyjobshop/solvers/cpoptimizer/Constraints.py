@@ -2,29 +2,26 @@ import docplex.cp.modeler as cpo
 import numpy as np
 from docplex.cp.model import CpoModel
 
-import pyjobshop.utils as utils
-from pyjobshop.ProblemData import Constraint, ProblemData
+import pyjobshop.solvers.utils as utils
+from pyjobshop.ProblemData import Constraint, Machine, ProblemData
 
-from .VariablesManager import VariablesManager
+from .Variables import Variables
 
 
-class ConstraintsManager:
+class Constraints:
     """
-    Handles the core constraints of the CP Optimizer model.
+    Builds the core constraints of the CP Optimizer model.
     """
 
     def __init__(
-        self,
-        model: CpoModel,
-        data: ProblemData,
-        vars_manager: VariablesManager,
+        self, model: CpoModel, data: ProblemData, variables: Variables
     ):
         self._model = model
         self._data = data
-        self._job_vars = vars_manager.job_vars
-        self._task_vars = vars_manager.task_vars
-        self._mode_vars = vars_manager.mode_vars
-        self._sequence_vars = vars_manager.sequence_vars
+        self._job_vars = variables.job_vars
+        self._task_vars = variables.task_vars
+        self._mode_vars = variables.mode_vars
+        self._sequence_vars = variables.sequence_vars
 
     def _job_spans_tasks(self):
         """
@@ -57,53 +54,59 @@ class ConstraintsManager:
         available, the setup times are enforced as well.
         """
         model, data = self._model, self._data
-        machine2modes = utils.machine2modes(data)
+        resource2modes = utils.resource2modes(data)
 
-        for machine in range(data.num_machines):
-            if not (modes := machine2modes[machine]):
-                continue  # skip if no modes for this machine
-
-            if data.machines[machine].capacity > 0:
+        for idx, resource in enumerate(data.resources):
+            if not isinstance(resource, Machine):
                 continue
 
-            tasks = [data.modes[mode].task for mode in modes]
-            setups = data.setup_times[machine, :, :][np.ix_(tasks, tasks)]
-            seq_var = self._sequence_vars[machine]
+            if not (modes := resource2modes[idx]):
+                continue  # no modes for this machine
 
-            if np.all(setups == 0):  # no setup times
-                model.add(cpo.no_overlap(seq_var))
+            seq_var = self._sequence_vars[idx]
+
+            if seq_var is None:
+                msg = f"No sequence var found for resource {idx}."
+                raise ValueError(msg)
+
+            if (setups := data.setup_times) is not None:
+                # Use the mode's task indices to get the correct setup times.
+                tasks = [data.modes[mode].task for mode in modes]
+                matrix = setups[idx, :, :][np.ix_(tasks, tasks)]
+                if np.any(matrix > 0):
+                    model.add(cpo.no_overlap(seq_var, matrix))
             else:
-                model.add(cpo.no_overlap(seq_var, setups))
+                model.add(cpo.no_overlap(seq_var))
 
-    def _machine_capacity(self):
+    def _resource_capacity(self):
         """
-        Creates constraints for the machine capacity.
+        Creates constraints for the resource capacity.
         """
         model, data = self._model, self._data
 
-        # Map machines to the relevant modes and their demands.
-        mapper = [[] for _ in range(data.num_machines)]
+        # Map resources to the relevant modes and their demands.
+        mapper = [[] for _ in range(data.num_resources)]
         for idx, mode in enumerate(data.modes):
-            for machine, demand in zip(mode.machines, mode.demands):
+            for resource, demand in zip(mode.resources, mode.demands):
                 if demand > 0:
-                    mapper[machine].append((idx, demand))
+                    mapper[resource].append((idx, demand))
 
-        for idx, machine in enumerate(data.machines):
-            if machine.capacity == 0:
-                continue
+        for idx, resource in enumerate(data.resources):
+            if isinstance(resource, Machine):
+                continue  # handled by no-overlap constraints
 
-            if machine.renewable:
+            if resource.renewable:
                 pulses = [
                     cpo.pulse(self._mode_vars[mode], demand)
                     for (mode, demand) in mapper[idx]
                 ]
-                model.add(model.sum(pulses) <= machine.capacity)
+                model.add(model.sum(pulses) <= resource.capacity)
             else:
                 usage = [
                     cpo.presence_of(self._mode_vars[mode]) * demand
                     for (mode, demand) in mapper[idx]
                 ]
-                model.add(model.sum(usage) <= machine.capacity)
+                model.add(model.sum(usage) <= resource.capacity)
 
     def _timing_constraints(self):
         """
@@ -151,36 +154,39 @@ class ConstraintsManager:
             if not sequencing_constraints:
                 continue
 
-            # Find the modes of the task that have intersecting machines,
+            # Find the modes of the task that have intersecting resources,
             # because we need to enforce sequencing constraints on them.
-            intersecting = utils.find_modes_with_intersecting_machines(
+            intersecting = utils.find_modes_with_intersecting_resources(
                 data, task1, task2
             )
-            for mode1, mode2, machines in intersecting:
-                for machine in machines:
-                    sequence = self._sequence_vars[machine]
-                    if sequence is None:
-                        msg = f"No sequence var found for machine {machine}."
+            for mode1, mode2, resources in intersecting:
+                for resource in resources:
+                    if not isinstance(data.resources[resource], Machine):
+                        continue  # skip sequencing on non-machine resources
+
+                    seq_var = self._sequence_vars[resource]
+                    if seq_var is None:
+                        msg = f"No sequence var found for resource {resource}."
                         raise ValueError(msg)
 
                     var1 = self._mode_vars[mode1]
                     var2 = self._mode_vars[mode2]
 
                     if Constraint.PREVIOUS in sequencing_constraints:
-                        model.add(cpo.previous(sequence, var1, var2))
+                        model.add(cpo.previous(seq_var, var1, var2))
 
                     if Constraint.BEFORE in sequencing_constraints:
-                        model.add(cpo.before(sequence, var1, var2))
+                        model.add(cpo.before(seq_var, var1, var2))
 
-    def _identical_and_different_machine_constraints(self):
+    def _identical_and_different_resource_constraints(self):
         """
-        Creates the constraints for the same and different machine constraints.
+        Creates constraints for the same and different resource constraints.
         """
         model, data = self._model, self._data
         task2modes = utils.task2modes(data)
         relevant = {
-            Constraint.IDENTICAL_MACHINES,
-            Constraint.DIFFERENT_MACHINES,
+            Constraint.IDENTICAL_RESOURCES,
+            Constraint.DIFFERENT_RESOURCES,
         }
 
         for (task1, task2), constraints in data.constraints.items():
@@ -188,16 +194,16 @@ class ConstraintsManager:
             if not assignment_constraints:
                 continue
 
-            identical = utils.find_modes_with_identical_machines(
+            identical = utils.find_modes_with_identical_resources(
                 data, task1, task2
             )
-            disjoint = utils.find_modes_with_disjoint_machines(
+            disjoint = utils.find_modes_with_disjoint_resources(
                 data, task1, task2
             )
 
             modes1 = task2modes[task1]
             for mode1 in modes1:
-                if Constraint.IDENTICAL_MACHINES in assignment_constraints:
+                if Constraint.IDENTICAL_RESOURCES in assignment_constraints:
                     identical_modes2 = identical[mode1]
                     var1 = cpo.presence_of(self._mode_vars[mode1])
                     vars2 = [
@@ -206,7 +212,7 @@ class ConstraintsManager:
                     ]
                     model.add(sum(vars2) >= var1)
 
-                if Constraint.DIFFERENT_MACHINES in assignment_constraints:
+                if Constraint.DIFFERENT_RESOURCES in assignment_constraints:
                     disjoint_modes2 = disjoint[mode1]
                     var1 = cpo.presence_of(self._mode_vars[mode1])
                     vars2 = [
@@ -215,14 +221,14 @@ class ConstraintsManager:
                     ]
                     model.add(sum(vars2) >= var1)
 
-    def add_all_constraints(self):
+    def add_constraints(self):
         """
         Adds all the constraints to the CP model.
         """
         self._job_spans_tasks()
         self._select_one_mode()
         self._no_overlap_and_setup_times()
-        self._machine_capacity()
+        self._resource_capacity()
         self._timing_constraints()
         self._previous_before_constraints()
-        self._identical_and_different_machine_constraints()
+        self._identical_and_different_resource_constraints()

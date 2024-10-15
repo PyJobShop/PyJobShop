@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import Optional
+from typing import Optional, Sequence, Union
 
 import numpy as np
 
@@ -11,6 +11,8 @@ from pyjobshop.ProblemData import (
     Mode,
     Objective,
     ProblemData,
+    Resource,
+    ResourceType,
     Task,
 )
 from pyjobshop.Result import Result
@@ -25,7 +27,7 @@ class Model:
 
     def __init__(self):
         self._jobs: list[Job] = []
-        self._machines: list[Machine] = []
+        self._resources: list[ResourceType] = []
         self._tasks: list[Task] = []
         self._modes: list[Mode] = []
         self._constraints: dict[tuple[int, int], list[Constraint]] = (
@@ -37,7 +39,7 @@ class Model:
         self._objective: Objective = Objective.makespan()
 
         self._id2job: dict[int, int] = {}
-        self._id2machine: dict[int, int] = {}
+        self._id2resource: dict[int, int] = {}
         self._id2task: dict[int, int] = {}
 
     @property
@@ -48,11 +50,11 @@ class Model:
         return self._jobs
 
     @property
-    def machines(self) -> list[Machine]:
+    def resources(self) -> list[ResourceType]:
         """
-        Returns the list of machines in the model.
+        Returns the list of resources in the model.
         """
-        return self._machines
+        return self._resources
 
     @property
     def tasks(self) -> list[Task]:
@@ -86,13 +88,22 @@ class Model:
             model.add_job(
                 weight=job.weight,
                 release_date=job.release_date,
-                due_date=job.due_date,
                 deadline=job.deadline,
+                due_date=job.due_date,
                 name=job.name,
             )
 
-        for machine in data.machines:
-            model.add_machine(capacity=machine.capacity, name=machine.name)
+        for resource in data.resources:
+            if isinstance(resource, Machine):
+                model.add_machine(name=resource.name)
+            elif isinstance(resource, Resource):
+                model.add_resource(
+                    capacity=resource.capacity,
+                    renewable=resource.renewable,
+                    name=resource.name,
+                )
+            else:
+                raise ValueError(f"Unknown resource type: {type(resource)}")
 
         task2job = {}
         for job_idx, job in enumerate(data.jobs):
@@ -113,7 +124,7 @@ class Model:
         for mode in data.modes:
             model.add_mode(
                 task=model.tasks[mode.task],
-                machines=[model.machines[mach] for mach in mode.machines],
+                resources=[model.resources[res] for res in mode.resources],
                 duration=mode.duration,
                 demands=mode.demands,
             )
@@ -142,19 +153,20 @@ class Model:
                     model.add_previous(task1, task2)
                 elif constraint == Constraint.BEFORE:
                     model.add_before(task1, task2)
-                elif constraint == Constraint.IDENTICAL_MACHINES:
-                    model.add_identical_machines(task1, task2)
-                elif constraint == Constraint.DIFFERENT_MACHINES:
-                    model.add_different_machine(task1, task2)
+                elif constraint == Constraint.IDENTICAL_RESOURCES:
+                    model.add_identical_resources(task1, task2)
+                elif constraint == Constraint.DIFFERENT_RESOURCES:
+                    model.add_different_resource(task1, task2)
 
-        for (mach, idx1, idx2), duration in np.ndenumerate(data.setup_times):
-            if duration != 0:
-                model.add_setup_time(
-                    machine=model.machines[mach],
-                    task1=model.tasks[idx1],
-                    task2=model.tasks[idx2],
-                    duration=duration,
-                )
+        if (setups := data.setup_times) is not None:
+            for (res, idx1, idx2), duration in np.ndenumerate(setups):
+                if duration != 0:
+                    model.add_setup_time(
+                        machine=model.resources[res],
+                        task1=model.tasks[idx1],
+                        task2=model.tasks[idx2],
+                        duration=duration,
+                    )
 
         model.set_horizon(data.horizon)
         model.set_objective(
@@ -171,20 +183,24 @@ class Model:
         Returns a ProblemData object containing the problem instance.
         """
         num_tasks = len(self.tasks)
-        num_machines = len(self.machines)
+        num_res = len(self.resources)
 
-        # Convert setup times into a 3D array with zero as default.
-        setup_times = np.zeros((num_machines, num_tasks, num_tasks), dtype=int)
-        for (machine, task1, task2), duration in self._setup_times.items():
-            setup_times[machine, task1, task2] = duration
+        # Convert setup times into a 3D array if there are any setup times,
+        # otherwise return None.
+        if self._setup_times:
+            setup = np.zeros((num_res, num_tasks, num_tasks), dtype=int)
+            for (res, task1, task2), duration in self._setup_times.items():
+                setup[res, task1, task2] = duration
+        else:
+            setup = None
 
         return ProblemData(
             jobs=self.jobs,
-            machines=self.machines,
+            resources=self.resources,
             tasks=self.tasks,
             modes=self._modes,
             constraints=self._constraints,
-            setup_times=setup_times,
+            setup_times=setup,
             horizon=self._horizon,
             objective=self._objective,
         )
@@ -229,18 +245,39 @@ class Model:
 
         return job
 
-    def add_machine(
-        self, capacity: int = 0, renewable: bool = True, name: str = ""
-    ) -> Machine:
+    def add_resource(
+        self, capacity: int, renewable: bool = True, name: str = ""
+    ) -> Resource:
+        """
+        Adds a resource to the model.
+
+        Parameters
+        ----------
+        capacity
+            The capacity of the resource.
+        renewable
+            Whether the resource is renewable.
+        name
+            Name of the resource.
+
+        Returns
+        -------
+        Resource
+            The created resource.
+        """
+        resource = Resource(capacity=capacity, renewable=renewable, name=name)
+
+        self._id2resource[id(resource)] = len(self.resources)
+        self._resources.append(resource)
+
+        return resource
+
+    def add_machine(self, name: str = "") -> Machine:
         """
         Adds a machine to the model.
 
         Parameters
         ----------
-        capacity
-            The capacity of the machine.
-        renewable
-            Whether the machine is renewable.
         name
             Name of the machine.
 
@@ -249,10 +286,10 @@ class Model:
         Machine
             The created machine.
         """
-        machine = Machine(capacity=capacity, renewable=renewable, name=name)
+        machine = Machine(name=name)
 
-        self._id2machine[id(machine)] = len(self.machines)
-        self._machines.append(machine)
+        self._id2resource[id(machine)] = len(self.resources)
+        self._resources.append(machine)
 
         return machine
 
@@ -310,35 +347,12 @@ class Model:
 
         return task
 
-    def add_processing_time(
-        self, task: Task, machine: Machine, duration: int, demand: int = 0
-    ):
-        """
-        Adds a processing time for a given task on a machine.
-
-        Parameters
-        ----------
-        task
-            The task to be processed.
-        machine
-            The machine on which the task is processed.
-        duration
-            Processing time of the task on the machine.
-        demand
-            Demand of the task on the machine. Default 0.
-        """
-
-        task_idx = self._id2task[id(task)]
-        machine_idx = self._id2machine[id(machine)]
-
-        self._modes.append(Mode(task_idx, [machine_idx], duration, [demand]))
-
     def add_mode(
         self,
         task: Task,
-        machines: list[Machine],
+        resources: Union[ResourceType, Sequence[ResourceType]],
         duration: int,
-        demands: Optional[list[int]] = None,
+        demands: Optional[Union[int, list[int]]] = None,
     ) -> Mode:
         """
         Adds a processing mode.
@@ -347,130 +361,136 @@ class Model:
         ----------
         task
             The task associated with the mode.
-        machines
-            The machines that the task must be processed on.
+        resources
+            The resource(s) that the task must be processed on.
         duration
             Processing duration of this mode.
         demands
-            List of demands for each machine for this mode. If ``None`` is
-            given, then the demands are initialized as list of zeros with the
-            same length as the machines.
+            Demands for each resource for this mode. If ``None``, then the
+            demands are initialized as list of zeros with the same length as
+            the resources.
         """
+        if isinstance(resources, (Resource, Machine)):
+            resources = [resources]
+
+        if isinstance(demands, int):
+            demands = [demands]
+
         task_idx = self._id2task[id(task)]
-        machine_idcs = [self._id2machine[id(machine)] for machine in machines]
-        mode = Mode(task_idx, machine_idcs, duration, demands)
+        resource_idcs = [self._id2resource[id(res)] for res in resources]
+        mode = Mode(task_idx, resource_idcs, duration, demands)
         self._modes.append(mode)
 
         return mode
 
-    def add_start_at_start(self, first: Task, second: Task):
+    def add_start_at_start(self, task1: Task, task2: Task):
         """
         Adds a constraint that the first task must start at the same time as
         the second task starts.
         """
-        task1 = self._id2task[id(first)]
-        task2 = self._id2task[id(second)]
-        self._constraints[task1, task2].append(Constraint.START_AT_START)
+        idx1 = self._id2task[id(task1)]
+        idx2 = self._id2task[id(task2)]
+        self._constraints[idx1, idx2].append(Constraint.START_AT_START)
 
-    def add_start_at_end(self, first: Task, second: Task):
+    def add_start_at_end(self, task1: Task, task2: Task):
         """
         Adds a constraint that the first task must start at the same time as
         the second task ends.
         """
-        task1 = self._id2task[id(first)]
-        task2 = self._id2task[id(second)]
-        self._constraints[task1, task2].append(Constraint.START_AT_END)
+        idx1 = self._id2task[id(task1)]
+        idx2 = self._id2task[id(task2)]
+        self._constraints[idx1, idx2].append(Constraint.START_AT_END)
 
-    def add_start_before_start(self, first: Task, second: Task):
+    def add_start_before_start(self, task1: Task, task2: Task):
         """
         Adds a constraint that the first task must start before the second task
         starts.
         """
-        task1 = self._id2task[id(first)]
-        task2 = self._id2task[id(second)]
-        self._constraints[task1, task2].append(Constraint.START_BEFORE_START)
+        idx1 = self._id2task[id(task1)]
+        idx2 = self._id2task[id(task2)]
+        self._constraints[idx1, idx2].append(Constraint.START_BEFORE_START)
 
-    def add_start_before_end(self, first: Task, second: Task):
+    def add_start_before_end(self, task1: Task, task2: Task):
         """
         Adds a constraint that the first task must start before the second task
         ends.
         """
-        task1 = self._id2task[id(first)]
-        task2 = self._id2task[id(second)]
-        self._constraints[task1, task2].append(Constraint.START_BEFORE_END)
+        idx1 = self._id2task[id(task1)]
+        idx2 = self._id2task[id(task2)]
+        self._constraints[idx1, idx2].append(Constraint.START_BEFORE_END)
 
-    def add_end_at_end(self, first: Task, second: Task):
+    def add_end_at_end(self, task1: Task, task2: Task):
         """
         Adds a constraint that the first task must end at the same time as the
         second task ends.
         """
-        task1 = self._id2task[id(first)]
-        task2 = self._id2task[id(second)]
-        self._constraints[task1, task2].append(Constraint.END_AT_END)
+        idx1 = self._id2task[id(task1)]
+        idx2 = self._id2task[id(task2)]
+        self._constraints[idx1, idx2].append(Constraint.END_AT_END)
 
-    def add_end_at_start(self, first: Task, second: Task):
+    def add_end_at_start(self, task1: Task, task2: Task):
         """
         Adds a constraint that the first task must end at the same time as the
         second task starts.
         """
-        task1 = self._id2task[id(first)]
-        task2 = self._id2task[id(second)]
-        self._constraints[task1, task2].append(Constraint.END_AT_START)
+        idx1 = self._id2task[id(task1)]
+        idx2 = self._id2task[id(task2)]
+        self._constraints[idx1, idx2].append(Constraint.END_AT_START)
 
-    def add_end_before_start(self, first: Task, second: Task):
+    def add_end_before_start(self, task1: Task, task2: Task):
         """
         Adds a constraint that the first task must end before the second task
         starts.
         """
-        task1 = self._id2task[id(first)]
-        task2 = self._id2task[id(second)]
-        self._constraints[task1, task2].append(Constraint.END_BEFORE_START)
+        idx1 = self._id2task[id(task1)]
+        idx2 = self._id2task[id(task2)]
+        self._constraints[idx1, idx2].append(Constraint.END_BEFORE_START)
 
-    def add_end_before_end(self, first: Task, second: Task):
+    def add_end_before_end(self, task1: Task, task2: Task):
         """
         Adds a constraint that the first task must end before the second task
         ends.
         """
-        task1 = self._id2task[id(first)]
-        task2 = self._id2task[id(second)]
-        self._constraints[task1, task2].append(Constraint.END_BEFORE_END)
+        idx1 = self._id2task[id(task1)]
+        idx2 = self._id2task[id(task2)]
+        self._constraints[idx1, idx2].append(Constraint.END_BEFORE_END)
 
-    def add_previous(self, first: Task, second: Task):
+    def add_identical_resources(self, task1: Task, task2: Task):
+        """
+        Adds a constraint that two tasks must be scheduled with modes that
+        require the same resources.
+        """
+        idx1 = self._id2task[id(task1)]
+        idx2 = self._id2task[id(task2)]
+        self._constraints[idx1, idx2].append(Constraint.IDENTICAL_RESOURCES)
+
+    def add_different_resource(self, task1: Task, task2: Task):
+        """
+        Adds a constraint that the two tasks must be scheduled with modes that
+        require different resources.
+        """
+        idx1 = self._id2task[id(task1)]
+        idx2 = self._id2task[id(task2)]
+        self._constraints[idx1, idx2].append(Constraint.DIFFERENT_RESOURCES)
+
+    def add_previous(self, task1: Task, task2: Task):
         """
         Adds a constraint that the first task must be scheduled right before
         the second task, meaning that no task is allowed to schedule between,
-        if they are scheduled on the same machine.
+        if they are scheduled on the same resource.
         """
-        task1 = self._id2task[id(first)]
-        task2 = self._id2task[id(second)]
-        self._constraints[task1, task2].append(Constraint.PREVIOUS)
+        idx1 = self._id2task[id(task1)]
+        idx2 = self._id2task[id(task2)]
+        self._constraints[idx1, idx2].append(Constraint.PREVIOUS)
 
-    def add_before(self, first: Task, second: Task):
+    def add_before(self, task1: Task, task2: Task):
         """
         Adds a constraint that the first task must be scheduled before the
-        second task, if they are scheduled on the same machine.
+        second task, if they are scheduled on the same resource.
         """
-        task1 = self._id2task[id(first)]
-        task2 = self._id2task[id(second)]
-        self._constraints[task1, task2].append(Constraint.BEFORE)
-
-    def add_identical_machines(self, first: Task, second: Task):
-        """
-        Adds a constraint that two tasks must be scheduled with modes that
-        require the same machines.
-        """
-        task1 = self._id2task[id(first)]
-        task2 = self._id2task[id(second)]
-        self._constraints[task1, task2].append(Constraint.IDENTICAL_MACHINES)
-
-    def add_different_machine(self, first: Task, second: Task):
-        """
-        Adds a constraint that the two tasks must be scheduled with modes that
-        require different machines.
-        """
-        task1 = self._id2task[id(first)]
-        task2 = self._id2task[id(second)]
-        self._constraints[task1, task2].append(Constraint.DIFFERENT_MACHINES)
+        idx1 = self._id2task[id(task1)]
+        idx2 = self._id2task[id(task2)]
+        self._constraints[idx1, idx2].append(Constraint.BEFORE)
 
     def add_setup_time(
         self, machine: Machine, task1: Task, task2: Task, duration: int
@@ -481,7 +501,7 @@ class Model:
         Parameters
         ----------
         machine
-            Machine on which the setup time occurs.
+            The machine on which the setup time occurs.
         task1
             First task.
         task2
@@ -490,7 +510,7 @@ class Model:
             Duration of the setup time when switching from the first task
             to the second task on the machine.
         """
-        machine_idx = self._id2machine[id(machine)]
+        machine_idx = self._id2resource[id(machine)]
         task_idx1 = self._id2task[id(task1)]
         task_idx2 = self._id2task[id(task2)]
 

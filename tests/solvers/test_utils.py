@@ -1,12 +1,12 @@
 from numpy.testing import assert_equal
 
-from pyjobshop.ProblemData import Job, Machine, Mode, ProblemData, Task
-from pyjobshop.utils import (
+from pyjobshop.ProblemData import Job, Mode, ProblemData, Resource, Task
+from pyjobshop.solvers.utils import (
     compute_task_durations,
-    find_modes_with_disjoint_machines,
-    find_modes_with_identical_machines,
-    find_modes_with_intersecting_machines,
-    machine2modes,
+    find_modes_with_disjoint_resources,
+    find_modes_with_identical_resources,
+    find_modes_with_intersecting_resources,
+    resource2modes,
     task2modes,
 )
 
@@ -17,7 +17,7 @@ def test_compute_task_durations():
     """
     data = ProblemData(
         [Job()],
-        [Machine(), Machine()],
+        [Resource(0), Resource(0)],
         [Task(), Task()],
         modes=[Mode(0, [0], 1), Mode(0, [1], 10), Mode(1, [1], 0)],
         constraints={},
@@ -31,20 +31,20 @@ def test_compute_task_durations():
     assert_equal(task_durations[1], [0])
 
 
-def test_machine2modes():
+def test_resource2modes():
     """
-    Tests that the mode indices corresponding to each machine are correctly
+    Tests that the mode indices corresponding to each resource are correctly
     computed.
     """
     data = ProblemData(
         [Job()],
-        [Machine(), Machine()],
+        [Resource(0), Resource(0)],
         [Task(), Task()],
         modes=[Mode(0, [0], 1), Mode(0, [1], 10), Mode(1, [1], 0)],
         constraints={},
     )
 
-    mapper = machine2modes(data)
+    mapper = resource2modes(data)
     assert_equal(mapper[0], [0])
     assert_equal(mapper[1], [1, 2])
 
@@ -56,7 +56,7 @@ def test_task2modes():
     """
     data = ProblemData(
         [Job()],
-        [Machine(), Machine()],
+        [Resource(0), Resource(0)],
         [Task(), Task()],
         modes=[Mode(0, [0], 1), Mode(0, [1], 10), Mode(1, [1], 0)],
         constraints={},
@@ -67,13 +67,13 @@ def test_task2modes():
     assert_equal(mapper[1], [2])
 
 
-def test_find_modes_with_intersecting_machines():
+def test_find_modes_with_intersecting_resources():
     """
     Tests that the intersecting modes between two tasks are correctly computed.
     """
     data = ProblemData(
         [Job()],
-        [Machine(), Machine(), Machine()],
+        [Resource(0), Resource(0), Resource(0)],
         [Task(), Task()],
         modes=[
             Mode(0, [0], 1),
@@ -82,7 +82,7 @@ def test_find_modes_with_intersecting_machines():
             Mode(1, [2], 0),
         ],
     )
-    intersecting = find_modes_with_intersecting_machines(data, 0, 1)
+    intersecting = find_modes_with_intersecting_resources(data, 0, 1)
 
     # Task 1 has two modes, which both intersect with the first mode of task 2.
     # The last mode of task 2 does not intersect with any mode of task 1, so
@@ -90,13 +90,13 @@ def test_find_modes_with_intersecting_machines():
     assert_equal(intersecting, [(0, 2, [0]), (1, 2, [0, 1])])
 
 
-def test_find_modes_with_identical_machines():
+def test_find_modes_with_identical_resources():
     """
-    Tests that the modes with identical machines are correctly computed.
+    Tests that the modes with identical resources are correctly computed.
     """
     data = ProblemData(
         [Job()],
-        [Machine(), Machine(), Machine()],
+        [Resource(0), Resource(0), Resource(0)],
         [Task(), Task()],
         modes=[
             Mode(0, [0], 1),
@@ -105,20 +105,20 @@ def test_find_modes_with_identical_machines():
             Mode(1, [2], 0),
         ],
     )
-    identical = find_modes_with_identical_machines(data, 0, 1)
+    identical = find_modes_with_identical_resources(data, 0, 1)
 
-    # The second mode of task 1 has the same machines as the first mode of
-    # task 2. The other modes do not have identical machines.
+    # The second mode of task 1 has the same resources as the first mode of
+    # task 2. The other modes do not have identical resources.
     assert_equal(identical, {1: [2]})
 
 
-def test_find_disjoint_machines():
+def test_find_disjoint_resources():
     """
-    Tests that the modes with disjoint machines are correctly computed.
+    Tests that the modes with disjoint resources are correctly computed.
     """
     data = ProblemData(
         [Job()],
-        [Machine(), Machine(), Machine()],
+        [Resource(0), Resource(0), Resource(0)],
         [Task(), Task()],
         modes=[
             Mode(0, [0], 1),
@@ -127,8 +127,8 @@ def test_find_disjoint_machines():
             Mode(1, [2], 0),
         ],
     )
-    disjoint = find_modes_with_disjoint_machines(data, 0, 1)
+    disjoint = find_modes_with_disjoint_resources(data, 0, 1)
 
-    # Both modes of task 1 have disjoint machines with the second mode of
+    # Both modes of task 1 have disjoint resources with the second mode of
     # task 2.
     assert_equal(disjoint, {0: [3], 1: [3]})

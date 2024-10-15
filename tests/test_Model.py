@@ -10,6 +10,7 @@ from pyjobshop.ProblemData import (
     Mode,
     Objective,
     ProblemData,
+    Resource,
     Task,
 )
 from pyjobshop.Solution import Solution, TaskData
@@ -25,8 +26,8 @@ def test_model_to_data():
     machine1, machine2 = [model.add_machine() for _ in range(2)]
     task1, task2 = [model.add_task(job=job) for _ in range(2)]
 
-    model.add_processing_time(task1, machine1, 1)
-    model.add_processing_time(task2, machine2, 2)
+    model.add_mode(task1, machine1, 1)
+    model.add_mode(task2, machine2, 2)
 
     model.add_start_at_start(task1, task2)
     model.add_start_at_end(task1, task2)
@@ -36,8 +37,8 @@ def test_model_to_data():
     model.add_end_at_end(task1, task2)
     model.add_end_before_end(task1, task2)
     model.add_end_before_start(task1, task2)
-    model.add_identical_machines(task2, task1)
-    model.add_different_machine(task2, task1)
+    model.add_identical_resources(task2, task1)
+    model.add_different_resource(task2, task1)
     model.add_previous(task2, task1)
     model.add_before(task2, task1)
 
@@ -50,13 +51,13 @@ def test_model_to_data():
     data = model.data()
 
     assert_equal(data.jobs, [job])
-    assert_equal(data.machines, [machine1, machine2])
+    assert_equal(data.resources, [machine1, machine2])
     assert_equal(data.tasks, [task1, task2])
     assert_equal(
         data.modes,
         [
-            Mode(task=0, machines=[0], duration=1),
-            Mode(task=1, machines=[1], duration=2),
+            Mode(task=0, resources=[0], duration=1),
+            Mode(task=1, resources=[1], duration=2),
         ],
     )
     assert_equal(
@@ -73,8 +74,8 @@ def test_model_to_data():
                 Constraint.END_BEFORE_START,
             ],
             (1, 0): [
-                Constraint.IDENTICAL_MACHINES,
-                Constraint.DIFFERENT_MACHINES,
+                Constraint.IDENTICAL_RESOURCES,
+                Constraint.DIFFERENT_RESOURCES,
                 Constraint.PREVIOUS,
                 Constraint.BEFORE,
             ],
@@ -92,9 +93,9 @@ def test_from_data():
     """
     data = ProblemData(
         [Job()],
-        [Machine(), Machine()],
-        [Task(), Task()],
-        modes=[Mode(0, [0], 1), Mode(1, [1], 2)],
+        [Resource(1), Machine()],
+        [Task(), Task(), Task()],
+        modes=[Mode(0, [0], 1), Mode(1, [1], 2), Mode(2, [1], 2)],
         constraints={
             (0, 1): [
                 Constraint.START_AT_START,
@@ -105,16 +106,18 @@ def test_from_data():
                 Constraint.END_AT_END,
                 Constraint.END_BEFORE_START,
                 Constraint.END_BEFORE_END,
+                Constraint.IDENTICAL_RESOURCES,
+                Constraint.DIFFERENT_RESOURCES,
+            ],
+            (1, 2): [
                 Constraint.PREVIOUS,
                 Constraint.BEFORE,
-                Constraint.IDENTICAL_MACHINES,
-                Constraint.DIFFERENT_MACHINES,
-            ]
+            ],
         },
         setup_times=np.array(
             [
-                [[0, 0], [0, 0]],
-                [[1, 1], [1, 1]],
+                np.zeros((3, 3)),  # resource
+                np.ones((3, 3)),  # machine
             ]
         ),
         horizon=100,
@@ -124,7 +127,7 @@ def test_from_data():
     m_data = model.data()
 
     assert_equal(m_data.num_jobs, data.num_jobs)
-    assert_equal(m_data.num_machines, data.num_machines)
+    assert_equal(m_data.num_resources, data.num_resources)
     assert_equal(m_data.num_tasks, data.num_tasks)
     assert_equal(m_data.num_modes, data.num_modes)
     assert_equal(m_data.modes, data.modes)
@@ -143,16 +146,16 @@ def test_model_to_data_default_values():
     job = model.add_job()
     machine = model.add_machine()
     task = model.add_task(job=job)
-    model.add_processing_time(task, machine, 1)
+    model.add_mode(task, machine, 1)
 
     data = model.data()
 
     assert_equal(data.jobs, [job])
-    assert_equal(data.machines, [machine])
+    assert_equal(data.resources, [machine])
     assert_equal(data.tasks, [task])
-    assert_equal(data.modes, [Mode(task=0, machines=[0], duration=1)])
+    assert_equal(data.modes, [Mode(task=0, resources=[0], duration=1)])
     assert_equal(data.constraints, {})
-    assert_equal(data.setup_times, [[[0]]])
+    assert_equal(data.setup_times, None)
     assert_equal(data.horizon, MAX_VALUE)
     assert_equal(data.objective, Objective.makespan())
 
@@ -174,16 +177,26 @@ def test_add_job_attributes():
     assert_equal(job.name, "job")
 
 
+def test_add_resource_attributes():
+    """
+    Tests that adding a resource to the model correctly sets the attributes.
+    """
+    model = Model()
+
+    resource = model.add_resource(capacity=1, renewable=False, name="resource")
+
+    assert_equal(resource.capacity, 1)
+    assert_equal(resource.renewable, False)
+    assert_equal(resource.name, "resource")
+
+
 def test_add_machine_attributes():
     """
     Tests that adding a machine to the model correctly sets the attributes.
     """
     model = Model()
 
-    machine = model.add_machine(capacity=1, renewable=False, name="machine")
-
-    assert_equal(machine.capacity, 1)
-    assert_equal(machine.renewable, False)
+    machine = model.add_machine(name="machine")
     assert_equal(machine.name, "machine")
 
 
@@ -217,19 +230,19 @@ def test_add_mode_attributes():
     model = Model()
 
     task = model.add_task()
-    machines = [model.add_machine() for _ in range(3)]
+    resources = [model.add_machine() for _ in range(3)]
 
-    mode = model.add_mode(task, machines, duration=1, demands=[1, 2, 3])
+    mode = model.add_mode(task, resources, duration=1, demands=[1, 2, 3])
 
     assert_equal(mode.task, 0)
-    assert_equal(mode.machines, [0, 1, 2])
+    assert_equal(mode.resources, [0, 1, 2])
     assert_equal(mode.duration, 1)
     assert_equal(mode.demands, [1, 2, 3])
 
 
-def test_model_processing_time_creates_correct_mode():
+def test_add_mode_single_resource():
     """
-    Tests that the processing time interface creates the correct mode.
+    Tests that adding a mode with single resource and demand is correctly set.
     """
     model = Model()
 
@@ -237,8 +250,11 @@ def test_model_processing_time_creates_correct_mode():
     machine = model.add_machine()
     task = model.add_task(job=job)
 
-    model.add_processing_time(task, machine, 1)
-    assert_equal(model.modes[0], Mode(task=0, machines=[0], duration=1))
+    mode = model.add_mode(task, machine, 1, 1)
+    assert_equal(mode.task, 0)
+    assert_equal(mode.resources, [0])
+    assert_equal(mode.duration, 1)
+    assert_equal(mode.demands, [1])  # default
 
 
 def test_model_attributes():
@@ -248,12 +264,12 @@ def test_model_attributes():
     model = Model()
 
     jobs = [model.add_job() for _ in range(10)]
-    machines = [model.add_machine() for _ in range(20)]
+    resources = [model.add_machine() for _ in range(20)]
     tasks = [model.add_task() for _ in range(30)]
-    modes = [model.add_mode(t, [m], 1) for t in tasks for m in machines]
+    modes = [model.add_mode(t, [m], 1) for t in tasks for m in resources]
 
     assert_equal(model.jobs, jobs)
-    assert_equal(model.machines, machines)
+    assert_equal(model.resources, resources)
     assert_equal(model.tasks, tasks)
     assert_equal(model.modes, modes)
 
@@ -295,7 +311,7 @@ def test_solve(solver: str):
     tasks = [model.add_task(job=job) for _ in range(2)]
 
     for task, duration in zip(tasks, [1, 2]):
-        model.add_processing_time(task, machine, duration)
+        model.add_mode(task, machine, duration)
 
     result = model.solve(solver=solver)
 
