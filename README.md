@@ -12,9 +12,9 @@
 PyJobShop is a Python library for solving scheduling problems with constraint programming.
 It currently supports the following scheduling problems:
 
-- **Resource environments:** single machines, parallel machines, hybrid flow shops, open shops, job shops, and flexible job shops.
-- **Constraints:** release dates, deadlines, due dates, sequence-dependent setup times, no-wait, blocking, and precedence constraints.
-- **Objective functions:** minimizing makespan, total flow time, number of tardy jobs, and total tardiness.
+- **Resource environments:** single machines, parallel machines, hybrid flow shops, open shops, job shops, flexible job shops, and capacity-constrained resources.
+- **Constraints:** release dates, deadlines, due dates, multiple modes, sequence-dependent setup times, no-wait, blocking, and precedence constraints.
+- **Objective functions:** minimizing makespan, total flow time, number of tardy jobs, total tardiness, and total earliness.
 
 You can find PyJobShop on the Python Package Index under the name `pyjobshop`. 
 To install it, simply run:
@@ -35,7 +35,9 @@ We also support CP Optimizer - see [our documentation](https://pyjobshop.readthe
 ## Examples
 We provide example notebooks that show how PyJobShop may be used to solve scheduling problems.
 
-- TODO
+- A short tutorial and introduction to PyJobShop's modeling interface, available [here](https://pyjobshop.readthedocs.io/stable/examples/simple_example.html). This is a great way to get started with PyJobShop.
+- Notebooks solving the classical machine scheduling problems such as the hybrid flow shop ([here](https://pyjobshop.readthedocs.io/stable/examples/hybrid_flow_shop.html)) and the flexible job shop problem ([here](https://pyjobshop.readthedocs.io/stable/examples/flexible_job_shop.html)).
+- A notebook showing how to solve different project scheduling problems, [here](https://pyjobshop.readthedocs.io/stable/examples/project_scheduling.html).
 
 ## Contributing
 We are very grateful for any contributions you are willing to make. 
