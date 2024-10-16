@@ -16,29 +16,36 @@ jobs:
         python-version: ['3.9', '3.10', '3.11']
     steps:
       - uses: actions/checkout@v4
+
       - name: Install the latest version of uv
-        uses: astral-sh/setup-uv@v2
+        uses: astral-sh/setup-uv@v3
         with:
-          version: "latest"
-          enable-cache: true
+          version: "0.4.22"
+
       - name: Install Python version
         run: uv python install ${{ matrix.python-version }}
+
       - name: Install the project
         run: uv sync --all-extras --dev
+
       - name: Cache pre-commit
         uses: actions/cache@v3
         id: cache-pre-commit
         with:
           path: ~/.cache/pre-commit/
           key: pre-commit-${{ matrix.python-version }}-${{ hashFiles('.pre-commit-config.yaml') }}
+
       - name: Install pre-commit
         if: steps.cache-pre-commit.outputs.cache-hit != 'true'
         run: uv run pre-commit install --install-hooks
+
       - name: Run pre-commit
         run: uv run pre-commit run --all-files
+
       - name: Run tests
         run: |
           uv run pytest --solvers ortools cpoptimizer
+
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v3
         env:

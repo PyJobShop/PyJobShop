@@ -1,55 +1,21 @@
-name: Publish to PyPI
+name: Publish
 
 on:
   release:
     types: [ created ]
-  push:
-    branches: [ main ]
-
 
 jobs:
-  build:
-    name: Build distribution 📦
+  run:
+    name: "Build and publish release"
     runs-on: ubuntu-latest
-
     steps:
-    - uses: actions/checkout@v4
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: "3.11"
-    - name: Install pypa/build
-      run: >-
-        python3 -m
-        pip install
-        build
-        --user
-    - name: Build a binary wheel and a source tarball
-      run: python3 -m build
-    - name: Store the distribution packages
-      uses: actions/upload-artifact@v3
-      with:
-        name: python-package-distributions
-        path: dist/
+      - uses: actions/checkout@v4
 
-  publish-to-pypi:
-    name: >-
-      Publish package to PyPI
-    if: startsWith(github.ref, 'refs/tags/')  # only publish to PyPI on tag pushes
-    needs:
-    - build
-    runs-on: ubuntu-latest
-    environment:
-      name: pypi
-      url: https://pypi.org/p/pyjobshop 
-    permissions:
-      id-token: write  # IMPORTANT: mandatory for trusted publishing
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "0.4.22"
 
-    steps:
-    - name: Download all the dists
-      uses: actions/download-artifact@v3
-      with:
-        name: python-package-distributions
-        path: dist/
-    - name: Publish distribution 📦 to PyPI
-      uses: pypa/gh-action-pypi-publish@release/v1
+      - run: uv python install 3.11
+      - run: uv build
+      - run: uv publish
