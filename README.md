@@ -1,6 +1,3 @@
-> [!NOTE]
-> This package is under development. Expect things to break significantly in versions ``v0.0.*``.
-
 ![PyJobShop logo](docs/source/assets/images/logo.svg)
 
 [![PyPI](https://img.shields.io/pypi/v/PyJobShop?style=flat-square)](https://pypi.org/project/pyjobshop/)

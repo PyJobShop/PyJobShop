@@ -2,10 +2,6 @@
    :alt: PyJobShop logo
    :figwidth: 100%
 
-.. note::
-
-   This project is under active development. Expect things to break significantly in versions ``v0.0.*``.
-
 
 PyJobShop is a Python library for solving scheduling problems with constraint programming.
 It currently supports the following scheduling problems:
