@@ -23,7 +23,7 @@ def plot_task_gantt(
         Solution to plot.
     data
         The corresponding problem data.
-    task
+    tasks
         The tasks (by index) to plot and in which order they should appear
         (from top to bottom). Defaults to all tasks in the data instance.
     plot_labels
