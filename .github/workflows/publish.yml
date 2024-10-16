@@ -19,3 +19,5 @@ jobs:
       - run: uv python install 3.11
       - run: uv build
       - run: uv publish
+        env:
+            UV_PUBLISH_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
