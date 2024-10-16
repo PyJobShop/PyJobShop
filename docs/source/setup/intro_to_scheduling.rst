@@ -17,11 +17,12 @@ Scheduling deals with allocating tasks to resources over time. The goal is to op
 
 Most scheduling problems include three key concepts: jobs, tasks, and resources. Jobs represent collections of tasks and are used to measure performance. Tasks are the smallest units of work that need to be performed. Resources include all materials and personnel available for completing the tasks. In addition to these key concepts, specific scheduling applications might have other requirements such as different processing modes, task precedence constraints, and setup times.
 
+A solution to a scheduling problem includes the specific task-to-resource assignment and the determination of all task start and end times. Such a solution can be visualized using a Gantt chart (see figure above).
+
 .. note::
 
    In scheduling, it is assumed that all tasks are *known*, whereas lot-sizing or batching problems also deal with determining *which tasks* to produce. PyJobShop only deals with scheduling problems.
 
-A solution to a scheduling problem includes the specific task-to-resource assignment and the determination of all task start and end times. Such a solution can be visualized using a Gantt chart (see :ref:`gantt-chart`).
 
 .. Solving scheduling problems
 
