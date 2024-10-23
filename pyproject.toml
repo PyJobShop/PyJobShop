@@ -99,8 +99,7 @@ omit = [
     "setup.py",
     "cpo_config.py",
     "conftest.py",
-    "pyjobshop/cpoptimizer/*",
-    "pyjobshop/ortools/*",
+    "pyjobshop/solvers/*",
     "pyjobshop/cli.py",
     "pyjobshop/show_versions.py"
 ]

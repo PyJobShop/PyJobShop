@@ -92,7 +92,7 @@ def test_from_data():
     representation of that instance.
     """
     data = ProblemData(
-        [Job()],
+        [Job(due_date=1)],
         [Resource(1), Machine()],
         [Task(), Task(), Task()],
         modes=[Mode(0, [0], 1), Mode(1, [1], 2), Mode(2, [1], 2)],
@@ -121,7 +121,15 @@ def test_from_data():
             ]
         ),
         horizon=100,
-        objective=Objective.total_flow_time(),
+        objective=Objective(
+            weight_makespan=2,
+            weight_tardy_jobs=3,
+            weight_total_tardiness=4,
+            weight_total_flow_time=5,
+            weight_total_earliness=6,
+            weight_max_tardiness=7,
+            weight_max_lateness=8,
+        ),
     )
     model = Model.from_data(data)
     m_data = model.data()
@@ -291,6 +299,8 @@ def test_model_set_objective():
         weight_total_tardiness=3,
         weight_total_flow_time=4,
         weight_total_earliness=5,
+        weight_max_tardiness=6,
+        weight_max_lateness=7,
     )
 
     assert_equal(model.objective.weight_makespan, 1)
@@ -298,6 +308,8 @@ def test_model_set_objective():
     assert_equal(model.objective.weight_total_tardiness, 3)
     assert_equal(model.objective.weight_total_flow_time, 4)
     assert_equal(model.objective.weight_total_earliness, 5)
+    assert_equal(model.objective.weight_max_tardiness, 6)
+    assert_equal(model.objective.weight_max_lateness, 7)
 
 
 def test_solve(solver: str):

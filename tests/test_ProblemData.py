@@ -412,6 +412,8 @@ def test_problem_data_raises_capacitated_resources_and_setup_times():
         Objective.tardy_jobs(),
         Objective.total_tardiness(),
         Objective.total_earliness(),
+        Objective.max_tardiness(),
+        Objective.max_lateness(),
     ],
 )
 def test_problem_data_tardy_objective_without_job_due_dates(
@@ -1261,6 +1263,55 @@ def test_total_earliness(solver: str):
     assert_equal(result.status.value, "Optimal")
     assert_equal(result.best.tasks[1].start, 0)
     assert_equal(result.best.tasks[1].end, 1)
+
+
+def test_max_tardiness(solver: str):
+    """
+    Tests that the maximum tardiness objective function is correctly optimized.
+    """
+    model = Model()
+
+    for idx in range(2):
+        machine = model.add_machine()
+        job = model.add_job(weight=idx + 1, due_date=0)
+        task = model.add_task(job=job)
+        model.add_mode(task, machine, duration=2)
+
+    model.set_objective(weight_max_tardiness=2)
+
+    result = model.solve(solver=solver)
+
+    # Both jobs are tardy by 2 time units, but job 1 has weight 2 and job 2
+    # has weight 1. So the maximum tardiness is 2 * 2 = 4. Multiplied with the
+    # ``weight_max_tardiness`` of 2, the objective value is 8.
+    assert_equal(result.objective, 8)
+    assert_equal(result.best.tasks[0].end, 2)
+    assert_equal(result.best.tasks[1].end, 2)
+
+
+def test_max_lateness(solver: str):
+    """
+    Tests that the maximum lateness objective function is correctly optimized.
+    Specifically, we also check that lateness can be negative.
+    """
+    model = Model()
+
+    for idx in range(2):
+        machine = model.add_machine()
+        job = model.add_job(weight=idx + 1, due_date=4)
+        task = model.add_task(job=job)
+        model.add_mode(task, machine, duration=2)
+
+    model.set_objective(weight_max_lateness=2)
+
+    result = model.solve(solver=solver)
+
+    # Both jobs are "late" by -2 time units, but job 1 has weight 2 and job 2
+    # has weight 1. So the maximum lateness is -2 * 1 = -2. Multiplied with the
+    # ``weight_max_lateness`` of 2, the objective value is -4.
+    assert_equal(result.objective, -4)
+    assert_equal(result.best.tasks[0].end, 2)
+    assert_equal(result.best.tasks[1].end, 2)
 
 
 def test_combined_objective(solver: str):

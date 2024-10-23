@@ -23,6 +23,8 @@ class Objective:
         self._task_vars = variables.task_vars
         self._job_vars = variables.job_vars
 
+        self._current_obj_expr = None
+
     def _makespan_expr(self) -> LinearExprT:
         """
         Returns an expression representing the makespan of the model.
@@ -96,38 +98,67 @@ class Objective:
         weights = [job.weight for job in data.jobs]
         return LinearExpr.weighted_sum(earliness_vars, weights)
 
+    def _max_tardiness_expr(self) -> LinearExprT:
+        """
+        Returns an expression representing the maximum tardiness of jobs.
+        """
+        model, data = self._model, self._data
+        tardiness_vars = []
+
+        for job, var in zip(data.jobs, self._job_vars):
+            assert job.due_date is not None
+            tardiness = model.new_int_var(0, data.horizon, f"tardiness_{job}")
+            model.add_max_equality(tardiness, [0, var.end - job.due_date])
+            tardiness_vars.append(job.weight * tardiness)
+
+        max_tardiness = model.new_int_var(0, data.horizon, "max_tardiness")
+        model.add_max_equality(max_tardiness, tardiness_vars)
+        return max_tardiness
+
+    def _max_lateness_expr(self) -> LinearExprT:
+        """
+        Returns an expression representing the maximum tardiness of jobs.
+        """
+        model, data = self._model, self._data
+        lateness_vars = []
+
+        for job, var in zip(data.jobs, self._job_vars):
+            assert job.due_date is not None
+            lateness = model.new_int_var(
+                -data.horizon, data.horizon, f"lateness_{job}"
+            )
+            model.add(lateness == var.end - job.due_date)
+            lateness_vars.append(job.weight * lateness)
+
+        max_lateness = model.new_int_var(
+            -data.horizon, data.horizon, "max_lateness"
+        )
+        model.add_max_equality(max_lateness, lateness_vars)
+        return max_lateness
+
     def _objective_expr(self, objective: DataObjective) -> LinearExprT:
         """
         Returns the expression corresponding to the given objective.
         """
-        expr = 0
+        items = [
+            (objective.weight_makespan, self._makespan_expr),
+            (objective.weight_tardy_jobs, self._tardy_jobs_expr),
+            (objective.weight_total_tardiness, self._total_tardiness_expr),
+            (objective.weight_total_flow_time, self._total_flow_time_expr),
+            (objective.weight_total_earliness, self._total_earliness_expr),
+            (objective.weight_max_tardiness, self._max_tardiness_expr),
+            (objective.weight_max_lateness, self._max_lateness_expr),
+        ]
+        exprs = [weight * expr() for weight, expr in items if weight > 0]
+        return LinearExpr.sum(exprs)
 
-        if objective.weight_makespan > 0:
-            expr += objective.weight_makespan * self._makespan_expr()
-
-        if objective.weight_tardy_jobs > 0:
-            expr += objective.weight_tardy_jobs * self._tardy_jobs_expr()
-
-        if objective.weight_total_tardiness > 0:
-            expr += (
-                objective.weight_total_tardiness * self._total_tardiness_expr()
-            )
-
-        if objective.weight_total_flow_time > 0:
-            expr += (
-                objective.weight_total_flow_time * self._total_flow_time_expr()
-            )
-
-        if objective.weight_total_earliness > 0:
-            expr += (
-                objective.weight_total_earliness * self._total_earliness_expr()
-            )
-
-        return expr
-
-    def set_objective(self, objective: DataObjective):
+    def build(self, objective: DataObjective):
         """
         Sets the objective of the the model.
         """
-        self._model.clear_objective()
-        self._model.minimize(self._objective_expr(objective))
+        if self._current_obj_expr is not None:
+            self._model.clear_objective()
+
+        obj_expr = self._objective_expr(objective)
+        self._model.minimize(obj_expr)
+        self._current_obj_expr = obj_expr
