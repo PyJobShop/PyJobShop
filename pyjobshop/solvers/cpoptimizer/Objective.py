@@ -20,7 +20,7 @@ class Objective:
         self._task_vars = variables.task_vars
         self._job_vars = variables.job_vars
 
-        self._current_objective_expr = None
+        self._current_obj_expr = None
 
     def _makespan_expr(self) -> CpoExpr:
         """
@@ -124,9 +124,9 @@ class Objective:
         """
         Builds the objective of the model.
         """
-        if self._current_objective_expr is not None:
-            self._model.remove(self._current_objective_expr)
+        if self._current_obj_expr is not None:
+            self._model.remove(self._current_obj_expr)
 
         obj_expr = self._objective_expr(objective)
         self._model.add(obj_expr)
-        self._current_objective_expr = obj_expr
+        self._current_obj_expr = obj_expr

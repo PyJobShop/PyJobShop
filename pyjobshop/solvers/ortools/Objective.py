@@ -23,6 +23,8 @@ class Objective:
         self._task_vars = variables.task_vars
         self._job_vars = variables.job_vars
 
+        self._current_obj_expr = None
+
     def _makespan_expr(self) -> LinearExprT:
         """
         Returns an expression representing the makespan of the model.
@@ -147,12 +149,16 @@ class Objective:
             (objective.weight_max_tardiness, self._max_tardiness_expr),
             (objective.weight_max_lateness, self._max_lateness_expr),
         ]
-        exprs = [weight * method() for weight, method in items if weight > 0]
+        exprs = [weight * expr() for weight, expr in items if weight > 0]
         return LinearExpr.sum(exprs)
 
-    def set_objective(self, objective: DataObjective):
+    def build(self, objective: DataObjective):
         """
         Sets the objective of the the model.
         """
-        self._model.clear_objective()
-        self._model.minimize(self._objective_expr(objective))
+        if self._current_obj_expr is not None:
+            self._model.clear_objective()
+
+        obj_expr = self._objective_expr(objective)
+        self._model.minimize(obj_expr)
+        self._current_obj_expr = obj_expr
