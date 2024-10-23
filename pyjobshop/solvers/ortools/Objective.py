@@ -134,34 +134,21 @@ class Objective:
         model.add_max_equality(max_lateness, lateness_vars)
         return max_lateness
 
-    def _objective_expr(self, obj: DataObjective) -> LinearExprT:
+    def _objective_expr(self, objective: DataObjective) -> LinearExprT:
         """
         Returns the expression corresponding to the given objective.
         """
-        expr = 0
-
-        if obj.weight_makespan > 0:
-            expr += obj.weight_makespan * self._makespan_expr()
-
-        if obj.weight_tardy_jobs > 0:
-            expr += obj.weight_tardy_jobs * self._tardy_jobs_expr()
-
-        if obj.weight_total_tardiness > 0:
-            expr += obj.weight_total_tardiness * self._total_tardiness_expr()
-
-        if obj.weight_total_flow_time > 0:
-            expr += obj.weight_total_flow_time * self._total_flow_time_expr()
-
-        if obj.weight_total_earliness > 0:
-            expr += obj.weight_total_earliness * self._total_earliness_expr()
-
-        if obj.weight_max_tardiness > 0:
-            expr += obj.weight_max_tardiness * self._max_tardiness_expr()
-
-        if obj.weight_max_lateness > 0:
-            expr += obj.weight_max_lateness * self._max_lateness_expr()
-
-        return expr
+        items = [
+            (objective.weight_makespan, self._makespan_expr),
+            (objective.weight_tardy_jobs, self._tardy_jobs_expr),
+            (objective.weight_total_tardiness, self._total_tardiness_expr),
+            (objective.weight_total_flow_time, self._total_flow_time_expr),
+            (objective.weight_total_earliness, self._total_earliness_expr),
+            (objective.weight_max_tardiness, self._max_tardiness_expr),
+            (objective.weight_max_lateness, self._max_lateness_expr),
+        ]
+        exprs = [weight * method() for weight, method in items if weight > 0]
+        return LinearExpr.sum(exprs)
 
     def set_objective(self, objective: DataObjective):
         """
