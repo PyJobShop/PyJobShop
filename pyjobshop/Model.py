@@ -174,6 +174,9 @@ class Model:
             weight_tardy_jobs=data.objective.weight_tardy_jobs,
             weight_total_tardiness=data.objective.weight_total_tardiness,
             weight_total_flow_time=data.objective.weight_total_flow_time,
+            weight_total_earliness=data.objective.weight_total_earliness,
+            weight_max_tardiness=data.objective.weight_max_tardiness,
+            weight_max_lateness=data.objective.weight_max_lateness,
         )
 
         return model
@@ -534,6 +537,8 @@ class Model:
         weight_total_tardiness: int = 0,
         weight_total_flow_time: int = 0,
         weight_total_earliness: int = 0,
+        weight_max_tardiness: int = 0,
+        weight_max_lateness: int = 0,
     ):
         """
         Sets the objective function in this model.
@@ -550,6 +555,10 @@ class Model:
             Weight of the total flow time objective. Default 0.
         weight_total_earliness
             Weight of the total earliness objective. Default 0.
+        weight_max_tardiness
+            Weight of the max tardiness objective. Default 0.
+        weight_max_lateness
+            Weight of the max lateness objective. Default 0.
         """
         self._objective = Objective(
             weight_makespan=weight_makespan,
@@ -557,6 +566,8 @@ class Model:
             weight_total_tardiness=weight_total_tardiness,
             weight_total_flow_time=weight_total_flow_time,
             weight_total_earliness=weight_total_earliness,
+            weight_max_tardiness=weight_max_tardiness,
+            weight_max_lateness=weight_max_lateness,
         )
 
     def solve(

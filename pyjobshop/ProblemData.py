@@ -405,6 +405,8 @@ class Objective:
     * Total flow time
     * Total tardiness
     * Total earliness
+    * Maximum tardiness
+    * Maximum lateness
 
     .. note::
         Use :attr:`Job.weight` to set a specific job's contribution to the
@@ -416,6 +418,8 @@ class Objective:
     weight_total_flow_time: int = 0
     weight_total_tardiness: int = 0
     weight_total_earliness: int = 0
+    weight_max_tardiness: int = 0
+    weight_max_lateness: int = 0
 
     @classmethod
     def makespan(cls):
@@ -451,6 +455,20 @@ class Objective:
         Minimizes the total earliness.
         """
         return cls(weight_total_earliness=1)
+
+    @classmethod
+    def max_tardiness(cls):
+        """
+        Minimizes the maximum tardiness.
+        """
+        return cls(weight_max_tardiness=1)
+
+    @classmethod
+    def max_lateness(cls):
+        """
+        Minimizes the maximum lateness.
+        """
+        return cls(weight_max_lateness=1)
 
 
 class ProblemData:
@@ -568,6 +586,8 @@ class ProblemData:
             self.objective.weight_tardy_jobs > 0
             or self.objective.weight_total_tardiness > 0
             or self.objective.weight_total_earliness > 0
+            or self.objective.weight_max_tardiness > 0
+            or self.objective.weight_max_lateness > 0
         ):
             if any(job.due_date is None for job in self.jobs):
                 msg = "Job due dates required for due date-based objectives."
