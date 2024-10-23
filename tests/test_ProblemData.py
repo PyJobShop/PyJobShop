@@ -1263,6 +1263,14 @@ def test_total_earliness(solver: str):
     assert_equal(result.best.tasks[1].end, 1)
 
 
+def test_max_tardiness(solver: str):
+    pass  # TODO
+
+
+def test_max_lateness(solver: str):
+    pass  # TODO
+
+
 def test_combined_objective(solver: str):
     """
     Tests that a combined objective function of makespan and tardy jobs is
