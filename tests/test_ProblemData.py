@@ -1282,7 +1282,7 @@ def test_max_tardiness(solver: str):
     result = model.solve(solver=solver)
 
     # Both jobs are tardy by 2 time units, but job 1 has weight 2 and job 2
-    # has weight 1. So the maximum tardiness is 2 * 2 = 4. Combined with the
+    # has weight 1. So the maximum tardiness is 2 * 2 = 4. Multiplied with the
     # ``weight_max_tardiness`` of 2, the objective value is 8.
     assert_equal(result.objective, 8)
     assert_equal(result.best.tasks[0].end, 2)
@@ -1307,7 +1307,7 @@ def test_max_lateness(solver: str):
     result = model.solve(solver=solver)
 
     # Both jobs are "late" by -2 time units, but job 1 has weight 2 and job 2
-    # has weight 1. So the maximum tardiness is -2 * 1 = -2. Combined with the
+    # has weight 1. So the maximum lateness is -2 * 1 = -2. Multiplied with the
     # ``weight_max_lateness`` of 2, the objective value is -4.
     assert_equal(result.objective, -4)
     assert_equal(result.best.tasks[0].end, 2)
