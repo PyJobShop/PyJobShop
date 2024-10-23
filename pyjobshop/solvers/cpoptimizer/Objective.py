@@ -80,32 +80,56 @@ class Objective:
 
         return cpo.sum(total)  # type: ignore
 
-    def _objective_expr(self, objective: DataObjective) -> CpoExpr:
+    def _max_tardiness_expr(self) -> CpoExpr:
+        """
+        Returns an expression representing the maximum tardiness of jobs.
+        """
+        data = self._data
+        max_tardiness = cpo.max(
+            job.weight * cpo.max(0, cpo.end_of(var) - job.due_date)
+            for job, var in zip(data.jobs, self._job_vars)
+        )
+
+        return max_tardiness
+
+    def _max_lateness_expr(self) -> CpoExpr:
+        """
+        Returns an expression representing the maximum lateness of jobs.
+        """
+        data = self._data
+        max_lateness = cpo.max(
+            job.weight * (cpo.end_of(var) - job.due_date)
+            for job, var in zip(data.jobs, self._job_vars)
+        )
+
+        return max_lateness
+
+    def _objective_expr(self, obj: DataObjective) -> CpoExpr:
         """
         Returns the expression corresponding to the given objective.
         """
         expr = 0
 
-        if objective.weight_makespan > 0:
-            expr += objective.weight_makespan * self._makespan_expr()
+        if obj.weight_makespan > 0:
+            expr += obj.weight_makespan * self._makespan_expr()
 
-        if objective.weight_tardy_jobs > 0:
-            expr += objective.weight_tardy_jobs * self._tardy_jobs_expr()
+        if obj.weight_tardy_jobs > 0:
+            expr += obj.weight_tardy_jobs * self._tardy_jobs_expr()
 
-        if objective.weight_total_tardiness > 0:
-            expr += (
-                objective.weight_total_tardiness * self._total_tardiness_expr()
-            )
+        if obj.weight_total_tardiness > 0:
+            expr += obj.weight_total_tardiness * self._total_tardiness_expr()
 
-        if objective.weight_total_flow_time > 0:
-            expr += (
-                objective.weight_total_flow_time * self._total_flow_time_expr()
-            )
+        if obj.weight_total_flow_time > 0:
+            expr += obj.weight_total_flow_time * self._total_flow_time_expr()
 
-        if objective.weight_total_earliness > 0:
-            expr += (
-                objective.weight_total_earliness * self._total_earliness_expr()
-            )
+        if obj.weight_total_earliness > 0:
+            expr += obj.weight_total_earliness * self._total_earliness_expr()
+
+        if obj.weight_max_tardiness > 0:
+            expr += obj.weight_max_tardiness * self._max_tardiness_expr()
+
+        if obj.weight_max_lateness > 0:
+            expr += obj.weight_max_lateness * self._max_lateness_expr()
 
         return self._model.minimize(expr)
 
