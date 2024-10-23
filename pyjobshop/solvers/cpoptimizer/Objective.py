@@ -32,10 +32,8 @@ class Objective:
         """
         Returns an expression representing the number of tardy jobs.
         """
-        data = self._data
         exprs = []
-
-        for job, var in zip(data.jobs, self._job_vars):
+        for job, var in zip(self._data.jobs, self._job_vars):
             is_tardy = cpo.greater(cpo.end_of(var) - job.due_date, 0)
             exprs.append(job.weight * is_tardy)
 
@@ -45,10 +43,8 @@ class Objective:
         """
         Returns an expression representing the total flow time of jobs.
         """
-        data = self._data
         total = []
-
-        for job, var in zip(data.jobs, self._job_vars):
+        for job, var in zip(self._data.jobs, self._job_vars):
             flow_time = cpo.max(0, cpo.end_of(var) - job.release_date)
             total.append(job.weight * flow_time)
 
@@ -58,10 +54,8 @@ class Objective:
         """
         Returns an expression representing the total tardiness of jobs.
         """
-        data = self._data
         total = []
-
-        for job, var in zip(data.jobs, self._job_vars):
+        for job, var in zip(self._data.jobs, self._job_vars):
             tardiness = cpo.max(0, cpo.end_of(var) - job.due_date)
             total.append(job.weight * tardiness)
 
@@ -71,10 +65,8 @@ class Objective:
         """
         Returns an expression representing the total earliness of jobs.
         """
-        data = self._data
         total = []
-
-        for job, var in zip(data.jobs, self._job_vars):
+        for job, var in zip(self._data.jobs, self._job_vars):
             earliness = cpo.max(0, job.due_date - cpo.end_of(var))
             total.append(job.weight * earliness)
 
@@ -84,25 +76,21 @@ class Objective:
         """
         Returns an expression representing the maximum tardiness of jobs.
         """
-        data = self._data
-        max_tardiness = cpo.max(
+        tardiness = [
             job.weight * cpo.max(0, cpo.end_of(var) - job.due_date)
-            for job, var in zip(data.jobs, self._job_vars)
-        )
-
-        return max_tardiness
+            for job, var in zip(self._data.jobs, self._job_vars)
+        ]
+        return cpo.max(tardiness)
 
     def _max_lateness_expr(self) -> CpoExpr:
         """
         Returns an expression representing the maximum lateness of jobs.
         """
-        data = self._data
-        max_lateness = cpo.max(
+        lateness = [
             job.weight * (cpo.end_of(var) - job.due_date)
-            for job, var in zip(data.jobs, self._job_vars)
-        )
-
-        return max_lateness
+            for job, var in zip(self._data.jobs, self._job_vars)
+        ]
+        return cpo.max(lateness)
 
     def _objective_expr(self, objective: DataObjective) -> CpoExpr:
         """
