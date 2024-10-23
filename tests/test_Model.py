@@ -92,7 +92,7 @@ def test_from_data():
     representation of that instance.
     """
     data = ProblemData(
-        [Job()],
+        [Job(due_date=1)],
         [Resource(1), Machine()],
         [Task(), Task(), Task()],
         modes=[Mode(0, [0], 1), Mode(1, [1], 2), Mode(2, [1], 2)],
