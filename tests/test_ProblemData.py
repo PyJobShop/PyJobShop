@@ -412,6 +412,8 @@ def test_problem_data_raises_capacitated_resources_and_setup_times():
         Objective.tardy_jobs(),
         Objective.total_tardiness(),
         Objective.total_earliness(),
+        Objective.max_tardiness(),
+        Objective.max_lateness(),
     ],
 )
 def test_problem_data_tardy_objective_without_job_due_dates(
