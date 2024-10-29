@@ -26,7 +26,7 @@ jobs:
         run: uv python install ${{ matrix.python-version }}
 
       - name: Install the project
-        run: uv sync --all-extras --group dev
+        run: uv sync --all-extras
 
       - name: Cache pre-commit
         uses: actions/cache@v3
