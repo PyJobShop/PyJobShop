@@ -20,13 +20,13 @@ jobs:
       - name: Install the latest version of uv
         uses: astral-sh/setup-uv@v3
         with:
-          version: "0.4.22"
+          version: "0.4.27"
 
       - name: Install Python version
         run: uv python install ${{ matrix.python-version }}
 
       - name: Install the project
-        run: uv sync --all-extras --dev
+        run: uv sync --all-extras
 
       - name: Cache pre-commit
         uses: actions/cache@v3

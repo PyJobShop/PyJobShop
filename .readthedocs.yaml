@@ -8,7 +8,7 @@ build:
     - asdf plugin add uv
     - asdf install uv latest
     - asdf global uv latest
-    - uv sync --all-extras --dev
+    - uv sync --all-extras --group docs --group examples
     - .venv/bin/python -m sphinx -T -b html -d docs/_build/doctrees -D language=en docs/source $READTHEDOCS_OUTPUT/html
 sphinx:
   configuration: docs/source/conf.py
