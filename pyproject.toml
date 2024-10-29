@@ -1,12 +1,30 @@
 [project]
 name = "pyjobshop"
-version = "0.0.2"
+version = "0.0.3a0"
 description = "Solving scheduling problems with constraint programming."
 authors = [
     { name = "Leon Lan", email = "l.lan@vu.nl"},
 ]
-license = { text = "MIT" }
+license = { text = "MIT License" }
 readme = "README.md"
+keywords = [
+    "scheduling",
+    "constraint programming",
+    "job shop problem",
+]
+classifiers = [
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Development Status :: 5 - Production/Stable",
+    "Topic :: Software Development",
+    "Topic :: Scientific/Engineering",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
 requires-python = ">=3.9"
 dependencies = [
     "ortools>=9.10.4067,<10",
@@ -17,8 +35,17 @@ dependencies = [
     "tomli>=2.0.1",
 ]
 
+
+[project.urls]
+Homepage = "https://pyjobshop.readthedocs.io/stable/"
+Documentation = "https://pyjobshop.readthedocs.io/stable/"
+Repository = "https://github.com/PyJobShop/PyJobShop"
+Issues = "https://github.com/PyJobShop/PyJobShop/issues"
+
+
 [project.scripts]
 pyjobshop = 'pyjobshop:cli.main'
+
 
 [project.optional-dependencies]
 docplex = [
@@ -27,6 +54,7 @@ docplex = [
 cplex = [
     "cplex>=22.1.1.2",
 ]
+
 
 [dependency-groups]
 dev = [
@@ -45,8 +73,10 @@ docs = [
 ]
 examples = ["jupyterlab>=4.2.4"]
 
+
 [tool.uv]
 default-groups = ["dev"]
+
 
 [tool.uv.sources]
 fjsplib = { git = "https://github.com/PyJobShop/FJSPLIB.git", rev = "75b2d18" }
