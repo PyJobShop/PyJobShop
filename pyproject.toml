@@ -45,8 +45,10 @@ docs = [
 ]
 examples = ["jupyterlab>=4.2.4"]
 
-[tool.uv.sources]
+[tool.uv]
 default-groups = ["dev"]
+
+[tool.uv.sources]
 fjsplib = { git = "https://github.com/PyJobShop/FJSPLIB.git", rev = "75b2d18" }
 
 
