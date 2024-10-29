@@ -28,7 +28,7 @@ cplex = [
     "cplex>=22.1.1.2",
 ]
 
-[depedency-groups]
+[dependency-groups]
 dev = [
     "pre-commit>=3.8.0",
     "pytest>=8.3.2",
