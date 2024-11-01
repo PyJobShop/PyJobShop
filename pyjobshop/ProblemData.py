@@ -19,7 +19,7 @@ class Job:
     Parameters
     ----------
     weight
-        The job importance weight, used as multiplicative factor in the
+        The weight of the job, used as multiplicative factor in the
         objective function. Default 1.
     release_date
         The earliest time that the job may start. Default 0.
@@ -71,8 +71,8 @@ class Job:
     @property
     def weight(self) -> int:
         """
-        The job importance weight, used as multiplicative factor in the
-        objective function.
+        The weight of the job, used as multiplicative factor in the objective
+        function.
         """
         return self._weight
 
@@ -408,7 +408,7 @@ class Objective:
     * Maximum lateness
 
     .. note::
-        Use :attr:`Job.weight` to set a specific job's contribution to the
+        Use :attr:`Job.weight` to set a specific job's weight in the
         objective function.
     """
 
@@ -423,49 +423,49 @@ class Objective:
     @classmethod
     def makespan(cls):
         """
-        Minimizes the makespan.
+        Returns the makespan objective function.
         """
         return cls(weight_makespan=1)
 
     @classmethod
     def total_flow_time(cls):
         """
-        Minimizes the total flow time.
+        Returns the total flow time objective function.
         """
         return cls(weight_total_flow_time=1)
 
     @classmethod
     def tardy_jobs(cls):
         """
-        Minimizes the number of tardy jobs.
+        Returns the number of tardy jobs objective function.
         """
         return cls(weight_tardy_jobs=1)
 
     @classmethod
     def total_tardiness(cls):
         """
-        Minimizes the total tardiness.
+        Returns the total tardiness objective function.
         """
         return cls(weight_total_tardiness=1)
 
     @classmethod
     def total_earliness(cls):
         """
-        Minimizes the total earliness.
+        Returns the total earliness objective function.
         """
         return cls(weight_total_earliness=1)
 
     @classmethod
     def max_tardiness(cls):
         """
-        Minimizes the maximum tardiness.
+        Returns the maximum tardiness objective function.
         """
         return cls(weight_max_tardiness=1)
 
     @classmethod
     def max_lateness(cls):
         """
-        Minimizes the maximum lateness.
+        Returns the maximum lateness objective function.
         """
         return cls(weight_max_lateness=1)
 

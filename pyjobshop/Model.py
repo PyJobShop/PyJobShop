@@ -222,7 +222,7 @@ class Model:
         Parameters
         ----------
         weight
-            The job importance weight, used as multiplicative factor in the
+            The weight of the job, used as multiplicative factor in the
             objective function. Default 1.
         release_date
             The earliest time that the job may start. Default 0.
