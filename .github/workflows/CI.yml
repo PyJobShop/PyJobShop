@@ -13,7 +13,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        python-version: ['3.9', '3.10', '3.11']
+        python-version: ['3.9', '3.10', '3.11', '3.12']
     steps:
       - uses: actions/checkout@v4
 
@@ -26,7 +26,14 @@ jobs:
         run: uv python install ${{ matrix.python-version }}
 
       - name: Install the project
-        run: uv sync --all-extras
+        # CPLEX does not distribute binaries for Python 3.12, so we do not
+        # install its extras dependencies for this version.
+        run: |
+          if [ "${{ matrix.python-version }}" != "3.12" ]; then
+            uv sync --all-extras
+          else
+            uv sync
+          fi
 
       - name: Cache pre-commit
         uses: actions/cache@v3
