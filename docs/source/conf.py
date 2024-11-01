@@ -22,7 +22,6 @@ extensions = [
     "sphinx_immaterial",
     "nbsphinx",
     "numpydoc",
-    "enum_tools.autoenum",
 ]
 
 templates_path = ["_templates"]
