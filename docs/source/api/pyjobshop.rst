@@ -30,7 +30,8 @@ PyJobShop
     .. autoclass:: Mode
        :members:
 
-    .. autoenum:: Constraint
+    .. autoclass:: Constraint
+       :members:
 
     .. autoclass:: Objective
        :members:

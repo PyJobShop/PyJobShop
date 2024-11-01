@@ -4,7 +4,6 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Optional, Sequence, TypeVar, Union
 
-import enum_tools.documentation
 import numpy as np
 
 from pyjobshop.constants import MAX_VALUE
@@ -352,46 +351,46 @@ class Mode:
         )
 
 
-@enum_tools.documentation.document_enum
 class Constraint(str, Enum):
     """
-    Task constraints between two tasks :math:`i` and :math:`j`.
+    Enum that defines different types of constraints between two tasks
+    :math:`i` and :math:`k`.
     """
 
-    #: Task :math:`i` must start when task :math:`j` starts.
+    #: Task :math:`i` must start when task :math:`k` starts.
     START_AT_START = "start_at_start"
 
-    #: Task :math:`i` must at start when task :math:`j` ends.
+    #: Task :math:`i` must at start when task :math:`k` ends.
     START_AT_END = "start_at_end"
 
-    #: Task :math:`i` must start before task :math:`j` starts.
+    #: Task :math:`i` must start before task :math:`k` starts.
     START_BEFORE_START = "start_before_start"
 
-    #: Task :math:`i` must start before task :math:`j` ends.
+    #: Task :math:`i` must start before task :math:`k` ends.
     START_BEFORE_END = "start_before_end"
 
-    #: Task :math:`i` must end when task :math:`j` starts.
+    #: Task :math:`i` must end when task :math:`k` starts.
     END_AT_START = "end_at_start"
 
-    #: Task :math:`i` must end when task :math:`j` ends.
+    #: Task :math:`i` must end when task :math:`k` ends.
     END_AT_END = "end_at_end"
 
-    #: Task :math:`i` must end before task :math:`j` starts.
+    #: Task :math:`i` must end before task :math:`k` starts.
     END_BEFORE_START = "end_before_start"
 
-    #: Task :math:`i` must end before task :math:`j` ends.
+    #: Task :math:`i` must end before task :math:`k` ends.
     END_BEFORE_END = "end_before_end"
 
-    #: Assign tasks :math:`i` and :math:`j` to modes with the same set of resources. # noqa
+    #: Tasks :math:`i` and :math:`k` must use modes with identical resources.
     IDENTICAL_RESOURCES = "identical_resources"
 
-    #: Assign tasks :math:`i` and :math:`j` to modes with disjoint sets of resources. # noqa
+    #: Tasks :math:`i` and :math:`k` must use modes with disjoint resources.
     DIFFERENT_RESOURCES = "different_resources"
 
-    #: Sequence :math:`i` right before :math:`j` (if assigned to same resource). # noqa
+    #: Sequence task :math:`i` right before :math:`k` on shared resources.
     PREVIOUS = "previous"
 
-    #: Sequence :math:`i` before :math:`j` (if assigned to same resources).
+    #: Sequence task :math:`i` before :math:`k` on shared resources.
     BEFORE = "before"
 
 
