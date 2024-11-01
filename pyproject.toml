@@ -25,12 +25,11 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
 ]
-requires-python = ">=3.9"
+requires-python = ">=3.9,<3.13"
 dependencies = [
     "ortools>=9.10.4067,<10",
     "matplotlib>=3.9.2",
     "fjsplib",
-    "enum-tools>=0.12.0",
     "tqdm>=4.66.5",
     "tomli>=2.0.1",
 ]
@@ -69,7 +68,6 @@ docs = [
     "nbsphinx>=0.9.5",
     "numpydoc>=1.8.0",
     "sphinx-immaterial>=0.12.2",
-    "enum-tools[sphinx]>=0.12.0",
 ]
 examples = ["jupyterlab>=4.2.4"]
 

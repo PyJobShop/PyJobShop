@@ -222,7 +222,7 @@ class Model:
         Parameters
         ----------
         weight
-            The job importance weight, used as multiplicative factor in the
+            The weight of the job, used as multiplicative factor in the
             objective function. Default 1.
         release_date
             The earliest time that the job may start. Default 0.
@@ -461,7 +461,7 @@ class Model:
     def add_identical_resources(self, task1: Task, task2: Task):
         """
         Adds a constraint that two tasks must be scheduled with modes that
-        require the same resources.
+        require identical resources.
         """
         idx1 = self._id2task[id(task1)]
         idx2 = self._id2task[id(task2)]
@@ -480,7 +480,7 @@ class Model:
         """
         Adds a constraint that the first task must be scheduled right before
         the second task, meaning that no task is allowed to schedule between,
-        if they are scheduled on the same resource.
+        on resources that they are both scheduled on.
         """
         idx1 = self._id2task[id(task1)]
         idx2 = self._id2task[id(task2)]
@@ -489,7 +489,7 @@ class Model:
     def add_before(self, task1: Task, task2: Task):
         """
         Adds a constraint that the first task must be scheduled before the
-        second task, if they are scheduled on the same resource.
+        second task on resources that they are both scheduled on.
         """
         idx1 = self._id2task[id(task1)]
         idx2 = self._id2task[id(task2)]
