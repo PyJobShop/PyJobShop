@@ -21,7 +21,7 @@ Now, change into the PyJobShop directory, and set-up the virtual environment usi
 .. code-block:: shell
 
    cd PyJobShop
-   uv sync --all-extras
+   uv sync --all-extras --group docs --group examples
 
 Now make sure everything runs smoothly, by executing the test suite:
 
