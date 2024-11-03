@@ -32,13 +32,13 @@ Now make sure everything runs smoothly, by executing the test suite:
 .. note::
 
    By default, tests will run on all solvers, which are currently OR-Tools and CP Optimizer.
-   If you encounter installation issues with CP Optimizer, you can also run tests only for OR-Tools by specifying the `--solvers` argument as follows:
+   If you encounter installation issues with CP Optimizer, you can also run tests only for OR-Tools by specifying the ``--solvers`` argument as follows:
 
    .. code-block:: shell
 
       uv run pytest --solvers ortools
 
-   See the :doc:`installation instructions<../setup/installation>` page for more information on installing CP Optimizer.
+   See the :doc:```installation instructions<../setup/installation>` page for more information on installing CP Optimizer.
 
 .. note::
 

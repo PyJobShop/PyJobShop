@@ -24,10 +24,6 @@ Installing CP Optimizer
 PyJobShop includes OR-Tools' CP-SAT solver by default, an open-source constraint programming solver.
 Additionally, PyJobShop can be integrated with IBM ILOG CP Optimizer, a commercial constraint programming solver.
 
-.. note::
-
-   CP Optimizer only works with Python versions 3.9, 3.10, and 3.11.
-
 To use PyJobShop with CP Optimizer, follow one of the following two steps based on whether you already have CP Optimizer installed:
 
 1. **If you already have CP Optimizer installed:**
@@ -50,6 +46,10 @@ To use PyJobShop with CP Optimizer, follow one of the following two steps based 
       pip install pyjobshop[docplex,cplex]
 
    The ``cplex`` library installs a free edition of CP Optimizer that is capable of solving models with up to 1000 variables and 1000 constraints. For larger models, you need a paid or academic version of CP Optimizer.
+
+   .. warning::
+
+      The free community edition of CP Optimizer can only installed with Python versions 3.9-3.11.
 
    If you are a student or researcher, you can get a free academic version of CP Optimizer for non-commercial purposes by following these steps:
 
