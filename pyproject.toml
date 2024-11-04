@@ -69,7 +69,9 @@ docs = [
     "numpydoc>=1.8.0",
     "sphinx-immaterial>=0.12.2",
 ]
-examples = ["jupyterlab>=4.2.4"]
+examples = [
+    "jupyter>=1.0.0",
+]
 
 
 [tool.uv]

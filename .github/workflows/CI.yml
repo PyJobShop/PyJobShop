@@ -54,7 +54,8 @@ jobs:
           if [ "${{ matrix.python-version }}" != "3.12" ]; then
             uv run pytest --solvers ortools cpoptimizer
           else
-          # CPLEX does not distribute binaries for Python 3.12.
+          # CPLEX does not distribute binaries for Python 3.12,
+          # so we only test ortools on 3.11.
             uv run pytest --solvers ortools
           fi
 

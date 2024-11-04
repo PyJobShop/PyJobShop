@@ -21,13 +21,24 @@ Now, change into the PyJobShop directory, and set-up the virtual environment usi
 .. code-block:: shell
 
    cd PyJobShop
-   uv sync
+   uv sync --all-extras --group docs --group examples
 
 Now make sure everything runs smoothly, by executing the test suite:
 
 .. code-block:: shell
 
    uv run pytest
+
+.. note::
+
+   By default, tests will run on all solvers, which are currently OR-Tools and CP Optimizer.
+   If you encounter installation issues with CP Optimizer, you can also run tests only for OR-Tools by specifying the ``--solvers`` argument as follows:
+
+   .. code-block:: shell
+
+      uv run pytest --solvers ortools
+
+   See the :doc:`installation instructions<../setup/installation>` page for more details about installing CP Optimizer.
 
 .. note::
 

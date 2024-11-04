@@ -1,5 +1,6 @@
 Installation instructions
 =========================
+
 The easiest way to install the ``pyjobshop`` package is through ``pip``.
 To install it, simply run:
 
@@ -10,6 +11,7 @@ To install it, simply run:
 
 Installing from source
 ----------------------
+
 To install the latest version of ``pyjobshop`` directly from the GitHub repository, run the following:
 
 .. code-block:: shell
@@ -21,12 +23,9 @@ This can be useful to get features that have not yet made it to the Python packa
 
 Installing CP Optimizer
 -----------------------
+
 PyJobShop includes OR-Tools' CP-SAT solver by default, an open-source constraint programming solver.
 Additionally, PyJobShop can be integrated with IBM ILOG CP Optimizer, a commercial constraint programming solver.
-
-.. note::
-
-   CP Optimizer only works with Python versions 3.9, 3.10, and 3.11.
 
 To use PyJobShop with CP Optimizer, follow one of the following two steps based on whether you already have CP Optimizer installed:
 
@@ -51,9 +50,16 @@ To use PyJobShop with CP Optimizer, follow one of the following two steps based 
 
    The ``cplex`` library installs a free edition of CP Optimizer that is capable of solving models with up to 1000 variables and 1000 constraints. For larger models, you need a paid or academic version of CP Optimizer.
 
-   If you are a student or researcher, you can get a free academic version of CP Optimizer for non-commercial purposes by following these steps:
+   .. warning::
 
-   - Register at `ibm.com/academic <https://ibm.com/academic>`_ and log in.
-   - Go to `academic.ibm.com/a2mt/downloads/data_science <https://academic.ibm.com/a2mt/downloads/data_science>`_ and download ILOG CPLEX Optimization Studio, which includes CP Optimizer.
-   - Follow the installation instructions, making sure to complete the Python installation steps at the end.
-   - Ensure that the path to ``cpoptimizer(.exe)`` is accessible and properly set in your system path.
+      The free community edition of CP Optimizer can only installed with Python versions 3.9-3.11.
+
+Obtaining the academic version
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If you are a student or researcher, you can get the free academic version of CP Optimizer for non-commercial purposes by following these steps:
+
+- Register at `ibm.com/academic <https://ibm.com/academic>`_ and log in.
+- Go to `academic.ibm.com/a2mt/downloads/data_science <https://academic.ibm.com/a2mt/downloads/data_science>`_ and download ILOG CPLEX Optimization Studio, which includes CP Optimizer.
+- Follow the installation instructions, making sure to complete the Python installation steps at the end.
+- Ensure that the path to ``cpoptimizer(.exe)`` is accessible and properly set in your system path.
