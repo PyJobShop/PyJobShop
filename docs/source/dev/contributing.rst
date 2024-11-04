@@ -38,7 +38,7 @@ Now make sure everything runs smoothly, by executing the test suite:
 
       uv run pytest --solvers ortools
 
-   See the :doc:```installation instructions<../setup/installation>` page for more information on installing CP Optimizer.
+   See the :doc:`installation instructions<../setup/installation>` page for more details about installing CP Optimizer.
 
 .. note::
 
