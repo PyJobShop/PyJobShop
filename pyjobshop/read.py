@@ -3,13 +3,7 @@ from pathlib import Path
 from typing import Union
 
 import fjsplib
-
-from pyjobshop.parse.project import (
-    ProjectInstance,
-    parse_mplib,
-    parse_patterson,
-    parse_psplib,
-)
+import psplib
 
 from .Model import Model
 from .ProblemData import ProblemData
@@ -35,12 +29,13 @@ def read(
     """
     if instance_format == InstanceFormat.FJSPLIB:
         return _read_fjslib(loc)
-    elif instance_format == InstanceFormat.PSPLIB:
-        return _project_instance_to_data(parse_psplib(loc))
-    elif instance_format == InstanceFormat.MPLIB:
-        return _project_instance_to_data(parse_mplib(loc))
-    elif instance_format == InstanceFormat.PATTERSON:
-        return _project_instance_to_data(parse_patterson(loc))
+    elif instance_format in [
+        InstanceFormat.PSPLIB,
+        InstanceFormat.MPLIB,
+        InstanceFormat.PATTERSON,
+    ]:
+        instance = psplib.parse(loc, instance_format)
+        return _project_instance_to_data(instance)
 
     raise ValueError(f"Unknown instance format: {instance_format}")
 
@@ -69,7 +64,7 @@ def _read_fjslib(loc: Union[str, Path]) -> ProblemData:
     return m.data()
 
 
-def _project_instance_to_data(instance: ProjectInstance) -> ProblemData:
+def _project_instance_to_data(instance: psplib.ProjectInstance) -> ProblemData:
     """
     Converts a ProjectInstance to a ProblemData object.
     """
