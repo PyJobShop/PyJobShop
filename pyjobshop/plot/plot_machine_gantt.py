@@ -23,10 +23,10 @@ def plot_machine_gantt(
 
     Parameters
     ----------
-    data
-        The problem data instance.
     solution
         A solution to the problem.
+    data
+        The problem data instance.
     resources
         The resources (by index) to plot and in which order they should appear
         (from top to bottom). Defaults to all resources in the data instance.
