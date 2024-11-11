@@ -20,25 +20,24 @@ Compared to mixed-integer linear programming, which only allows modeling using l
   .. figure:: ../assets/sudoku.png
     :alt: A 9x9 Sudoku pizzle.
     :figwidth: 100%
+    :align: center
 
   A Sudoku puzzle is a simple yet effective way to explain the basics of how CP works.
 
-   1. **Variables:** Each cell in the 9x9 Sudoku grid is treated as a variable, with possible values ranging from 1 to 9.
+  1. **Variables:** Each cell in the 9x9 Sudoku grid is treated as a variable, with possible values ranging from 1 to 9.
 
-   2. **Constraints:** Rules are applied to these variables, including:
-      - Each row must contain unique numbers.
-      - Each column must contain unique numbers.
-      - Each of the nine 3x3 subgrids (or boxes) must also contain unique numbers.
+  2. **Constraints:** Rules are applied to these variables, including:
 
+      * Each row must contain unique numbers.
+      * Each column must contain unique numbers.
+      * Each of the nine 3x3 subgrids (or boxes) must also contain unique numbers.
+      * Finally, the pre-filled cell restricts its corresponding variable to a specific value.
 
-   3. **Initial constraints:** The partially filled grid (the Sudoku puzzle) provides initial constraints, as each pre-filled cell restricts its corresponding variable to a specific value.
+  3. **Propagation:** As you reason through the constraints, you reduce the domains of variables, and this information can be used to further narrow down possibilities without guessing.
 
-  4. **Propagation:** As you reason through the constraints, you reduce the domains of variables, and this information can be used to further narrow down possibilities without guessing.
+  4. **Search:** When reasoning with constraints alone cannot determine the remaining values, you may have to make educated guesses. If a guess leads to a contradiction, you backtrack to eliminate that option and try a different one.
 
-   5. **Search:** When reasoning with constraints alone cannot determine the remaining values, you may have to make educated guesses. If a guess leads to a contradiction, you backtrack to eliminate that option and try a different one.
-
-  6. **Solution:** A solution is found when all cells are filled in such a way that all constraints are satisfied.
-
+  5. **Solution:** A solution is found when all cells are filled in such a way that all constraints are satisfied.
 
 
 Several popular tools and libraries are available for modeling and solving CP problems.
