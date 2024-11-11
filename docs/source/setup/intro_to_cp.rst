@@ -19,19 +19,19 @@ Compared to mixed-integer linear programming, which only allows modeling using l
 
   .. figure:: ../assets/sudoku.png
     :alt: A 9x9 Sudoku pizzle.
-    :figwidth: 100%
-    :align: center
+    :figwidth: 50%
 
-  A Sudoku puzzle is a simple yet effective way to explain the basics of how CP works.
+  A Sudoku puzzle is a simple example to explain the basics of CP.
 
   1. **Variables:** Each cell in the 9x9 Sudoku grid is treated as a variable, with possible values ranging from 1 to 9.
 
-  2. **Constraints:** Rules are applied to these variables, including:
+  2. **Constraints:**
+     Rules are applied to these variables, including:
 
-      * Each row must contain unique numbers.
-      * Each column must contain unique numbers.
-      * Each of the nine 3x3 subgrids (or boxes) must also contain unique numbers.
-      * Finally, the pre-filled cell restricts its corresponding variable to a specific value.
+     * Each row must contain unique numbers.
+     * Each column must contain unique numbers.
+     * Each of the nine 3x3 subgrids (or boxes) must also contain unique numbers.
+     * Finally, the pre-filled cell restricts its corresponding variable to a specific value.
 
   3. **Propagation:** As you reason through the constraints, you reduce the domains of variables, and this information can be used to further narrow down possibilities without guessing.
 
