@@ -210,7 +210,7 @@ def test_add_machine_attributes():
 
 def test_add_task_attributes():
     """
-    Tests that adding an task to the model correctly sets the attributes.
+    Tests that adding a task to the model correctly sets the attributes.
     """
     model = Model()
 
