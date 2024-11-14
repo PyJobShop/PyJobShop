@@ -86,7 +86,7 @@ class ModeVar:
     start: IntVar
     duration: IntVar
     end: IntVar
-    is_present: IntVar
+    is_present: BoolVarT
 
 
 @dataclass
