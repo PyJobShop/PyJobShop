@@ -46,9 +46,9 @@ def plot_machine_gantt(
     # belong to a job are colored grey.
     task2color = defaultdict(lambda: "grey")
     colors = _get_colors()
-    for job_idx, job in enumerate(data.jobs):
-        for task in job.tasks:
-            task2color[task] = colors[job_idx % len(colors)]
+    for idx, task in enumerate(data.tasks):
+        if task.job is not None:
+            task2color[idx] = colors[task.job % len(colors)]
 
     for idx, task_data in enumerate(solution.tasks):
         kwargs = {
