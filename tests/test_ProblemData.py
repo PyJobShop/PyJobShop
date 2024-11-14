@@ -134,6 +134,7 @@ def test_task_attributes():
     Tests that the attributes of the Task class are set correctly.
     """
     task = Task(
+        job=0,
         earliest_start=1,
         latest_start=2,
         earliest_end=3,
@@ -142,6 +143,7 @@ def test_task_attributes():
         name="TestTask",
     )
 
+    assert_equal(task.job, 0)
     assert_equal(task.earliest_start, 1)
     assert_equal(task.latest_start, 2)
     assert_equal(task.earliest_end, 3)
@@ -152,6 +154,7 @@ def test_task_attributes():
     # Also test that default values are set correctly.
     task = Task()
 
+    assert_equal(task.job, None)
     assert_equal(task.earliest_start, 0)
     assert_equal(task.latest_start, MAX_VALUE)
     assert_equal(task.earliest_end, 0)
@@ -178,7 +181,12 @@ def test_task_attributes_raises_invalid_parameters(
     Task class.
     """
     with assert_raises(ValueError):
-        Task(earliest_start, latest_start, earliest_end, latest_end)
+        Task(
+            earliest_start=earliest_start,
+            latest_start=latest_start,
+            earliest_end=earliest_end,
+            latest_end=latest_end,
+        )
 
 
 def test_problem_data_input_parameter_attributes():
@@ -300,6 +308,19 @@ def test_problem_data_job_references_unknown_task():
             [Job(tasks=[42])],
             [Resource(0)],
             [Task()],
+            [Mode(0, [0], 1)],
+        )
+
+
+def test_problem_data_task_references_unknown_job():
+    """
+    Tests that an error is raised when a task references an unknown job.
+    """
+    with assert_raises(ValueError):
+        ProblemData(
+            [Job()],
+            [Resource(0)],
+            [Task(job=42)],
             [Mode(0, [0], 1)],
         )
 

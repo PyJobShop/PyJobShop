@@ -105,14 +105,9 @@ class Model:
             else:
                 raise ValueError(f"Unknown resource type: {type(resource)}")
 
-        task2job = {}
-        for job_idx, job in enumerate(data.jobs):
-            for task_idx in job.tasks:
-                task2job[task_idx] = job_idx
-
         for task in data.tasks:
             model.add_task(
-                job=model.jobs[job_idx],
+                job=model.jobs[task.job] if task.job is not None else None,
                 earliest_start=task.earliest_start,
                 latest_start=task.latest_start,
                 earliest_end=task.earliest_end,
@@ -331,7 +326,9 @@ class Model:
         Task
             The created task.
         """
+        job_idx = self._id2job[id(job)] if job is not None else None
         task = Task(
+            job_idx,
             earliest_start,
             latest_start,
             earliest_end,
@@ -344,8 +341,7 @@ class Model:
         self._id2task[id(task)] = task_idx
         self._tasks.append(task)
 
-        if job is not None:
-            job_idx = self._id2job[id(job)]
+        if job_idx is not None:
             self._jobs[job_idx].add_task(task_idx)
 
         return task

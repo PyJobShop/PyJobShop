@@ -200,6 +200,9 @@ class Task:
 
     Parameters
     ----------
+    job
+        The index of the job that this task belongs to. None if the task
+        does not belong to any job. Default ``None``.
     earliest_start
         Earliest start time of the task. Default ``0``.
     latest_start
@@ -220,6 +223,7 @@ class Task:
 
     def __init__(
         self,
+        job: Optional[int] = None,
         earliest_start: int = 0,
         latest_start: int = MAX_VALUE,
         earliest_end: int = 0,
@@ -233,12 +237,21 @@ class Task:
         if earliest_end > latest_end:
             raise ValueError("earliest_end must be <= latest_end.")
 
+        self._job = job
         self._earliest_start = earliest_start
         self._latest_start = latest_start
         self._earliest_end = earliest_end
         self._latest_end = latest_end
         self._fixed_duration = fixed_duration
         self._name = name
+
+    @property
+    def job(self) -> Optional[int]:
+        """
+        The index of the job that this task belongs to. None if the task
+        does not belong to any job.
+        """
+        return self._job
 
     @property
     def earliest_start(self) -> int:
@@ -532,6 +545,11 @@ class ProblemData:
         for job in self.jobs:
             if any(task < 0 or task >= num_tasks for task in job.tasks):
                 raise ValueError("Job references to unknown task index.")
+
+        for task in self.tasks:
+            if task.job is not None:
+                if task.job < 0 or task.job >= len(self.jobs):
+                    raise ValueError("Task references to unknown job index.")
 
         for idx, mode in enumerate(self.modes):
             if mode.task < 0 or mode.task >= num_tasks:
