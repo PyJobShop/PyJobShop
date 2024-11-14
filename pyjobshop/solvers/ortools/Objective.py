@@ -154,7 +154,7 @@ class Objective:
 
     def build(self, objective: DataObjective):
         """
-        Sets the objective of the the model.
+        Sets the objective of the model.
         """
         if self._current_obj_expr is not None:
             self._model.clear_objective()

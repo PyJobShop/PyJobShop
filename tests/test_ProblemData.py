@@ -577,7 +577,7 @@ def test_job_release_date(solver: str):
 
 def test_job_deadline(solver: str):
     """
-    Tests that the tasks beloning to a job end no later than the
+    Tests that the tasks belonging to a job end no later than the
     job's deadline.
     """
     model = Model()
@@ -625,7 +625,7 @@ def test_job_deadline_infeasible(solver: str):
 
 def test_task_earliest_start(solver: str):
     """
-    Tests that an task starts no earlier than its earliest start time.
+    Tests that a task starts no earlier than its earliest start time.
     """
     model = Model()
 
@@ -644,7 +644,7 @@ def test_task_earliest_start(solver: str):
 
 def test_task_latest_start(solver: str):
     """
-    Tests that an task starts no later than its latest start time.
+    Tests that a task starts no later than its latest start time.
     """
     model = Model()
 
@@ -672,7 +672,7 @@ def test_task_latest_start(solver: str):
 
 def test_task_fixed_start(solver: str):
     """
-    Tests that an task starts at its fixed start time when earliest
+    Tests that a task starts at its fixed start time when earliest
     and latest start times are equal.
     """
     model = Model()
@@ -692,7 +692,7 @@ def test_task_fixed_start(solver: str):
 
 def test_task_earliest_end(solver: str):
     """
-    Tests that an task end no earlier than its earliest end time.
+    Tests that a task end no earlier than its earliest end time.
     """
     model = Model()
 
@@ -712,7 +712,7 @@ def test_task_earliest_end(solver: str):
 
 def test_task_latest_end(solver: str):
     """
-    Tests that an task ends no later than its latest end time.
+    Tests that a task ends no later than its latest end time.
     """
     model = Model()
 
@@ -740,7 +740,7 @@ def test_task_latest_end(solver: str):
 
 def test_task_fixed_end(solver: str):
     """
-    Tests that an task ends at its fixed end time when earliest
+    Tests that a task ends at its fixed end time when earliest
     and latest end times are equal.
     """
     model = Model()
@@ -762,7 +762,7 @@ def test_task_fixed_duration_infeasible_with_timing_constraints(
     solver: str,
 ):
     """
-    Tests that an task with fixed duration cannot be feasibly scheduled
+    Tests that a task with fixed duration cannot be feasibly scheduled
     in combination with tight timing constraints.
     """
     model = Model()
@@ -780,7 +780,7 @@ def test_task_fixed_duration_infeasible_with_timing_constraints(
 
 def test_task_non_fixed_duration(solver: str):
     """
-    Tests that an task with non-fixed duration is scheduled correctly.
+    Tests that a task with non-fixed duration is scheduled correctly.
     """
     model = Model()
 
