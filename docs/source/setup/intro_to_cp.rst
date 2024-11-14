@@ -2,13 +2,13 @@ Introduction to constraint programming
 ======================================
 
 Constraint programming (CP) is a paradigm rooted in the fields of computer science and artificial intelligence for solving combinatorial problems.
-In CP, problems are defined through variables with specific domains and constraints that describe the feasible values that variable can take.
+In CP, problems are defined through variables with specific domains and constraints that describe the feasible values that variables can take.
 The goal is to find a value for each variable such that all constraints are satisfied.
-While CP traditionally focused at finding feasible solutions, it can also be used to solve optimization problems (that is, with an objective function) and has been very successful at doing so for applications such as scheduling and planning.
+While CP traditionally focused on finding feasible solutions, it can also be used to solve optimization problems (that is, with an objective function) and has been very successful at doing so for applications such as scheduling and planning.
 
 The way that CP solvers find a solution is by systematically searching through the space of feasible solutions, while reducing the set of solutions to explore through constraint propagation.
-Constraint propagation is a method that reduces variable domains by reasoning on existing constraints, and propagating this information to other constraints, which in turn can result in more domain reductions.
-Combined with search methods, such as branching or local search heuristics, the CP solver can navigates through the complex search space until the (best) solution is found or when a stopping criterion is met.
+Constraint propagation is a method that reduces variable domains by reasoning on existing constraints and propagating this information to other constraints, which in turn can result in more domain reductions.
+Combined with search methods, such as branching or local search heuristics, the CP solver can navigate through the complex search space until the (best) solution is found or when a stopping criterion is met.
 
 A key strength of CP is its expressive modeling language.
 It provides logical constraints (such as AND, XOR, OR) and global constraints, which capture real-world structures and have strong propagation procedures that can substantially reduce variable domains.
@@ -18,7 +18,7 @@ Compared to mixed-integer linear programming, which only allows modeling using l
 .. example::
 
   .. figure:: ../assets/sudoku.png
-    :alt: A 9x9 Sudoku pizzle.
+    :alt: A 9x9 Sudoku puzzle.
     :figwidth: 50%
 
   A Sudoku puzzle is a simple example to explain the basics of CP.
@@ -44,7 +44,7 @@ Several popular tools and libraries are available for modeling and solving CP pr
 
 * `Google OR-Tools CP-SAT <https://developers.google.com/optimization/cp/cp_solver>`_ is an open-source solver with an extremely competitive CP solver, consistently winning the yearly `MiniZinc challenge <https://www.minizinc.org/challenge/>`_.
 * `IBM ILOG CP Optimizer <https://www.ibm.com/products/ilog-cplex-optimization-studio/cplex-cp-optimizer>`_ is particularly geared towards industrial scheduling and planning tasks.
-* `MiniZinc <https://www.minizinc.org/>`_ is a high-level constraint modeling language that allows you to easily model discrete optimization problems, and can be easily used with any CP solver.
+* `MiniZinc <https://www.minizinc.org/>`_ is a high-level constraint modeling language that allows you to easily model discrete optimization problems and can be easily used with any CP solver.
 
 For those interested in more details of CP, we refer to the following resources:
 
