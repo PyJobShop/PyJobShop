@@ -74,13 +74,14 @@ class Constraints:
             if isinstance(resource, Machine):
                 seq_var = self._sequence_vars[idx]
                 assert seq_var is not None
-                model.add_no_overlap([var.interval for var in seq_var.modes])
+                mode_vars = [var.interval for var in seq_var.mode_vars]
+                model.add_no_overlap(mode_vars)
 
     def _activate_setup_times(self):
         """
         Activates the sequence variables for resources that have setup times.
-        The ``circuit_constraints`` function will in turn add constraints to
-        the CP-SAT model to enforce setup times.
+        The ``_circuit_constraints`` function will in turn add
+        constraints to the CP-SAT model to enforce setup times.
         """
         model, data = self._model, self._data
 
@@ -189,8 +190,8 @@ class Constraints:
                     if Constraint.PREVIOUS in sequencing_constraints:
                         seq_var.activate(model)
 
-                        idx1 = seq_var.modes.index(var1)
-                        idx2 = seq_var.modes.index(var2)
+                        idx1 = seq_var.mode_vars.index(var1)
+                        idx2 = seq_var.mode_vars.index(var2)
                         arc = seq_var.arcs[idx1, idx2]
                         both_present = [var1.is_present, var2.is_present]
 
@@ -199,8 +200,8 @@ class Constraints:
                     if Constraint.BEFORE in sequencing_constraints:
                         seq_var.activate(model)
 
-                        idx1 = seq_var.modes.index(var1)
-                        idx2 = seq_var.modes.index(var2)
+                        idx1 = seq_var.mode_vars.index(var1)
+                        idx2 = seq_var.mode_vars.index(var2)
                         rank1 = seq_var.ranks[idx1]
                         rank2 = seq_var.ranks[idx2]
                         both_present = [var1.is_present, var2.is_present]
@@ -250,10 +251,10 @@ class Constraints:
                     ]
                     model.add(sum(vars2) >= var1)
 
-    def _enforce_circuit(self):
+    def _circuit_constraints(self):
         """
-        Enforce the circuit constraints for each resource, ensuring that the
-        sequencing constraints are respected.
+        Creates the circuit constraints for each machine, if activated by
+        sequencing constraints (before, previous and setup times).
         """
         model, data = self._model, self._data
 
@@ -265,11 +266,11 @@ class Constraints:
             assert seq_var is not None
 
             if not seq_var.is_active:
-                # No sequencing constraints found. Skip the creation of
+                # No sequencing constraints active. Skip the creation of
                 # (expensive) circuit constraints.
                 continue
 
-            modes = seq_var.modes
+            modes = seq_var.mode_vars
             starts = seq_var.starts
             ends = seq_var.ends
             ranks = seq_var.ranks
@@ -277,7 +278,7 @@ class Constraints:
 
             # Add dummy node self-arc to allow empty circuits.
             empty = model.new_bool_var(f"empty_circuit_{idx}")
-            circuit: list[tuple[int, int, BoolVarT]] = [(-1, -1, empty)]
+            graph: list[tuple[int, int, BoolVarT]] = [(-1, -1, empty)]
 
             for idx1, var1 in enumerate(modes):
                 start = starts[idx1]  # "is start node" literal
@@ -285,14 +286,14 @@ class Constraints:
                 rank = ranks[idx1]
 
                 # Arcs from the dummy node to/from a task.
-                circuit.append((-1, idx1, start))
-                circuit.append((idx1, -1, end))
+                graph.append((-1, idx1, start))
+                graph.append((idx1, -1, end))
 
                 # Set rank for first task in the sequence.
                 model.add(rank == 0).only_enforce_if(start)
 
-                # Self arc if the task is not present on this machine.
-                circuit.append((idx1, idx1, ~var1.is_present))
+                # Self arc if the task is not present.
+                graph.append((idx1, idx1, ~var1.is_present))
                 model.add(rank == -1).only_enforce_if(~var1.is_present)
 
                 # If the circuit is empty then the var should not be present.
@@ -303,7 +304,7 @@ class Constraints:
                         continue
 
                     arc = arcs[idx1, idx2]
-                    circuit.append((idx1, idx2, arc))
+                    graph.append((idx1, idx2, arc))
 
                     model.add_implication(arc, var1.is_present)
                     model.add_implication(arc, var2.is_present)
@@ -320,7 +321,7 @@ class Constraints:
                     expr = var1.end + setup <= var2.start
                     model.add(expr).only_enforce_if(arc)
 
-            model.add_circuit(circuit)
+            model.add_circuit(graph)
 
     def add_constraints(self):
         """
@@ -336,4 +337,4 @@ class Constraints:
         self._identical_and_different_resource_constraints()
 
         # From here onwards we know which sequence constraints are active.
-        self._enforce_circuit()
+        self._circuit_constraints()
