@@ -92,18 +92,20 @@ class ModeVar:
 @dataclass
 class SequenceVar:
     """
-    Represents a sequence of interval variables of task alternatives. Relevant
-    sequence variables are lazily generated when activated by constraints that
-    call the ``activate`` method.
+    Represents a sequence of interval variables for all modes that use this
+    resource. Relevant sequence variables are lazily generated when activated
+    by constraints that call the ``activate`` method.
 
     Parameters
     ----------
-    modes
-        The mode variables of each task belonging to this sequence.
+    mode_vars
+        The mode interval variables belonging to this sequence.
     starts
-        The start literals for each task.
+        The start literals for each mode, indicating whether the interval is
+        first in the sequence.
     ends
-        The end literals for each task.
+        The end literals for each mode, indicating whether the interval is last
+        in the sequence.
     ranks
         The rank variables of each interval on the resource. Used to define the
         ordering of the intervals in the resource sequence.
@@ -115,7 +117,7 @@ class SequenceVar:
         circuit constraint must be added for this resource. Default ``False``.
     """
 
-    modes: list[ModeVar]
+    mode_vars: list[ModeVar]
     starts: list[BoolVarT] = field(default_factory=list)
     ends: list[BoolVarT] = field(default_factory=list)
     ranks: list[IntVar] = field(default_factory=list)
@@ -130,23 +132,23 @@ class SequenceVar:
             return
 
         self.is_active = True
-        num_tasks = len(self.modes)
+        num_modes = len(self.mode_vars)
 
         # Start and end literals define whether the corresponding interval
         # is first or last in the sequence, respectively.
-        self.starts = [m.new_bool_var("") for _ in range(num_tasks)]
-        self.ends = [m.new_bool_var("") for _ in range(num_tasks)]
+        self.starts = [m.new_bool_var("") for _ in range(num_modes)]
+        self.ends = [m.new_bool_var("") for _ in range(num_modes)]
 
-        # Rank variables define the position of the task in the sequence.
+        # Rank variables define the position of the mode in the sequence.
         self.ranks = [
-            m.new_int_var(-1, num_tasks, "") for _ in range(num_tasks)
+            m.new_int_var(-1, num_modes, "") for _ in range(num_modes)
         ]
 
         # Arcs indicate if two intervals are scheduled consecutively.
         self.arcs = {
             (i, j): m.new_bool_var(f"{i}->{j}")
-            for i in range(num_tasks)
-            for j in range(num_tasks)
+            for i in range(num_modes)
+            for j in range(num_modes)
         }
 
 
