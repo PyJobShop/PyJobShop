@@ -37,8 +37,8 @@ dependencies = [
 
 
 [project.urls]
-Homepage = "https://pyjobshop.readthedocs.io/stable/"
-Documentation = "https://pyjobshop.readthedocs.io/stable/"
+Homepage = "https://pyjobshop.org"
+Documentation = "https://pyjobshop.org"
 Repository = "https://github.com/PyJobShop/PyJobShop"
 Issues = "https://github.com/PyJobShop/PyJobShop/issues"
 
