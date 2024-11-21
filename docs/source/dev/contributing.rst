@@ -16,12 +16,12 @@ Then, clone your new fork to some local environment:
 
    git clone https://github.com/<your username>/PyJobShop.git
 
-Now, change into the PyJobShop directory, and set-up the virtual environment using `uv <https://github.com/astral-sh/uv>`__:
+Now, change into the PyJobShop directory, and set-up the virtual environment using `uv <https://github.com/astral-sh/uv>`_ (v0.5.4 or above):
 
 .. code-block:: shell
 
    cd PyJobShop
-   uv sync --all-extras --group docs --group examples
+   uv sync --all-extras --all-groups
 
 Now make sure everything runs smoothly, by executing the test suite:
 
