@@ -46,9 +46,9 @@ class Constraints:
 
         for task in range(data.num_tasks):
             presences = []
+            main = self._task_vars[task]
 
             for mode in task2modes[task]:
-                main = self._task_vars[task]
                 opt = self._mode_vars[mode]
                 is_present = opt.is_present
                 presences.append(is_present)
