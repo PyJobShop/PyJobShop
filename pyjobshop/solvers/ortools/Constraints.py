@@ -200,13 +200,12 @@ class Constraints:
                     if Constraint.BEFORE in sequencing_constraints:
                         seq_var.activate(model)
 
-                        idx1 = seq_var.mode_vars.index(var1)
-                        idx2 = seq_var.mode_vars.index(var2)
-                        rank1 = seq_var.ranks[idx1]
-                        rank2 = seq_var.ranks[idx2]
+                        start1 = var1.start
+                        start2 = var2.start
                         both_present = [var1.is_present, var2.is_present]
+                        expr = start1 <= start2
 
-                        model.add(rank1 <= rank2).only_enforce_if(both_present)
+                        model.add(expr).only_enforce_if(both_present)
 
     def _identical_and_different_resource_constraints(self):
         """
@@ -271,9 +270,6 @@ class Constraints:
                 continue
 
             modes = seq_var.mode_vars
-            starts = seq_var.starts
-            ends = seq_var.ends
-            ranks = seq_var.ranks
             arcs = seq_var.arcs
 
             # Add dummy node self-arc to allow empty circuits.
@@ -281,20 +277,16 @@ class Constraints:
             graph: list[tuple[int, int, BoolVarT]] = [(-1, -1, empty)]
 
             for idx1, var1 in enumerate(modes):
-                start = starts[idx1]  # "is start node" literal
-                end = ends[idx1]  # "is end node" literal
-                rank = ranks[idx1]
+                # Arcs from the dummy node to task.
+                from_dummy = model.new_bool_var(f"dummy_to_{idx1}_on_{idx}")
+                graph.append((-1, idx1, from_dummy))
 
-                # Arcs from the dummy node to/from a task.
-                graph.append((-1, idx1, start))
-                graph.append((idx1, -1, end))
-
-                # Set rank for first task in the sequence.
-                model.add(rank == 0).only_enforce_if(start)
+                # Arcs from the task to dummy node.
+                to_dummy = model.new_bool_var(f"{idx1}_to_dummy_on_{idx}")
+                graph.append((idx1, -1, to_dummy))
 
                 # Self arc if the task is not present.
                 graph.append((idx1, idx1, ~var1.is_present))
-                model.add(rank == -1).only_enforce_if(~var1.is_present)
 
                 # If the circuit is empty then the var should not be present.
                 model.add_implication(empty, ~var1.is_present)
@@ -308,9 +300,6 @@ class Constraints:
 
                     model.add_implication(arc, var1.is_present)
                     model.add_implication(arc, var2.is_present)
-
-                    # Maintain rank incrementally.
-                    model.add(rank + 1 == ranks[idx2]).only_enforce_if(arc)
 
                     # Use the mode's task idx to get the correct setup times.
                     setup = (
