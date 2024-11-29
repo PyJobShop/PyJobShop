@@ -30,7 +30,6 @@ def show_versions():
      pyjobshop: 0.0.2b0
     matplotlib: 3.9.2
        ortools: 9.10.4067
-    enum-tools: 0.12.0
        docplex: 2.28.240
          cplex: not installed
           tqdm: 4.66.5
