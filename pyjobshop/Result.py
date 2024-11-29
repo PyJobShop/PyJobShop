@@ -35,3 +35,13 @@ class Result:
     runtime: float
     best: Solution
     objective: float
+
+    def __str__(self):
+        content = [
+            "Solver results",
+            "==============",
+            f"   status: {self.status}",
+            f"  runtime: {self.runtime}",
+            f"objective: {self.objective}",
+        ]
+        return "\n".join(content)
