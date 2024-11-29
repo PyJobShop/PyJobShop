@@ -40,8 +40,8 @@ class Result:
         content = [
             "Solver results",
             "==============",
+            f"objective: {self.objective:.2f}",
             f"   status: {self.status}",
-            f"  runtime: {self.runtime}",
-            f"objective: {self.objective}",
+            f"  runtime: {self.runtime:.2f}",
         ]
         return "\n".join(content)
