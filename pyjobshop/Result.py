@@ -41,7 +41,7 @@ class Result:
             "Solver results",
             "==============",
             f"objective: {self.objective:.2f}",
-            f"   status: {self.status}",
+            f"   status: {self.status.value}",
             f"  runtime: {self.runtime:.2f}",
         ]
         return "\n".join(content)
