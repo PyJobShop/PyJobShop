@@ -31,6 +31,7 @@ def test_solve_log(small, solver, capfd):
     solve(small, solver, display=True)
     printed = capfd.readouterr().out
     assert_(printed != "")
+    assert_("Solver results" in printed)
 
     solve(small, solver, display=False)
     printed = capfd.readouterr().out
