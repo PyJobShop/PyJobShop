@@ -161,15 +161,13 @@ class Constraints:
         Creates the consecutive constraints.
         """
         model, data = self._model, self._data
-        relevant = {Constraint.CONSECUTIVE}
 
         for (task1, task2), constraints in data.constraints.items():
-            sequencing_constraints = set(constraints) & relevant
-            if not sequencing_constraints:
+            if Constraint.CONSECUTIVE not in constraints:
                 continue
 
             # Find the modes of the task that have intersecting resources,
-            # because we need to enforce sequencing constraints on them.
+            # because we need to enforce consecutive constraints on them.
             intersecting = utils.find_modes_with_intersecting_resources(
                 data, task1, task2
             )
@@ -186,15 +184,14 @@ class Constraints:
                     var1 = self._mode_vars[mode1]
                     var2 = self._mode_vars[mode2]
 
-                    if Constraint.CONSECUTIVE in sequencing_constraints:
-                        seq_var.activate(model)
+                    seq_var.activate(model)
 
-                        idx1 = seq_var.mode_vars.index(var1)
-                        idx2 = seq_var.mode_vars.index(var2)
-                        arc = seq_var.arcs[idx1, idx2]
-                        both_present = [var1.is_present, var2.is_present]
+                    idx1 = seq_var.mode_vars.index(var1)
+                    idx2 = seq_var.mode_vars.index(var2)
+                    arc = seq_var.arcs[idx1, idx2]
+                    both_present = [var1.is_present, var2.is_present]
 
-                        model.add(arc == 1).only_enforce_if(both_present)
+                    model.add(arc == 1).only_enforce_if(both_present)
 
     def _identical_and_different_resource_constraints(self):
         """

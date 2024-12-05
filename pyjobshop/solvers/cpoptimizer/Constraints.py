@@ -147,15 +147,13 @@ class Constraints:
         Creates the consecutive constraints.
         """
         model, data = self._model, self._data
-        relevant = {Constraint.CONSECUTIVE}
 
         for (task1, task2), constraints in data.constraints.items():
-            sequencing_constraints = set(constraints) & relevant
-            if not sequencing_constraints:
+            if Constraint.CONSECUTIVE not in constraints:
                 continue
 
             # Find the modes of the task that have intersecting resources,
-            # because we need to enforce sequencing constraints on them.
+            # because we need to enforce consecutive constraints on them.
             intersecting = utils.find_modes_with_intersecting_resources(
                 data, task1, task2
             )
@@ -172,8 +170,7 @@ class Constraints:
                     var1 = self._mode_vars[mode1]
                     var2 = self._mode_vars[mode2]
 
-                    if Constraint.CONSECUTIVE in sequencing_constraints:
-                        model.add(cpo.previous(seq_var, var1, var2))
+                    model.add(cpo.previous(seq_var, var1, var2))
 
     def _identical_and_different_resource_constraints(self):
         """
