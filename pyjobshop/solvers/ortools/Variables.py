@@ -100,17 +100,9 @@ class SequenceVar:
     ----------
     mode_vars
         The mode interval variables belonging to this sequence.
-    starts
-        The start literals for each mode, indicating whether the interval is
-        first in the sequence.
-    ends
-        The end literals for each mode, indicating whether the interval is last
-        in the sequence.
-    ranks
-        The rank variables of each interval on the resource. Used to define the
-        ordering of the intervals in the resource sequence.
     arcs
-        The arc literals between each pair of intervals in the sequence.
+        The arc literals between each pair of intervals in the sequence
+        indicating whether intervals are scheduled directly behind each other.
         Keys are tuples of indices.
     is_active
         A boolean that indicates whether the sequence is active, meaning that a
@@ -118,9 +110,6 @@ class SequenceVar:
     """
 
     mode_vars: list[ModeVar]
-    starts: list[BoolVarT] = field(default_factory=list)
-    ends: list[BoolVarT] = field(default_factory=list)
-    ranks: list[IntVar] = field(default_factory=list)
     arcs: dict[tuple[int, int], BoolVarT] = field(default_factory=dict)
     is_active: bool = False
 
@@ -134,21 +123,12 @@ class SequenceVar:
         self.is_active = True
         num_modes = len(self.mode_vars)
 
-        # Start and end literals define whether the corresponding interval
-        # is first or last in the sequence, respectively.
-        self.starts = [m.new_bool_var("") for _ in range(num_modes)]
-        self.ends = [m.new_bool_var("") for _ in range(num_modes)]
-
-        # Rank variables define the position of the mode in the sequence.
-        self.ranks = [
-            m.new_int_var(-1, num_modes, "") for _ in range(num_modes)
-        ]
-
         # Arcs indicate if two intervals are scheduled consecutively.
         self.arcs = {
             (i, j): m.new_bool_var(f"{i}->{j}")
             for i in range(num_modes)
             for j in range(num_modes)
+            if i != j
         }
 
 
