@@ -1023,9 +1023,9 @@ def test_different_resources_with_modes_and_multiple_resources(solver: str):
     assert_equal(result.best.tasks[1].mode, 3)
 
 
-def test_previous_constraint(solver: str):
+def test_consecutive_constraint(solver: str):
     """
-    Tests that the previous constraint is respected.
+    Tests that the consecutive constraint is respected.
     """
     model = Model()
 
@@ -1038,18 +1038,18 @@ def test_previous_constraint(solver: str):
     model.add_mode(task2, machine, duration=1)
 
     model.add_setup_time(machine, task2, task1, duration=100)
-    model.add_previous(task2, task1)
+    model.add_consecutive(task2, task1)
 
     result = model.solve(solver=solver)
 
-    # Task 2 must be scheduled before task 1, but the setup time
+    # Task 2 must be scheduled directly before task 1, but the setup time
     # between them is 100, so the makespan is 1 + 100 + 1 = 102.
     assert_equal(result.objective, 102)
 
 
-def test_previous_multiple_machines(solver: str):
+def test_consecutive_multiple_machines(solver: str):
     """
-    Test the previous constraint with tasks that have modes with multiple
+    Test the consecutive constraint with tasks that have modes with multiple
     machines.
     """
     model = Model()
@@ -1069,10 +1069,10 @@ def test_previous_multiple_machines(solver: str):
     assert_equal(result.objective, 2)
     assert_equal(result.status.value, "Optimal")
 
-    # Now we add the previous constraint...
-    model.add_previous(task2, task1)
+    # Now we add the consecutive constraint...
+    model.add_consecutive(task2, task1)
 
-    # ...so task 2 must be scheduled before task 1, but the setup time
+    # ...so task 2 must be scheduled directly before task 1, but the setup time
     # between them is 10, so the makespan is 1 + 10 + 1 = 2.
     result = model.solve(solver=solver)
     assert_equal(result.objective, 12)

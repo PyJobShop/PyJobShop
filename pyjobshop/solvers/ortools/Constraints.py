@@ -156,12 +156,12 @@ class Constraints:
             if Constraint.END_BEFORE_END in constraints:
                 model.add(task_var1.end <= task_var2.end)
 
-    def _previous_constraints(self):
+    def _consecutive_constraints(self):
         """
-        Creates the previous constraints.
+        Creates the consecutive constraints.
         """
         model, data = self._model, self._data
-        relevant = {Constraint.PREVIOUS}
+        relevant = {Constraint.CONSECUTIVE}
 
         for (task1, task2), constraints in data.constraints.items():
             sequencing_constraints = set(constraints) & relevant
@@ -186,7 +186,7 @@ class Constraints:
                     var1 = self._mode_vars[mode1]
                     var2 = self._mode_vars[mode2]
 
-                    if Constraint.PREVIOUS in sequencing_constraints:
+                    if Constraint.CONSECUTIVE in sequencing_constraints:
                         seq_var.activate(model)
 
                         idx1 = seq_var.mode_vars.index(var1)
@@ -242,7 +242,7 @@ class Constraints:
     def _circuit_constraints(self):
         """
         Creates the circuit constraints for each machine, if activated by
-        sequencing constraints (before, previous and setup times).
+        sequencing constraints (consecutive and setup times).
         """
         model, data = self._model, self._data
 
@@ -311,7 +311,7 @@ class Constraints:
         self._resource_capacity()
         self._activate_setup_times()
         self._timing_constraints()
-        self._previous_constraints()
+        self._consecutive_constraints()
         self._identical_and_different_resource_constraints()
 
         # From here onwards we know which sequence constraints are active.

@@ -144,8 +144,8 @@ class Model:
                     model.add_end_before_start(task1, task2)
                 elif constraint == Constraint.END_BEFORE_END:
                     model.add_end_before_end(task1, task2)
-                elif constraint == Constraint.PREVIOUS:
-                    model.add_previous(task1, task2)
+                elif constraint == Constraint.CONSECUTIVE:
+                    model.add_consecutive(task1, task2)
                 elif constraint == Constraint.IDENTICAL_RESOURCES:
                     model.add_identical_resources(task1, task2)
                 elif constraint == Constraint.DIFFERENT_RESOURCES:
@@ -458,13 +458,13 @@ class Model:
         """
         self._add_constaint(task1, task2, Constraint.DIFFERENT_RESOURCES)
 
-    def add_previous(self, task1: Task, task2: Task):
+    def add_consecutive(self, task1: Task, task2: Task):
         """
         Adds a constraint that the first task must be scheduled right before
         the second task, meaning that no task is allowed to schedule between,
         on resources that they are both scheduled on.
         """
-        self._add_constaint(task1, task2, Constraint.PREVIOUS)
+        self._add_constaint(task1, task2, Constraint.CONSECUTIVE)
 
     def add_setup_time(
         self, machine: Machine, task1: Task, task2: Task, duration: int

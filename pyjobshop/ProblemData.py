@@ -401,7 +401,7 @@ class Constraint(str, Enum):
     DIFFERENT_RESOURCES = "different_resources"
 
     #: Sequence task :math:`i` right before :math:`k` on shared resources.
-    PREVIOUS = "previous"
+    CONSECUTIVE = "consecutive"
 
 
 @dataclass

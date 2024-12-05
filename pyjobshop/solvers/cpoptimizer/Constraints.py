@@ -142,12 +142,12 @@ class Constraints:
             if Constraint.END_BEFORE_END in constraints:
                 model.add(cpo.end_before_end(task1, task2))
 
-    def _previous_constraints(self):
+    def _consecutive_constraints(self):
         """
-        Creates the previous constraints.
+        Creates the consecutive constraints.
         """
         model, data = self._model, self._data
-        relevant = {Constraint.PREVIOUS}
+        relevant = {Constraint.CONSECUTIVE}
 
         for (task1, task2), constraints in data.constraints.items():
             sequencing_constraints = set(constraints) & relevant
@@ -172,7 +172,7 @@ class Constraints:
                     var1 = self._mode_vars[mode1]
                     var2 = self._mode_vars[mode2]
 
-                    if Constraint.PREVIOUS in sequencing_constraints:
+                    if Constraint.CONSECUTIVE in sequencing_constraints:
                         model.add(cpo.previous(seq_var, var1, var2))
 
     def _identical_and_different_resource_constraints(self):
@@ -227,5 +227,5 @@ class Constraints:
         self._no_overlap_and_setup_times()
         self._resource_capacity()
         self._timing_constraints()
-        self._previous_constraints()
+        self._consecutive_constraints()
         self._identical_and_different_resource_constraints()
