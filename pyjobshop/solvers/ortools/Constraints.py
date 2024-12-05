@@ -3,8 +3,7 @@ from ortools.sat.python.cp_model import BoolVarT, CpModel, LinearExpr
 
 import pyjobshop.solvers.utils as utils
 from pyjobshop.ProblemData import Constraint, Machine, ProblemData
-
-from .Variables import Variables
+from pyjobshop.solvers.ortools.Variables import Variables
 
 
 class Constraints:
@@ -157,12 +156,12 @@ class Constraints:
             if Constraint.END_BEFORE_END in constraints:
                 model.add(task_var1.end <= task_var2.end)
 
-    def _previous_before_constraints(self):
+    def _previous_constraints(self):
         """
-        Creates the constraints for the previous and before constraints.
+        Creates the previous constraints.
         """
         model, data = self._model, self._data
-        relevant = {Constraint.PREVIOUS, Constraint.BEFORE}
+        relevant = {Constraint.PREVIOUS}
 
         for (task1, task2), constraints in data.constraints.items():
             sequencing_constraints = set(constraints) & relevant
@@ -196,16 +195,6 @@ class Constraints:
                         both_present = [var1.is_present, var2.is_present]
 
                         model.add(arc == 1).only_enforce_if(both_present)
-
-                    if Constraint.BEFORE in sequencing_constraints:
-                        seq_var.activate(model)
-
-                        start1 = var1.start
-                        start2 = var2.start
-                        both_present = [var1.is_present, var2.is_present]
-                        expr = start1 <= start2
-
-                        model.add(expr).only_enforce_if(both_present)
 
     def _identical_and_different_resource_constraints(self):
         """
@@ -322,7 +311,7 @@ class Constraints:
         self._resource_capacity()
         self._activate_setup_times()
         self._timing_constraints()
-        self._previous_before_constraints()
+        self._previous_constraints()
         self._identical_and_different_resource_constraints()
 
         # From here onwards we know which sequence constraints are active.

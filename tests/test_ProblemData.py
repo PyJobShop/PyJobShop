@@ -1079,40 +1079,6 @@ def test_previous_multiple_machines(solver: str):
     assert_equal(result.status.value, "Optimal")
 
 
-def test_before_constraint(solver: str):
-    """
-    Tests that the before constraint is respected.
-    """
-    model = Model()
-
-    job = model.add_job()
-    machine = model.add_machine()
-    task1 = model.add_task(job=job)
-    task2 = model.add_task(job=job)
-    task3 = model.add_task(job=job)
-
-    for task in [task1, task2, task3]:
-        model.add_mode(task, machine, duration=1)
-
-    model.add_setup_time(machine, task1, task2, 100)
-    model.add_setup_time(machine, task2, task3, 100)
-
-    result = model.solve(solver=solver)
-
-    # No constraints, so the makespan is 1 + 1 + 1 = 3.
-    assert_equal(result.objective, 3)
-
-    # Let's now add that task 1 must be scheduled before task 2 and task 2
-    # before task 3.
-    model.add_before(task1, task2)
-    model.add_before(task2, task3)
-
-    result = model.solve(solver=solver)
-
-    # The setup times are 100, so the makespan is 1 + 100 + 1 + 100 + 1 = 203.
-    assert_equal(result.objective, 203)
-
-
 def test_tight_horizon_results_in_infeasiblity(solver: str):
     """
     Tests that a tight horizon results in an infeasible instance.

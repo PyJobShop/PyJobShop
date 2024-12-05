@@ -142,12 +142,12 @@ class Constraints:
             if Constraint.END_BEFORE_END in constraints:
                 model.add(cpo.end_before_end(task1, task2))
 
-    def _previous_before_constraints(self):
+    def _previous_constraints(self):
         """
-        Creates the constraints for the previous and before constraints.
+        Creates the previous constraints.
         """
         model, data = self._model, self._data
-        relevant = {Constraint.PREVIOUS, Constraint.BEFORE}
+        relevant = {Constraint.PREVIOUS}
 
         for (task1, task2), constraints in data.constraints.items():
             sequencing_constraints = set(constraints) & relevant
@@ -174,9 +174,6 @@ class Constraints:
 
                     if Constraint.PREVIOUS in sequencing_constraints:
                         model.add(cpo.previous(seq_var, var1, var2))
-
-                    if Constraint.BEFORE in sequencing_constraints:
-                        model.add(cpo.before(seq_var, var1, var2))
 
     def _identical_and_different_resource_constraints(self):
         """
@@ -230,5 +227,5 @@ class Constraints:
         self._no_overlap_and_setup_times()
         self._resource_capacity()
         self._timing_constraints()
-        self._previous_before_constraints()
+        self._previous_constraints()
         self._identical_and_different_resource_constraints()
