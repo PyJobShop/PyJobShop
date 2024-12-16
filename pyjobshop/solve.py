@@ -48,9 +48,12 @@ def solve(
     ModuleNotFoundError
         If CP Optimizer is chosen but its dependencies are not installed.
     """
+    if solver not in ["ortools", "cpoptimizer"]:
+        raise ValueError(f"Unknown solver choice: {solver}.")
+
     if solver == "ortools":
         ortools = ORToolsSolver(data)
-        return ortools.solve(
+        result = ortools.solve(
             time_limit,
             display,
             num_workers,
@@ -63,12 +66,15 @@ def solve(
         )
 
         cpoptimizer = CPOptimizerSolver(data)
-        return cpoptimizer.solve(
+        result = cpoptimizer.solve(
             time_limit,
             display,
             num_workers,
             initial_solution,
             **kwargs,
         )
-    else:
-        raise ValueError(f"Unknown solver choice: {solver}.")
+
+    if display:
+        print(result)
+
+    return result
