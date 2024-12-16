@@ -41,7 +41,7 @@ def test_empty_circuit_not_allowed_bug():
             duration = durations[mach_idx][task_idx]
             model.add_mode(task, machine, duration)
 
-    model.add_previous(*tasks)  # this activates the circuit constraints
+    model.add_consecutive(*tasks)  # this activates the circuit constraints
 
     solver = Solver(model.data())
     result = solver.solve()

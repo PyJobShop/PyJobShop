@@ -39,8 +39,7 @@ def test_model_to_data():
     model.add_end_before_start(task1, task2)
     model.add_identical_resources(task2, task1)
     model.add_different_resource(task2, task1)
-    model.add_previous(task2, task1)
-    model.add_before(task2, task1)
+    model.add_consecutive(task2, task1)
 
     model.add_setup_time(machine1, task1, task2, 3)
     model.add_setup_time(machine2, task1, task2, 4)
@@ -76,8 +75,7 @@ def test_model_to_data():
             (1, 0): [
                 Constraint.IDENTICAL_RESOURCES,
                 Constraint.DIFFERENT_RESOURCES,
-                Constraint.PREVIOUS,
-                Constraint.BEFORE,
+                Constraint.CONSECUTIVE,
             ],
         },
     )
@@ -110,8 +108,7 @@ def test_from_data():
                 Constraint.DIFFERENT_RESOURCES,
             ],
             (1, 2): [
-                Constraint.PREVIOUS,
-                Constraint.BEFORE,
+                Constraint.CONSECUTIVE,
             ],
         },
         setup_times=np.array(
