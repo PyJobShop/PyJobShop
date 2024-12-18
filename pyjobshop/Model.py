@@ -113,6 +113,7 @@ class Model:
                 earliest_end=task.earliest_end,
                 latest_end=task.latest_end,
                 fixed_duration=task.fixed_duration,
+                optional=task.optional,
                 name=task.name,
             )
 
@@ -299,6 +300,7 @@ class Model:
         earliest_end: int = 0,
         latest_end: int = MAX_VALUE,
         fixed_duration: bool = True,
+        optional: bool = False,
         name: str = "",
     ) -> Task:
         """
@@ -318,6 +320,8 @@ class Model:
             Latest end time of the task. Default ``MAX_VALUE``.
         fixed_duration
             Whether the duration of the task is fixed. Default True.
+        optional
+            Whether the task is optional. Default False.
         name
             Name of the task.
 
@@ -334,6 +338,7 @@ class Model:
             earliest_end,
             latest_end,
             fixed_duration,
+            optional,
             name,
         )
 

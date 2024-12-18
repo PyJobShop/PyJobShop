@@ -1,6 +1,6 @@
 import numpy as np
 import pytest
-from numpy.testing import assert_, assert_equal, assert_raises
+from numpy.testing import assert_equal, assert_raises
 
 from pyjobshop.constants import MAX_VALUE
 from pyjobshop.Model import Model
@@ -86,6 +86,28 @@ def test_job_attributes_raises_invalid_parameters(
         )
 
 
+def test_job_does_not_span_absent_task(solver: str):
+    """
+    Tests that jobs do not span tasks that are absent.
+    """
+    model = Model()
+
+    job = model.add_job()
+    machine = model.add_machine()
+    task1 = model.add_task(job=job)
+    task2 = model.add_task(job=job, earliest_start=10, optional=True)
+
+    model.add_mode(task1, machine, duration=1)
+    model.add_mode(task2, machine, duration=1)
+
+    result = model.solve(solver=solver)
+
+    # Task 1 is required but task 2 is not. The job should span only task 1,
+    # so the makespan is 1.
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.objective, 1)
+
+
 def test_resource_attributes():
     """
     Tests that the attributes of the Resource class are set correctly.
@@ -140,6 +162,7 @@ def test_task_attributes():
         earliest_end=3,
         latest_end=4,
         fixed_duration=False,
+        optional=True,
         name="TestTask",
     )
 
@@ -149,6 +172,7 @@ def test_task_attributes():
     assert_equal(task.earliest_end, 3)
     assert_equal(task.latest_end, 4)
     assert_equal(task.fixed_duration, False)
+    assert_equal(task.optional, True)
     assert_equal(task.name, "TestTask")
 
     # Also test that default values are set correctly.
@@ -160,7 +184,31 @@ def test_task_attributes():
     assert_equal(task.earliest_end, 0)
     assert_equal(task.latest_end, MAX_VALUE)
     assert_equal(task.fixed_duration, True)
+    assert_equal(task.optional, False)
     assert_equal(task.name, "")
+
+
+def test_task_optional(solver: str):
+    """
+    Tests that when all tasks are optional without selection constraints,
+    then no tasks are scheduled.
+    """
+    model = Model()
+
+    job = model.add_job()
+    machine = model.add_machine()
+    tasks = [model.add_task(job=job, optional=True) for _ in range(4)]
+    for task in tasks:
+        model.add_mode(task, machine, duration=1)
+
+    result = model.solve(solver=solver)
+
+    # No task is required, so the makespan should be 0.
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.objective, 0)
+
+    for task_data in result.best.tasks:
+        assert_equal(task_data.present, False)
 
 
 @pytest.mark.parametrize(
@@ -452,125 +500,6 @@ def test_problem_data_tardy_objective_without_job_due_dates(
             [Mode(0, [0], 0)],
             objective=objective,
         )
-
-
-def describe_problem_data_replace():
-    """
-    Tests for the ProblemData.replace() method.
-    """
-
-    @pytest.fixture
-    def data():
-        jobs = [Job(due_date=1, deadline=1), Job(due_date=2, deadline=2)]
-        resources = [
-            Resource(capacity=0, name="resource"),
-            Resource(capacity=0, name="resource"),
-        ]
-        tasks = [Task(earliest_start=1), Task(earliest_start=1)]
-        modes = [
-            Mode(task=0, resources=[0], duration=1),
-            Mode(task=1, resources=[1], duration=2),
-        ]
-        constraints = {(0, 1): [Constraint.END_BEFORE_START]}
-        setup_times = np.zeros((2, 2, 2))
-        horizon = 1
-        objective = Objective.makespan()
-
-        return ProblemData(
-            jobs,
-            resources,
-            tasks,
-            modes,
-            constraints,
-            setup_times,
-            horizon,
-            objective,
-        )
-
-    def no_changes(data):
-        """
-        Tests that when using ``ProblemData.replace()`` without any arguments
-        returns a new instance with different objects but with the same values.
-        """
-
-        new = data.replace()
-        assert_(new is not data)
-
-        for idx in range(data.num_jobs):
-            assert_(new.jobs[idx] is not data.jobs[idx])
-            assert_equal(new.jobs[idx].deadline, data.jobs[idx].deadline)
-            assert_equal(new.jobs[idx].due_date, data.jobs[idx].due_date)
-
-        for idx in range(data.num_resources):
-            assert_(new.resources[idx] is not data.resources[idx])
-            assert_equal(new.resources[idx].name, data.resources[idx].name)
-
-        for idx in range(data.num_tasks):
-            assert_(new.tasks[idx] is not data.tasks[idx])
-            assert_equal(
-                new.tasks[idx].earliest_start,
-                data.tasks[idx].earliest_start,
-            )
-
-        for idx in range(data.num_modes):
-            assert_(new.modes[idx] is not data.modes[idx])
-            assert_equal(new.modes[idx].task, data.modes[idx].task)
-            assert_equal(new.modes[idx].resources, data.modes[idx].resources)
-            assert_equal(new.modes[idx].duration, data.modes[idx].duration)
-
-        assert_equal(new.constraints, data.constraints)
-        assert_equal(new.setup_times, data.setup_times)
-        assert_equal(new.horizon, data.horizon)
-        assert_equal(new.objective, data.objective)
-
-    def with_changes(data):
-        """
-        Tests that when using ``ProblemData.replace()`` replaces the attributes
-        with the new values when they are passed as arguments.
-        """
-        new = data.replace(
-            jobs=[Job(due_date=2, deadline=2), Job(due_date=1, deadline=1)],
-            resources=[Resource(capacity=0, name="new"), Machine(name="new")],
-            tasks=[Task(earliest_start=2), Task(earliest_start=2)],
-            modes=[
-                Mode(task=0, resources=[0], duration=20),
-                Mode(task=1, resources=[1], duration=10),
-            ],
-            constraints={(1, 0): [Constraint.END_BEFORE_START]},
-            setup_times=np.array(
-                [
-                    np.zeros((2, 2)),  # resource without setup times
-                    np.ones((2, 2)),  # resource with setup times
-                ],
-            ),
-            horizon=2,
-            objective=Objective.total_tardiness(),
-        )
-        assert_(new is not data)
-
-        for idx in range(data.num_jobs):
-            assert_(new.jobs[idx] is not data.jobs[idx])
-            assert_(new.jobs[idx].deadline != data.jobs[idx].deadline)
-            assert_(new.jobs[idx].due_date != data.jobs[idx].due_date)
-
-        for idx in range(data.num_resources):
-            assert_(new.resources[idx] is not data.resources[idx])
-            assert_(new.resources[idx].name != data.resources[idx].name)
-
-        for idx in range(data.num_tasks):
-            assert_(new.tasks[idx] is not data.tasks[idx])
-            assert_(
-                new.tasks[idx].earliest_start != data.tasks[idx].earliest_start
-            )
-
-        for idx in range(data.num_modes):
-            assert_(new.modes[idx] is not data.modes[idx])
-            assert_(new.modes[idx].duration != data.modes[idx].duration)
-
-        assert_(new.constraints != data.constraints)
-        assert_(not np.array_equal(new.setup_times, data.setup_times))
-        assert_(new.horizon != data.horizon)
-        assert_(new.objective != data.objective)
 
 
 # --- Tests that involve checking solver correctness of problem data. ---

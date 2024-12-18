@@ -219,6 +219,8 @@ class Task:
         Default ``True``.
     name
         Name of the task.
+    optional
+        Whether the task is optional. Default False.
     """
 
     def __init__(
@@ -229,6 +231,7 @@ class Task:
         earliest_end: int = 0,
         latest_end: int = MAX_VALUE,
         fixed_duration: bool = True,
+        optional: bool = False,
         name: str = "",
     ):
         if earliest_start > latest_start:
@@ -243,6 +246,7 @@ class Task:
         self._earliest_end = earliest_end
         self._latest_end = latest_end
         self._fixed_duration = fixed_duration
+        self._optional = optional
         self._name = name
 
     @property
@@ -294,6 +298,13 @@ class Task:
         Name of the task.
         """
         return self._name
+
+    @property
+    def optional(self) -> bool:
+        """
+        Whether the task is optional.
+        """
+        return self._optional
 
 
 class Mode:

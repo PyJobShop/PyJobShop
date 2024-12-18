@@ -33,6 +33,9 @@ class Constraints:
             task_starts = [self._task_vars[task].start for task in job.tasks]
             task_ends = [self._task_vars[task].end for task in job.tasks]
 
+            # TODO add dummy start/end in case no task is selected
+            # TODO does not work when optional tasks have timing constraints
+
             model.add_min_equality(job_var.start, task_starts)
             model.add_max_equality(job_var.end, task_ends)
 
@@ -45,23 +48,28 @@ class Constraints:
         task2modes = utils.task2modes(data)
 
         for task in range(data.num_tasks):
-            presences = []
-
-            for mode in task2modes[task]:
-                main = self._task_vars[task]
-                opt = self._mode_vars[mode]
-                is_present = opt.is_present
-                presences.append(is_present)
-
-                # Sync each optional interval variable with the main variable.
-                model.add(main.start == opt.start).only_enforce_if(is_present)
-                model.add(main.duration == opt.duration).only_enforce_if(
-                    is_present
-                )
-                model.add(main.end == opt.end).only_enforce_if(is_present)
+            task_var = self._task_vars[task]
 
             # Select exactly one optional interval variable for each task.
-            model.add_exactly_one(presences)
+            presences = [
+                self._mode_vars[mode].is_present for mode in task2modes[task]
+            ]
+            model.add(sum(presences) == 1).only_enforce_if(task_var.is_present)
+
+            for mode in task2modes[task]:
+                mode_var = self._mode_vars[mode]
+                both_present = [task_var.is_present, mode_var.is_present]
+
+                # Sync each optional interval variable with the main variable.
+                model.add(task_var.start == mode_var.start).only_enforce_if(
+                    both_present
+                )
+                model.add(
+                    task_var.duration == mode_var.duration
+                ).only_enforce_if(both_present)
+                model.add(task_var.end == mode_var.end).only_enforce_if(
+                    both_present
+                )
 
     def _no_overlap_resources(self):
         """
@@ -132,30 +140,39 @@ class Constraints:
         for (idx1, idx2), constraints in data.constraints.items():
             task_var1 = self._task_vars[idx1]
             task_var2 = self._task_vars[idx2]
+            both_present = [task_var1.is_present, task_var2.is_present]
 
             if Constraint.START_AT_START in constraints:
-                model.add(task_var1.start == task_var2.start)
+                expr = task_var1.start == task_var2.start
+                model.add(expr).only_enforce_if(both_present)
 
             if Constraint.START_AT_END in constraints:
-                model.add(task_var1.start == task_var2.end)
+                expr = task_var1.start == task_var2.end
+                model.add(expr).only_enforce_if(both_present)
 
             if Constraint.START_BEFORE_START in constraints:
-                model.add(task_var1.start <= task_var2.start)
+                expr = task_var1.start <= task_var2.start
+                model.add(expr).only_enforce_if(both_present)
 
             if Constraint.START_BEFORE_END in constraints:
-                model.add(task_var1.start <= task_var2.end)
+                expr = task_var1.start <= task_var2.end
+                model.add(expr).only_enforce_if(both_present)
 
             if Constraint.END_AT_START in constraints:
-                model.add(task_var1.end == task_var2.start)
+                expr = task_var1.end == task_var2.start
+                model.add(expr).only_enforce_if(both_present)
 
             if Constraint.END_AT_END in constraints:
-                model.add(task_var1.end == task_var2.end)
+                expr = task_var1.end == task_var2.end
+                model.add(expr).only_enforce_if(both_present)
 
             if Constraint.END_BEFORE_START in constraints:
-                model.add(task_var1.end <= task_var2.start)
+                expr = task_var1.end <= task_var2.start
+                model.add(expr).only_enforce_if(both_present)
 
             if Constraint.END_BEFORE_END in constraints:
-                model.add(task_var1.end <= task_var2.end)
+                expr = task_var1.end <= task_var2.end
+                model.add(expr).only_enforce_if(both_present)
 
     def _previous_before_constraints(self):
         """
@@ -232,6 +249,11 @@ class Constraints:
             )
 
             modes1 = task2modes[task1]
+            both_present = [
+                self._task_vars[task1].is_present,
+                self._task_vars[task2].is_present,
+            ]
+
             for mode1 in modes1:
                 if Constraint.IDENTICAL_RESOURCES in assignment_constraints:
                     identical_modes2 = identical[mode1]
@@ -240,7 +262,7 @@ class Constraints:
                         self._mode_vars[mode2].is_present
                         for mode2 in identical_modes2
                     ]
-                    model.add(sum(vars2) >= var1)
+                    model.add(sum(vars2) >= var1).only_enforce_if(both_present)
 
                 if Constraint.DIFFERENT_RESOURCES in assignment_constraints:
                     disjoint_modes2 = disjoint[mode1]
@@ -249,7 +271,7 @@ class Constraints:
                         self._mode_vars[mode2].is_present
                         for mode2 in disjoint_modes2
                     ]
-                    model.add(sum(vars2) >= var1)
+                    model.add(sum(vars2) >= var1).only_enforce_if(both_present)
 
     def _circuit_constraints(self):
         """
