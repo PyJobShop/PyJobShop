@@ -13,6 +13,7 @@ from pyjobshop.ProblemData import (
     ProblemData,
     Resource,
     Task,
+    TaskGroup,
 )
 from pyjobshop.Solution import TaskData as TaskData
 from pyjobshop.solve import solve
@@ -84,28 +85,6 @@ def test_job_attributes_raises_invalid_parameters(
             tasks=tasks,
             name=name,
         )
-
-
-def test_job_does_not_span_absent_task(solver: str):
-    """
-    Tests that jobs do not span tasks that are absent.
-    """
-    model = Model()
-
-    job = model.add_job()
-    machine = model.add_machine()
-    task1 = model.add_task(job=job)
-    task2 = model.add_task(job=job, earliest_start=10, optional=True)
-
-    model.add_mode(task1, machine, duration=1)
-    model.add_mode(task2, machine, duration=1)
-
-    result = model.solve(solver=solver)
-
-    # Task 1 is required but task 2 is not. The job should span only task 1,
-    # so the makespan is 1.
-    assert_equal(result.status.value, "Optimal")
-    assert_equal(result.objective, 1)
 
 
 def test_resource_attributes():
@@ -188,29 +167,6 @@ def test_task_attributes():
     assert_equal(task.name, "")
 
 
-def test_task_optional(solver: str):
-    """
-    Tests that when all tasks are optional without selection constraints,
-    then no tasks are scheduled.
-    """
-    model = Model()
-
-    job = model.add_job()
-    machine = model.add_machine()
-    tasks = [model.add_task(job=job, optional=True) for _ in range(4)]
-    for task in tasks:
-        model.add_mode(task, machine, duration=1)
-
-    result = model.solve(solver=solver)
-
-    # No task is required, so the makespan should be 0.
-    assert_equal(result.status.value, "Optimal")
-    assert_equal(result.objective, 0)
-
-    for task_data in result.best.tasks:
-        assert_equal(task_data.present, False)
-
-
 @pytest.mark.parametrize(
     "earliest_start, latest_start, earliest_end, latest_end",
     [
@@ -235,47 +191,6 @@ def test_task_attributes_raises_invalid_parameters(
             earliest_end=earliest_end,
             latest_end=latest_end,
         )
-
-
-def test_problem_data_input_parameter_attributes():
-    """
-    Tests that the input parameters of the ProblemData class are set correctly
-    as attributes.
-    """
-    jobs = [Job(tasks=[idx]) for idx in range(5)]
-    resources = [Machine() for _ in range(5)]
-    tasks = [Task() for _ in range(5)]
-    modes = [
-        Mode(task=task, resources=[resource], duration=1)
-        for task in range(5)
-        for resource in range(5)
-    ]
-    constraints = {
-        key: [Constraint.END_BEFORE_START] for key in ((0, 1), (2, 3), (4, 5))
-    }
-    setup_times = np.ones((5, 5, 5), dtype=int)
-    horizon = 100
-    objective = Objective.total_flow_time()
-
-    data = ProblemData(
-        jobs,
-        resources,
-        tasks,
-        modes,
-        constraints,
-        setup_times,
-        horizon,
-        objective,
-    )
-
-    assert_equal(data.jobs, jobs)
-    assert_equal(data.resources, resources)
-    assert_equal(data.tasks, tasks)
-    assert_equal(data.modes, modes)
-    assert_equal(data.constraints, constraints)
-    assert_equal(data.setup_times, setup_times)
-    assert_equal(data.horizon, horizon)
-    assert_equal(data.objective, objective)
 
 
 def test_mode_attributes():
@@ -308,6 +223,87 @@ def test_mode_raises_invalid_parameters(resources, duration, demands):
         Mode(task=0, resources=resources, duration=duration, demands=demands)
 
 
+def test_task_group_attributes():
+    """
+    Tests that the attributes of the TaskGroup class are set correctly.
+    """
+    group = TaskGroup(
+        tasks=[0, 1, 2],
+        optional=True,
+        mutually_exclusive=False,
+        name="TestGroup",
+    )
+
+    assert_equal(group.tasks, [0, 1, 2])
+    assert_equal(group.optional, True)
+    assert_equal(group.mutually_exclusive, False)
+    assert_equal(group.name, "TestGroup")
+
+
+def test_task_group_default_attributes():
+    """
+    Tests that the default attributes of the TaskGroup class are set correctly.
+    """
+    group = TaskGroup(tasks=[1])
+
+    assert_equal(group.optional, False)
+    assert_equal(group.mutually_exclusive, True)
+    assert_equal(group.name, "")
+
+
+def test_task_group_raises_invalid_parameters():
+    """
+    Tests that a ValueError is raised when invalid parameters are passed to
+    the TaskGroup class.
+    """
+    with assert_raises(ValueError):
+        TaskGroup(tasks=[])  # must have tasks
+
+
+def test_problem_data_input_parameter_attributes():
+    """
+    Tests that the input parameters of the ProblemData class are set correctly
+    as attributes.
+    """
+    jobs = [Job(tasks=[idx]) for idx in range(5)]
+    resources = [Machine() for _ in range(5)]
+    tasks = [Task() for _ in range(5)]
+    modes = [
+        Mode(task=task, resources=[resource], duration=1)
+        for task in range(5)
+        for resource in range(5)
+    ]
+    groups = [TaskGroup(tasks=[idx]) for idx in range(5)]
+    constraints = {
+        key: [Constraint.END_BEFORE_START] for key in ((0, 1), (2, 3), (4, 5))
+    }
+    setup_times = np.ones((5, 5, 5), dtype=int)
+    horizon = 100
+    objective = Objective.total_flow_time()
+
+    data = ProblemData(
+        jobs=jobs,
+        resources=resources,
+        tasks=tasks,
+        modes=modes,
+        groups=groups,
+        constraints=constraints,
+        setup_times=setup_times,
+        horizon=horizon,
+        objective=objective,
+    )
+
+    assert_equal(data.jobs, jobs)
+    assert_equal(data.resources, resources)
+    assert_equal(data.tasks, tasks)
+    assert_equal(data.modes, modes)
+    assert_equal(data.groups, groups)
+    assert_equal(data.constraints, constraints)
+    assert_equal(data.setup_times, setup_times)
+    assert_equal(data.horizon, horizon)
+    assert_equal(data.objective, objective)
+
+
 def test_problem_data_non_input_parameter_attributes():
     """
     Tests that attributes that are not input parameters of the ProblemData
@@ -322,13 +318,17 @@ def test_problem_data_non_input_parameter_attributes():
         Mode(task=1, resources=[0], duration=1),
         Mode(task=0, resources=[2], duration=1),
     ]
+    groups = [TaskGroup(tasks=[0, 1, 2])]
 
-    data = ProblemData(jobs, resources, tasks, modes)
+    data = ProblemData(
+        jobs=jobs, resources=resources, tasks=tasks, modes=modes, groups=groups
+    )
 
     assert_equal(data.num_jobs, 1)
     assert_equal(data.num_resources, 3)
     assert_equal(data.num_tasks, 3)
     assert_equal(data.num_modes, 4)
+    assert_equal(data.num_groups, 1)
 
 
 def test_problem_data_default_values():
@@ -339,8 +339,11 @@ def test_problem_data_default_values():
     resources = [Resource(0)]
     tasks = [Task()]
     modes = [Mode(task=0, resources=[0], duration=1)]
-    data = ProblemData(jobs, resources, tasks, modes)
+    data = ProblemData(
+        jobs=jobs, resources=resources, tasks=tasks, modes=modes
+    )
 
+    assert_equal(data.groups, [])
     assert_equal(data.constraints, {})
     assert_equal(data.setup_times, None)
     assert_equal(data.horizon, MAX_VALUE)
@@ -353,10 +356,10 @@ def test_problem_data_job_references_unknown_task():
     """
     with assert_raises(ValueError):
         ProblemData(
-            [Job(tasks=[42])],
-            [Resource(0)],
-            [Task()],
-            [Mode(0, [0], 1)],
+            jobs=[Job(tasks=[42])],
+            resources=[Resource(0)],
+            tasks=[Task()],
+            modes=[Mode(0, [0], 1)],
         )
 
 
@@ -366,10 +369,10 @@ def test_problem_data_task_references_unknown_job():
     """
     with assert_raises(ValueError):
         ProblemData(
-            [Job()],
-            [Resource(0)],
-            [Task(job=42)],
-            [Mode(0, [0], 1)],
+            jobs=[Job()],
+            resources=[Resource(0)],
+            tasks=[Task(job=42)],
+            modes=[Mode(0, [0], 1)],
         )
 
 
@@ -386,10 +389,10 @@ def test_problem_data_mode_references_unknown_data(mode):
     """
     with assert_raises(ValueError):
         ProblemData(
-            [Job()],
-            [Resource(0)],
-            [Task()],
-            [mode],
+            jobs=[Job()],
+            resources=[Resource(0)],
+            tasks=[Task()],
+            modes=[mode],
         )
 
 
@@ -398,7 +401,23 @@ def test_problem_data_task_without_modes():
     Tests that an error is raised when a task has no processing modes.
     """
     with assert_raises(ValueError):
-        ProblemData([Job()], [Resource(0)], [Task()], [])
+        ProblemData(
+            jobs=[Job()], resources=[Resource(0)], tasks=[Task()], modes=[]
+        )
+
+
+def test_problem_data_task_group_references_unknown_task():
+    """
+    Tests that an error is raised when a task group references an unknown task.
+    """
+    with assert_raises(ValueError):
+        ProblemData(
+            jobs=[Job()],
+            resources=[Resource(0)],
+            tasks=[Task()],
+            modes=[Mode(0, [0], 1)],
+            groups=[TaskGroup(tasks=[42])],
+        )
 
 
 def test_problem_data_all_modes_demand_infeasible():
@@ -409,10 +428,10 @@ def test_problem_data_all_modes_demand_infeasible():
 
     # This is OK: at least one mode is feasible.
     ProblemData(
-        [Job()],
-        [Resource(capacity=1)],
-        [Task()],
-        [
+        jobs=[Job()],
+        resources=[Resource(capacity=1)],
+        tasks=[Task()],
+        modes=[
             Mode(0, [0], 2, demands=[1]),  # feasible
             Mode(0, [0], 2, demands=[2]),  # infeasible
         ],
@@ -421,10 +440,10 @@ def test_problem_data_all_modes_demand_infeasible():
     with assert_raises(ValueError):
         # This is not OK: no mode is feasible.
         ProblemData(
-            [Job()],
-            [Resource(capacity=1)],
-            [Task()],
-            [
+            jobs=[Job()],
+            resources=[Resource(capacity=1)],
+            tasks=[Task()],
+            modes=[
                 Mode(0, [0], 2, demands=[2]),  # infeasible
                 Mode(0, [0], 2, demands=[2]),  # infeasible
             ],
@@ -451,9 +470,9 @@ def test_problem_data_raises_when_invalid_arguments(
     """
     with assert_raises(ValueError):
         ProblemData(
-            [Job()],
-            [Resource(0)],
-            [Task()],
+            jobs=[Job()],
+            resources=[Resource(0)],
+            tasks=[Task()],
             modes=[Mode(0, [0], 1)],
             setup_times=setup_times.astype(int),
             horizon=horizon,
@@ -467,10 +486,10 @@ def test_problem_data_raises_capacitated_resources_and_setup_times():
     """
     with assert_raises(ValueError):
         ProblemData(
-            [Job()],
-            [Resource(capacity=2)],
-            [Task()],
-            [Mode(0, [0], 0)],
+            jobs=[Job()],
+            resources=[Resource(capacity=2)],
+            tasks=[Task()],
+            modes=[Mode(0, [0], 0)],
             setup_times=np.array([[[1]]]),
         )
 
@@ -494,10 +513,10 @@ def test_problem_data_tardy_objective_without_job_due_dates(
     """
     with assert_raises(ValueError):
         ProblemData(
-            [Job()],
-            [Resource(0)],
-            [Task()],
-            [Mode(0, [0], 0)],
+            jobs=[Job()],
+            resources=[Resource(0)],
+            tasks=[Task()],
+            modes=[Mode(0, [0], 0)],
             objective=objective,
         )
 
@@ -513,20 +532,25 @@ def make_replace_data():
         Mode(task=0, resources=[0], duration=1),
         Mode(task=1, resources=[1], duration=2),
     ]
+    groups = [
+        TaskGroup(tasks=[0], optional=False, mutually_exclusive=False),
+        TaskGroup(tasks=[1], optional=True, mutually_exclusive=True),
+    ]
     constraints = {(0, 1): [Constraint.END_BEFORE_START]}
     setup_times = np.zeros((2, 2, 2))
     horizon = 1
     objective = Objective.makespan()
 
     return ProblemData(
-        jobs,
-        resources,
-        tasks,
-        modes,
-        constraints,
-        setup_times,
-        horizon,
-        objective,
+        jobs=jobs,
+        resources=resources,
+        tasks=tasks,
+        modes=modes,
+        groups=groups,
+        constraints=constraints,
+        setup_times=setup_times,
+        horizon=horizon,
+        objective=objective,
     )
 
 
@@ -562,6 +586,15 @@ def test_problem_data_replace_no_changes():
         assert_equal(new.modes[idx].resources, data.modes[idx].resources)
         assert_equal(new.modes[idx].duration, data.modes[idx].duration)
 
+    for idx in range(data.num_groups):
+        assert_(new.groups[idx] is not data.groups[idx])
+        assert_equal(new.groups[idx].tasks, data.groups[idx].tasks)
+        assert_equal(new.groups[idx].optional, data.groups[idx].optional)
+        assert_equal(
+            new.groups[idx].mutually_exclusive,
+            data.groups[idx].mutually_exclusive,
+        )
+
     assert_equal(new.constraints, data.constraints)
     assert_equal(new.setup_times, data.setup_times)
     assert_equal(new.horizon, data.horizon)
@@ -581,6 +614,10 @@ def test_problem_data_replace_with_changes():
         modes=[
             Mode(task=0, resources=[0], duration=20),
             Mode(task=1, resources=[1], duration=10),
+        ],
+        groups=[
+            TaskGroup(tasks=[1], optional=True, mutually_exclusive=True),
+            TaskGroup(tasks=[0], optional=False, mutually_exclusive=False),
         ],
         constraints={(1, 0): [Constraint.END_BEFORE_START]},
         setup_times=np.array(
@@ -612,6 +649,15 @@ def test_problem_data_replace_with_changes():
     for idx in range(data.num_modes):
         assert_(new.modes[idx] is not data.modes[idx])
         assert_(new.modes[idx].duration != data.modes[idx].duration)
+
+    for idx in range(data.num_groups):
+        assert_(new.groups[idx] is not data.groups[idx])
+        assert_(new.groups[idx].tasks != data.groups[idx].tasks)
+        assert_(new.groups[idx].optional != data.groups[idx].optional)
+        assert_(
+            new.groups[idx].mutually_exclusive
+            != data.groups[idx].mutually_exclusive
+        )
 
     assert_(new.constraints != data.constraints)
     assert_(not np.array_equal(new.setup_times, data.setup_times))
@@ -688,6 +734,28 @@ def test_job_deadline_infeasible(solver: str):
 
     # The processing time of the task is 2, but job deadline is 1.
     assert_equal(result.status.value, "Infeasible")
+
+
+def test_job_does_not_span_absent_task(solver: str):
+    """
+    Tests that jobs do not span tasks that are absent.
+    """
+    model = Model()
+
+    job = model.add_job()
+    machine = model.add_machine()
+    task1 = model.add_task(job=job)
+    task2 = model.add_task(job=job, earliest_start=10, optional=True)
+
+    model.add_mode(task1, machine, duration=1)
+    model.add_mode(task2, machine, duration=1)
+
+    result = model.solve(solver=solver)
+
+    # Task 1 is required but task 2 is not. The job should span only task 1,
+    # so the makespan is 1.
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.objective, 1)
 
 
 def test_task_earliest_start(solver: str):
@@ -868,6 +936,29 @@ def test_task_non_fixed_duration(solver: str):
     assert_equal(result.best.tasks, [TaskData(0, [0], 0, 10)])
 
 
+def test_task_optional(solver: str):
+    """
+    Tests that when all tasks are optional without selection constraints,
+    then no tasks are scheduled.
+    """
+    model = Model()
+
+    job = model.add_job()
+    machine = model.add_machine()
+    tasks = [model.add_task(job=job, optional=True) for _ in range(4)]
+    for task in tasks:
+        model.add_mode(task, machine, duration=1)
+
+    result = model.solve(solver=solver)
+
+    # No task is required, so the makespan should be 0.
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.objective, 0)
+
+    for task_data in result.best.tasks:
+        assert_equal(task_data.present, False)
+
+
 def test_resource_processes_two_tasks_simultaneously(solver: str):
     """
     Tests that a resource can process two tasks simultaneously.
@@ -988,7 +1079,13 @@ def test_constraints(solver, prec_type: Constraint, expected_makespan: int):
         for task in range(len(tasks))
     ]
 
-    data = ProblemData([job], resources, tasks, modes, {(0, 1): [prec_type]})
+    data = ProblemData(
+        jobs=[job],
+        resources=resources,
+        tasks=tasks,
+        modes=modes,
+        constraints={(0, 1): [prec_type]},
+    )
     result = solve(data, solver=solver)
 
     assert_equal(result.objective, expected_makespan)

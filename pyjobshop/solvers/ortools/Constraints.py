@@ -138,6 +138,9 @@ class Constraints:
         model, data = self._model, self._data
 
         for (idx1, idx2), constraints in data.constraints.items():
+            if idx1 >= len(self._task_vars) or idx2 >= len(self._task_vars):
+                continue  # HACK deal with constraints later
+
             task_var1 = self._task_vars[idx1]
             task_var2 = self._task_vars[idx2]
             both_present = [task_var1.is_present, task_var2.is_present]
@@ -273,6 +276,28 @@ class Constraints:
                     ]
                     model.add(sum(vars2) >= var1).only_enforce_if(both_present)
 
+    def _if_then_constraints(self):
+        model, data = self._model, self._data
+
+        # Group constraints: group present == select exactly one task
+        group_vars = [model.new_bool_var("") for _ in range(len(data.groups))]
+
+        for group, group_var in zip(data.groups, group_vars):
+            task_vars = [
+                self._task_vars[task].is_present for task in group.tasks
+            ]
+            model.add(sum(task_vars) == group_var)
+
+        # If then constraints
+        for (group1, group2), constraints in data.constraints.items():
+            if Constraint.IF_THEN not in constraints:
+                continue
+
+            present1 = group_vars[group1]
+            present2 = group_vars[group2]
+
+            model.add(present2 == 1).only_enforce_if(present1)
+
     def _circuit_constraints(self):
         """
         Creates the circuit constraints for each machine, if activated by
@@ -357,6 +382,7 @@ class Constraints:
         self._timing_constraints()
         self._previous_before_constraints()
         self._identical_and_different_resource_constraints()
+        self._if_then_constraints()
 
         # From here onwards we know which sequence constraints are active.
         self._circuit_constraints()

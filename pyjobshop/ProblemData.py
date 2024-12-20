@@ -375,6 +375,76 @@ class Mode:
         )
 
 
+class TaskGroup:
+    """
+    Simple dataclass for storing task group data. A task group represents a set
+    of tasks that are related in some way, e.g., exactly one task must be
+    selected from the group (``mutually_exclusive=True``) or at most one task
+    can be selected from the group (``mutually_exclusive=False``).
+
+    Parameters
+    ----------
+    tasks
+        Task indices that belong to this group.
+    optional
+        Whether this task group is optional. Default ``False``.
+    mutually_exclusive
+        Whether the tasks in this group are mutually exclusively present.
+        Default ``True``.
+    name
+        Name of the task group.
+    """
+
+    def __init__(
+        self,
+        tasks: list[int],
+        optional: bool = False,
+        mutually_exclusive: bool = True,
+        name: str = "",
+    ):
+        if not tasks:
+            raise ValueError("Task group must contain at least one task.")
+
+        if len(set(tasks)) != len(tasks):
+            raise ValueError("Task group contains duplicate tasks.")
+
+        self._tasks = tasks
+        self._optional = optional
+        self._mutually_exclusive = mutually_exclusive
+        self._name = name
+
+    @property
+    def tasks(self) -> list[int]:
+        """
+        Task indices in this group.
+        """
+        return self._tasks
+
+    @property
+    def optional(self) -> bool:
+        """
+        Whether this task group is optional.
+        """
+        return self._optional
+
+    @property
+    def mutually_exclusive(self) -> bool:
+        """
+        Whether the tasks in this group must be mutually exclusively present.
+        """
+        return self._mutually_exclusive
+
+    @property
+    def name(self) -> str:
+        """
+        Name of the task group.
+        """
+        return self._name
+
+    def __eq__(self, other) -> bool:
+        return self.tasks == other.tasks and self.name == other.name
+
+
 class Constraint(str, Enum):
     """
     Enum that defines different types of constraints between two tasks
@@ -416,6 +486,9 @@ class Constraint(str, Enum):
 
     #: Sequence task :math:`i` before :math:`k` on shared resources.
     BEFORE = "before"
+
+    #: Task :math:`k` must be scheduled if task :math:`i` is scheduled.
+    IF_THEN = "if_then"
 
 
 @dataclass
@@ -509,9 +582,11 @@ class ProblemData:
         List of tasks.
     modes
         List of processing modes of tasks.
+    groups
+        List of task groups. Default ``None``, which initializes an empty list.
     constraints
         Dict indexed by task pairs with a list of constraints as values.
-        Default is None, which initializes an empty dict.
+        Default is ``None``, which initializes an empty dict.
     setup_times
         Sequence-dependent setup times between tasks on a given resource. The
         first dimension of the array is indexed by the resource index. The last
@@ -528,6 +603,7 @@ class ProblemData:
         resources: Sequence[ResourceType],
         tasks: list[Task],
         modes: list[Mode],
+        groups: Optional[list[TaskGroup]] = None,
         constraints: Optional[_ConstraintsType] = None,
         setup_times: Optional[np.ndarray] = None,
         horizon: int = MAX_VALUE,
@@ -537,6 +613,7 @@ class ProblemData:
         self._resources = resources
         self._tasks = tasks
         self._modes = modes
+        self._groups = [] if groups is None else groups
         self._constraints = constraints if constraints is not None else {}
         self._setup_times = setup_times
         self._horizon = horizon
@@ -591,6 +668,10 @@ class ProblemData:
                 msg = f"All modes for task {task} have infeasible demands."
                 raise ValueError(msg)
 
+        for group in self.groups:
+            if any(task < 0 or task >= num_tasks for task in group.tasks):
+                raise ValueError("Task group references unknown task index.")
+
         if self.setup_times is not None:
             if np.any(self.setup_times < 0):
                 raise ValueError("Setup times must be non-negative.")
@@ -627,6 +708,7 @@ class ProblemData:
         resources: Optional[Sequence[ResourceType]] = None,
         tasks: Optional[list[Task]] = None,
         modes: Optional[list[Mode]] = None,
+        groups: Optional[list[TaskGroup]] = None,
         constraints: Optional[_ConstraintsType] = None,
         setup_times: Optional[np.ndarray] = None,
         horizon: Optional[int] = None,
@@ -646,6 +728,8 @@ class ProblemData:
             Optional list of tasks.
         modes
             Optional processing modes of tasks.
+        groups
+            Optional task groups of tasks.
         constraints
             Optional constraints between tasks.
         setup_times
@@ -668,6 +752,7 @@ class ProblemData:
         resources = _deepcopy_if_none(resources, self.resources)
         tasks = _deepcopy_if_none(tasks, self.tasks)
         modes = _deepcopy_if_none(modes, self.modes)
+        groups = _deepcopy_if_none(groups, self.groups)
         constraints = _deepcopy_if_none(constraints, self.constraints)
         setup_times = _deepcopy_if_none(setup_times, self.setup_times)
         horizon = _deepcopy_if_none(horizon, self.horizon)
@@ -678,6 +763,7 @@ class ProblemData:
             resources=resources,
             tasks=tasks,
             modes=modes,
+            groups=groups,
             constraints=constraints,
             setup_times=setup_times,
             horizon=horizon,
@@ -711,6 +797,13 @@ class ProblemData:
         Returns the processing modes of this problem instance.
         """
         return self._modes
+
+    @property
+    def groups(self) -> list[TaskGroup]:
+        """
+        Returns the list of task groups in this problem instance.
+        """
+        return self._groups
 
     @property
     def constraints(self) -> _ConstraintsType:
@@ -771,3 +864,10 @@ class ProblemData:
         Returns the number of modes in this instance.
         """
         return len(self._modes)
+
+    @property
+    def num_groups(self) -> int:
+        """
+        Returns the number of task groups in this instance.
+        """
+        return len(self._groups)

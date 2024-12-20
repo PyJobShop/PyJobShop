@@ -12,6 +12,7 @@ from pyjobshop.ProblemData import (
     ProblemData,
     Resource,
     Task,
+    TaskGroup,
 )
 from pyjobshop.Solution import Solution, TaskData
 
@@ -28,6 +29,7 @@ def test_model_to_data():
 
     model.add_mode(task1, machine1, 1)
     model.add_mode(task2, machine2, 2)
+    model.add_task_group([task1, task2])
 
     model.add_start_at_start(task1, task2)
     model.add_start_at_end(task1, task2)
@@ -60,6 +62,7 @@ def test_model_to_data():
             Mode(task=1, resources=[1], duration=2),
         ],
     )
+    assert_equal(data.groups, [TaskGroup([0, 1])])
     assert_equal(
         data.constraints,
         {
@@ -96,6 +99,7 @@ def test_from_data():
         [Resource(1), Machine()],
         [Task(), Task(job=0), Task()],
         modes=[Mode(0, [0], 1), Mode(1, [1], 2), Mode(2, [1], 2)],
+        groups=[TaskGroup([0]), TaskGroup([1])],
         constraints={
             (0, 1): [
                 Constraint.START_AT_START,
@@ -132,17 +136,19 @@ def test_from_data():
         ),
     )
     model = Model.from_data(data)
-    m_data = model.data()
+    model_data = model.data()
 
-    assert_equal(m_data.num_jobs, data.num_jobs)
-    assert_equal(m_data.num_resources, data.num_resources)
-    assert_equal(m_data.num_tasks, data.num_tasks)
-    assert_equal(m_data.num_modes, data.num_modes)
-    assert_equal(m_data.modes, data.modes)
-    assert_equal(m_data.constraints, data.constraints)
-    assert_equal(m_data.setup_times, data.setup_times)
-    assert_equal(m_data.horizon, data.horizon)
-    assert_equal(m_data.objective, data.objective)
+    assert_equal(model_data.num_jobs, data.num_jobs)
+    assert_equal(model_data.num_resources, data.num_resources)
+    assert_equal(model_data.num_tasks, data.num_tasks)
+    assert_equal(model_data.num_modes, data.num_modes)
+    assert_equal(model_data.num_groups, data.num_groups)
+    assert_equal(model_data.modes, data.modes)
+    assert_equal(model_data.groups, data.groups)
+    assert_equal(model_data.constraints, data.constraints)
+    assert_equal(model_data.setup_times, data.setup_times)
+    assert_equal(model_data.horizon, data.horizon)
+    assert_equal(model_data.objective, data.objective)
 
 
 def test_model_to_data_default_values():
@@ -162,6 +168,7 @@ def test_model_to_data_default_values():
     assert_equal(data.resources, [machine])
     assert_equal(data.tasks, [task])
     assert_equal(data.modes, [Mode(task=0, resources=[0], duration=1)])
+    assert_equal(data.groups, [])
     assert_equal(data.constraints, {})
     assert_equal(data.setup_times, None)
     assert_equal(data.horizon, MAX_VALUE)
@@ -267,6 +274,23 @@ def test_add_mode_single_resource():
     assert_equal(mode.demands, [1])  # default
 
 
+def test_add_task_group_attributes():
+    """
+    Tests that adding a task group to the model correctly sets the attributes.
+    """
+    model = Model()
+
+    tasks = [model.add_task() for _ in range(3)]
+    group = model.add_task_group(
+        tasks, optional=True, mutually_exclusive=False, name="group"
+    )
+
+    assert_equal(group.tasks, [0, 1, 2])
+    assert_equal(group.optional, True)
+    assert_equal(group.mutually_exclusive, False)
+    assert_equal(group.name, "group")
+
+
 def test_model_attributes():
     """
     Tests that the model attributes are correctly.
@@ -277,11 +301,13 @@ def test_model_attributes():
     resources = [model.add_machine() for _ in range(20)]
     tasks = [model.add_task() for _ in range(30)]
     modes = [model.add_mode(t, [m], 1) for t in tasks for m in resources]
+    groups = [model.add_task_group([t]) for t in tasks]
 
     assert_equal(model.jobs, jobs)
     assert_equal(model.resources, resources)
     assert_equal(model.tasks, tasks)
     assert_equal(model.modes, modes)
+    assert_equal(model.groups, groups)
 
 
 def test_model_set_objective():
