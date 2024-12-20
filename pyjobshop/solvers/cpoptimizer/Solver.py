@@ -119,4 +119,5 @@ class Solver:
             cp_result.get_solve_time(),
             solution,
             objective,
+            cp_result.get_objective_bound(),
         )

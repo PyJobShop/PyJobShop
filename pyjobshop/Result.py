@@ -29,9 +29,12 @@ class Result:
     objective
         The objective value of the solution. If no solution was found, this
         should be set to ``float('inf')``.
+    lower_bound
+        The lower bound of the objective value.
     """
 
     status: SolveStatus
     runtime: float
     best: Solution
     objective: float
+    lower_bound: float

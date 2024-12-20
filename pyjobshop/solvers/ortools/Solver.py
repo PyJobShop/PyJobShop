@@ -124,4 +124,5 @@ class Solver:
             cp_solver.wall_time,
             solution,
             objective_value,
+            cp_solver.best_objective_bound,
         )
