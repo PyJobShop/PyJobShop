@@ -81,7 +81,7 @@ class Variables:
         task_durations = utils.compute_task_durations(self._data)
 
         for idx, task in enumerate(data.tasks):
-            var = interval_var(name=f"T{task}")
+            var = interval_var(optional=task.optional, name=f"T{task}")
 
             var.set_start_min(task.earliest_start)
             var.set_start_max(min(task.latest_start, data.horizon))

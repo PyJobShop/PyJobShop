@@ -1,5 +1,8 @@
 import docplex.cp.modeler as cpo
 import numpy as np
+from docplex.cp.expression import (
+    binary_var,
+)
 from docplex.cp.model import CpoModel
 
 import pyjobshop.solvers.utils as utils
@@ -115,6 +118,9 @@ class Constraints:
         model, data = self._model, self._data
 
         for (idx1, idx2), constraints in data.constraints.items():
+            if idx1 >= data.num_tasks or idx2 >= data.num_tasks:
+                continue
+
             task1 = self._task_vars[idx1]
             task2 = self._task_vars[idx2]
 
@@ -221,6 +227,31 @@ class Constraints:
                     ]
                     model.add(sum(vars2) >= var1)
 
+    def _if_then_constraints(self):
+        """
+        Creates constraints for the if-then constraints.
+        """
+        model, data = self._model, self._data
+
+        # Group constraints: group present == select exactly one task
+        group_vars = [binary_var(name="") for _ in range(len(data.groups))]
+
+        for group, group_var in zip(data.groups, group_vars):
+            task_vars = [
+                cpo.presence_of(self._task_vars[task]) for task in group.tasks
+            ]
+            model.add(sum(task_vars) == group_var)
+
+        # If then constraints
+        for (group1, group2), constraints in data.constraints.items():
+            if Constraint.IF_THEN not in constraints:
+                continue
+
+            present1 = group_vars[group1]
+            present2 = group_vars[group2]
+
+            model.add(cpo.if_then(present1 == 1, present2 == 1))
+
     def add_constraints(self):
         """
         Adds all the constraints to the CP model.
@@ -232,3 +263,4 @@ class Constraints:
         self._timing_constraints()
         self._previous_before_constraints()
         self._identical_and_different_resource_constraints()
+        self._if_then_constraints()
