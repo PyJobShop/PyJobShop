@@ -279,14 +279,21 @@ class Constraints:
     def _if_then_constraints(self):
         model, data = self._model, self._data
 
-        # Group constraints: group present == select exactly one task
-        group_vars = [model.new_bool_var("") for _ in range(len(data.groups))]
+        # Group constraints
+        group_vars = [
+            model.new_bool_var("") if group.optional else model.new_constant(1)
+            for group in data.groups
+        ]
 
         for group, group_var in zip(data.groups, group_vars):
             task_vars = [
                 self._task_vars[task].is_present for task in group.tasks
             ]
-            model.add(sum(task_vars) == group_var)
+            if group.mutually_exclusive:
+                model.add(sum(task_vars) == group_var)
+            else:
+                # TODO can this be done more efficiently?
+                model.add(sum(task_vars) == group_var * len(task_vars))
 
         # If then constraints
         for (group1, group2), constraints in data.constraints.items():

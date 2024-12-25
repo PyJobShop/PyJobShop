@@ -233,14 +233,20 @@ class Constraints:
         """
         model, data = self._model, self._data
 
-        # Group constraints: group present == select exactly one task
-        group_vars = [binary_var(name="") for _ in range(len(data.groups))]
+        # Group constraints
+        group_vars = [
+            binary_var(name="") if group.optional else True
+            for group in data.groups
+        ]
 
         for group, group_var in zip(data.groups, group_vars):
             task_vars = [
                 cpo.presence_of(self._task_vars[task]) for task in group.tasks
             ]
-            model.add(sum(task_vars) == group_var)
+            if group.mutually_exclusive:
+                model.add(sum(task_vars) == group_var)
+            else:
+                model.add(model.logical_and(task_vars) == group_var)
 
         # If then constraints
         for (group1, group2), constraints in data.constraints.items():

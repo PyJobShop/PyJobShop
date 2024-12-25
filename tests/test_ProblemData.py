@@ -943,9 +943,8 @@ def test_task_optional(solver: str):
     """
     model = Model()
 
-    job = model.add_job()
     machine = model.add_machine()
-    tasks = [model.add_task(job=job, optional=True) for _ in range(4)]
+    tasks = [model.add_task(optional=True) for _ in range(4)]
     for task in tasks:
         model.add_mode(task, machine, duration=1)
 
@@ -1038,6 +1037,69 @@ def test_resource_non_renewable_capacity(solver: str):
     # cannot be scheduled.
     result = model.solve(solver=solver)
     assert_equal(result.status.value, "Infeasible")
+
+
+@pytest.mark.parametrize(
+    "mutually_exclusive,expected_makespan,presence",
+    [
+        (True, 1, [True, False]),  # schedule task 1
+        (False, 11, [True, True]),  # schedule both tasks
+    ],
+)
+def test_task_group_mutually_exclusive(
+    solver: str,
+    mutually_exclusive: bool,
+    expected_makespan: int,
+    presence: list[bool],
+):
+    """
+    Tests that a mutually exclusive group is correctly scheduled.
+    """
+    model = Model()
+
+    machine = model.add_machine()
+    tasks = [model.add_task(optional=True) for _ in range(2)]
+    model.add_task_group(tasks, mutually_exclusive=mutually_exclusive)
+
+    model.add_mode(tasks[0], machine, duration=1)
+    model.add_mode(tasks[1], machine, duration=10)
+
+    result = model.solve(solver=solver)
+
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.objective, expected_makespan)
+    assert_equal(result.best.tasks[0].present, presence[0])
+    assert_equal(result.best.tasks[1].present, presence[1])
+
+
+@pytest.mark.parametrize(
+    "optional,expected_makespan,presence",
+    [
+        (True, 0, [False, False]),  # do not schedule any task
+        (False, 1, [True, False]),  # schedule first tasks
+    ],
+)
+def test_task_group_optional(
+    solver: str, optional: bool, expected_makespan: int, presence: list[bool]
+):
+    """
+    Tests that an optional group is correctly scheduled.
+    """
+    model = Model()
+
+    machine = model.add_machine()
+    tasks = [model.add_task(optional=True) for _ in range(2)]
+    model.add_task_group(tasks, optional=optional, mutually_exclusive=True)
+
+    model.add_mode(tasks[0], machine, duration=1)
+    model.add_mode(tasks[1], machine, duration=10)
+
+    result = model.solve(solver=solver)
+
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.objective, expected_makespan)
+    assert_equal(result.best.tasks[0].present, presence[0])
+    assert_equal(result.best.tasks[1].present, presence[1])
 
 
 @pytest.mark.parametrize(
