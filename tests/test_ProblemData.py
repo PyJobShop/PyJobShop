@@ -958,6 +958,47 @@ def test_task_optional(solver: str):
         assert_equal(task_data.present, False)
 
 
+def test_task_optional_with_timing_constraints(solver: str):
+    """
+    Ensures that the makespan is correctly computed when there are tasks
+    with timing constraints.
+    """
+    model = Model()
+
+    machine = model.add_machine()
+    task = model.add_task(optional=True, earliest_end=2)
+    model.add_mode(task, machine, duration=1)
+
+    result = model.solve(solver=solver)
+
+    # The makespan should only be calculated over present tasks, so the
+    # makespan is 0. Before fixing this issue, the optional task's completion
+    # time was included in the makespan, and because of the earliest end
+    # constraint, it would result in a makespan of 2.
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.objective, 0)
+
+
+def test_task_absent_in_jobs(solver: str):
+    """
+    Tests that absent tasks are not accounted for in the job's objective.
+    """
+    model = Model()
+
+    job = model.add_job(deadline=1)
+    machine = model.add_machine()
+
+    absent1 = model.add_task(job=job, optional=True, earliest_end=2)
+    absent2 = model.add_task(job=job, optional=True, earliest_start=2)
+
+    model.add_mode(absent1, machine, duration=5)
+    model.add_mode(absent2, machine, duration=5)
+
+    result = model.solve(solver=solver)
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.objective, 0)
+
+
 def test_resource_processes_two_tasks_simultaneously(solver: str):
     """
     Tests that a resource can process two tasks simultaneously.

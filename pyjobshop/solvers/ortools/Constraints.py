@@ -30,11 +30,22 @@ class Constraints:
 
         for idx, job in enumerate(data.jobs):
             job_var = self._job_vars[idx]
-            task_starts = [self._task_vars[task].start for task in job.tasks]
-            task_ends = [self._task_vars[task].end for task in job.tasks]
+            task_starts = []
+            task_ends = []
 
-            # TODO add dummy start/end in case no task is selected
-            # TODO does not work when optional tasks have timing constraints
+            for task in job.tasks:
+                task_var = self._task_vars[task]
+                task_start_conditional = model.new_int_var(0, data.horizon, "")
+                task_end_conditional = model.new_int_var(0, data.horizon, "")
+
+                task_starts.append(task_start_conditional)
+                task_ends.append(task_end_conditional)
+
+                expr = task_start_conditional == task_var.start
+                model.add(expr).only_enforce_if(task_var.is_present)
+
+                expr = task_end_conditional == task_var.end
+                model.add(expr).only_enforce_if(task_var.is_present)
 
             model.add_min_equality(job_var.start, task_starts)
             model.add_max_equality(job_var.end, task_ends)
@@ -54,7 +65,7 @@ class Constraints:
             presences = [
                 self._mode_vars[mode].is_present for mode in task2modes[task]
             ]
-            model.add(sum(presences) == 1).only_enforce_if(task_var.is_present)
+            model.add(sum(presences) == task_var.is_present)
 
             for mode in task2modes[task]:
                 mode_var = self._mode_vars[mode]

@@ -4,6 +4,7 @@ from docplex.cp.model import CpoExpr, CpoModel
 from pyjobshop.ProblemData import Objective as DataObjective
 from pyjobshop.ProblemData import ProblemData
 
+from .utils import presence_of
 from .Variables import Variables
 
 
@@ -26,7 +27,9 @@ class Objective:
         """
         Returns an expression representing the makespan of the model.
         """
-        return cpo.max(cpo.end_of(var) for var in self._task_vars)
+        return cpo.max(
+            presence_of(var) * cpo.end_of(var) for var in self._task_vars
+        )
 
     def _tardy_jobs_expr(self) -> CpoExpr:
         """

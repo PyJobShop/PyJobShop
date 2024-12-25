@@ -30,7 +30,15 @@ class Objective:
         Returns an expression representing the makespan of the model.
         """
         makespan = self._model.new_int_var(0, self._data.horizon, "makespan")
-        completion_times = [var.end for var in self._task_vars]
+        completion_times = []
+        for var in self._task_vars:
+            completion_time = self._model.new_int_var(
+                0, self._data.horizon, ""
+            )
+            self._model.add_multiplication_equality(
+                completion_time, var.end, var.is_present
+            )
+            completion_times.append(completion_time)
         self._model.add_max_equality(makespan, completion_times)
         return makespan
 

@@ -1,13 +1,12 @@
 import docplex.cp.modeler as cpo
 import numpy as np
-from docplex.cp.expression import (
-    binary_var,
-)
+from docplex.cp.expression import binary_var, interval_var
 from docplex.cp.model import CpoModel
 
 import pyjobshop.solvers.utils as utils
 from pyjobshop.ProblemData import Constraint, Machine, ProblemData
 
+from .utils import presence_of
 from .Variables import Variables
 
 
@@ -35,6 +34,11 @@ class Constraints:
         for idx, job in enumerate(data.jobs):
             job_var = self._job_vars[idx]
             job_task_vars = [self._task_vars[task] for task in job.tasks]
+
+            if all(data.tasks[task].optional for task in job.tasks):
+                # Dummy interval variable if the job has no present tasks,
+                # because cpo.span requires at least one interval variable.
+                job_task_vars += [interval_var(name="job_dummy")]
 
             model.add(cpo.span(job_var, job_task_vars))
 
@@ -106,7 +110,7 @@ class Constraints:
                 model.add(model.sum(pulses) <= resource.capacity)
             else:
                 usage = [
-                    cpo.presence_of(self._mode_vars[mode]) * demand
+                    presence_of(self._mode_vars[mode]) * demand
                     for (mode, demand) in mapper[idx]
                 ]
                 model.add(model.sum(usage) <= resource.capacity)
@@ -211,18 +215,18 @@ class Constraints:
             for mode1 in modes1:
                 if Constraint.IDENTICAL_RESOURCES in assignment_constraints:
                     identical_modes2 = identical[mode1]
-                    var1 = cpo.presence_of(self._mode_vars[mode1])
+                    var1 = presence_of(self._mode_vars[mode1])
                     vars2 = [
-                        cpo.presence_of(self._mode_vars[mode2])
+                        presence_of(self._mode_vars[mode2])
                         for mode2 in identical_modes2
                     ]
                     model.add(sum(vars2) >= var1)
 
                 if Constraint.DIFFERENT_RESOURCES in assignment_constraints:
                     disjoint_modes2 = disjoint[mode1]
-                    var1 = cpo.presence_of(self._mode_vars[mode1])
+                    var1 = presence_of(self._mode_vars[mode1])
                     vars2 = [
-                        cpo.presence_of(self._mode_vars[mode2])
+                        presence_of(self._mode_vars[mode2])
                         for mode2 in disjoint_modes2
                     ]
                     model.add(sum(vars2) >= var1)
@@ -241,7 +245,7 @@ class Constraints:
 
         for group, group_var in zip(data.groups, group_vars):
             task_vars = [
-                cpo.presence_of(self._task_vars[task]) for task in group.tasks
+                presence_of(self._task_vars[task]) for task in group.tasks
             ]
             if group.mutually_exclusive:
                 model.add(sum(task_vars) == group_var)
