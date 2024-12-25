@@ -157,7 +157,7 @@ class Constraints:
 
         for (idx1, idx2), constraints in data.constraints.items():
             if idx1 >= len(self._task_vars) or idx2 >= len(self._task_vars):
-                continue  # HACK deal with constraints later
+                continue  # HACK for if-then constraints
 
             task_var1 = self._task_vars[idx1]
             task_var2 = self._task_vars[idx2]

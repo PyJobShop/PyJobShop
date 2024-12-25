@@ -123,7 +123,7 @@ class Constraints:
 
         for (idx1, idx2), constraints in data.constraints.items():
             if idx1 >= data.num_tasks or idx2 >= data.num_tasks:
-                continue
+                continue  # HACK for if-then constraints
 
             task1 = self._task_vars[idx1]
             task2 = self._task_vars[idx2]
@@ -257,10 +257,7 @@ class Constraints:
             if Constraint.IF_THEN not in constraints:
                 continue
 
-            present1 = group_vars[group1]
-            present2 = group_vars[group2]
-
-            model.add(cpo.if_then(present1 == 1, present2 == 1))
+            model.add(group_vars[group1] <= group_vars[group2])
 
     def add_constraints(self):
         """
