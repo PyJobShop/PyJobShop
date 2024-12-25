@@ -958,7 +958,7 @@ def test_task_optional(solver: str):
         assert_equal(task_data.present, False)
 
 
-def test_task_optional_with_timing_constraints(solver: str):
+def test_task_optional_makespan_with_timing_constraints(solver: str):
     """
     Ensures that the makespan is correctly computed when there are tasks
     with timing constraints.

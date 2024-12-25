@@ -35,17 +35,24 @@ class Constraints:
 
             for task in job.tasks:
                 task_var = self._task_vars[task]
-                task_start_conditional = model.new_int_var(0, data.horizon, "")
-                task_end_conditional = model.new_int_var(0, data.horizon, "")
 
-                task_starts.append(task_start_conditional)
-                task_ends.append(task_end_conditional)
+                if data.tasks[task].optional:
+                    # When tasks are absent, they should not restrict the job's
+                    # start and end times.
+                    task_start = model.new_int_var(0, data.horizon, "")
+                    task_end = model.new_int_var(0, data.horizon, "")
 
-                expr = task_start_conditional == task_var.start
-                model.add(expr).only_enforce_if(task_var.is_present)
+                    expr = task_start == task_var.start
+                    model.add(expr).only_enforce_if(task_var.is_present)
 
-                expr = task_end_conditional == task_var.end
-                model.add(expr).only_enforce_if(task_var.is_present)
+                    expr = task_end == task_var.end
+                    model.add(expr).only_enforce_if(task_var.is_present)
+                else:
+                    task_start = task_var.start
+                    task_end = task_var.end
+
+                task_starts.append(task_start)
+                task_ends.append(task_end)
 
             model.add_min_equality(job_var.start, task_starts)
             model.add_max_equality(job_var.end, task_ends)

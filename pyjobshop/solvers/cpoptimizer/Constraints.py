@@ -37,7 +37,7 @@ class Constraints:
 
             if all(data.tasks[task].optional for task in job.tasks):
                 # Dummy interval variable if the job has no present tasks,
-                # because cpo.span requires at least one interval variable.
+                # because ``span`` requires at least one interval variable.
                 job_task_vars += [interval_var(name="job_dummy")]
 
             model.add(cpo.span(job_var, job_task_vars))
