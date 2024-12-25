@@ -21,6 +21,7 @@ class Constraints:
         self._task_vars = variables.task_vars
         self._mode_vars = variables.mode_vars
         self._sequence_vars = variables.sequence_vars
+        self._group_vars = variables.group_vars
 
     def _job_spans_tasks(self):
         """
@@ -88,6 +89,22 @@ class Constraints:
                 model.add(task_var.end == mode_var.end).only_enforce_if(
                     both_present
                 )
+
+    def _group_constraints(self):
+        """
+        Creates constraints for the group selection constraints.
+        """
+        model, data = self._model, self._data
+
+        for group, group_var in zip(data.groups, self._group_vars):
+            task_vars = [
+                self._task_vars[task].is_present for task in group.tasks
+            ]
+            if group.mutually_exclusive:
+                model.add(sum(task_vars) == group_var)
+            else:
+                # TODO can this be done more efficiently?
+                model.add(sum(task_vars) == group_var * len(task_vars))
 
     def _no_overlap_resources(self):
         """
@@ -295,33 +312,16 @@ class Constraints:
                     model.add(sum(vars2) >= var1).only_enforce_if(both_present)
 
     def _if_then_constraints(self):
+        """
+        Creates the if-then constraints.
+        """
         model, data = self._model, self._data
 
-        # Group constraints
-        group_vars = [
-            model.new_bool_var("") if group.optional else model.new_constant(1)
-            for group in data.groups
-        ]
-
-        for group, group_var in zip(data.groups, group_vars):
-            task_vars = [
-                self._task_vars[task].is_present for task in group.tasks
-            ]
-            if group.mutually_exclusive:
-                model.add(sum(task_vars) == group_var)
-            else:
-                # TODO can this be done more efficiently?
-                model.add(sum(task_vars) == group_var * len(task_vars))
-
-        # If then constraints
         for (group1, group2), constraints in data.constraints.items():
             if Constraint.IF_THEN not in constraints:
                 continue
 
-            present1 = group_vars[group1]
-            present2 = group_vars[group2]
-
-            model.add(present2 == 1).only_enforce_if(present1)
+            model.add(self._group_vars[group1] <= self._group_vars[group2])
 
     def _circuit_constraints(self):
         """
@@ -401,6 +401,7 @@ class Constraints:
         """
         self._job_spans_tasks()
         self._select_one_mode()
+        self._group_constraints()
         self._no_overlap_resources()
         self._resource_capacity()
         self._activate_setup_times()

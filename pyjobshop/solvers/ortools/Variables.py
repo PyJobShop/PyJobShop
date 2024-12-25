@@ -168,6 +168,7 @@ class Variables:
         self._task_vars = self._make_task_variables()
         self._mode_vars = self._make_mode_variables()
         self._sequence_vars = self._make_sequence_variables()
+        self._group_vars = self._make_group_variables()
 
     @property
     def job_vars(self) -> list[JobVar]:
@@ -196,6 +197,13 @@ class Variables:
         Returns the sequence variables.
         """
         return self._sequence_vars
+
+    @property
+    def group_vars(self) -> list[BoolVarT]:
+        """
+        Returns the group variables.
+        """
+        return self._group_vars
 
     def _make_job_variables(self) -> list[JobVar]:
         """
@@ -328,6 +336,18 @@ class Variables:
                 variables.append(None)
 
         return variables
+
+    def _make_group_variables(self) -> list[BoolVarT]:
+        """
+        Creates a binary variable for each group, indicating whether the group
+        is present or not.
+        """
+        return [
+            self._model.new_bool_var("")
+            if group.optional
+            else self._model.new_constant(1)
+            for group in self._data.groups
+        ]
 
     def warmstart(self, solution: Solution):
         """

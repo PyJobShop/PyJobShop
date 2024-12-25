@@ -1,6 +1,6 @@
 import docplex.cp.modeler as cpo
 import numpy as np
-from docplex.cp.expression import binary_var, interval_var
+from docplex.cp.expression import interval_var
 from docplex.cp.model import CpoModel
 
 import pyjobshop.solvers.utils as utils
@@ -24,6 +24,7 @@ class Constraints:
         self._task_vars = variables.task_vars
         self._mode_vars = variables.mode_vars
         self._sequence_vars = variables.sequence_vars
+        self._group_vars = variables.group_vars
 
     def _job_spans_tasks(self):
         """
@@ -53,6 +54,21 @@ class Constraints:
         for task in range(data.num_tasks):
             mode_vars = [self._mode_vars[mode] for mode in task2modes[task]]
             model.add(cpo.alternative(self._task_vars[task], mode_vars))
+
+    def _group_constraints(self):
+        """
+        Creates constraints for the group constraints.
+        """
+        model, data = self._model, self._data
+
+        for group, group_var in zip(data.groups, self._group_vars):
+            task_vars = [
+                presence_of(self._task_vars[task]) for task in group.tasks
+            ]
+            if group.mutually_exclusive:
+                model.add(sum(task_vars) == group_var)
+            else:
+                model.add(model.logical_and(task_vars) == group_var)
 
     def _no_overlap_and_setup_times(self):
         """
@@ -237,27 +253,11 @@ class Constraints:
         """
         model, data = self._model, self._data
 
-        # Group constraints
-        group_vars = [
-            binary_var(name="") if group.optional else True
-            for group in data.groups
-        ]
-
-        for group, group_var in zip(data.groups, group_vars):
-            task_vars = [
-                presence_of(self._task_vars[task]) for task in group.tasks
-            ]
-            if group.mutually_exclusive:
-                model.add(sum(task_vars) == group_var)
-            else:
-                model.add(model.logical_and(task_vars) == group_var)
-
-        # If then constraints
         for (group1, group2), constraints in data.constraints.items():
             if Constraint.IF_THEN not in constraints:
                 continue
 
-            model.add(group_vars[group1] <= group_vars[group2])
+            model.add(self._group_vars[group1] <= self._group_vars[group2])
 
     def add_constraints(self):
         """
@@ -265,6 +265,7 @@ class Constraints:
         """
         self._job_spans_tasks()
         self._select_one_mode()
+        self._group_constraints()
         self._no_overlap_and_setup_times()
         self._resource_capacity()
         self._timing_constraints()
