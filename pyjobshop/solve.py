@@ -53,28 +53,23 @@ def solve(
 
     if solver == "ortools":
         ortools = ORToolsSolver(data)
-        result = ortools.solve(
+        return ortools.solve(
             time_limit,
             display,
             num_workers,
             initial_solution,
             **kwargs,
         )
-    elif solver == "cpoptimizer":
+    else:
         from pyjobshop.solvers.cpoptimizer.Solver import (
             Solver as CPOptimizerSolver,
         )
 
         cpoptimizer = CPOptimizerSolver(data)
-        result = cpoptimizer.solve(
+        return cpoptimizer.solve(
             time_limit,
             display,
             num_workers,
             initial_solution,
             **kwargs,
         )
-
-    if display:
-        print(result)
-
-    return result

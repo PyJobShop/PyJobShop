@@ -24,11 +24,11 @@ def test_result_string_representation():
     solution = Solution([])
     result = Result(SolveStatus.OPTIMAL, 100.00001, solution, 123.45)
     expected = (
-        "Solver results\n"
-        "==============\n"
+        "Solution results\n"
+        "================\n"
         "objective: 123.45\n"
         "   status: Optimal\n"
-        "  runtime: 100.00"
+        "  runtime: 100.00 seconds"
     )
 
     assert_equal(str(result), expected)
