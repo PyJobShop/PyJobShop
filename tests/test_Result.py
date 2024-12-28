@@ -16,3 +16,23 @@ def test_result_attributes():
     assert_equal(result.best, solution)
     assert_equal(result.objective, 100)
     assert_equal(result.lower_bound, 100)
+
+
+def test_result_string_representation():
+    """
+    Test that the string representation of a Result object is correct.
+    """
+    solution = Solution([])
+    result = Result(
+        SolveStatus.OPTIMAL, 100.00001, solution, 123.45, float("-inf")
+    )
+    expected = (
+        "Solution results\n"
+        "================\n"
+        "  objective: 123.45\n"
+        "lower bound: -inf\n"
+        "     status: Optimal\n"
+        "    runtime: 100.00 seconds"
+    )
+
+    assert_equal(str(result), expected)
