@@ -43,10 +43,10 @@ class Constraints:
                     task_end = model.new_int_var(0, data.horizon, "")
 
                     expr = task_start == task_var.start
-                    model.add(expr).only_enforce_if(task_var.is_present)
+                    model.add(expr).only_enforce_if(task_var.present)
 
                     expr = task_end == task_var.end
-                    model.add(expr).only_enforce_if(task_var.is_present)
+                    model.add(expr).only_enforce_if(task_var.present)
                 else:
                     task_start = task_var.start
                     task_end = task_var.end
@@ -70,13 +70,13 @@ class Constraints:
 
             # Select exactly one optional interval variable for each task.
             presences = [
-                self._mode_vars[mode].is_present for mode in task2modes[task]
+                self._mode_vars[mode].present for mode in task2modes[task]
             ]
-            model.add(sum(presences) == task_var.is_present)
+            model.add(sum(presences) == task_var.present)
 
             for mode in task2modes[task]:
                 mode_var = self._mode_vars[mode]
-                both_present = [task_var.is_present, mode_var.is_present]
+                both_present = [task_var.present, mode_var.present]
 
                 sync_start = task_var.start == mode_var.start
                 model.add(sync_start).only_enforce_if(both_present)
@@ -142,7 +142,7 @@ class Constraints:
                 model.add_cumulative(intvs, demands, resource.capacity)
             else:
                 precenses = [
-                    mode_vars[mode].is_present for mode, _ in mapper[idx]
+                    mode_vars[mode].present for mode, _ in mapper[idx]
                 ]
                 usage = LinearExpr.weighted_sum(precenses, demands)
                 model.add(usage <= resource.capacity)
@@ -159,7 +159,7 @@ class Constraints:
 
             task_var1 = self._task_vars[idx1]
             task_var2 = self._task_vars[idx2]
-            both_present = [task_var1.is_present, task_var2.is_present]
+            both_present = [task_var1.present, task_var2.present]
 
             if Constraint.START_AT_START in constraints:
                 expr = task_var1.start == task_var2.start
@@ -229,7 +229,7 @@ class Constraints:
                         idx1 = seq_var.mode_vars.index(var1)
                         idx2 = seq_var.mode_vars.index(var2)
                         arc = seq_var.arcs[idx1, idx2]
-                        both_present = [var1.is_present, var2.is_present]
+                        both_present = [var1.present, var2.present]
 
                         model.add(arc == 1).only_enforce_if(both_present)
 
@@ -240,7 +240,7 @@ class Constraints:
                         idx2 = seq_var.mode_vars.index(var2)
                         rank1 = seq_var.ranks[idx1]
                         rank2 = seq_var.ranks[idx2]
-                        both_present = [var1.is_present, var2.is_present]
+                        both_present = [var1.present, var2.present]
 
                         model.add(rank1 <= rank2).only_enforce_if(both_present)
 
@@ -269,25 +269,25 @@ class Constraints:
 
             modes1 = task2modes[task1]
             both_present = [
-                self._task_vars[task1].is_present,
-                self._task_vars[task2].is_present,
+                self._task_vars[task1].present,
+                self._task_vars[task2].present,
             ]
 
             for mode1 in modes1:
                 if Constraint.IDENTICAL_RESOURCES in assignment_constraints:
                     identical_modes2 = identical[mode1]
-                    var1 = self._mode_vars[mode1].is_present
+                    var1 = self._mode_vars[mode1].present
                     vars2 = [
-                        self._mode_vars[mode2].is_present
+                        self._mode_vars[mode2].present
                         for mode2 in identical_modes2
                     ]
                     model.add(sum(vars2) >= var1).only_enforce_if(both_present)
 
                 if Constraint.DIFFERENT_RESOURCES in assignment_constraints:
                     disjoint_modes2 = disjoint[mode1]
-                    var1 = self._mode_vars[mode1].is_present
+                    var1 = self._mode_vars[mode1].present
                     vars2 = [
-                        self._mode_vars[mode2].is_present
+                        self._mode_vars[mode2].present
                         for mode2 in disjoint_modes2
                     ]
                     model.add(sum(vars2) >= var1).only_enforce_if(both_present)
@@ -302,8 +302,8 @@ class Constraints:
             if Constraint.IF_THEN not in constraints:
                 continue
 
-            pred = self._task_vars[idx1].is_present
-            succs = sum(self._task_vars[idx2].is_present for idx2 in idcs2)
+            pred = self._task_vars[idx1].present
+            succs = sum(self._task_vars[idx2].present for idx2 in idcs2)
             model.add(pred <= succs)
 
     def _circuit_constraints(self):
@@ -348,11 +348,11 @@ class Constraints:
                 model.add(rank == 0).only_enforce_if(start)
 
                 # Self arc if the task is not present.
-                graph.append((idx1, idx1, ~var1.is_present))
-                model.add(rank == -1).only_enforce_if(~var1.is_present)
+                graph.append((idx1, idx1, ~var1.present))
+                model.add(rank == -1).only_enforce_if(~var1.present)
 
                 # If the circuit is empty then the var should not be present.
-                model.add_implication(empty, ~var1.is_present)
+                model.add_implication(empty, ~var1.present)
 
                 for idx2, var2 in enumerate(modes):
                     if idx1 == idx2:
@@ -361,8 +361,8 @@ class Constraints:
                     arc = arcs[idx1, idx2]
                     graph.append((idx1, idx2, arc))
 
-                    model.add_implication(arc, var1.is_present)
-                    model.add_implication(arc, var2.is_present)
+                    model.add_implication(arc, var1.present)
+                    model.add_implication(arc, var2.present)
 
                     # Maintain rank incrementally.
                     model.add(rank + 1 == ranks[idx2]).only_enforce_if(arc)

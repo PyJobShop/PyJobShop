@@ -52,7 +52,7 @@ class TaskVar:
         The duration variable of the interval.
     end
         The end time variable of the interval.
-    is_present
+    present
         The boolean variable indicating whether the interval is present.
     """
 
@@ -60,7 +60,7 @@ class TaskVar:
     start: IntVar
     duration: IntVar
     end: IntVar
-    is_present: BoolVarT
+    present: BoolVarT
 
 
 @dataclass
@@ -80,7 +80,7 @@ class ModeVar:
         The duration variable of the interval.
     end
         The end time variable of the interval.
-    is_present
+    present
         The boolean variable indicating whether the interval is present.
     """
 
@@ -89,7 +89,7 @@ class ModeVar:
     start: IntVar
     duration: IntVar
     end: IntVar
-    is_present: BoolVarT
+    present: BoolVarT
 
 
 @dataclass
@@ -258,17 +258,15 @@ class Variables:
                 ub=min(task.latest_end, data.horizon),
                 name=f"{name}_end",
             )
-            is_present = (
-                model.new_bool_var(f"{name}_is_present")
+            present = (
+                model.new_bool_var(f"{name}_present")
                 if task.optional
                 else model.new_constant(True)
             )
             interval = model.new_optional_interval_var(
-                start, duration, end, is_present, f"interval_{task}"
+                start, duration, end, present, f"interval_{task}"
             )
-            variables.append(
-                TaskVar(interval, start, duration, end, is_present)
-            )
+            variables.append(TaskVar(interval, start, duration, end, present))
 
         return variables
 
@@ -297,9 +295,9 @@ class Variables:
                 ub=min(task.latest_end, data.horizon),
                 name=f"{name}_start",
             )
-            is_present = model.new_bool_var(f"{name}_is_present")
+            present = model.new_bool_var(f"{name}_present")
             interval = model.new_optional_interval_var(
-                start, duration, end, is_present, f"{name}_interval"
+                start, duration, end, present, f"{name}_interval"
             )
             var = ModeVar(
                 task_idx=mode.task,
@@ -307,7 +305,7 @@ class Variables:
                 start=start,
                 duration=duration,
                 end=end,
-                is_present=is_present,
+                present=present,
             )
             variables.append(var)
 
@@ -361,7 +359,7 @@ class Variables:
             model.add_hint(task_var.start, sol_task.start)
             model.add_hint(task_var.duration, sol_task.end - sol_task.start)
             model.add_hint(task_var.end, sol_task.end)
-            # TODO: add hint for is_present
+            # TODO: add hint for present
 
         for idx in range(len(data.modes)):
             var = mode_vars[idx]
@@ -371,4 +369,4 @@ class Variables:
             model.add_hint(var.start, sol_task.start)
             model.add_hint(var.duration, sol_task.end - sol_task.start)
             model.add_hint(var.end, sol_task.end)
-            model.add_hint(var.is_present, idx == sol_task.mode)
+            model.add_hint(var.present, idx == sol_task.mode)

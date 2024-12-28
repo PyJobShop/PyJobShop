@@ -37,7 +37,7 @@ class Objective:
                 # When the task is absent, it should not restrict the makespan.
                 task_end = self._model.new_int_var(0, self._data.horizon, "")
                 expr = task_end == var.end
-                self._model.add(expr).only_enforce_if(var.is_present)
+                self._model.add(expr).only_enforce_if(var.present)
             else:
                 task_end = var.end
 
