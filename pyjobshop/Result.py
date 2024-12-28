@@ -38,10 +38,10 @@ class Result:
 
     def __str__(self):
         content = [
-            "Solver results",
-            "==============",
+            "Solution results",
+            "================",
             f"objective: {self.objective:.2f}",
             f"   status: {self.status.value}",
-            f"  runtime: {self.runtime:.2f}",
+            f"  runtime: {self.runtime:.2f} seconds",
         ]
         return "\n".join(content)
