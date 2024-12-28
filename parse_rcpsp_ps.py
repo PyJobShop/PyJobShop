@@ -33,12 +33,15 @@ class ProjectInstance:
 
 
 def parse_rcpsp_ps(instance_loc: Union[str, Path]):
+    """
+    TODO use ProjectInstance
+
+    TODO verify that the solutions are correct.
+    """
     with open(instance_loc, "r") as fh:
         lines = iter(line.strip() for line in fh.readlines() if line.strip())
 
-    num_activities, num_renewable, num_non_renewable = map(
-        int, next(lines).split()
-    )
+    num_activities, num_renewable, _ = map(int, next(lines).split())
     capacities = list(map(int, next(lines).split()))
     fixed = list(map(int, next(lines).split()))
 
@@ -91,19 +94,6 @@ if __name__ == "__main__":
         groups = {}
 
         for idx, task_data in enumerate(instance.tasks):
-            if (idx,) not in groups:
-                groups[(idx,)] = model.add_task_group(
-                    [tasks[idx]], optional=True
-                )
-
-            for group in task_data.groups:
-                if tuple(group) not in groups:
-                    succs = [model.tasks[succ] for succ in group]
-                    groups[tuple(group)] = model.add_task_group(
-                        succs, optional=True, mutually_exclusive=True
-                    )
-
-        for idx, task_data in enumerate(instance.tasks):
             model.add_mode(
                 tasks[idx],
                 model.resources,
@@ -115,14 +105,13 @@ if __name__ == "__main__":
                 model.add_end_before_start(tasks[idx], model.tasks[succ])
 
             for successors in task_data.groups:
-                group1 = groups[(idx,)]
-                group2 = groups[tuple(successors)]
-                model.add_if_then(group1, group2)
+                model.add_if_then(
+                    tasks[idx], [tasks[succ] for succ in successors]
+                )
 
         result = model.solve(
-            display=True, time_limit=1000, solver="cpoptimizer"
+            display=True, time_limit=100, solver="cpoptimizer"
         )
-        # result = model.solve(display=True, time_limit=1000, solver="ortools")
 
         res = (
             instance_loc.stem,

@@ -14,7 +14,6 @@ from pyjobshop.ProblemData import (
     Resource,
     ResourceType,
     Task,
-    TaskGroup,
 )
 from pyjobshop.Result import Result
 from pyjobshop.Solution import Solution
@@ -31,7 +30,6 @@ class Model:
         self._resources: list[ResourceType] = []
         self._tasks: list[Task] = []
         self._modes: list[Mode] = []
-        self._groups: list[TaskGroup] = []
         self._constraints: dict[tuple[int, int], list[Constraint]] = (
             defaultdict(list)
         )
@@ -43,7 +41,6 @@ class Model:
         self._id2job: dict[int, int] = {}
         self._id2resource: dict[int, int] = {}
         self._id2task: dict[int, int] = {}
-        self._id2group: dict[int, int] = {}
 
     @property
     def jobs(self) -> list[Job]:
@@ -72,13 +69,6 @@ class Model:
         Returns the list of modes in the model.
         """
         return self._modes
-
-    @property
-    def groups(self) -> list[TaskGroup]:
-        """
-        Returns the list of task groups in the model.
-        """
-        return self._groups
 
     @property
     def objective(self) -> Objective:
@@ -133,14 +123,6 @@ class Model:
                 resources=[model.resources[res] for res in mode.resources],
                 duration=mode.duration,
                 demands=mode.demands,
-            )
-
-        for group in data.groups:
-            model.add_task_group(
-                tasks=[model.tasks[idx] for idx in group.tasks],
-                optional=group.optional,
-                mutually_exclusive=group.mutually_exclusive,
-                name=group.name,
             )
 
         for (idx1, idx2), constraints in data.constraints.items():
@@ -216,7 +198,6 @@ class Model:
             resources=self.resources,
             tasks=self.tasks,
             modes=self._modes,
-            groups=self._groups,
             constraints=self._constraints,
             setup_times=setup,
             horizon=self._horizon,
@@ -406,47 +387,6 @@ class Model:
 
         return mode
 
-    def add_task_group(
-        self,
-        tasks: list[Task],
-        optional: bool = False,
-        mutually_exclusive: bool = True,
-        name: str = "",
-    ) -> TaskGroup:
-        """
-        Adds a task group to the model.
-
-        Parameters
-        ----------
-        tasks
-            Tasks that belong to this group.
-        optional
-            Whether this task group is optional. If ``True``, no task from the
-            group needs to be selected. Default ``False``.
-        mutually_exclusive
-            Whether the tasks in the group are mutually exclusive. If ``True``,
-            at most one task from the group can be selected. Default ``True``.
-        name
-            Name of the task group.
-
-        Returns
-        -------
-        TaskGroup
-            The created task group.
-        """
-        task_idcs = [self._id2task[id(task)] for task in tasks]
-        group = TaskGroup(
-            task_idcs,
-            optional=optional,
-            mutually_exclusive=mutually_exclusive,
-            name=name,
-        )
-
-        self._id2group[id(group)] = len(self._groups)
-        self._groups.append(group)
-
-        return group
-
     def _add_constaint(self, task1: Task, task2: Task, constraint: Constraint):
         """
         Adds a constraint between two tasks.
@@ -540,13 +480,15 @@ class Model:
         """
         self._add_constaint(task1, task2, Constraint.BEFORE)
 
-    def add_if_then(self, option1, option2):
+    def add_if_then(self, pred: Task, succs: Task | list[Task]):
         """
-        Adds a constraint that option2 must be true if option1 is true.
+        Adds a constraint that the successor task(s) must be selected if the
+        predecessor task is selected.
         """
-        idx1 = self._id2group[id(option1)]
-        idx2 = self._id2group[id(option2)]
-        self._constraints[idx1, idx2].append(Constraint.IF_THEN)
+        idx1 = self._id2task[id(pred)]
+        succs = [succs] if isinstance(succs, Task) else succs
+        idcs2 = [self._id2task[id(succ)] for succ in succs]
+        self._constraints[idx1, tuple(idcs2)].append(Constraint.IF_THEN)
 
     def add_setup_time(
         self, machine: Machine, task1: Task, task2: Task, duration: int

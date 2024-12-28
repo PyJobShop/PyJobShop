@@ -13,7 +13,6 @@ from pyjobshop.ProblemData import (
     ProblemData,
     Resource,
     Task,
-    TaskGroup,
 )
 from pyjobshop.Solution import TaskData as TaskData
 from pyjobshop.solve import solve
@@ -223,43 +222,6 @@ def test_mode_raises_invalid_parameters(resources, duration, demands):
         Mode(task=0, resources=resources, duration=duration, demands=demands)
 
 
-def test_task_group_attributes():
-    """
-    Tests that the attributes of the TaskGroup class are set correctly.
-    """
-    group = TaskGroup(
-        tasks=[0, 1, 2],
-        optional=True,
-        mutually_exclusive=False,
-        name="TestGroup",
-    )
-
-    assert_equal(group.tasks, [0, 1, 2])
-    assert_equal(group.optional, True)
-    assert_equal(group.mutually_exclusive, False)
-    assert_equal(group.name, "TestGroup")
-
-
-def test_task_group_default_attributes():
-    """
-    Tests that the default attributes of the TaskGroup class are set correctly.
-    """
-    group = TaskGroup(tasks=[1])
-
-    assert_equal(group.optional, False)
-    assert_equal(group.mutually_exclusive, True)
-    assert_equal(group.name, "")
-
-
-def test_task_group_raises_invalid_parameters():
-    """
-    Tests that a ValueError is raised when invalid parameters are passed to
-    the TaskGroup class.
-    """
-    with assert_raises(ValueError):
-        TaskGroup(tasks=[])  # must have tasks
-
-
 def test_problem_data_input_parameter_attributes():
     """
     Tests that the input parameters of the ProblemData class are set correctly
@@ -273,7 +235,6 @@ def test_problem_data_input_parameter_attributes():
         for task in range(5)
         for resource in range(5)
     ]
-    groups = [TaskGroup(tasks=[idx]) for idx in range(5)]
     constraints = {
         key: [Constraint.END_BEFORE_START] for key in ((0, 1), (2, 3), (4, 5))
     }
@@ -286,7 +247,6 @@ def test_problem_data_input_parameter_attributes():
         resources=resources,
         tasks=tasks,
         modes=modes,
-        groups=groups,
         constraints=constraints,
         setup_times=setup_times,
         horizon=horizon,
@@ -297,7 +257,6 @@ def test_problem_data_input_parameter_attributes():
     assert_equal(data.resources, resources)
     assert_equal(data.tasks, tasks)
     assert_equal(data.modes, modes)
-    assert_equal(data.groups, groups)
     assert_equal(data.constraints, constraints)
     assert_equal(data.setup_times, setup_times)
     assert_equal(data.horizon, horizon)
@@ -318,17 +277,18 @@ def test_problem_data_non_input_parameter_attributes():
         Mode(task=1, resources=[0], duration=1),
         Mode(task=0, resources=[2], duration=1),
     ]
-    groups = [TaskGroup(tasks=[0, 1, 2])]
 
     data = ProblemData(
-        jobs=jobs, resources=resources, tasks=tasks, modes=modes, groups=groups
+        jobs=jobs,
+        resources=resources,
+        tasks=tasks,
+        modes=modes,
     )
 
     assert_equal(data.num_jobs, 1)
     assert_equal(data.num_resources, 3)
     assert_equal(data.num_tasks, 3)
     assert_equal(data.num_modes, 4)
-    assert_equal(data.num_groups, 1)
 
 
 def test_problem_data_default_values():
@@ -343,7 +303,6 @@ def test_problem_data_default_values():
         jobs=jobs, resources=resources, tasks=tasks, modes=modes
     )
 
-    assert_equal(data.groups, [])
     assert_equal(data.constraints, {})
     assert_equal(data.setup_times, None)
     assert_equal(data.horizon, MAX_VALUE)
@@ -403,20 +362,6 @@ def test_problem_data_task_without_modes():
     with assert_raises(ValueError):
         ProblemData(
             jobs=[Job()], resources=[Resource(0)], tasks=[Task()], modes=[]
-        )
-
-
-def test_problem_data_task_group_references_unknown_task():
-    """
-    Tests that an error is raised when a task group references an unknown task.
-    """
-    with assert_raises(ValueError):
-        ProblemData(
-            jobs=[Job()],
-            resources=[Resource(0)],
-            tasks=[Task()],
-            modes=[Mode(0, [0], 1)],
-            groups=[TaskGroup(tasks=[42])],
         )
 
 
@@ -532,10 +477,6 @@ def make_replace_data():
         Mode(task=0, resources=[0], duration=1),
         Mode(task=1, resources=[1], duration=2),
     ]
-    groups = [
-        TaskGroup(tasks=[0], optional=False, mutually_exclusive=False),
-        TaskGroup(tasks=[1], optional=True, mutually_exclusive=True),
-    ]
     constraints = {(0, 1): [Constraint.END_BEFORE_START]}
     setup_times = np.zeros((2, 2, 2))
     horizon = 1
@@ -546,7 +487,6 @@ def make_replace_data():
         resources=resources,
         tasks=tasks,
         modes=modes,
-        groups=groups,
         constraints=constraints,
         setup_times=setup_times,
         horizon=horizon,
@@ -586,15 +526,6 @@ def test_problem_data_replace_no_changes():
         assert_equal(new.modes[idx].resources, data.modes[idx].resources)
         assert_equal(new.modes[idx].duration, data.modes[idx].duration)
 
-    for idx in range(data.num_groups):
-        assert_(new.groups[idx] is not data.groups[idx])
-        assert_equal(new.groups[idx].tasks, data.groups[idx].tasks)
-        assert_equal(new.groups[idx].optional, data.groups[idx].optional)
-        assert_equal(
-            new.groups[idx].mutually_exclusive,
-            data.groups[idx].mutually_exclusive,
-        )
-
     assert_equal(new.constraints, data.constraints)
     assert_equal(new.setup_times, data.setup_times)
     assert_equal(new.horizon, data.horizon)
@@ -614,10 +545,6 @@ def test_problem_data_replace_with_changes():
         modes=[
             Mode(task=0, resources=[0], duration=20),
             Mode(task=1, resources=[1], duration=10),
-        ],
-        groups=[
-            TaskGroup(tasks=[1], optional=True, mutually_exclusive=True),
-            TaskGroup(tasks=[0], optional=False, mutually_exclusive=False),
         ],
         constraints={(1, 0): [Constraint.END_BEFORE_START]},
         setup_times=np.array(
@@ -649,15 +576,6 @@ def test_problem_data_replace_with_changes():
     for idx in range(data.num_modes):
         assert_(new.modes[idx] is not data.modes[idx])
         assert_(new.modes[idx].duration != data.modes[idx].duration)
-
-    for idx in range(data.num_groups):
-        assert_(new.groups[idx] is not data.groups[idx])
-        assert_(new.groups[idx].tasks != data.groups[idx].tasks)
-        assert_(new.groups[idx].optional != data.groups[idx].optional)
-        assert_(
-            new.groups[idx].mutually_exclusive
-            != data.groups[idx].mutually_exclusive
-        )
 
     assert_(new.constraints != data.constraints)
     assert_(not np.array_equal(new.setup_times, data.setup_times))
@@ -1078,69 +996,6 @@ def test_resource_non_renewable_capacity(solver: str):
     # cannot be scheduled.
     result = model.solve(solver=solver)
     assert_equal(result.status.value, "Infeasible")
-
-
-@pytest.mark.parametrize(
-    "mutually_exclusive,expected_makespan,presence",
-    [
-        (True, 1, [True, False]),  # schedule task 1
-        (False, 11, [True, True]),  # schedule both tasks
-    ],
-)
-def test_task_group_mutually_exclusive(
-    solver: str,
-    mutually_exclusive: bool,
-    expected_makespan: int,
-    presence: list[bool],
-):
-    """
-    Tests that a mutually exclusive group is correctly scheduled.
-    """
-    model = Model()
-
-    machine = model.add_machine()
-    tasks = [model.add_task(optional=True) for _ in range(2)]
-    model.add_task_group(tasks, mutually_exclusive=mutually_exclusive)
-
-    model.add_mode(tasks[0], machine, duration=1)
-    model.add_mode(tasks[1], machine, duration=10)
-
-    result = model.solve(solver=solver)
-
-    assert_equal(result.status.value, "Optimal")
-    assert_equal(result.objective, expected_makespan)
-    assert_equal(result.best.tasks[0].present, presence[0])
-    assert_equal(result.best.tasks[1].present, presence[1])
-
-
-@pytest.mark.parametrize(
-    "optional,expected_makespan,presence",
-    [
-        (True, 0, [False, False]),  # do not schedule any task
-        (False, 1, [True, False]),  # schedule first tasks
-    ],
-)
-def test_task_group_optional(
-    solver: str, optional: bool, expected_makespan: int, presence: list[bool]
-):
-    """
-    Tests that an optional group is correctly scheduled.
-    """
-    model = Model()
-
-    machine = model.add_machine()
-    tasks = [model.add_task(optional=True) for _ in range(2)]
-    model.add_task_group(tasks, optional=optional, mutually_exclusive=True)
-
-    model.add_mode(tasks[0], machine, duration=1)
-    model.add_mode(tasks[1], machine, duration=10)
-
-    result = model.solve(solver=solver)
-
-    assert_equal(result.status.value, "Optimal")
-    assert_equal(result.objective, expected_makespan)
-    assert_equal(result.best.tasks[0].present, presence[0])
-    assert_equal(result.best.tasks[1].present, presence[1])
 
 
 @pytest.mark.parametrize(

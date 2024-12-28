@@ -2,9 +2,7 @@ from typing import Optional
 
 from docplex.cp.expression import (
     CpoIntervalVar,
-    CpoIntVar,
     CpoSequenceVar,
-    binary_var,
     interval_var,
     sequence_var,
 )
@@ -28,7 +26,6 @@ class Variables:
         self._task_vars = self._make_task_variables()
         self._mode_vars = self._make_mode_variables()
         self._sequence_vars = self._make_sequence_variables()
-        self._group_vars = self._make_group_variables()
 
     @property
     def job_vars(self) -> list[CpoIntervalVar]:
@@ -57,13 +54,6 @@ class Variables:
         Returns the sequence variables.
         """
         return self._sequence_vars
-
-    @property
-    def group_vars(self) -> list[CpoIntVar]:
-        """
-        Returns the group variables.
-        """
-        return self._group_vars
 
     def _make_job_variables(self) -> list[CpoIntervalVar]:
         """
@@ -158,16 +148,6 @@ class Variables:
                 variables.append(seq_var)
 
         return variables
-
-    def _make_group_variables(self) -> list[CpoIntVar]:
-        """
-        Creates a binary variable for each group, indicating whether the group
-        is present or not.
-        """
-        return [
-            binary_var(name="") if group.optional else True
-            for group in self._data.groups
-        ]
 
     def warmstart(self, solution: Solution):
         """

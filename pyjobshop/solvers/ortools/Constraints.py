@@ -21,7 +21,6 @@ class Constraints:
         self._task_vars = variables.task_vars
         self._mode_vars = variables.mode_vars
         self._sequence_vars = variables.sequence_vars
-        self._group_vars = variables.group_vars
 
     def _job_spans_tasks(self):
         """
@@ -90,22 +89,6 @@ class Constraints:
                     both_present
                 )
 
-    def _group_constraints(self):
-        """
-        Creates constraints for the group selection constraints.
-        """
-        model, data = self._model, self._data
-
-        for group, group_var in zip(data.groups, self._group_vars):
-            task_vars = [
-                self._task_vars[task].is_present for task in group.tasks
-            ]
-            if group.mutually_exclusive:
-                model.add(sum(task_vars) == group_var)
-            else:
-                # TODO can this be done more efficiently?
-                model.add(sum(task_vars) == group_var * len(task_vars))
-
     def _no_overlap_resources(self):
         """
         Creates the no overlap constraints for machines, ensuring that no two
@@ -173,7 +156,7 @@ class Constraints:
         model, data = self._model, self._data
 
         for (idx1, idx2), constraints in data.constraints.items():
-            if idx1 >= len(self._task_vars) or idx2 >= len(self._task_vars):
+            if isinstance(idx2, tuple):
                 continue  # HACK for if-then constraints
 
             task_var1 = self._task_vars[idx1]
@@ -317,11 +300,16 @@ class Constraints:
         """
         model, data = self._model, self._data
 
-        for (group1, group2), constraints in data.constraints.items():
+        for (idx1, idcs2), constraints in data.constraints.items():
             if Constraint.IF_THEN not in constraints:
                 continue
 
-            model.add(self._group_vars[group1] <= self._group_vars[group2])
+            task_var1 = self._task_vars[idx1]
+            task_vars2 = [self._task_vars[idx2] for idx2 in idcs2]
+            model.add(
+                task_var1.is_present
+                <= sum(var.is_present for var in task_vars2)
+            )
 
     def _circuit_constraints(self):
         """
@@ -401,7 +389,6 @@ class Constraints:
         """
         self._job_spans_tasks()
         self._select_one_mode()
-        self._group_constraints()
         self._no_overlap_resources()
         self._resource_capacity()
         self._activate_setup_times()
