@@ -15,4 +15,4 @@ def test_result_attributes():
     assert_equal(result.runtime, 123.45)
     assert_equal(result.best, solution)
     assert_equal(result.objective, 100)
-    assert_equal(result.objective_bound, 100)
+    assert_equal(result.lower_bound, 100)
