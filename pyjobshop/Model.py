@@ -309,21 +309,21 @@ class Model:
         Parameters
         ----------
         job
-            The job that the task belongs to. Default None.
+            The job that the task belongs to. Default ``None``.
         earliest_start
-            Earliest start time of the task. Default 0.
+            Earliest start time of the task. Default ``0``.
         latest_start
             Latest start time of the task. Default ``MAX_VALUE``.
         earliest_end
-            Earliest end time of the task. Default 0.
+            Earliest end time of the task. Default ``0``.
         latest_end
             Latest end time of the task. Default ``MAX_VALUE``.
         fixed_duration
-            Whether the duration of the task is fixed. Default True.
+            Whether the duration of the task is fixed. Default ``True``.
         optional
-            Whether the task is optional. Default False.
+            Whether the task is optional. Default ``False``.
         name
-            Name of the task.
+            Name of the task. Default ``""``.
 
         Returns
         -------

@@ -78,16 +78,14 @@ class Constraints:
                 mode_var = self._mode_vars[mode]
                 both_present = [task_var.is_present, mode_var.is_present]
 
-                # Sync each optional interval variable with the main variable.
-                model.add(task_var.start == mode_var.start).only_enforce_if(
-                    both_present
-                )
-                model.add(
-                    task_var.duration == mode_var.duration
-                ).only_enforce_if(both_present)
-                model.add(task_var.end == mode_var.end).only_enforce_if(
-                    both_present
-                )
+                sync_start = task_var.start == mode_var.start
+                model.add(sync_start).only_enforce_if(both_present)
+
+                sync_duration = task_var.duration == mode_var.duration
+                model.add(sync_duration).only_enforce_if(both_present)
+
+                sync_end = task_var.end == mode_var.end
+                model.add(sync_end).only_enforce_if(both_present)
 
     def _no_overlap_resources(self):
         """
@@ -304,12 +302,9 @@ class Constraints:
             if Constraint.IF_THEN not in constraints:
                 continue
 
-            task_var1 = self._task_vars[idx1]
-            task_vars2 = [self._task_vars[idx2] for idx2 in idcs2]
-            model.add(
-                task_var1.is_present
-                <= sum(var.is_present for var in task_vars2)
-            )
+            pred = self._task_vars[idx1].is_present
+            succs = sum(self._task_vars[idx2].is_present for idx2 in idcs2)
+            model.add(pred <= succs)
 
     def _circuit_constraints(self):
         """

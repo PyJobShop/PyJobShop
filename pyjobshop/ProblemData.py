@@ -220,7 +220,7 @@ class Task:
     name
         Name of the task.
     optional
-        Whether the task is optional. Default False.
+        Whether the task is optional. Default ``False``.
     """
 
     def __init__(
