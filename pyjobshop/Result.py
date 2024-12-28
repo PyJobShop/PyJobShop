@@ -30,7 +30,7 @@ class Result:
         The objective value of the solution. If no solution was found, this
         should be set to ``float('inf')``.
     lower_bound
-        The proven minimum possible value of the objective function.
+        The lower bound of the objective function.
     """
 
     status: SolveStatus
