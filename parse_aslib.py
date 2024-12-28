@@ -218,13 +218,12 @@ def subgraphs2vdbtasks(
 
 
 if __name__ == "__main__":
-    for instance_idx in range(1000, 1010):
+    for instance_idx in range(1010):
         instance_loc = f"tmp/ASLIB/ASLIB0/aslib0_{instance_idx}a.RCP"
         instance = parse(instance_loc, instance_format="patterson")
         subgraphs = parse_aslib(instance_loc.replace("a.RCP", "b.RCP"))
         tasks = subgraphs2vdbtasks(instance, subgraphs)
 
         loc = f"tmp/rcpsp-ps/instances/ASLIB0/aslib0_{instance_idx}a.txt"
-        loc = f"aslib/aslib0_{instance_idx}a.txt"
         write_rcpsp_ps(loc, instance, tasks)
         print(instance_idx)

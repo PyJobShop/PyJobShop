@@ -3,18 +3,15 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Union
 
+import networkx as nx
+from psplib.ProjectInstance import Resource
+
 from pyjobshop import Model
 
 
 def natural_keys(text):
     text = text.stem
     return [int(c) if c.isdigit() else c for c in re.split(r"(\d+)", text)]
-
-
-@dataclass
-class Resource:
-    capacity: int
-    renewable: bool
 
 
 @dataclass
@@ -28,15 +25,14 @@ class Task:
 
 @dataclass
 class ProjectInstance:
+    # TODO refactor using Project and Activity classes
     resources: list[Resource]
     tasks: list[Task]
 
 
 def parse_rcpsp_ps(instance_loc: Union[str, Path]):
     """
-    TODO use ProjectInstance
-
-    TODO verify that the solutions are correct.
+    Parses a RCPSP-PS formatted instance from Van der Beek et al. (2024).
     """
     with open(instance_loc, "r") as fh:
         lines = iter(line.strip() for line in fh.readlines() if line.strip())
@@ -79,7 +75,7 @@ if __name__ == "__main__":
     loc = "tmp/rcpsp-ps/instances/ASLIB0"
     path = Path(loc)
     # for instance_loc in sorted(path.rglob("*.txt"), key=natural_keys):
-    for idx in range(975, 36000):
+    for idx in range(0, 36000):
         instance_loc = path / f"aslib0_{idx}a.txt"
         instance = parse_rcpsp_ps(instance_loc)
 
@@ -109,9 +105,7 @@ if __name__ == "__main__":
                     tasks[idx], [tasks[succ] for succ in successors]
                 )
 
-        result = model.solve(
-            display=True, time_limit=100, solver="cpoptimizer"
-        )
+        result = model.solve(display=True, time_limit=100, solver="ortools")
 
         res = (
             instance_loc.stem,
@@ -123,3 +117,17 @@ if __name__ == "__main__":
         print(res)
         with open("other2.txt", "a") as fh:
             fh.write(" ".join(map(str, res)) + "\n")
+
+        # Check that there is indeed an (s, t)-path with present activities.
+        present = [
+            idx for idx, task in enumerate(result.best.tasks) if task.present
+        ]
+        G = nx.DiGraph()
+        for idx, task_data in enumerate(instance.tasks):
+            for succ in task_data.successors:
+                if idx in present and succ in present:
+                    G.add_edge(idx, succ)
+
+        source = 0
+        target = len(instance.tasks) - 1
+        nx.shortest_path(G, source, target)
