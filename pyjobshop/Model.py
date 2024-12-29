@@ -35,7 +35,6 @@ class Model:
         )
 
         self._setup_times: dict[tuple[int, int, int], int] = {}
-        self._horizon: int = MAX_VALUE
         self._objective: Objective = Objective.makespan()
 
         self._id2job: dict[int, int] = {}
@@ -161,7 +160,6 @@ class Model:
                         duration=duration,
                     )
 
-        model.set_horizon(data.horizon)
         model.set_objective(
             weight_makespan=data.objective.weight_makespan,
             weight_tardy_jobs=data.objective.weight_tardy_jobs,
@@ -197,7 +195,6 @@ class Model:
             modes=self._modes,
             constraints=self._constraints,
             setup_times=setup,
-            horizon=self._horizon,
             objective=self._objective,
         )
 
@@ -491,17 +488,6 @@ class Model:
         task_idx2 = self._id2task[id(task2)]
 
         self._setup_times[machine_idx, task_idx1, task_idx2] = duration
-
-    def set_horizon(self, horizon: int):
-        """
-        Sets the horizon of the model.
-
-        Parameters
-        ----------
-        horizon
-            The horizon.
-        """
-        self._horizon = horizon
 
     def set_objective(
         self,
