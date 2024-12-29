@@ -259,17 +259,13 @@ class Constraints:
             arcs = seq_var.arcs
 
             # Add dummy node self-arc to allow empty circuits.
-            empty = model.new_bool_var(f"empty_circuit_{idx}")
+            empty = model.new_bool_var("")
             graph: list[tuple[int, int, BoolVarT]] = [(-1, -1, empty)]
 
             for idx1, var1 in enumerate(modes):
-                # Arcs from the dummy node to task.
-                from_dummy = model.new_bool_var(f"dummy_to_{idx1}_on_{idx}")
-                graph.append((-1, idx1, from_dummy))
-
-                # Arcs from the task to dummy node.
-                to_dummy = model.new_bool_var(f"{idx1}_to_dummy_on_{idx}")
-                graph.append((idx1, -1, to_dummy))
+                # Arcs from and to the dummy node.
+                graph.append((-1, idx1, model.new_bool_var("")))
+                graph.append((idx1, -1, model.new_bool_var("")))
 
                 # Self arc if the task is not present.
                 graph.append((idx1, idx1, ~var1.is_present))
