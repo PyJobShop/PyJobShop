@@ -411,11 +411,8 @@ class Constraint(str, Enum):
     #: Tasks :math:`i` and :math:`k` must use modes with disjoint resources.
     DIFFERENT_RESOURCES = "different_resources"
 
-    #: Sequence task :math:`i` right before :math:`k` on shared resources.
-    PREVIOUS = "previous"
-
-    #: Sequence task :math:`i` before :math:`k` on shared resources.
-    BEFORE = "before"
+    #: Sequence task :math:`i` right before :math:`k` on shared machines.
+    CONSECUTIVE = "consecutive"
 
     #: Task :math:`k` must be scheduled if task :math:`i` is scheduled.
     IF_THEN = "if_then"

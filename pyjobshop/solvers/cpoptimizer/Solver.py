@@ -121,8 +121,9 @@ class Solver:
             objective = float("inf")
 
         return Result(
-            self._get_solve_status(status),
-            cp_result.get_solve_time(),
-            solution,
-            objective,
+            objective=objective,
+            lower_bound=cp_result.get_objective_bound(),
+            status=self._get_solve_status(status),
+            runtime=cp_result.get_solve_time(),
+            best=solution,
         )

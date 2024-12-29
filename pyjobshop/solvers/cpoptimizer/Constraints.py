@@ -153,20 +153,18 @@ class Constraints:
             if Constraint.END_BEFORE_END in constraints:
                 model.add(cpo.end_before_end(task1, task2))
 
-    def _previous_before_constraints(self):
+    def _consecutive_constraints(self):
         """
-        Creates the constraints for the previous and before constraints.
+        Creates the consecutive constraints.
         """
         model, data = self._model, self._data
-        relevant = {Constraint.PREVIOUS, Constraint.BEFORE}
 
         for (task1, task2), constraints in data.constraints.items():
-            sequencing_constraints = set(constraints) & relevant
-            if not sequencing_constraints:
+            if Constraint.CONSECUTIVE not in constraints:
                 continue
 
             # Find the modes of the task that have intersecting resources,
-            # because we need to enforce sequencing constraints on them.
+            # because we need to enforce consecutive constraints on them.
             intersecting = utils.find_modes_with_intersecting_resources(
                 data, task1, task2
             )
@@ -183,11 +181,7 @@ class Constraints:
                     var1 = self._mode_vars[mode1]
                     var2 = self._mode_vars[mode2]
 
-                    if Constraint.PREVIOUS in sequencing_constraints:
-                        model.add(cpo.previous(seq_var, var1, var2))
-
-                    if Constraint.BEFORE in sequencing_constraints:
-                        model.add(cpo.before(seq_var, var1, var2))
+                    model.add(cpo.previous(seq_var, var1, var2))
 
     def _identical_and_different_resource_constraints(self):
         """
@@ -255,6 +249,6 @@ class Constraints:
         self._no_overlap_and_setup_times()
         self._resource_capacity()
         self._timing_constraints()
-        self._previous_before_constraints()
+        self._consecutive_constraints()
         self._identical_and_different_resource_constraints()
         self._if_then_constraints()
