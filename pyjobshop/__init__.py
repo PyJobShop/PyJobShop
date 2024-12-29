@@ -4,9 +4,10 @@ from .ProblemData import Constraint as Constraint
 from .ProblemData import Job as Job
 from .ProblemData import Machine as Machine
 from .ProblemData import Mode as Mode
+from .ProblemData import NonRenewable as NonRenewable
 from .ProblemData import Objective as Objective
 from .ProblemData import ProblemData as ProblemData
-from .ProblemData import Resource as Resource
+from .ProblemData import Renewable as Renewable
 from .ProblemData import Task as Task
 from .read import read as read
 from .Result import Result as Result

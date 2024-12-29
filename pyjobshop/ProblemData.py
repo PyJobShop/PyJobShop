@@ -124,27 +124,54 @@ class Job:
         self._tasks.append(idx)
 
 
-class Resource:
+class Machine:
     """
-    Simple dataclass for storing all resource-related data.
+    A machine resource is a specialized resource that only processes one task
+    at a time and can handle sequencing constraints.
+
+    Parameters
+    ----------
+    name
+        Name of the machine.
+    """
+
+    def __init__(self, name: str = ""):
+        self._name = name
+
+    @property
+    def capacity(self) -> int:  # TODO remove?
+        """
+        Capacity of the machine.
+        """
+        return 0
+
+    @property
+    def name(self) -> str:
+        """
+        Name of the machine.
+        """
+        return self._name
+
+
+class Renewable:
+    """
+    A renewable resource that replenishes its capacity after each task
+    completion.
 
     Parameters
     ----------
     capacity
         Capacity of the resource.
-    renewable
-        Whether the resource is renewable. A renewable resource replenishes
-        its capacity after each task completion. Default ``True``.
     name
         Name of the resource.
     """
 
-    def __init__(self, capacity: int, renewable: bool = True, name: str = ""):
+    def __init__(self, capacity: int, name: str = ""):
         if capacity < 0:
             raise ValueError("Capacity must be non-negative.")
 
         self._capacity = capacity
-        self._renewable = renewable
+        self._renewable = True
         self._name = name
 
     @property
@@ -169,29 +196,49 @@ class Resource:
         return self._name
 
 
-class Machine(Resource):
+class NonRenewable:
     """
-    Simple dataclass for storing all machine-related data. A machine is a
-    specialized resource type that allows for sequencing constraints.
+    A non-renewable resource that does not replenish its capacity.
 
     Parameters
     ----------
+    capacity
+        Capacity of the resource.
     name
-        Name of the machine.
+        Name of the resource.
     """
 
-    def __init__(self, name: str = ""):
-        super().__init__(capacity=0, renewable=True, name=name)
+    def __init__(self, capacity: int, name: str = ""):
+        if capacity < 0:
+            raise ValueError("Capacity must be non-negative.")
+
+        self._capacity = capacity
+        self._renewable = False
+        self._name = name
+
+    @property
+    def capacity(self) -> int:
+        """
+        Capacity of the resource.
+        """
+        return self._capacity
+
+    @property
+    def renewable(self) -> bool:
+        """
+        Whether the resource is renewable.
+        """
+        return self._renewable
 
     @property
     def name(self) -> str:
         """
-        Name of the machine.
+        Name of the resource.
         """
         return self._name
 
 
-ResourceType = Union["Resource", "Machine"]
+ResourceType = Union[Machine, Renewable, NonRenewable]
 
 
 class Task:
@@ -530,6 +577,13 @@ class ProblemData:
             objective if objective is not None else Objective.makespan()
         )
 
+        # Split resources by type.
+        self._machines = [r for r in resources if isinstance(r, Machine)]
+        self._renewables = [r for r in resources if isinstance(r, Renewable)]
+        self._non_renewables = [
+            r for r in resources if isinstance(r, NonRenewable)
+        ]
+
         self._validate_parameters()
 
     def _validate_parameters(self):
@@ -683,6 +737,27 @@ class ProblemData:
         Returns the resource data of this problem instance.
         """
         return self._resources
+
+    @property
+    def machines(self) -> list[Machine]:
+        """
+        Returns the machine resources of this problem instance.
+        """
+        return self._machines
+
+    @property
+    def renewables(self) -> list[Renewable]:
+        """
+        Returns the renewable resources of this problem instance.
+        """
+        return self._renewables
+
+    @property
+    def non_renewables(self) -> list[NonRenewable]:
+        """
+        Returns the non-renewable resources of this problem instance.
+        """
+        return self._non_renewables
 
     @property
     def tasks(self) -> list[Task]:

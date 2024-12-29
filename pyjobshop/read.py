@@ -6,7 +6,7 @@ import fjsplib
 import psplib
 
 from .Model import Model
-from .ProblemData import ProblemData
+from .ProblemData import NonRenewable, ProblemData, Renewable
 
 
 class InstanceFormat(str, Enum):
@@ -70,8 +70,10 @@ def _project_instance_to_data(instance: psplib.ProjectInstance) -> ProblemData:
     """
     model = Model()
 
-    resources = [
-        model.add_resource(capacity=res.capacity, renewable=res.renewable)
+    resources: list[Union[Renewable, NonRenewable]] = [
+        model.add_renewable(capacity=res.capacity)
+        if res.renewable
+        else model.add_non_renewable(capacity=res.capacity)
         for res in instance.resources
     ]
 
