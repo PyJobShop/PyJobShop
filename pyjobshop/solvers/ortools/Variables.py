@@ -1,5 +1,4 @@
 from dataclasses import dataclass, field
-from typing import Optional
 
 from ortools.sat.python.cp_model import (
     BoolVarT,
@@ -93,7 +92,7 @@ class ModeVar:
 class SequenceVar:
     """
     Represents a sequence of interval variables for all modes that use this
-    resource. Relevant sequence variables are lazily generated when activated
+    machine. Relevant sequence variables are lazily generated when activated
     by constraints that call the ``activate`` method.
 
     Parameters
@@ -106,7 +105,7 @@ class SequenceVar:
         Keys are tuples of indices.
     is_active
         A boolean that indicates whether the sequence is active, meaning that a
-        circuit constraint must be added for this resource. Default ``False``.
+        circuit constraint must be added for this machine. Default ``False``.
     """
 
     mode_vars: list[ModeVar]
@@ -168,7 +167,7 @@ class Variables:
         return self._mode_vars
 
     @property
-    def sequence_vars(self) -> list[Optional[SequenceVar]]:
+    def sequence_vars(self) -> list[SequenceVar]:
         """
         Returns the sequence variables.
         """
@@ -285,19 +284,16 @@ class Variables:
 
         return variables
 
-    def _make_sequence_variables(self) -> list[Optional[SequenceVar]]:
+    def _make_sequence_variables(self) -> list[SequenceVar]:
         """
-        Creates a sequence variable for each uncapacitated resource. Resources
-        with capacity constraints do not get a sequence variable.
+        Creates a sequence variable for each machine.
         """
-        variables: list[Optional[SequenceVar]] = []
+        variables: list[SequenceVar] = []
 
         for idx, modes in enumerate(utils.resource2modes(self._data)):
             if isinstance(self._data.resources[idx], Machine):
                 intervals = [self.mode_vars[mode] for mode in modes]
                 variables.append(SequenceVar(intervals))
-            else:
-                variables.append(None)
 
         return variables
 

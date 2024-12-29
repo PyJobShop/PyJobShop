@@ -62,20 +62,6 @@ class Constraints:
             # Select exactly one optional interval variable for each task.
             model.add_exactly_one(presences)
 
-    def _no_overlap_resources(self):
-        """
-        Creates the no overlap constraints for machines, ensuring that no two
-        intervals in a sequence variable are overlapping.
-        """
-        model, data = self._model, self._data
-
-        for idx, resource in enumerate(data.resources):
-            if isinstance(resource, Machine):
-                seq_var = self._sequence_vars[idx]
-                assert seq_var is not None
-                mode_vars = [var.interval for var in seq_var.mode_vars]
-                model.add_no_overlap(mode_vars)
-
     def _activate_setup_times(self):
         """
         Activates the sequence variables for resources that have setup times.
@@ -84,14 +70,9 @@ class Constraints:
         """
         model, data = self._model, self._data
 
-        for idx, resource in enumerate(data.resources):
-            if not isinstance(resource, Machine):
-                continue
-
+        for idx in range(len(data.machines)):
             if data.setup_times is not None and np.any(data.setup_times[idx]):
-                seq_var = self._sequence_vars[idx]
-                assert seq_var is not None
-                seq_var.activate(model)
+                self._sequence_vars[idx].activate(model)
 
     def _resource_capacity(self):
         """
@@ -99,6 +80,12 @@ class Constraints:
         """
         model, data = self._model, self._data
         mode_vars = self._mode_vars
+
+        # No overlap on machines.
+        for idx in range(len(data.machines)):
+            seq_var = self._sequence_vars[idx]
+            mode_vars = [var.interval for var in seq_var.mode_vars]
+            model.add_no_overlap(mode_vars)
 
         # Map resources to the relevant modes and their demands.
         mapper = [[] for _ in range(data.num_resources)]
@@ -243,12 +230,8 @@ class Constraints:
         """
         model, data = self._model, self._data
 
-        for idx, resource in enumerate(data.resources):
-            if not isinstance(resource, Machine):
-                continue
-
+        for idx in range(len(data.machines)):
             seq_var = self._sequence_vars[idx]
-            assert seq_var is not None
 
             if not seq_var.is_active:
                 # No sequencing constraints active. Skip the creation of
@@ -300,7 +283,6 @@ class Constraints:
         """
         self._job_spans_tasks()
         self._select_one_mode()
-        self._no_overlap_resources()
         self._resource_capacity()
         self._activate_setup_times()
         self._timing_constraints()
