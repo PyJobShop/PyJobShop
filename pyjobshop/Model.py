@@ -462,7 +462,7 @@ class Model:
         """
         Adds a constraint that the first task must be scheduled right before
         the second task, meaning that no task is allowed to schedule between,
-        on resources that they are both scheduled on.
+        on machines that they are both scheduled on.
         """
         self._add_constaint(task1, task2, Constraint.CONSECUTIVE)
 
