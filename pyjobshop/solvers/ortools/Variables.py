@@ -198,7 +198,7 @@ class Variables:
                 ub=min(job.deadline, data.horizon),
                 name=f"{name}_end",
             )
-            interval = model.NewIntervalVar(
+            interval = model.new_interval_var(
                 start, duration, end, f"{name}_interval"
             )
             variables.append(JobVar(interval, start, duration, end))
@@ -235,7 +235,7 @@ class Variables:
                 ub=min(task.latest_end, data.horizon),
                 name=f"{name}_end",
             )
-            interval = model.NewIntervalVar(
+            interval = model.new_interval_var(
                 start, duration, end, f"interval_{task}"
             )
             variables.append(TaskVar(interval, start, duration, end))

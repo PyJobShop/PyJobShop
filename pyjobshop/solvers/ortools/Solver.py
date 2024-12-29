@@ -120,8 +120,9 @@ class Solver:
             objective_value = float("inf")
 
         return Result(
-            self._get_solve_status(status),
-            cp_solver.wall_time,
-            solution,
-            objective_value,
+            objective=objective_value,
+            lower_bound=cp_solver.best_objective_bound,
+            status=self._get_solve_status(status),
+            runtime=cp_solver.wall_time,
+            best=solution,
         )

@@ -19,6 +19,11 @@ class Result:
 
     Parameters
     ----------
+    objective
+        The objective value of the solution. If no solution was found, this
+        should be set to ``float('inf')``.
+    lower_bound
+        The lower bound of the objective function.
     status
         The termination status of the solver run.
     runtime
@@ -26,12 +31,21 @@ class Result:
     best
         The best found solution. If no solution was found, this should be a
         dummy solution.
-    objective
-        The objective value of the solution. If no solution was found, this
-        should be set to ``float('inf')``.
     """
 
+    objective: float
+    lower_bound: float
     status: SolveStatus
     runtime: float
     best: Solution
-    objective: float
+
+    def __str__(self):
+        content = [
+            "Solution results",
+            "================",
+            f"  objective: {self.objective:.2f}",
+            f"lower bound: {self.lower_bound:.2f}",
+            f"     status: {self.status.value}",
+            f"    runtime: {self.runtime:.2f} seconds",
+        ]
+        return "\n".join(content)
