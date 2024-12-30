@@ -615,6 +615,7 @@ class ProblemData:
         for mode in self.modes:
             num_modes[mode.task] += 1
             infeasible_modes[mode.task] += any(
+                # Assumes that machines have zero capacity.
                 demand > getattr(self.resources[res], "capacity", 0)
                 for demand, res in zip(mode.demands, mode.resources)
             )
