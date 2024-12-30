@@ -164,7 +164,6 @@ class Renewable:
             raise ValueError("Capacity must be non-negative.")
 
         self._capacity = capacity
-        self._renewable = True
         self._name = name
 
     @property
@@ -173,13 +172,6 @@ class Renewable:
         Capacity of the resource.
         """
         return self._capacity
-
-    @property
-    def renewable(self) -> bool:
-        """
-        Whether the resource is renewable.
-        """
-        return self._renewable
 
     @property
     def name(self) -> str:
@@ -206,7 +198,6 @@ class NonRenewable:
             raise ValueError("Capacity must be non-negative.")
 
         self._capacity = capacity
-        self._renewable = False
         self._name = name
 
     @property
@@ -215,13 +206,6 @@ class NonRenewable:
         Capacity of the resource.
         """
         return self._capacity
-
-    @property
-    def renewable(self) -> bool:
-        """
-        Whether the resource is renewable.
-        """
-        return self._renewable
 
     @property
     def name(self) -> str:

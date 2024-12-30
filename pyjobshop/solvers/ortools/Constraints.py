@@ -82,7 +82,7 @@ class Constraints:
             mode_vars = [var.interval for var in seq_var.mode_vars]
             model.add_no_overlap(mode_vars)
 
-    def _renewables_capacity(self):
+    def _renewable_capacity(self):
         """
         Creates capacity constraints for the renewable resources.
         """
@@ -302,7 +302,7 @@ class Constraints:
         self._job_spans_tasks()
         self._select_one_mode()
         self._machines_no_overlap()
-        self._renewables_capacity()
+        self._renewable_capacity()
         self._non_renewable_capacity()
         self._timing_constraints()
         self._identical_and_different_resource_constraints()
