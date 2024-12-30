@@ -88,20 +88,14 @@ class Constraints:
         """
         model, data = self._model, self._data
         mode_vars = self._mode_vars
-
-        # Map resources to the relevant modes and their demands.
-        mapper = [[] for _ in range(data.num_resources)]
-        for idx, mode in enumerate(data.modes):
-            for resource, demand in zip(mode.resources, mode.demands):
-                if demand > 0:
-                    mapper[resource].append((idx, demand))
+        res2modes, res2demands = utils.resource2modes_demands(data)
 
         for idx, resource in enumerate(data.resources):
             if not isinstance(resource, Renewable):
                 continue
 
-            intervals = [mode_vars[mode].interval for mode, _ in mapper[idx]]
-            demands = [demand for _, demand in mapper[idx]]
+            intervals = [mode_vars[mode].interval for mode in res2modes[idx]]
+            demands = res2demands[idx]
             model.add_cumulative(intervals, demands, resource.capacity)
 
     def _non_renewable_capacity(self):
@@ -110,20 +104,14 @@ class Constraints:
         """
         model, data = self._model, self._data
         mode_vars = self._mode_vars
-
-        # Map resources to the relevant modes and their demands.
-        mapper = [[] for _ in range(data.num_resources)]
-        for idx, mode in enumerate(data.modes):
-            for resource, demand in zip(mode.resources, mode.demands):
-                if demand > 0:
-                    mapper[resource].append((idx, demand))
+        res2modes, res2demands = utils.resource2modes_demands(data)
 
         for idx, resource in enumerate(data.resources):
             if not isinstance(resource, NonRenewable):
                 continue
 
-            precenses = [mode_vars[mode].is_present for mode, _ in mapper[idx]]
-            demands = [demand for _, demand in mapper[idx]]
+            precenses = [mode_vars[mode].is_present for mode in res2modes[idx]]
+            demands = res2demands[idx]
             usage = LinearExpr.weighted_sum(precenses, demands)
             model.add(usage <= resource.capacity)
 
