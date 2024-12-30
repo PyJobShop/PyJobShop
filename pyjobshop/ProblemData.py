@@ -502,8 +502,6 @@ class ProblemData:
         Sequence-dependent setup times between tasks on a given resource. The
         first dimension of the array is indexed by the resource index. The last
         two dimensions of the array are indexed by task indices.
-    horizon
-        The horizon value. Default ``MAX_VALUE``.
     objective
         The objective function. Default is minimizing the makespan.
     """
@@ -516,7 +514,6 @@ class ProblemData:
         modes: list[Mode],
         constraints: Optional[_ConstraintsType] = None,
         setup_times: Optional[np.ndarray] = None,
-        horizon: int = MAX_VALUE,
         objective: Optional[Objective] = None,
     ):
         self._jobs = jobs
@@ -525,7 +522,6 @@ class ProblemData:
         self._modes = modes
         self._constraints = constraints if constraints is not None else {}
         self._setup_times = setup_times
-        self._horizon = horizon
         self._objective = (
             objective if objective is not None else Objective.makespan()
         )
@@ -593,9 +589,6 @@ class ProblemData:
                     msg = "Setup times only allowed for machines."
                     raise ValueError(msg)
 
-        if self.horizon < 0:
-            raise ValueError("Horizon must be non-negative.")
-
         if (
             self.objective.weight_tardy_jobs > 0
             or self.objective.weight_total_tardiness > 0
@@ -615,7 +608,6 @@ class ProblemData:
         modes: Optional[list[Mode]] = None,
         constraints: Optional[_ConstraintsType] = None,
         setup_times: Optional[np.ndarray] = None,
-        horizon: Optional[int] = None,
         objective: Optional[Objective] = None,
     ) -> "ProblemData":
         """
@@ -636,8 +628,6 @@ class ProblemData:
             Optional constraints between tasks.
         setup_times
             Optional sequence-dependent setup times.
-        horizon
-            Optional horizon value.
         objective
             Optional objective function.
 
@@ -656,7 +646,6 @@ class ProblemData:
         modes = _deepcopy_if_none(modes, self.modes)
         constraints = _deepcopy_if_none(constraints, self.constraints)
         setup_times = _deepcopy_if_none(setup_times, self.setup_times)
-        horizon = _deepcopy_if_none(horizon, self.horizon)
         objective = _deepcopy_if_none(objective, self.objective)
 
         return ProblemData(
@@ -666,7 +655,6 @@ class ProblemData:
             modes=modes,
             constraints=constraints,
             setup_times=setup_times,
-            horizon=horizon,
             objective=objective,
         )
 
@@ -714,14 +702,6 @@ class ProblemData:
         indices are the task indices.
         """
         return self._setup_times
-
-    @property
-    def horizon(self) -> int:
-        """
-        The time horizon of this instance. This is an upper bound on the
-        completion time of all tasks.
-        """
-        return self._horizon
 
     @property
     def objective(self) -> Objective:

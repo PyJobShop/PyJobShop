@@ -4,6 +4,7 @@ from ortools.sat.python.cp_model import (
     LinearExprT,
 )
 
+from pyjobshop.constants import MAX_VALUE
 from pyjobshop.ProblemData import Objective as DataObjective
 from pyjobshop.ProblemData import ProblemData
 
@@ -29,7 +30,7 @@ class Objective:
         """
         Returns an expression representing the makespan of the model.
         """
-        makespan = self._model.new_int_var(0, self._data.horizon, "makespan")
+        makespan = self._model.new_int_var(0, MAX_VALUE, "makespan")
         completion_times = [var.end for var in self._task_vars]
         self._model.add_max_equality(makespan, completion_times)
         return makespan
@@ -59,7 +60,7 @@ class Objective:
         flow_time_vars = []
 
         for job, var in zip(data.jobs, self._job_vars):
-            flow_time = model.new_int_var(0, data.horizon, f"flow_time_{job}")
+            flow_time = model.new_int_var(0, MAX_VALUE, f"flow_time_{job}")
             model.add_max_equality(flow_time, [0, var.end - job.release_date])
             flow_time_vars.append(flow_time)
 
@@ -75,7 +76,7 @@ class Objective:
 
         for job, var in zip(data.jobs, self._job_vars):
             assert job.due_date is not None
-            tardiness = model.new_int_var(0, data.horizon, f"tardiness_{job}")
+            tardiness = model.new_int_var(0, MAX_VALUE, f"tardiness_{job}")
             model.add_max_equality(tardiness, [0, var.end - job.due_date])
             tardiness_vars.append(tardiness)
 
@@ -91,7 +92,7 @@ class Objective:
 
         for job, var in zip(data.jobs, self._job_vars):
             assert job.due_date is not None
-            earliness = model.new_int_var(0, data.horizon, f"earliness_{job}")
+            earliness = model.new_int_var(0, MAX_VALUE, f"earliness_{job}")
             model.add_max_equality(earliness, [0, job.due_date - var.end])
             earliness_vars.append(earliness)
 
@@ -107,11 +108,11 @@ class Objective:
 
         for job, var in zip(data.jobs, self._job_vars):
             assert job.due_date is not None
-            tardiness = model.new_int_var(0, data.horizon, f"tardiness_{job}")
+            tardiness = model.new_int_var(0, MAX_VALUE, f"tardiness_{job}")
             model.add_max_equality(tardiness, [0, var.end - job.due_date])
             tardiness_vars.append(job.weight * tardiness)
 
-        max_tardiness = model.new_int_var(0, data.horizon, "max_tardiness")
+        max_tardiness = model.new_int_var(0, MAX_VALUE, "max_tardiness")
         model.add_max_equality(max_tardiness, tardiness_vars)
         return max_tardiness
 
@@ -125,14 +126,12 @@ class Objective:
         for job, var in zip(data.jobs, self._job_vars):
             assert job.due_date is not None
             lateness = model.new_int_var(
-                -data.horizon, data.horizon, f"lateness_{job}"
+                -MAX_VALUE, MAX_VALUE, f"lateness_{job}"
             )
             model.add(lateness == var.end - job.due_date)
             lateness_vars.append(job.weight * lateness)
 
-        max_lateness = model.new_int_var(
-            -data.horizon, data.horizon, "max_lateness"
-        )
+        max_lateness = model.new_int_var(-MAX_VALUE, MAX_VALUE, "max_lateness")
         model.add_max_equality(max_lateness, lateness_vars)
         return max_lateness
 

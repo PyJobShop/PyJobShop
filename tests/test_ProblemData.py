@@ -206,7 +206,6 @@ def test_problem_data_input_parameter_attributes():
         key: [Constraint.END_BEFORE_START] for key in ((0, 1), (2, 3), (4, 5))
     }
     setup_times = np.ones((5, 5, 5), dtype=int)
-    horizon = 100
     objective = Objective.total_flow_time()
 
     data = ProblemData(
@@ -216,7 +215,6 @@ def test_problem_data_input_parameter_attributes():
         modes,
         constraints,
         setup_times,
-        horizon,
         objective,
     )
 
@@ -226,7 +224,6 @@ def test_problem_data_input_parameter_attributes():
     assert_equal(data.modes, modes)
     assert_equal(data.constraints, constraints)
     assert_equal(data.setup_times, setup_times)
-    assert_equal(data.horizon, horizon)
     assert_equal(data.objective, objective)
 
 
@@ -295,7 +292,6 @@ def test_problem_data_default_values():
 
     assert_equal(data.constraints, {})
     assert_equal(data.setup_times, None)
-    assert_equal(data.horizon, MAX_VALUE)
     assert_equal(data.objective, Objective.makespan())
 
 
@@ -384,19 +380,13 @@ def test_problem_data_all_modes_demand_infeasible():
 
 
 @pytest.mark.parametrize(
-    "setup_times, horizon",
+    "setup_times",
     [
-        # Negative setup times.
-        (np.ones((1, 1, 1)) * -1, 1),
-        # Invalid setup times shape.
-        (np.ones((2, 2, 2)), 1),
-        # Negative horizon.
-        (np.ones((1, 1, 1)), -1),
+        (np.ones((1, 1, 1)) * -1),  # negative setup times
+        (np.ones((2, 2, 2))),  # invalid setup times shape
     ],
 )
-def test_problem_data_raises_when_invalid_arguments(
-    setup_times: np.ndarray, horizon: int
-):
+def test_problem_data_raises_when_invalid_arguments(setup_times: np.ndarray):
     """
     Tests that the ProblemData class raises an error when invalid arguments are
     passed.
@@ -408,7 +398,6 @@ def test_problem_data_raises_when_invalid_arguments(
             [Task()],
             modes=[Mode(0, [0], 1)],
             setup_times=setup_times.astype(int),
-            horizon=horizon,
         )
 
 
@@ -467,7 +456,6 @@ def make_replace_data():
     ]
     constraints = {(0, 1): [Constraint.END_BEFORE_START]}
     setup_times = np.zeros((2, 2, 2))
-    horizon = 1
     objective = Objective.makespan()
 
     return ProblemData(
@@ -477,7 +465,6 @@ def make_replace_data():
         modes,
         constraints,
         setup_times,
-        horizon,
         objective,
     )
 
@@ -516,7 +503,6 @@ def test_problem_data_replace_no_changes():
 
     assert_equal(new.constraints, data.constraints)
     assert_equal(new.setup_times, data.setup_times)
-    assert_equal(new.horizon, data.horizon)
     assert_equal(new.objective, data.objective)
 
 
@@ -541,7 +527,6 @@ def test_problem_data_replace_with_changes():
                 np.ones((2, 2)),  # resource with setup times
             ],
         ),
-        horizon=2,
         objective=Objective.total_tardiness(),
     )
     assert_(new is not data)
@@ -567,7 +552,6 @@ def test_problem_data_replace_with_changes():
 
     assert_(new.constraints != data.constraints)
     assert_(not np.array_equal(new.setup_times, data.setup_times))
-    assert_(new.horizon != data.horizon)
     assert_(new.objective != data.objective)
 
 
@@ -1075,25 +1059,6 @@ def test_consecutive_multiple_machines(solver: str):
     result = model.solve(solver=solver)
     assert_equal(result.objective, 12)
     assert_equal(result.status.value, "Optimal")
-
-
-def test_tight_horizon_results_in_infeasiblity(solver: str):
-    """
-    Tests that a tight horizon results in an infeasible instance.
-    """
-    model = Model()
-
-    job = model.add_job()
-    machine = model.add_machine()
-    task = model.add_task(job=job)
-
-    model.add_mode(task, machine, duration=2)
-    model.set_horizon(1)
-
-    result = model.solve(solver=solver)
-
-    # Processing time is 2, but horizon is 1, so this is infeasible.
-    assert_equal(result.status.value, "Infeasible")
 
 
 @pytest.mark.parametrize(
