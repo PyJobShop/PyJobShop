@@ -167,7 +167,7 @@ class Variables:
         return self._mode_vars
 
     @property
-    def sequence_vars(self) -> list[SequenceVar]:
+    def sequence_vars(self) -> dict[int, SequenceVar]:
         """
         Returns the sequence variables.
         """
@@ -284,16 +284,16 @@ class Variables:
 
         return variables
 
-    def _make_sequence_variables(self) -> list[SequenceVar]:
+    def _make_sequence_variables(self) -> dict[int, SequenceVar]:
         """
         Creates a sequence variable for each machine.
         """
-        variables: list[SequenceVar] = []
+        variables: dict[int, SequenceVar] = {}
 
         for idx, modes in enumerate(utils.resource2modes(self._data)):
             if isinstance(self._data.resources[idx], Machine):
                 intervals = [self.mode_vars[mode] for mode in modes]
-                variables.append(SequenceVar(intervals))
+                variables[idx] = SequenceVar(intervals)
 
         return variables
 

@@ -2,7 +2,13 @@ import numpy as np
 from ortools.sat.python.cp_model import BoolVarT, CpModel, LinearExpr
 
 import pyjobshop.solvers.utils as utils
-from pyjobshop.ProblemData import Constraint, Machine, ProblemData
+from pyjobshop.ProblemData import (
+    Constraint,
+    Machine,
+    NonRenewable,
+    ProblemData,
+    Renewable,
+)
 from pyjobshop.solvers.ortools.Variables import Variables
 
 
@@ -62,30 +68,26 @@ class Constraints:
             # Select exactly one optional interval variable for each task.
             model.add_exactly_one(presences)
 
-    def _activate_setup_times(self):
+    def _machines_no_overlap(self):
         """
-        Activates the sequence variables for resources that have setup times.
-        The ``_circuit_constraints`` function will in turn add
-        constraints to the CP-SAT model to enforce setup times.
+        Creates no-overlap constraints for machines.
         """
         model, data = self._model, self._data
 
-        for idx in range(len(data.machines)):
-            if data.setup_times is not None and np.any(data.setup_times[idx]):
-                self._sequence_vars[idx].activate(model)
+        for idx, resource in enumerate(data.resources):
+            if not isinstance(resource, Machine):
+                continue
 
-    def _resource_capacity(self):
-        """
-        Creates constraints for the resource capacity.
-        """
-        model, data = self._model, self._data
-        mode_vars = self._mode_vars
-
-        # No overlap on machines.
-        for idx in range(len(data.machines)):
             seq_var = self._sequence_vars[idx]
             mode_vars = [var.interval for var in seq_var.mode_vars]
             model.add_no_overlap(mode_vars)
+
+    def _renewables_capacity(self):
+        """
+        Creates capacity constraints for the renewable resources.
+        """
+        model, data = self._model, self._data
+        mode_vars = self._mode_vars
 
         # Map resources to the relevant modes and their demands.
         mapper = [[] for _ in range(data.num_resources)]
@@ -95,19 +97,35 @@ class Constraints:
                     mapper[resource].append((idx, demand))
 
         for idx, resource in enumerate(data.resources):
-            if isinstance(resource, Machine):
-                continue  # handled by no-overlap constraints
+            if not isinstance(resource, Renewable):
+                continue
 
+            intervals = [mode_vars[mode].interval for mode, _ in mapper[idx]]
             demands = [demand for _, demand in mapper[idx]]
-            if resource.renewable:
-                intvs = [mode_vars[mode].interval for mode, _ in mapper[idx]]
-                model.add_cumulative(intvs, demands, resource.capacity)
-            else:
-                precenses = [
-                    mode_vars[mode].is_present for mode, _ in mapper[idx]
-                ]
-                usage = LinearExpr.weighted_sum(precenses, demands)
-                model.add(usage <= resource.capacity)
+            model.add_cumulative(intervals, demands, resource.capacity)
+
+    def _non_renewable_capacity(self):
+        """
+        Creates capacity constraints for the non-renewable resources.
+        """
+        model, data = self._model, self._data
+        mode_vars = self._mode_vars
+
+        # Map resources to the relevant modes and their demands.
+        mapper = [[] for _ in range(data.num_resources)]
+        for idx, mode in enumerate(data.modes):
+            for resource, demand in zip(mode.resources, mode.demands):
+                if demand > 0:
+                    mapper[resource].append((idx, demand))
+
+        for idx, resource in enumerate(data.resources):
+            if not isinstance(resource, NonRenewable):
+                continue
+
+            precenses = [mode_vars[mode].is_present for mode, _ in mapper[idx]]
+            demands = [demand for _, demand in mapper[idx]]
+            usage = LinearExpr.weighted_sum(precenses, demands)
+            model.add(usage <= resource.capacity)
 
     def _timing_constraints(self):
         """
@@ -142,43 +160,6 @@ class Constraints:
 
             if Constraint.END_BEFORE_END in constraints:
                 model.add(task_var1.end <= task_var2.end)
-
-    def _consecutive_constraints(self):
-        """
-        Creates the consecutive constraints.
-        """
-        model, data = self._model, self._data
-
-        for (task1, task2), constraints in data.constraints.items():
-            if Constraint.CONSECUTIVE not in constraints:
-                continue
-
-            # Find the modes of the task that have intersecting resources,
-            # because we need to enforce consecutive constraints on them.
-            intersecting = utils.find_modes_with_intersecting_resources(
-                data, task1, task2
-            )
-            for mode1, mode2, resources in intersecting:
-                for resource in resources:
-                    if not isinstance(data.resources[resource], Machine):
-                        continue  # skip sequencing on non-machine resources
-
-                    seq_var = self._sequence_vars[resource]
-                    if seq_var is None:
-                        msg = f"No sequence var found for resource {resource}."
-                        raise ValueError(msg)
-
-                    var1 = self._mode_vars[mode1]
-                    var2 = self._mode_vars[mode2]
-
-                    seq_var.activate(model)
-
-                    idx1 = seq_var.mode_vars.index(var1)
-                    idx2 = seq_var.mode_vars.index(var2)
-                    arc = seq_var.arcs[idx1, idx2]
-                    both_present = [var1.is_present, var2.is_present]
-
-                    model.add(arc == 1).only_enforce_if(both_present)
 
     def _identical_and_different_resource_constraints(self):
         """
@@ -223,6 +204,50 @@ class Constraints:
                     ]
                     model.add(sum(vars2) >= var1)
 
+    def _activate_setup_times(self):
+        """
+        Activates the sequence variables for resources that have setup times.
+        The ``_circuit_constraints`` function will in turn add constraints to
+        the CP-SAT model to enforce setup times.
+        """
+        model, data = self._model, self._data
+
+        for idx in range(len(data.machines)):
+            if data.setup_times is not None and np.any(data.setup_times[idx]):
+                self._sequence_vars[idx].activate(model)
+
+    def _consecutive_constraints(self):
+        """
+        Creates the consecutive constraints.
+        """
+        model, data = self._model, self._data
+
+        for (task1, task2), constraints in data.constraints.items():
+            if Constraint.CONSECUTIVE not in constraints:
+                continue
+
+            # Find the modes of the task that have intersecting resources,
+            # because we need to enforce consecutive constraints on them.
+            intersecting = utils.find_modes_with_intersecting_resources(
+                data, task1, task2
+            )
+            for mode1, mode2, resources in intersecting:
+                for resource in resources:
+                    if not isinstance(data.resources[resource], Machine):
+                        continue  # skip sequencing on non-machine resources
+
+                    seq_var = self._sequence_vars[resource]
+                    seq_var.activate(model)
+                    var1 = self._mode_vars[mode1]
+                    var2 = self._mode_vars[mode2]
+
+                    idx1 = seq_var.mode_vars.index(var1)
+                    idx2 = seq_var.mode_vars.index(var2)
+                    arc = seq_var.arcs[idx1, idx2]
+                    both_present = [var1.is_present, var2.is_present]
+
+                    model.add(arc == 1).only_enforce_if(both_present)
+
     def _circuit_constraints(self):
         """
         Creates the circuit constraints for each machine, if activated by
@@ -230,9 +255,11 @@ class Constraints:
         """
         model, data = self._model, self._data
 
-        for idx in range(len(data.machines)):
-            seq_var = self._sequence_vars[idx]
+        for idx, resource in enumerate(data.resources):
+            if not isinstance(resource, Machine):
+                continue
 
+            seq_var = self._sequence_vars[idx]
             if not seq_var.is_active:
                 # No sequencing constraints active. Skip the creation of
                 # (expensive) circuit constraints.
@@ -283,11 +310,13 @@ class Constraints:
         """
         self._job_spans_tasks()
         self._select_one_mode()
-        self._resource_capacity()
-        self._activate_setup_times()
+        self._machines_no_overlap()
+        self._renewables_capacity()
+        self._non_renewable_capacity()
         self._timing_constraints()
-        self._consecutive_constraints()
         self._identical_and_different_resource_constraints()
+        self._activate_setup_times()
+        self._consecutive_constraints()
 
         # From here onwards we know which sequence constraints are active.
         self._circuit_constraints()
