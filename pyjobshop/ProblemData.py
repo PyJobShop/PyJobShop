@@ -139,13 +139,6 @@ class Machine:
         self._name = name
 
     @property
-    def capacity(self) -> int:  # TODO remove?
-        """
-        Capacity of the machine.
-        """
-        return 0
-
-    @property
     def name(self) -> str:
         """
         Name of the machine.
@@ -622,8 +615,8 @@ class ProblemData:
         for mode in self.modes:
             num_modes[mode.task] += 1
             infeasible_modes[mode.task] += any(
-                demand > self.resources[resource].capacity
-                for demand, resource in zip(mode.demands, mode.resources)
+                demand > getattr(self.resources[res], "capacity", 0)
+                for demand, res in zip(mode.demands, mode.resources)
             )
 
         for task, count in num_modes.items():
