@@ -570,13 +570,6 @@ class ProblemData:
             objective if objective is not None else Objective.makespan()
         )
 
-        # Split resources by type.
-        self._machines = [r for r in resources if isinstance(r, Machine)]
-        self._renewables = [r for r in resources if isinstance(r, Renewable)]
-        self._non_renewables = [
-            r for r in resources if isinstance(r, NonRenewable)
-        ]
-
         self._validate_parameters()
 
     def _validate_parameters(self):
@@ -731,27 +724,6 @@ class ProblemData:
         Returns the resource data of this problem instance.
         """
         return self._resources
-
-    @property
-    def machines(self) -> list[Machine]:
-        """
-        Returns the machine resources of this problem instance.
-        """
-        return self._machines
-
-    @property
-    def renewables(self) -> list[Renewable]:
-        """
-        Returns the renewable resources of this problem instance.
-        """
-        return self._renewables
-
-    @property
-    def non_renewables(self) -> list[NonRenewable]:
-        """
-        Returns the non-renewable resources of this problem instance.
-        """
-        return self._non_renewables
 
     @property
     def tasks(self) -> list[Task]:

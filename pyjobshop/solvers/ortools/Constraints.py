@@ -212,7 +212,10 @@ class Constraints:
         """
         model, data = self._model, self._data
 
-        for idx in range(len(data.machines)):
+        for idx, resource in enumerate(data.resources):
+            if not isinstance(resource, Machine):
+                continue
+
             if data.setup_times is not None and np.any(data.setup_times[idx]):
                 self._sequence_vars[idx].activate(model)
 
