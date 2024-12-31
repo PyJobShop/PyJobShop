@@ -111,8 +111,9 @@ def test_from_data():
         },
         setup_times=np.array(
             [
-                np.zeros((3, 3)),  # resource
                 np.ones((3, 3)),  # machine
+                np.zeros((3, 3)),  # renewable
+                np.zeros((3, 3)),  # non-renewable
             ]
         ),
         objective=Objective(
