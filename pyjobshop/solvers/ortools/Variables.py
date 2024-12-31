@@ -9,6 +9,7 @@ from ortools.sat.python.cp_model import (
 )
 
 import pyjobshop.solvers.utils as utils
+from pyjobshop.constants import MAX_VALUE
 from pyjobshop.ProblemData import Machine, ProblemData
 from pyjobshop.Solution import Solution
 
@@ -184,17 +185,17 @@ class Variables:
             name = f"J{idx}"
             start = model.new_int_var(
                 lb=job.release_date,
-                ub=data.horizon,
+                ub=MAX_VALUE,
                 name=f"{name}_start",
             )
             duration = model.new_int_var(
                 lb=0,
-                ub=min(job.deadline - job.release_date, data.horizon),
+                ub=min(job.deadline - job.release_date, MAX_VALUE),
                 name=f"{name}_duration",
             )
             end = model.new_int_var(
                 lb=0,
-                ub=min(job.deadline, data.horizon),
+                ub=min(job.deadline, MAX_VALUE),
                 name=f"{name}_end",
             )
             interval = model.new_interval_var(
@@ -216,7 +217,7 @@ class Variables:
             name = f"T{idx}"
             start = model.new_int_var(
                 lb=task.earliest_start,
-                ub=min(task.latest_start, data.horizon),
+                ub=min(task.latest_start, MAX_VALUE),
                 name=f"{name}_start",
             )
             if task.fixed_duration:
@@ -226,12 +227,12 @@ class Variables:
             else:
                 duration = model.new_int_var(
                     lb=min(task_durations[idx]),
-                    ub=data.horizon,
+                    ub=MAX_VALUE,
                     name=f"{name}_duration",
                 )
             end = model.new_int_var(
                 lb=task.earliest_end,
-                ub=min(task.latest_end, data.horizon),
+                ub=min(task.latest_end, MAX_VALUE),
                 name=f"{name}_end",
             )
             interval = model.new_interval_var(
@@ -255,17 +256,17 @@ class Variables:
             name = f"M{idx}_{mode.task}"
             start = model.new_int_var(
                 lb=task.earliest_start,
-                ub=min(task.latest_start, data.horizon),
+                ub=min(task.latest_start, MAX_VALUE),
                 name=f"{name}_start",
             )
             duration = model.new_int_var(
                 lb=mode.duration,
-                ub=mode.duration if task.fixed_duration else data.horizon,
+                ub=mode.duration if task.fixed_duration else MAX_VALUE,
                 name=f"{name}_duration",
             )
             end = model.new_int_var(
                 lb=task.earliest_end,
-                ub=min(task.latest_end, data.horizon),
+                ub=min(task.latest_end, MAX_VALUE),
                 name=f"{name}_start",
             )
             is_present = model.new_bool_var(f"{name}_is_present")

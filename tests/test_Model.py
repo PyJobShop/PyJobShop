@@ -1,7 +1,6 @@
 import numpy as np
 from numpy.testing import assert_equal
 
-from pyjobshop.constants import MAX_VALUE
 from pyjobshop.Model import Model
 from pyjobshop.ProblemData import (
     Constraint,
@@ -44,7 +43,6 @@ def test_model_to_data():
     model.add_setup_time(machine1, task1, task2, 3)
     model.add_setup_time(machine2, task1, task2, 4)
 
-    model.set_horizon(100)
     model.set_objective(weight_total_flow_time=1)
 
     data = model.data()
@@ -80,7 +78,6 @@ def test_model_to_data():
         },
     )
     assert_equal(data.setup_times, [[[0, 3], [0, 0]], [[0, 4], [0, 0]]])
-    assert_equal(data.horizon, 100)
     assert_equal(data.objective, Objective.total_flow_time())
 
 
@@ -117,7 +114,6 @@ def test_from_data():
                 np.ones((3, 3)),  # machine
             ]
         ),
-        horizon=100,
         objective=Objective(
             weight_makespan=2,
             weight_tardy_jobs=3,
@@ -138,7 +134,6 @@ def test_from_data():
     assert_equal(m_data.modes, data.modes)
     assert_equal(m_data.constraints, data.constraints)
     assert_equal(m_data.setup_times, data.setup_times)
-    assert_equal(m_data.horizon, data.horizon)
     assert_equal(m_data.objective, data.objective)
 
 
@@ -161,7 +156,6 @@ def test_model_to_data_default_values():
     assert_equal(data.modes, [Mode(task=0, resources=[0], duration=1)])
     assert_equal(data.constraints, {})
     assert_equal(data.setup_times, None)
-    assert_equal(data.horizon, MAX_VALUE)
     assert_equal(data.objective, Objective.makespan())
 
 

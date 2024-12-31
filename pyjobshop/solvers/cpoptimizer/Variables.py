@@ -7,6 +7,7 @@ from docplex.cp.expression import (
 from docplex.cp.model import CpoModel
 
 import pyjobshop.solvers.utils as utils
+from pyjobshop.constants import MAX_VALUE
 from pyjobshop.ProblemData import Machine, ProblemData
 from pyjobshop.Solution import Solution
 
@@ -63,7 +64,7 @@ class Variables:
             var = interval_var(name=f"J{job}")
 
             var.set_start_min(job.release_date)
-            var.set_end_max(min(job.deadline, self._data.horizon))
+            var.set_end_max(min(job.deadline, MAX_VALUE))
 
             variables.append(var)
             self._model.add(var)
@@ -82,16 +83,14 @@ class Variables:
             var = interval_var(name=f"T{task}")
 
             var.set_start_min(task.earliest_start)
-            var.set_start_max(min(task.latest_start, data.horizon))
+            var.set_start_max(min(task.latest_start, MAX_VALUE))
 
             var.set_end_min(task.earliest_end)
-            var.set_end_max(min(task.latest_end, data.horizon))
+            var.set_end_max(min(task.latest_end, MAX_VALUE))
 
             var.set_size_min(min(task_durations[idx]))
             var.set_size_max(
-                max(task_durations[idx])
-                if task.fixed_duration
-                else data.horizon
+                max(task_durations[idx]) if task.fixed_duration else MAX_VALUE
             )
 
             variables.append(var)
@@ -111,16 +110,16 @@ class Variables:
             task = data.tasks[mode.task]
 
             var.set_start_min(task.earliest_start)
-            var.set_start_max(min(task.latest_start, data.horizon))
+            var.set_start_max(min(task.latest_start, MAX_VALUE))
 
             var.set_end_min(task.earliest_end)
-            var.set_end_max(min(task.latest_end, data.horizon))
+            var.set_end_max(min(task.latest_end, MAX_VALUE))
 
             if task.fixed_duration:
                 var.set_size(mode.duration)
             else:
                 var.set_size_min(mode.duration)
-                var.set_size_max(data.horizon)
+                var.set_size_max(MAX_VALUE)
 
             variables.append(var)
             self._model.add(var)
