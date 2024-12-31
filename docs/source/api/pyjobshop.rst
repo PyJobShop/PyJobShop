@@ -33,12 +33,43 @@ PyJobShop
     .. autoclass:: Mode
        :members:
 
-    .. autoclass:: Constraints
-       :members:
-
     .. autoclass:: Objective
        :members:
 
+.. automodule:: pyjobshop.Constraints
+
+    .. autoclass:: Constraints
+
+
+    .. autoclass:: StartAtEnd
+        :members:
+
+    .. autoclass:: StartBeforeStart
+        :members:
+
+    .. autoclass:: StartBeforeEnd
+        :members:
+
+    .. autoclass:: EndAtStart
+        :members:
+
+    .. autoclass:: EndAtEnd
+        :members:
+
+    .. autoclass:: EndBeforeStart
+        :members:
+
+    .. autoclass:: EndBeforeEnd
+        :members:
+
+    .. autoclass:: IdenticalResources
+        :members:
+
+    .. autoclass:: DifferentResources
+        :members:
+
+    .. autoclass:: Consecutive
+        :members:
 
 .. automodule:: pyjobshop.Solution
 

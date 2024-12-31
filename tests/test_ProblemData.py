@@ -3,8 +3,7 @@ import pytest
 from numpy.testing import assert_, assert_equal, assert_raises
 
 from pyjobshop.constants import MAX_VALUE
-from pyjobshop.Model import Model
-from pyjobshop.ProblemData import (
+from pyjobshop.Constraints import (
     Constraints,
     DifferentResources,
     EndAtEnd,
@@ -12,6 +11,13 @@ from pyjobshop.ProblemData import (
     EndBeforeEnd,
     EndBeforeStart,
     IdenticalResources,
+    StartAtEnd,
+    StartAtStart,
+    StartBeforeEnd,
+    StartBeforeStart,
+)
+from pyjobshop.Model import Model
+from pyjobshop.ProblemData import (
     Job,
     Machine,
     Mode,
@@ -19,10 +25,6 @@ from pyjobshop.ProblemData import (
     Objective,
     ProblemData,
     Renewable,
-    StartAtEnd,
-    StartAtStart,
-    StartBeforeEnd,
-    StartBeforeStart,
     Task,
 )
 from pyjobshop.Solution import TaskData as TaskData

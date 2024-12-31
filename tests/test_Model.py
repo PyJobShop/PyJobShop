@@ -1,8 +1,7 @@
 import numpy as np
 from numpy.testing import assert_equal
 
-from pyjobshop.Model import Model
-from pyjobshop.ProblemData import (
+from pyjobshop.Constraints import (
     Consecutive,
     Constraints,
     DifferentResources,
@@ -11,6 +10,13 @@ from pyjobshop.ProblemData import (
     EndBeforeEnd,
     EndBeforeStart,
     IdenticalResources,
+    StartAtEnd,
+    StartAtStart,
+    StartBeforeEnd,
+    StartBeforeStart,
+)
+from pyjobshop.Model import Model
+from pyjobshop.ProblemData import (
     Job,
     Machine,
     Mode,
@@ -18,10 +24,6 @@ from pyjobshop.ProblemData import (
     Objective,
     ProblemData,
     Renewable,
-    StartAtEnd,
-    StartAtStart,
-    StartBeforeEnd,
-    StartBeforeStart,
     Task,
 )
 from pyjobshop.Solution import Solution, TaskData
