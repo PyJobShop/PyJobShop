@@ -82,8 +82,7 @@ def test_model_to_data():
     assert_equal(constraints.identical_resources, [IdenticalResources(1, 0)])
     assert_equal(constraints.different_resources, [DifferentResources(1, 0)])
     assert_equal(constraints.consecutive, [Consecutive(1, 0)])
-
-    assert_equal(data.setup_times, [[[0, 3], [0, 0]], [[0, 4], [0, 0]]])
+    assert_equal(constraints.setup_times, [[[0, 3], [0, 0]], [[0, 4], [0, 0]]])
     assert_equal(data.objective, Objective.total_flow_time())
 
 
@@ -109,13 +108,13 @@ def test_from_data():
             identical_resources=[IdenticalResources(0, 1)],
             different_resources=[DifferentResources(0, 1)],
             consecutive=[Consecutive(1, 2)],
-        ),
-        setup_times=np.array(
-            [
-                np.ones((3, 3)),  # machine
-                np.zeros((3, 3)),  # renewable
-                np.zeros((3, 3)),  # non-renewable
-            ]
+            setup_times=np.array(
+                [
+                    np.ones((3, 3)),  # machine
+                    np.zeros((3, 3)),  # renewable
+                    np.zeros((3, 3)),  # non-renewable
+                ]
+            ),
         ),
         objective=Objective(
             weight_makespan=2,
@@ -136,7 +135,6 @@ def test_from_data():
     assert_equal(m_data.num_modes, data.num_modes)
     assert_equal(m_data.modes, data.modes)
     assert_equal(m_data.constraints, data.constraints)
-    assert_equal(m_data.setup_times, data.setup_times)
     assert_equal(m_data.objective, data.objective)
 
 
@@ -158,7 +156,6 @@ def test_model_to_data_default_values():
     assert_equal(data.tasks, [task])
     assert_equal(data.modes, [Mode(task=0, resources=[0], duration=1)])
     assert_equal(data.constraints, Constraints())
-    assert_equal(data.setup_times, None)
     assert_equal(data.objective, Objective.makespan())
 
 

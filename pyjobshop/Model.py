@@ -171,7 +171,7 @@ class Model:
         for idx1, idx2 in data.constraints.consecutive:
             model.add_consecutive(tasks[idx1], tasks[idx2])
 
-        if (setups := data.setup_times) is not None:
+        if (setups := data.constraints.setup_times) is not None:
             for (res, idx1, idx2), duration in np.ndenumerate(setups):
                 if duration != 0:
                     model.add_setup_time(
@@ -206,8 +206,8 @@ class Model:
             setup = np.zeros((num_res, num_tasks, num_tasks), dtype=int)
             for (res, task1, task2), duration in self._setup_times.items():
                 setup[res, task1, task2] = duration
-        else:
-            setup = None
+
+            self._constraints.setup_times = setup
 
         return ProblemData(
             jobs=self.jobs,
@@ -215,7 +215,6 @@ class Model:
             tasks=self.tasks,
             modes=self._modes,
             constraints=self._constraints,
-            setup_times=setup,
             objective=self._objective,
         )
 

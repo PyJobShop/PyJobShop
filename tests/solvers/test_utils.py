@@ -20,7 +20,6 @@ def test_compute_task_durations():
         [Renewable(0), Renewable(0)],
         [Task(), Task()],
         modes=[Mode(0, [0], 1), Mode(0, [1], 10), Mode(1, [1], 0)],
-        constraints={},
     )
 
     task_durations = compute_task_durations(data)
@@ -41,7 +40,6 @@ def test_resource2modes():
         [Renewable(0), Renewable(0)],
         [Task(), Task()],
         modes=[Mode(0, [0], 1), Mode(0, [1], 10), Mode(1, [1], 0)],
-        constraints={},
     )
 
     mapper = resource2modes(data)
@@ -59,7 +57,6 @@ def test_task2modes():
         [Renewable(0), Renewable(0)],
         [Task(), Task()],
         modes=[Mode(0, [0], 1), Mode(0, [1], 10), Mode(1, [1], 0)],
-        constraints={},
     )
 
     mapper = task2modes(data)

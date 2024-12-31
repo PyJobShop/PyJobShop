@@ -469,6 +469,11 @@ class Constraints:
         List of different resources constraints.
     consecutive
         List of consecutive constraints.
+    setup_times
+        Optional sequence-dependent setup times between tasks on a given
+        resource. The first dimension of the array is indexed by the resource
+        index. The last two dimensions of the array are indexed by task
+        indices.
     """
 
     def __init__(
@@ -484,6 +489,7 @@ class Constraints:
         identical_resources: Optional[list[IdenticalResources]] = None,
         different_resources: Optional[list[DifferentResources]] = None,
         consecutive: Optional[list[Consecutive]] = None,
+        setup_times: Optional[np.ndarray] = None,
     ):
         self._start_at_start = start_at_start or []
         self._start_at_end = start_at_end or []
@@ -496,6 +502,7 @@ class Constraints:
         self._identical_resources = identical_resources or []
         self._different_resources = different_resources or []
         self._consecutive = consecutive or []
+        self._setup_times = setup_times
 
     def __eq__(self, other) -> bool:
         return (
@@ -510,6 +517,14 @@ class Constraints:
             and self.identical_resources == other.identical_resources
             and self.different_resources == other.different_resources
             and self.consecutive == other.consecutive
+            and (
+                (self.setup_times is None and other.setup_times is None)
+                or (
+                    self.setup_times is not None
+                    and other.setup_times is not None
+                    and np.array_equal(self.setup_times, other.setup_times)
+                )
+            )
         )
 
     @property
@@ -555,6 +570,14 @@ class Constraints:
     @property
     def consecutive(self) -> list[Consecutive]:
         return self._consecutive
+
+    @property
+    def setup_times(self) -> Optional[np.ndarray]:
+        return self._setup_times
+
+    @setup_times.setter
+    def setup_times(self, value: np.ndarray):
+        self._setup_times = value
 
 
 @dataclass
@@ -650,10 +673,6 @@ class ProblemData:
         List of processing modes of tasks.
     constraints
         TODO
-    setup_times
-        Sequence-dependent setup times between tasks on a given resource. The
-        first dimension of the array is indexed by the resource index. The last
-        two dimensions of the array are indexed by task indices.
     objective
         The objective function. Default is minimizing the makespan.
     """
@@ -665,7 +684,6 @@ class ProblemData:
         tasks: list[Task],
         modes: list[Mode],
         constraints: Optional[Constraints] = None,
-        setup_times: Optional[np.ndarray] = None,
         objective: Optional[Objective] = None,
     ):
         self._jobs = jobs
@@ -675,7 +693,6 @@ class ProblemData:
         self._constraints = (
             constraints if constraints is not None else Constraints()
         )
-        self._setup_times = setup_times
         self._objective = (
             objective if objective is not None else Objective.makespan()
         )
@@ -729,17 +746,18 @@ class ProblemData:
                 msg = f"All modes for task {task} have infeasible demands."
                 raise ValueError(msg)
 
-        if self.setup_times is not None:
-            if np.any(self.setup_times < 0):
+        setup_times = self.constraints.setup_times
+        if setup_times is not None:
+            if np.any(setup_times < 0):
                 raise ValueError("Setup times must be non-negative.")
 
-            if self.setup_times.shape != (num_res, num_tasks, num_tasks):
+            if setup_times.shape != (num_res, num_tasks, num_tasks):
                 shape = "(num_resources, num_tasks, num_tasks)"
                 raise ValueError(f"Setup times shape must be {shape}.")
 
             for idx, resource in enumerate(self.resources):
                 is_machine = isinstance(resource, Machine)
-                has_setup_times = np.any(self.setup_times[idx] > 0)
+                has_setup_times = np.any(setup_times[idx] > 0)
 
                 if not is_machine and has_setup_times:
                     msg = "Setup times only allowed for machines."
@@ -763,7 +781,6 @@ class ProblemData:
         tasks: Optional[list[Task]] = None,
         modes: Optional[list[Mode]] = None,
         constraints: Optional[Constraints] = None,
-        setup_times: Optional[np.ndarray] = None,
         objective: Optional[Objective] = None,
     ) -> "ProblemData":
         """
@@ -782,8 +799,6 @@ class ProblemData:
             Optional processing modes of tasks.
         constraints
             Optional constraints between tasks.
-        setup_times
-            Optional sequence-dependent setup times.
         objective
             Optional objective function.
 
@@ -801,7 +816,6 @@ class ProblemData:
         tasks = _deepcopy_if_none(tasks, self.tasks)
         modes = _deepcopy_if_none(modes, self.modes)
         constraints = _deepcopy_if_none(constraints, self.constraints)
-        setup_times = _deepcopy_if_none(setup_times, self.setup_times)
         objective = _deepcopy_if_none(objective, self.objective)
 
         return ProblemData(
@@ -810,7 +824,6 @@ class ProblemData:
             tasks=tasks,
             modes=modes,
             constraints=constraints,
-            setup_times=setup_times,
             objective=objective,
         )
 
@@ -848,15 +861,6 @@ class ProblemData:
         TODO
         """
         return self._constraints
-
-    @property
-    def setup_times(self) -> Optional[np.ndarray]:
-        """
-        Optional sequence-dependent setup times between tasks on a given
-        machine. The first index is the resource index and the last two
-        indices are the task indices.
-        """
-        return self._setup_times
 
     @property
     def objective(self) -> Objective:

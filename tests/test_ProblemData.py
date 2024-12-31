@@ -231,7 +231,6 @@ def test_problem_data_input_parameter_attributes():
             EndBeforeStart(4, 5),
         ]
     )
-    setup_times = np.ones((5, 5, 5), dtype=int)
     objective = Objective.total_flow_time()
 
     data = ProblemData(
@@ -240,7 +239,6 @@ def test_problem_data_input_parameter_attributes():
         tasks,
         modes,
         constraints,
-        setup_times,
         objective,
     )
 
@@ -249,7 +247,6 @@ def test_problem_data_input_parameter_attributes():
     assert_equal(data.tasks, tasks)
     assert_equal(data.modes, modes)
     assert_equal(data.constraints, constraints)
-    assert_equal(data.setup_times, setup_times)
     assert_equal(data.objective, objective)
 
 
@@ -317,7 +314,6 @@ def test_problem_data_default_values():
     data = ProblemData(jobs, resources, tasks, modes)
 
     assert_equal(data.constraints, Constraints())
-    assert_equal(data.setup_times, None)
     assert_equal(data.objective, Objective.makespan())
 
 
@@ -423,7 +419,7 @@ def test_problem_data_raises_when_invalid_arguments(setup_times: np.ndarray):
             [Renewable(0)],
             [Task()],
             modes=[Mode(0, [0], 1)],
-            setup_times=setup_times.astype(int),
+            constraints=Constraints(setup_times=setup_times.astype(int)),
         )
 
 
@@ -438,7 +434,7 @@ def test_problem_data_raises_capacitated_resources_and_setup_times():
             [Renewable(capacity=2)],
             [Task()],
             [Mode(0, [0], 0)],
-            setup_times=np.array([[[1]]]),
+            constraints=Constraints(setup_times=np.array([[[1]]])),
         )
 
 
@@ -481,7 +477,6 @@ def make_replace_data():
         Mode(task=1, resources=[1], duration=2),
     ]
     constraints = Constraints(end_before_start=[EndBeforeStart(0, 1)])
-    setup_times = np.zeros((2, 2, 2))
     objective = Objective.makespan()
 
     return ProblemData(
@@ -490,7 +485,6 @@ def make_replace_data():
         tasks,
         modes,
         constraints,
-        setup_times,
         objective,
     )
 
@@ -528,7 +522,6 @@ def test_problem_data_replace_no_changes():
         assert_equal(new.modes[idx].duration, data.modes[idx].duration)
 
     assert_equal(new.constraints, data.constraints)
-    assert_equal(new.setup_times, data.setup_times)
     assert_equal(new.objective, data.objective)
 
 
@@ -546,12 +539,14 @@ def test_problem_data_replace_with_changes():
             Mode(task=0, resources=[0], duration=20),
             Mode(task=1, resources=[1], duration=10),
         ],
-        constraints=Constraints(end_before_start=[EndBeforeStart(1, 0)]),
-        setup_times=np.array(
-            [
-                np.zeros((2, 2)),  # resource without setup times
-                np.ones((2, 2)),  # resource with setup times
-            ],
+        constraints=Constraints(
+            end_before_start=[EndBeforeStart(1, 0)],
+            setup_times=np.array(
+                [
+                    np.zeros((2, 2)),  # resource without setup times
+                    np.ones((2, 2)),  # resource with setup times
+                ],
+            ),
         ),
         objective=Objective.total_tardiness(),
     )
@@ -577,7 +572,6 @@ def test_problem_data_replace_with_changes():
         assert_(new.modes[idx].duration != data.modes[idx].duration)
 
     assert_(new.constraints != data.constraints)
-    assert_(not np.array_equal(new.setup_times, data.setup_times))
     assert_(new.objective != data.objective)
 
 

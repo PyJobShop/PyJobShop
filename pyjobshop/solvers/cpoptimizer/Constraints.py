@@ -69,7 +69,7 @@ class Constraints:
 
             seq_var = self._sequence_vars[idx]
 
-            if (setups := data.setup_times) is not None:
+            if (setups := data.constraints.setup_times) is not None:
                 # Use the mode's task indices to get the correct setup times.
                 tasks = [data.modes[mode].task for mode in modes]
                 matrix = setups[idx, :, :][np.ix_(tasks, tasks)]
