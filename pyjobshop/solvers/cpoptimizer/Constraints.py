@@ -52,7 +52,7 @@ class Constraints:
             mode_vars = [self._mode_vars[mode] for mode in task2modes[task]]
             model.add(cpo.alternative(self._task_vars[task], mode_vars))
 
-    def _no_overlap_and_setup_times(self):
+    def _machines_no_overlap_and_setup_times(self):
         """
         Creates the no-overlap constraints for machines, ensuring that no two
         intervals in a sequence variable are overlapping. If setup times are
@@ -223,7 +223,7 @@ class Constraints:
         """
         self._job_spans_tasks()
         self._select_one_mode()
-        self._no_overlap_and_setup_times()
+        self._machines_no_overlap_and_setup_times()
         self._renewable_capacity()
         self._non_renewable_capacity()
         self._timing_constraints()

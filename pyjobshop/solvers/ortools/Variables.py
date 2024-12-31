@@ -288,10 +288,13 @@ class Variables:
         """
         Creates a sequence variable for each machine.
         """
+        data = self._data
+        resource2modes = utils.resource2modes(data)
         variables: dict[int, SequenceVar] = {}
 
-        for idx, modes in enumerate(utils.resource2modes(self._data)):
-            if isinstance(self._data.resources[idx], Machine):
+        for idx, resource in enumerate(data.resources):
+            if isinstance(resource, Machine):
+                modes = resource2modes[idx]
                 intervals = [self.mode_vars[mode] for mode in modes]
                 variables[idx] = SequenceVar(intervals)
 

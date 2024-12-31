@@ -135,12 +135,13 @@ class Variables:
         resource2modes = utils.resource2modes(data)
         variables: dict[int, CpoSequenceVar] = {}
 
-        for resource, modes in enumerate(resource2modes):
-            if isinstance(data.resources[resource], Machine):
+        for idx, resource in enumerate(data.resources):
+            if isinstance(resource, Machine):
+                modes = resource2modes[idx]
                 intervals = [self.mode_vars[mode] for mode in modes]
                 seq_var = sequence_var(name=f"S{resource}", vars=intervals)
                 self._model.add(seq_var)
-                variables[resource] = seq_var
+                variables[idx] = seq_var
 
         return variables
 
