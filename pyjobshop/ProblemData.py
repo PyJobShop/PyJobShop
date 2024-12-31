@@ -124,27 +124,46 @@ class Job:
         self._tasks.append(idx)
 
 
-class Resource:
+class Machine:
     """
-    Simple dataclass for storing all resource-related data.
+    A machine resource is a specialized resource that only processes one task
+    at a time and can handle sequencing constraints.
+
+    Parameters
+    ----------
+    name
+        Name of the machine.
+    """
+
+    def __init__(self, name: str = ""):
+        self._name = name
+
+    @property
+    def name(self) -> str:
+        """
+        Name of the machine.
+        """
+        return self._name
+
+
+class Renewable:
+    """
+    A renewable resource that replenishes its capacity after each task
+    completion.
 
     Parameters
     ----------
     capacity
         Capacity of the resource.
-    renewable
-        Whether the resource is renewable. A renewable resource replenishes
-        its capacity after each task completion. Default ``True``.
     name
         Name of the resource.
     """
 
-    def __init__(self, capacity: int, renewable: bool = True, name: str = ""):
+    def __init__(self, capacity: int, name: str = ""):
         if capacity < 0:
             raise ValueError("Capacity must be non-negative.")
 
         self._capacity = capacity
-        self._renewable = renewable
         self._name = name
 
     @property
@@ -155,11 +174,38 @@ class Resource:
         return self._capacity
 
     @property
-    def renewable(self) -> bool:
+    def name(self) -> str:
         """
-        Whether the resource is renewable.
+        Name of the resource.
         """
-        return self._renewable
+        return self._name
+
+
+class NonRenewable:
+    """
+    A non-renewable resource that does not replenish its capacity.
+
+    Parameters
+    ----------
+    capacity
+        Capacity of the resource.
+    name
+        Name of the resource.
+    """
+
+    def __init__(self, capacity: int, name: str = ""):
+        if capacity < 0:
+            raise ValueError("Capacity must be non-negative.")
+
+        self._capacity = capacity
+        self._name = name
+
+    @property
+    def capacity(self) -> int:
+        """
+        Capacity of the resource.
+        """
+        return self._capacity
 
     @property
     def name(self) -> str:
@@ -169,29 +215,7 @@ class Resource:
         return self._name
 
 
-class Machine(Resource):
-    """
-    Simple dataclass for storing all machine-related data. A machine is a
-    specialized resource type that allows for sequencing constraints.
-
-    Parameters
-    ----------
-    name
-        Name of the machine.
-    """
-
-    def __init__(self, name: str = ""):
-        super().__init__(capacity=0, renewable=True, name=name)
-
-    @property
-    def name(self) -> str:
-        """
-        Name of the machine.
-        """
-        return self._name
-
-
-ResourceType = Union["Resource", "Machine"]
+Resource = Union[Machine, Renewable, NonRenewable]
 
 
 class Task:
@@ -509,7 +533,7 @@ class ProblemData:
     def __init__(
         self,
         jobs: list[Job],
-        resources: Sequence[ResourceType],
+        resources: Sequence[Resource],
         tasks: list[Task],
         modes: list[Mode],
         constraints: Optional[_ConstraintsType] = None,
@@ -535,14 +559,16 @@ class ProblemData:
         num_res = self.num_resources
         num_tasks = self.num_tasks
 
-        for job in self.jobs:
+        for idx, job in enumerate(self.jobs):
             if any(task < 0 or task >= num_tasks for task in job.tasks):
-                raise ValueError("Job references to unknown task index.")
+                msg = f"Job {idx} references to unknown task index."
+                raise ValueError(msg)
 
-        for task in self.tasks:
+        for idx, task in enumerate(self.tasks):
             if task.job is not None:
                 if task.job < 0 or task.job >= len(self.jobs):
-                    raise ValueError("Task references to unknown job index.")
+                    msg = f"Task {idx} references to unknown job index."
+                    raise ValueError(msg)
 
         for idx, mode in enumerate(self.modes):
             if mode.task < 0 or mode.task >= num_tasks:
@@ -553,10 +579,9 @@ class ProblemData:
                     msg = f"Mode {idx} references unknown resource index."
                     raise ValueError(msg)
 
-        without = set(range(num_tasks)) - {mode.task for mode in self.modes}
-        names = [self.tasks[idx].name or idx for idx in sorted(without)]
-        if names:  # task indices if names are not available
-            raise ValueError(f"Processing modes missing for tasks {without}.")
+        missing = set(range(num_tasks)) - {mode.task for mode in self.modes}
+        if missing := sorted(missing):
+            raise ValueError(f"Processing modes missing for tasks {missing}.")
 
         infeasible_modes = Counter()
         num_modes = Counter()
@@ -564,8 +589,9 @@ class ProblemData:
         for mode in self.modes:
             num_modes[mode.task] += 1
             infeasible_modes[mode.task] += any(
-                demand > self.resources[resource].capacity
-                for demand, resource in zip(mode.demands, mode.resources)
+                # Assumes that machines have zero capacity.
+                demand > getattr(self.resources[res], "capacity", 0)
+                for demand, res in zip(mode.demands, mode.resources)
             )
 
         for task, count in num_modes.items():
@@ -603,7 +629,7 @@ class ProblemData:
     def replace(
         self,
         jobs: Optional[list[Job]] = None,
-        resources: Optional[Sequence[ResourceType]] = None,
+        resources: Optional[Sequence[Resource]] = None,
         tasks: Optional[list[Task]] = None,
         modes: Optional[list[Mode]] = None,
         constraints: Optional[_ConstraintsType] = None,
@@ -666,7 +692,7 @@ class ProblemData:
         return self._jobs
 
     @property
-    def resources(self) -> Sequence[ResourceType]:
+    def resources(self) -> Sequence[Resource]:
         """
         Returns the resource data of this problem instance.
         """

@@ -1,4 +1,3 @@
-import bisect
 from collections import defaultdict
 from itertools import product
 
@@ -42,10 +41,40 @@ def resource2modes(data: ProblemData) -> list[list[int]]:
         The list of mode indices for each resource.
     """
     result: list[list[int]] = [[] for _ in range(data.num_resources)]
+
     for idx, mode in enumerate(data.modes):
         for resource in mode.resources:
-            bisect.insort(result[resource], idx)
+            result[resource].append(idx)
+
     return result
+
+
+def resource2modes_demands(
+    data: ProblemData,
+) -> tuple[list[list[int]], list[list[int]]]:
+    """
+    Returns the list of mode indices and the list of corresponding demands
+    for each resource.
+
+    Parameters
+    ----------
+    data
+        The problem data instance.
+
+    Returns
+    -------
+    tuple[list[list[int]], list[list[int]]]
+        The list of mode indices and corresponding demands for each resource.
+    """
+    modes: list[list[int]] = [[] for _ in range(data.num_resources)]
+    demands: list[list[int]] = [[] for _ in range(data.num_resources)]
+
+    for idx, mode in enumerate(data.modes):
+        for resource, demand in zip(mode.resources, mode.demands):
+            modes[resource].append(idx)
+            demands[resource].append(demand)
+
+    return modes, demands
 
 
 def task2modes(data: ProblemData) -> list[list[int]]:
@@ -63,8 +92,10 @@ def task2modes(data: ProblemData) -> list[list[int]]:
         The list of mode indices for each task.
     """
     result: list[list[int]] = [[] for _ in range(data.num_tasks)]
+
     for idx, mode in enumerate(data.modes):
-        bisect.insort(result[mode.task], idx)
+        result[mode.task].append(idx)
+
     return result
 
 

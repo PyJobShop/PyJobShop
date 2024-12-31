@@ -7,9 +7,10 @@ from pyjobshop.ProblemData import (
     Job,
     Machine,
     Mode,
+    NonRenewable,
     Objective,
     ProblemData,
-    Resource,
+    Renewable,
     Task,
 )
 from pyjobshop.Solution import Solution, TaskData
@@ -88,7 +89,7 @@ def test_from_data():
     """
     data = ProblemData(
         [Job(due_date=1)],
-        [Resource(1), Machine()],
+        [Machine(), Renewable(1), NonRenewable(0)],
         [Task(), Task(job=0), Task()],
         modes=[Mode(0, [0], 1), Mode(1, [1], 2), Mode(2, [1], 2)],
         constraints={
@@ -110,8 +111,9 @@ def test_from_data():
         },
         setup_times=np.array(
             [
-                np.zeros((3, 3)),  # resource
                 np.ones((3, 3)),  # machine
+                np.zeros((3, 3)),  # renewable
+                np.zeros((3, 3)),  # non-renewable
             ]
         ),
         objective=Objective(
@@ -176,19 +178,6 @@ def test_add_job_attributes():
     assert_equal(job.name, "job")
 
 
-def test_add_resource_attributes():
-    """
-    Tests that adding a resource to the model correctly sets the attributes.
-    """
-    model = Model()
-
-    resource = model.add_resource(capacity=1, renewable=False, name="resource")
-
-    assert_equal(resource.capacity, 1)
-    assert_equal(resource.renewable, False)
-    assert_equal(resource.name, "resource")
-
-
 def test_add_machine_attributes():
     """
     Tests that adding a machine to the model correctly sets the attributes.
@@ -197,6 +186,30 @@ def test_add_machine_attributes():
 
     machine = model.add_machine(name="machine")
     assert_equal(machine.name, "machine")
+
+
+def test_add_renewable_resource_attributes():
+    """
+    Tests that adding a resource to the model correctly sets the attributes.
+    """
+    model = Model()
+
+    renewable = model.add_renewable(capacity=1, name="resource")
+
+    assert_equal(renewable.capacity, 1)
+    assert_equal(renewable.name, "resource")
+
+
+def test_add_non_renewable_resource_attributes():
+    """
+    Tests that adding a resource to the model correctly sets the attributes.
+    """
+    model = Model()
+
+    non_renewable = model.add_non_renewable(capacity=1, name="resource")
+
+    assert_equal(non_renewable.capacity, 1)
+    assert_equal(non_renewable.name, "resource")
 
 
 def test_add_task_attributes():

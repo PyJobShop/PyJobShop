@@ -1,5 +1,4 @@
 from dataclasses import dataclass, field
-from typing import Optional
 
 from ortools.sat.python.cp_model import (
     BoolVarT,
@@ -94,7 +93,7 @@ class ModeVar:
 class SequenceVar:
     """
     Represents a sequence of interval variables for all modes that use this
-    resource. Relevant sequence variables are lazily generated when activated
+    machine. Relevant sequence variables are lazily generated when activated
     by constraints that call the ``activate`` method.
 
     Parameters
@@ -107,7 +106,7 @@ class SequenceVar:
         Keys are tuples of indices.
     is_active
         A boolean that indicates whether the sequence is active, meaning that a
-        circuit constraint must be added for this resource. Default ``False``.
+        circuit constraint must be added for this machine. Default ``False``.
     """
 
     mode_vars: list[ModeVar]
@@ -169,7 +168,7 @@ class Variables:
         return self._mode_vars
 
     @property
-    def sequence_vars(self) -> list[Optional[SequenceVar]]:
+    def sequence_vars(self) -> dict[int, SequenceVar]:
         """
         Returns the sequence variables.
         """
@@ -243,9 +242,7 @@ class Variables:
 
         return variables
 
-    def _make_mode_variables(
-        self,
-    ) -> list[ModeVar]:
+    def _make_mode_variables(self) -> list[ModeVar]:
         """
         Creates an optional interval variable for mode.
         """
@@ -286,19 +283,19 @@ class Variables:
 
         return variables
 
-    def _make_sequence_variables(self) -> list[Optional[SequenceVar]]:
+    def _make_sequence_variables(self) -> dict[int, SequenceVar]:
         """
-        Creates a sequence variable for each uncapacitated resource. Resources
-        with capacity constraints do not get a sequence variable.
+        Creates a sequence variable for each machine.
         """
-        variables: list[Optional[SequenceVar]] = []
+        data = self._data
+        resource2modes = utils.resource2modes(data)
+        variables: dict[int, SequenceVar] = {}
 
-        for idx, modes in enumerate(utils.resource2modes(self._data)):
-            if isinstance(self._data.resources[idx], Machine):
+        for idx, resource in enumerate(data.resources):
+            if isinstance(resource, Machine):
+                modes = resource2modes[idx]
                 intervals = [self.mode_vars[mode] for mode in modes]
-                variables.append(SequenceVar(intervals))
-            else:
-                variables.append(None)
+                variables[idx] = SequenceVar(intervals)
 
         return variables
 

@@ -9,10 +9,11 @@ from pyjobshop.ProblemData import (
     Job,
     Machine,
     Mode,
+    NonRenewable,
     Objective,
     ProblemData,
+    Renewable,
     Resource,
-    ResourceType,
     Task,
 )
 from pyjobshop.Result import Result
@@ -27,7 +28,7 @@ class Model:
 
     def __init__(self):
         self._jobs: list[Job] = []
-        self._resources: list[ResourceType] = []
+        self._resources: list[Resource] = []
         self._tasks: list[Task] = []
         self._modes: list[Mode] = []
         self._constraints: dict[tuple[int, int], list[Constraint]] = (
@@ -49,7 +50,7 @@ class Model:
         return self._jobs
 
     @property
-    def resources(self) -> list[ResourceType]:
+    def resources(self) -> list[Resource]:
         """
         Returns the list of resources in the model.
         """
@@ -95,10 +96,14 @@ class Model:
         for resource in data.resources:
             if isinstance(resource, Machine):
                 model.add_machine(name=resource.name)
-            elif isinstance(resource, Resource):
-                model.add_resource(
+            elif isinstance(resource, Renewable):
+                model.add_renewable(
                     capacity=resource.capacity,
-                    renewable=resource.renewable,
+                    name=resource.name,
+                )
+            elif isinstance(resource, NonRenewable):
+                model.add_non_renewable(
+                    capacity=resource.capacity,
                     name=resource.name,
                 )
             else:
@@ -238,33 +243,6 @@ class Model:
 
         return job
 
-    def add_resource(
-        self, capacity: int, renewable: bool = True, name: str = ""
-    ) -> Resource:
-        """
-        Adds a resource to the model.
-
-        Parameters
-        ----------
-        capacity
-            The capacity of the resource.
-        renewable
-            Whether the resource is renewable.
-        name
-            Name of the resource.
-
-        Returns
-        -------
-        Resource
-            The created resource.
-        """
-        resource = Resource(capacity=capacity, renewable=renewable, name=name)
-
-        self._id2resource[id(resource)] = len(self.resources)
-        self._resources.append(resource)
-
-        return resource
-
     def add_machine(self, name: str = "") -> Machine:
         """
         Adds a machine to the model.
@@ -285,6 +263,52 @@ class Model:
         self._resources.append(machine)
 
         return machine
+
+    def add_renewable(self, capacity: int, name: str = "") -> Renewable:
+        """
+        Adds a renewable resource to the model.
+
+        Parameters
+        ----------
+        capacity
+            Capacity of the resource.
+        name
+            Name of the resource.
+
+        Returns
+        -------
+        Renewable
+            The created renewable resource.
+        """
+        resource = Renewable(capacity=capacity, name=name)
+
+        self._id2resource[id(resource)] = len(self.resources)
+        self._resources.append(resource)
+
+        return resource
+
+    def add_non_renewable(self, capacity: int, name: str = "") -> NonRenewable:
+        """
+        Adds a non-renewable resource to the model.
+
+        Parameters
+        ----------
+        capacity
+            Capacity of the resource.
+        name
+            Name of the resource.
+
+        Returns
+        -------
+        NonRenewable
+            The created non-renewable resource.
+        """
+        resource = NonRenewable(capacity=capacity, name=name)
+
+        self._id2resource[id(resource)] = len(self.resources)
+        self._resources.append(resource)
+
+        return resource
 
     def add_task(
         self,
@@ -344,7 +368,7 @@ class Model:
     def add_mode(
         self,
         task: Task,
-        resources: Union[ResourceType, Sequence[ResourceType]],
+        resources: Union[Resource, Sequence[Resource]],
         duration: int,
         demands: Optional[Union[int, list[int]]] = None,
     ) -> Mode:
@@ -364,7 +388,7 @@ class Model:
             demands are initialized as list of zeros with the same length as
             the resources.
         """
-        if isinstance(resources, (Resource, Machine)):
+        if isinstance(resources, (Machine, Renewable, NonRenewable)):
             resources = [resources]
 
         if isinstance(demands, int):
