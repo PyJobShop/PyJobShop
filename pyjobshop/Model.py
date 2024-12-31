@@ -13,7 +13,7 @@ from pyjobshop.ProblemData import (
     Objective,
     ProblemData,
     Renewable,
-    ResourceType,
+    Resource,
     Task,
 )
 from pyjobshop.Result import Result
@@ -28,7 +28,7 @@ class Model:
 
     def __init__(self):
         self._jobs: list[Job] = []
-        self._resources: list[ResourceType] = []
+        self._resources: list[Resource] = []
         self._tasks: list[Task] = []
         self._modes: list[Mode] = []
         self._constraints: dict[tuple[int, int], list[Constraint]] = (
@@ -51,7 +51,7 @@ class Model:
         return self._jobs
 
     @property
-    def resources(self) -> list[ResourceType]:
+    def resources(self) -> list[Resource]:
         """
         Returns the list of resources in the model.
         """
@@ -371,7 +371,7 @@ class Model:
     def add_mode(
         self,
         task: Task,
-        resources: Union[ResourceType, Sequence[ResourceType]],
+        resources: Union[Resource, Sequence[Resource]],
         duration: int,
         demands: Optional[Union[int, list[int]]] = None,
     ) -> Mode:

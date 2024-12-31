@@ -215,7 +215,7 @@ class NonRenewable:
         return self._name
 
 
-ResourceType = Union[Machine, Renewable, NonRenewable]
+Resource = Union[Machine, Renewable, NonRenewable]
 
 
 class Task:
@@ -535,7 +535,7 @@ class ProblemData:
     def __init__(
         self,
         jobs: list[Job],
-        resources: Sequence[ResourceType],
+        resources: Sequence[Resource],
         tasks: list[Task],
         modes: list[Mode],
         constraints: Optional[_ConstraintsType] = None,
@@ -635,7 +635,7 @@ class ProblemData:
     def replace(
         self,
         jobs: Optional[list[Job]] = None,
-        resources: Optional[Sequence[ResourceType]] = None,
+        resources: Optional[Sequence[Resource]] = None,
         tasks: Optional[list[Task]] = None,
         modes: Optional[list[Mode]] = None,
         constraints: Optional[_ConstraintsType] = None,
@@ -703,7 +703,7 @@ class ProblemData:
         return self._jobs
 
     @property
-    def resources(self) -> Sequence[ResourceType]:
+    def resources(self) -> Sequence[Resource]:
         """
         Returns the resource data of this problem instance.
         """
