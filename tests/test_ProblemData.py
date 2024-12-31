@@ -87,6 +87,14 @@ def test_job_attributes_raises_invalid_parameters(
         )
 
 
+def test_machine_attributes():
+    """
+    Tests that the attributes of the Machine class are set correctly.
+    """
+    machine = Machine(name="Machine")
+    assert_equal(machine.name, "Machine")
+
+
 def test_renewable_attributes():
     """
     Tests that the attributes of the Renewable class are set correctly.
@@ -99,6 +107,15 @@ def test_renewable_attributes():
     renewable = Renewable(capacity=1, name="TestRenewable")
     assert_equal(renewable.capacity, 1)
     assert_equal(renewable.name, "TestRenewable")
+
+
+def test_renewable_raises_invalid_capacity():
+    """
+    Tests that a ValueError is raised when an invalid capacity is passed
+    to the Renewable class.
+    """
+    with assert_raises(ValueError):
+        Renewable(capacity=-1)  # negative
 
 
 def test_non_renewable_attributes():
@@ -115,42 +132,13 @@ def test_non_renewable_attributes():
     assert_equal(non_renewable.name, "TestNonRenewable")
 
 
-@pytest.mark.parametrize(
-    "capacity",
-    [
-        (-1),  # capacity < 0
-    ],
-)
-def test_renewable_raises_invalid_parameters(capacity: int):
+def test_non_renewable_raises_invalid_capacity():
     """
-    Tests that a ValueError is raised when invalid parameters are passed to
-    the Renewable class.
+    Tests that a ValueError is raised when an invalid capacity is passed
+    to the Renewable class.
     """
     with assert_raises(ValueError):
-        Renewable(capacity=capacity)
-
-
-@pytest.mark.parametrize(
-    "capacity",
-    [
-        (-1),  # capacity < 0
-    ],
-)
-def test_non_renwable_raises_invalid_parameters(capacity: int):
-    """
-    Tests that a ValueError is raised when invalid parameters are passed to
-    the NonRenewable class.
-    """
-    with assert_raises(ValueError):
-        NonRenewable(capacity=capacity)
-
-
-def test_machine_attributes():
-    """
-    Tests that the attributes of the Machine class are set correctly.
-    """
-    machine = Machine(name="Machine")
-    assert_equal(machine.name, "Machine")
+        NonRenewable(capacity=-1)  # negative
 
 
 def test_task_attributes():

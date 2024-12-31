@@ -559,14 +559,16 @@ class ProblemData:
         num_res = self.num_resources
         num_tasks = self.num_tasks
 
-        for job in self.jobs:
+        for idx, job in enumerate(self.jobs):
             if any(task < 0 or task >= num_tasks for task in job.tasks):
-                raise ValueError("Job references to unknown task index.")
+                msg = f"Job {idx} references to unknown task index."
+                raise ValueError(msg)
 
-        for task in self.tasks:
+        for idx, task in enumerate(self.tasks):
             if task.job is not None:
                 if task.job < 0 or task.job >= len(self.jobs):
-                    raise ValueError("Task references to unknown job index.")
+                    msg = f"Task {idx} references to unknown job index."
+                    raise ValueError(msg)
 
         for idx, mode in enumerate(self.modes):
             if mode.task < 0 or mode.task >= num_tasks:
@@ -577,10 +579,9 @@ class ProblemData:
                     msg = f"Mode {idx} references unknown resource index."
                     raise ValueError(msg)
 
-        without = set(range(num_tasks)) - {mode.task for mode in self.modes}
-        names = [self.tasks[idx].name or idx for idx in sorted(without)]
-        if names:  # task indices if names are not available
-            raise ValueError(f"Processing modes missing for tasks {without}.")
+        missing = set(range(num_tasks)) - {mode.task for mode in self.modes}
+        if missing := sorted(missing):
+            raise ValueError(f"Processing modes missing for tasks {missing}.")
 
         infeasible_modes = Counter()
         num_modes = Counter()

@@ -7,6 +7,7 @@ from pyjobshop.ProblemData import (
     Job,
     Machine,
     Mode,
+    NonRenewable,
     Objective,
     ProblemData,
     Renewable,
@@ -88,7 +89,7 @@ def test_from_data():
     """
     data = ProblemData(
         [Job(due_date=1)],
-        [Renewable(1), Machine()],
+        [Machine(), Renewable(1), NonRenewable(0)],
         [Task(), Task(job=0), Task()],
         modes=[Mode(0, [0], 1), Mode(1, [1], 2), Mode(2, [1], 2)],
         constraints={
@@ -192,10 +193,10 @@ def test_add_renewable_resource_attributes():
     """
     model = Model()
 
-    resource = model.add_renewable(capacity=1, name="resource")
+    renewable = model.add_renewable(capacity=1, name="resource")
 
-    assert_equal(resource.capacity, 1)
-    assert_equal(resource.name, "resource")
+    assert_equal(renewable.capacity, 1)
+    assert_equal(renewable.name, "resource")
 
 
 def test_add_non_renewable_resource_attributes():
@@ -204,10 +205,10 @@ def test_add_non_renewable_resource_attributes():
     """
     model = Model()
 
-    resource = model.add_non_renewable(capacity=1, name="resource")
+    non_renewable = model.add_non_renewable(capacity=1, name="resource")
 
-    assert_equal(resource.capacity, 1)
-    assert_equal(resource.name, "resource")
+    assert_equal(non_renewable.capacity, 1)
+    assert_equal(non_renewable.name, "resource")
 
 
 def test_add_task_attributes():

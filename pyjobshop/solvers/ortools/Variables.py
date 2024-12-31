@@ -242,9 +242,7 @@ class Variables:
 
         return variables
 
-    def _make_mode_variables(
-        self,
-    ) -> list[ModeVar]:
+    def _make_mode_variables(self) -> list[ModeVar]:
         """
         Creates an optional interval variable for mode.
         """
