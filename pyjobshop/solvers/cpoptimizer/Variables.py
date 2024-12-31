@@ -1,5 +1,3 @@
-from typing import Optional
-
 from docplex.cp.expression import (
     CpoIntervalVar,
     CpoSequenceVar,
@@ -9,6 +7,7 @@ from docplex.cp.expression import (
 from docplex.cp.model import CpoModel
 
 import pyjobshop.solvers.utils as utils
+from pyjobshop.constants import MAX_VALUE
 from pyjobshop.ProblemData import Machine, ProblemData
 from pyjobshop.Solution import Solution
 
@@ -49,7 +48,7 @@ class Variables:
         return self._mode_vars
 
     @property
-    def sequence_vars(self) -> list[Optional[CpoSequenceVar]]:
+    def sequence_vars(self) -> dict[int, CpoSequenceVar]:
         """
         Returns the sequence variables.
         """
@@ -65,7 +64,7 @@ class Variables:
             var = interval_var(name=f"J{job}")
 
             var.set_start_min(job.release_date)
-            var.set_end_max(min(job.deadline, self._data.horizon))
+            var.set_end_max(min(job.deadline, MAX_VALUE))
 
             variables.append(var)
             self._model.add(var)
@@ -84,16 +83,14 @@ class Variables:
             var = interval_var(optional=task.optional, name=f"T{task}")
 
             var.set_start_min(task.earliest_start)
-            var.set_start_max(min(task.latest_start, data.horizon))
+            var.set_start_max(min(task.latest_start, MAX_VALUE))
 
             var.set_end_min(task.earliest_end)
-            var.set_end_max(min(task.latest_end, data.horizon))
+            var.set_end_max(min(task.latest_end, MAX_VALUE))
 
             var.set_size_min(min(task_durations[idx]))
             var.set_size_max(
-                max(task_durations[idx])
-                if task.fixed_duration
-                else data.horizon
+                max(task_durations[idx]) if task.fixed_duration else MAX_VALUE
             )
 
             variables.append(var)
@@ -113,39 +110,37 @@ class Variables:
             task = data.tasks[mode.task]
 
             var.set_start_min(task.earliest_start)
-            var.set_start_max(min(task.latest_start, data.horizon))
+            var.set_start_max(min(task.latest_start, MAX_VALUE))
 
             var.set_end_min(task.earliest_end)
-            var.set_end_max(min(task.latest_end, data.horizon))
+            var.set_end_max(min(task.latest_end, MAX_VALUE))
 
             if task.fixed_duration:
                 var.set_size(mode.duration)
             else:
                 var.set_size_min(mode.duration)
-                var.set_size_max(data.horizon)
+                var.set_size_max(MAX_VALUE)
 
             variables.append(var)
             self._model.add(var)
 
         return variables
 
-    def _make_sequence_variables(self) -> list[Optional[CpoSequenceVar]]:
+    def _make_sequence_variables(self) -> dict[int, CpoSequenceVar]:
         """
-        Creates a sequence variable for each machine, and no variable for
-        general resources.
+        Creates a sequence variable for each machine.
         """
         data = self._data
         resource2modes = utils.resource2modes(data)
-        variables: list[Optional[CpoSequenceVar]] = []
+        variables: dict[int, CpoSequenceVar] = {}
 
-        for resource, modes in enumerate(resource2modes):
-            if not isinstance(data.resources[resource], Machine):
-                variables.append(None)
-            else:
+        for idx, resource in enumerate(data.resources):
+            if isinstance(resource, Machine):
+                modes = resource2modes[idx]
                 intervals = [self.mode_vars[mode] for mode in modes]
                 seq_var = sequence_var(name=f"S{resource}", vars=intervals)
                 self._model.add(seq_var)
-                variables.append(seq_var)
+                variables[idx] = seq_var
 
         return variables
 

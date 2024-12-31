@@ -1,16 +1,16 @@
 import numpy as np
 from numpy.testing import assert_equal
 
-from pyjobshop.constants import MAX_VALUE
 from pyjobshop.Model import Model
 from pyjobshop.ProblemData import (
     Constraint,
     Job,
     Machine,
     Mode,
+    NonRenewable,
     Objective,
     ProblemData,
-    Resource,
+    Renewable,
     Task,
 )
 from pyjobshop.Solution import Solution, TaskData
@@ -44,7 +44,6 @@ def test_model_to_data():
     model.add_setup_time(machine1, task1, task2, 3)
     model.add_setup_time(machine2, task1, task2, 4)
 
-    model.set_horizon(100)
     model.set_objective(weight_total_flow_time=1)
 
     data = model.data()
@@ -80,7 +79,6 @@ def test_model_to_data():
         },
     )
     assert_equal(data.setup_times, [[[0, 3], [0, 0]], [[0, 4], [0, 0]]])
-    assert_equal(data.horizon, 100)
     assert_equal(data.objective, Objective.total_flow_time())
 
 
@@ -91,7 +89,7 @@ def test_from_data():
     """
     data = ProblemData(
         [Job(due_date=1)],
-        [Resource(1), Machine()],
+        [Machine(), Renewable(1), NonRenewable(0)],
         [Task(), Task(job=0), Task()],
         modes=[Mode(0, [0], 1), Mode(1, [1], 2), Mode(2, [1], 2)],
         constraints={
@@ -113,11 +111,11 @@ def test_from_data():
         },
         setup_times=np.array(
             [
-                np.zeros((3, 3)),  # resource
                 np.ones((3, 3)),  # machine
+                np.zeros((3, 3)),  # renewable
+                np.zeros((3, 3)),  # non-renewable
             ]
         ),
-        horizon=100,
         objective=Objective(
             weight_makespan=2,
             weight_tardy_jobs=3,
@@ -138,7 +136,6 @@ def test_from_data():
     assert_equal(model_data.modes, data.modes)
     assert_equal(model_data.constraints, data.constraints)
     assert_equal(model_data.setup_times, data.setup_times)
-    assert_equal(model_data.horizon, data.horizon)
     assert_equal(model_data.objective, data.objective)
 
 
@@ -161,7 +158,6 @@ def test_model_to_data_default_values():
     assert_equal(data.modes, [Mode(task=0, resources=[0], duration=1)])
     assert_equal(data.constraints, {})
     assert_equal(data.setup_times, None)
-    assert_equal(data.horizon, MAX_VALUE)
     assert_equal(data.objective, Objective.makespan())
 
 
@@ -182,19 +178,6 @@ def test_add_job_attributes():
     assert_equal(job.name, "job")
 
 
-def test_add_resource_attributes():
-    """
-    Tests that adding a resource to the model correctly sets the attributes.
-    """
-    model = Model()
-
-    resource = model.add_resource(capacity=1, renewable=False, name="resource")
-
-    assert_equal(resource.capacity, 1)
-    assert_equal(resource.renewable, False)
-    assert_equal(resource.name, "resource")
-
-
 def test_add_machine_attributes():
     """
     Tests that adding a machine to the model correctly sets the attributes.
@@ -203,6 +186,30 @@ def test_add_machine_attributes():
 
     machine = model.add_machine(name="machine")
     assert_equal(machine.name, "machine")
+
+
+def test_add_renewable_resource_attributes():
+    """
+    Tests that adding a resource to the model correctly sets the attributes.
+    """
+    model = Model()
+
+    renewable = model.add_renewable(capacity=1, name="resource")
+
+    assert_equal(renewable.capacity, 1)
+    assert_equal(renewable.name, "resource")
+
+
+def test_add_non_renewable_resource_attributes():
+    """
+    Tests that adding a resource to the model correctly sets the attributes.
+    """
+    model = Model()
+
+    non_renewable = model.add_non_renewable(capacity=1, name="resource")
+
+    assert_equal(non_renewable.capacity, 1)
+    assert_equal(non_renewable.name, "resource")
 
 
 def test_add_task_attributes():

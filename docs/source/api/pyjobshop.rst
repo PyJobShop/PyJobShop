@@ -18,10 +18,13 @@ PyJobShop
     .. autoclass:: Job
        :members:
 
-    .. autoclass:: Resource
+    .. autoclass:: Machine
        :members:
 
-    .. autoclass:: Machine
+    .. autoclass:: Renewable
+       :members:
+
+    .. autoclass:: NonRenewable
        :members:
 
     .. autoclass:: Task

@@ -4,7 +4,13 @@ from docplex.cp.expression import interval_var
 from docplex.cp.model import CpoModel
 
 import pyjobshop.solvers.utils as utils
-from pyjobshop.ProblemData import Constraint, Machine, ProblemData
+from pyjobshop.ProblemData import (
+    Constraint,
+    Machine,
+    NonRenewable,
+    ProblemData,
+    Renewable,
+)
 
 from .utils import presence_of
 from .Variables import Variables
@@ -33,15 +39,15 @@ class Constraints:
 
         for idx, job in enumerate(data.jobs):
             job_var = self._job_vars[idx]
-            job_task_vars = [self._task_vars[task] for task in job.tasks]
+            task_vars = [self._task_vars[task] for task in job.tasks]
 
             if all(data.tasks[task].optional for task in job.tasks):
                 # ``span`` requires at least one present interval variable
                 # because the job interval is always present, so we add a
                 # present dummy interval to be sure this is true.
-                job_task_vars += [interval_var(name="dummy")]
+                task_vars += [interval_var(name="dummy")]
 
-            model.add(cpo.span(job_var, job_task_vars))
+            model.add(cpo.span(job_var, task_vars))
 
     def _select_one_mode(self):
         """
@@ -55,7 +61,7 @@ class Constraints:
             mode_vars = [self._mode_vars[mode] for mode in task2modes[task]]
             model.add(cpo.alternative(self._task_vars[task], mode_vars))
 
-    def _no_overlap_and_setup_times(self):
+    def _machines_no_overlap_and_setup_times(self):
         """
         Creates the no-overlap constraints for machines, ensuring that no two
         intervals in a sequence variable are overlapping. If setup times are
@@ -69,52 +75,53 @@ class Constraints:
                 continue
 
             if not (modes := resource2modes[idx]):
-                continue  # no modes for this machine
+                continue  # skip because cpo warns if there are no modes
 
             seq_var = self._sequence_vars[idx]
-
-            if seq_var is None:
-                msg = f"No sequence var found for resource {idx}."
-                raise ValueError(msg)
 
             if (setups := data.setup_times) is not None:
                 # Use the mode's task indices to get the correct setup times.
                 tasks = [data.modes[mode].task for mode in modes]
                 matrix = setups[idx, :, :][np.ix_(tasks, tasks)]
-                if np.any(matrix > 0):
-                    model.add(cpo.no_overlap(seq_var, matrix))
+                matrix = matrix if np.any(matrix > 0) else None
             else:
-                model.add(cpo.no_overlap(seq_var))
+                matrix = None
 
-    def _resource_capacity(self):
+            model.add(cpo.no_overlap(seq_var, matrix))
+
+    def _renewable_capacity(self):
         """
-        Creates constraints for the resource capacity.
+        Creates capacity constraints for the renewable resources.
         """
         model, data = self._model, self._data
-
-        # Map resources to the relevant modes and their demands.
-        mapper = [[] for _ in range(data.num_resources)]
-        for idx, mode in enumerate(data.modes):
-            for resource, demand in zip(mode.resources, mode.demands):
-                if demand > 0:
-                    mapper[resource].append((idx, demand))
+        res2modes, res2demands = utils.resource2modes_demands(data)
 
         for idx, resource in enumerate(data.resources):
-            if isinstance(resource, Machine):
-                continue  # handled by no-overlap constraints
+            if not isinstance(resource, Renewable):
+                continue
 
-            if resource.renewable:
-                pulses = [
-                    cpo.pulse(self._mode_vars[mode], demand)
-                    for (mode, demand) in mapper[idx]
-                ]
-                model.add(model.sum(pulses) <= resource.capacity)
-            else:
-                usage = [
-                    presence_of(self._mode_vars[mode]) * demand
-                    for (mode, demand) in mapper[idx]
-                ]
-                model.add(model.sum(usage) <= resource.capacity)
+            pulses = [
+                cpo.pulse(self._mode_vars[mode], demand)
+                for (mode, demand) in zip(res2modes[idx], res2demands[idx])
+            ]
+            model.add(model.sum(pulses) <= resource.capacity)
+
+    def _non_renewable_capacity(self):
+        """
+        Creates capacity constraints for the non-renewable resources.
+        """
+        model, data = self._model, self._data
+        res2modes, res2demands = utils.resource2modes_demands(data)
+
+        for idx, resource in enumerate(data.resources):
+            if not isinstance(resource, NonRenewable):
+                continue
+
+            usage = [
+                cpo.presence_of(self._mode_vars[mode]) * demand
+                for (mode, demand) in zip(res2modes[idx], res2demands[idx])
+            ]
+            model.add(model.sum(usage) <= resource.capacity)
 
     def _timing_constraints(self):
         """
@@ -152,36 +159,6 @@ class Constraints:
 
             if Constraint.END_BEFORE_END in constraints:
                 model.add(cpo.end_before_end(task1, task2))
-
-    def _consecutive_constraints(self):
-        """
-        Creates the consecutive constraints.
-        """
-        model, data = self._model, self._data
-
-        for (task1, task2), constraints in data.constraints.items():
-            if Constraint.CONSECUTIVE not in constraints:
-                continue
-
-            # Find the modes of the task that have intersecting resources,
-            # because we need to enforce consecutive constraints on them.
-            intersecting = utils.find_modes_with_intersecting_resources(
-                data, task1, task2
-            )
-            for mode1, mode2, resources in intersecting:
-                for resource in resources:
-                    if not isinstance(data.resources[resource], Machine):
-                        continue  # skip sequencing on non-machine resources
-
-                    seq_var = self._sequence_vars[resource]
-                    if seq_var is None:
-                        msg = f"No sequence var found for resource {resource}."
-                        raise ValueError(msg)
-
-                    var1 = self._mode_vars[mode1]
-                    var2 = self._mode_vars[mode2]
-
-                    model.add(cpo.previous(seq_var, var1, var2))
 
     def _identical_and_different_resource_constraints(self):
         """
@@ -240,15 +217,42 @@ class Constraints:
             present2 = sum(presence_of(self._task_vars[idx]) for idx in idcs2)
             model.add(present1 <= present2)
 
+    def _consecutive_constraints(self):
+        """
+        Creates the consecutive constraints.
+        """
+        model, data = self._model, self._data
+
+        for (task1, task2), constraints in data.constraints.items():
+            if Constraint.CONSECUTIVE not in constraints:
+                continue
+
+            # Find the modes of the task that have intersecting resources,
+            # because we need to enforce consecutive constraints on them.
+            intersecting = utils.find_modes_with_intersecting_resources(
+                data, task1, task2
+            )
+            for mode1, mode2, resources in intersecting:
+                for resource in resources:
+                    if not isinstance(data.resources[resource], Machine):
+                        continue  # skip sequencing on non-machine resources
+
+                    seq_var = self._sequence_vars[resource]
+                    var1 = self._mode_vars[mode1]
+                    var2 = self._mode_vars[mode2]
+
+                    model.add(cpo.previous(seq_var, var1, var2))
+
     def add_constraints(self):
         """
         Adds all the constraints to the CP model.
         """
         self._job_spans_tasks()
         self._select_one_mode()
-        self._no_overlap_and_setup_times()
-        self._resource_capacity()
+        self._machines_no_overlap_and_setup_times()
+        self._renewable_capacity()
+        self._non_renewable_capacity()
         self._timing_constraints()
-        self._consecutive_constraints()
         self._identical_and_different_resource_constraints()
         self._if_then_constraints()
+        self._consecutive_constraints()

@@ -9,9 +9,10 @@ from pyjobshop.ProblemData import (
     Job,
     Machine,
     Mode,
+    NonRenewable,
     Objective,
     ProblemData,
-    Resource,
+    Renewable,
     Task,
 )
 from pyjobshop.Solution import TaskData as TaskData
@@ -86,47 +87,58 @@ def test_job_attributes_raises_invalid_parameters(
         )
 
 
-def test_resource_attributes():
-    """
-    Tests that the attributes of the Resource class are set correctly.
-    """
-    # Let's first test the default values.
-    resource = Resource(capacity=1)
-    assert_equal(resource.renewable, True)
-    assert_equal(resource.name, "")
-
-    # Now test with some values.
-    resource = Resource(capacity=1, renewable=False, name="TestResource")
-    assert_equal(resource.capacity, 1)
-    assert_equal(resource.renewable, False)
-    assert_equal(resource.name, "TestResource")
-
-
-@pytest.mark.parametrize(
-    "capacity",
-    [
-        (-1),  # capacity < 0
-    ],
-)
-def test_resource_raises_invalid_parameters(capacity: int):
-    """
-    Tests that a ValueError is raised when invalid parameters are passed to
-    the Resource class.
-    """
-    with assert_raises(ValueError):
-        Resource(capacity=capacity)
-
-
 def test_machine_attributes():
     """
     Tests that the attributes of the Machine class are set correctly.
     """
     machine = Machine(name="Machine")
-
-    # Inherited attributes from Resource, but unsused.
-    assert_equal(machine.capacity, 0)
-    assert_equal(machine.renewable, True)
     assert_equal(machine.name, "Machine")
+
+
+def test_renewable_attributes():
+    """
+    Tests that the attributes of the Renewable class are set correctly.
+    """
+    # Let's first test the default values.
+    renewable = Renewable(capacity=1)
+    assert_equal(renewable.name, "")
+
+    # Now test with some values.
+    renewable = Renewable(capacity=1, name="TestRenewable")
+    assert_equal(renewable.capacity, 1)
+    assert_equal(renewable.name, "TestRenewable")
+
+
+def test_renewable_raises_invalid_capacity():
+    """
+    Tests that a ValueError is raised when an invalid capacity is passed
+    to the Renewable class.
+    """
+    with assert_raises(ValueError):
+        Renewable(capacity=-1)  # negative
+
+
+def test_non_renewable_attributes():
+    """
+    Tests that the attributes of the NonRenewable class are set correctly.
+    """
+    # Let's first test the default values.
+    non_renewable = NonRenewable(capacity=1)
+    assert_equal(non_renewable.name, "")
+
+    # Now test with some values.
+    non_renewable = NonRenewable(capacity=1, name="TestNonRenewable")
+    assert_equal(non_renewable.capacity, 1)
+    assert_equal(non_renewable.name, "TestNonRenewable")
+
+
+def test_non_renewable_raises_invalid_capacity():
+    """
+    Tests that a ValueError is raised when an invalid capacity is passed
+    to the Renewable class.
+    """
+    with assert_raises(ValueError):
+        NonRenewable(capacity=-1)  # negative
 
 
 def test_task_attributes():
@@ -239,7 +251,6 @@ def test_problem_data_input_parameter_attributes():
         key: [Constraint.END_BEFORE_START] for key in ((0, 1), (2, 3), (4, 5))
     }
     setup_times = np.ones((5, 5, 5), dtype=int)
-    horizon = 100
     objective = Objective.total_flow_time()
 
     data = ProblemData(
@@ -249,7 +260,6 @@ def test_problem_data_input_parameter_attributes():
         modes=modes,
         constraints=constraints,
         setup_times=setup_times,
-        horizon=horizon,
         objective=objective,
     )
 
@@ -259,7 +269,6 @@ def test_problem_data_input_parameter_attributes():
     assert_equal(data.modes, modes)
     assert_equal(data.constraints, constraints)
     assert_equal(data.setup_times, setup_times)
-    assert_equal(data.horizon, horizon)
     assert_equal(data.objective, objective)
 
 
@@ -269,7 +278,7 @@ def test_problem_data_non_input_parameter_attributes():
     class are set correctly.
     """
     jobs = [Job(tasks=[0, 1, 2])]
-    resources = [Resource(0) for _ in range(3)]
+    resources = [Renewable(0) for _ in range(3)]
     tasks = [Task() for _ in range(3)]
     modes = [
         Mode(task=2, resources=[1], duration=1),
@@ -296,7 +305,7 @@ def test_problem_data_default_values():
     Tests that the default values of the ProblemData class are set correctly.
     """
     jobs = [Job(tasks=[0])]
-    resources = [Resource(0)]
+    resources = [Renewable(0)]
     tasks = [Task()]
     modes = [Mode(task=0, resources=[0], duration=1)]
     data = ProblemData(
@@ -305,7 +314,6 @@ def test_problem_data_default_values():
 
     assert_equal(data.constraints, {})
     assert_equal(data.setup_times, None)
-    assert_equal(data.horizon, MAX_VALUE)
     assert_equal(data.objective, Objective.makespan())
 
 
@@ -316,7 +324,7 @@ def test_problem_data_job_references_unknown_task():
     with assert_raises(ValueError):
         ProblemData(
             jobs=[Job(tasks=[42])],
-            resources=[Resource(0)],
+            resources=[Renewable(0)],
             tasks=[Task()],
             modes=[Mode(0, [0], 1)],
         )
@@ -329,7 +337,7 @@ def test_problem_data_task_references_unknown_job():
     with assert_raises(ValueError):
         ProblemData(
             jobs=[Job()],
-            resources=[Resource(0)],
+            resources=[Renewable(0)],
             tasks=[Task(job=42)],
             modes=[Mode(0, [0], 1)],
         )
@@ -349,7 +357,7 @@ def test_problem_data_mode_references_unknown_data(mode):
     with assert_raises(ValueError):
         ProblemData(
             jobs=[Job()],
-            resources=[Resource(0)],
+            resources=[Renewable(0)],
             tasks=[Task()],
             modes=[mode],
         )
@@ -361,7 +369,7 @@ def test_problem_data_task_without_modes():
     """
     with assert_raises(ValueError):
         ProblemData(
-            jobs=[Job()], resources=[Resource(0)], tasks=[Task()], modes=[]
+            jobs=[Job()], resources=[Renewable(0)], tasks=[Task()], modes=[]
         )
 
 
@@ -374,7 +382,7 @@ def test_problem_data_all_modes_demand_infeasible():
     # This is OK: at least one mode is feasible.
     ProblemData(
         jobs=[Job()],
-        resources=[Resource(capacity=1)],
+        resources=[Renewable(capacity=1)],
         tasks=[Task()],
         modes=[
             Mode(0, [0], 2, demands=[1]),  # feasible
@@ -386,7 +394,7 @@ def test_problem_data_all_modes_demand_infeasible():
         # This is not OK: no mode is feasible.
         ProblemData(
             jobs=[Job()],
-            resources=[Resource(capacity=1)],
+            resources=[Renewable(capacity=1)],
             tasks=[Task()],
             modes=[
                 Mode(0, [0], 2, demands=[2]),  # infeasible
@@ -396,19 +404,13 @@ def test_problem_data_all_modes_demand_infeasible():
 
 
 @pytest.mark.parametrize(
-    "setup_times, horizon",
+    "setup_times",
     [
-        # Negative setup times.
-        (np.ones((1, 1, 1)) * -1, 1),
-        # Invalid setup times shape.
-        (np.ones((2, 2, 2)), 1),
-        # Negative horizon.
-        (np.ones((1, 1, 1)), -1),
+        (np.ones((1, 1, 1)) * -1),  # negative setup times
+        (np.ones((2, 2, 2))),  # invalid setup times shape
     ],
 )
-def test_problem_data_raises_when_invalid_arguments(
-    setup_times: np.ndarray, horizon: int
-):
+def test_problem_data_raises_when_invalid_arguments(setup_times: np.ndarray):
     """
     Tests that the ProblemData class raises an error when invalid arguments are
     passed.
@@ -416,11 +418,10 @@ def test_problem_data_raises_when_invalid_arguments(
     with assert_raises(ValueError):
         ProblemData(
             jobs=[Job()],
-            resources=[Resource(0)],
+            resources=[Renewable(0)],
             tasks=[Task()],
             modes=[Mode(0, [0], 1)],
             setup_times=setup_times.astype(int),
-            horizon=horizon,
         )
 
 
@@ -432,7 +433,7 @@ def test_problem_data_raises_capacitated_resources_and_setup_times():
     with assert_raises(ValueError):
         ProblemData(
             jobs=[Job()],
-            resources=[Resource(capacity=2)],
+            resources=[Renewable(capacity=2)],
             tasks=[Task()],
             modes=[Mode(0, [0], 0)],
             setup_times=np.array([[[1]]]),
@@ -459,7 +460,7 @@ def test_problem_data_tardy_objective_without_job_due_dates(
     with assert_raises(ValueError):
         ProblemData(
             jobs=[Job()],
-            resources=[Resource(0)],
+            resources=[Renewable(0)],
             tasks=[Task()],
             modes=[Mode(0, [0], 0)],
             objective=objective,
@@ -469,8 +470,8 @@ def test_problem_data_tardy_objective_without_job_due_dates(
 def make_replace_data():
     jobs = [Job(due_date=1, deadline=1), Job(due_date=2, deadline=2)]
     resources = [
-        Resource(capacity=0, name="resource"),
-        Resource(capacity=0, name="resource"),
+        Renewable(capacity=0, name="resource"),
+        NonRenewable(capacity=0, name="resource"),
     ]
     tasks = [Task(earliest_start=1), Task(earliest_start=1)]
     modes = [
@@ -479,7 +480,6 @@ def make_replace_data():
     ]
     constraints = {(0, 1): [Constraint.END_BEFORE_START]}
     setup_times = np.zeros((2, 2, 2))
-    horizon = 1
     objective = Objective.makespan()
 
     return ProblemData(
@@ -489,7 +489,6 @@ def make_replace_data():
         modes=modes,
         constraints=constraints,
         setup_times=setup_times,
-        horizon=horizon,
         objective=objective,
     )
 
@@ -528,7 +527,6 @@ def test_problem_data_replace_no_changes():
 
     assert_equal(new.constraints, data.constraints)
     assert_equal(new.setup_times, data.setup_times)
-    assert_equal(new.horizon, data.horizon)
     assert_equal(new.objective, data.objective)
 
 
@@ -540,7 +538,7 @@ def test_problem_data_replace_with_changes():
     data = make_replace_data()
     new = data.replace(
         jobs=[Job(due_date=2, deadline=2), Job(due_date=1, deadline=1)],
-        resources=[Resource(capacity=0, name="new"), Machine(name="new")],
+        resources=[Renewable(capacity=0, name="new"), Machine(name="new")],
         tasks=[Task(earliest_start=2), Task(earliest_start=2)],
         modes=[
             Mode(task=0, resources=[0], duration=20),
@@ -553,7 +551,6 @@ def test_problem_data_replace_with_changes():
                 np.ones((2, 2)),  # resource with setup times
             ],
         ),
-        horizon=2,
         objective=Objective.total_tardiness(),
     )
     assert_(new is not data)
@@ -579,7 +576,6 @@ def test_problem_data_replace_with_changes():
 
     assert_(new.constraints != data.constraints)
     assert_(not np.array_equal(new.setup_times, data.setup_times))
-    assert_(new.horizon != data.horizon)
     assert_(new.objective != data.objective)
 
 
@@ -922,7 +918,7 @@ def test_resource_processes_two_tasks_simultaneously(solver: str):
     Tests that a resource can process two tasks simultaneously.
     """
     model = Model()
-    resource = model.add_resource(capacity=2)
+    resource = model.add_renewable(capacity=2)
     task1 = model.add_task()
     task2 = model.add_task()
     model.add_mode(task1, [resource], duration=1, demands=[1])
@@ -941,7 +937,7 @@ def test_resource_renewable_capacity_is_respected(solver: str):
     Tests that a resource with renewable capacity is respected.
     """
     model = Model()
-    resource = model.add_resource(capacity=2)
+    resource = model.add_renewable(capacity=2)
     task1 = model.add_task()
     task2 = model.add_task()
     model.add_mode(task1, [resource], duration=1, demands=[2])
@@ -960,7 +956,7 @@ def test_resource_zero_capacity_is_respected(solver: str):
     Tests that a resource with zero capacity is respected.
     """
     model = Model()
-    resource = model.add_resource(capacity=0)
+    resource = model.add_renewable(capacity=0)
     task = model.add_task()
     model.add_mode(task, [resource], duration=10, demands=[0])
     model.add_mode(task, [resource], duration=1, demands=[1])
@@ -978,7 +974,7 @@ def test_resource_non_renewable_capacity(solver: str):
     """
     model = Model()
 
-    resource = model.add_resource(capacity=1, renewable=False)
+    resource = model.add_non_renewable(capacity=1)
     task1 = model.add_task()
     model.add_mode(task1, [resource], duration=1, demands=[1])
 
@@ -1178,25 +1174,6 @@ def test_consecutive_multiple_machines(solver: str):
     result = model.solve(solver=solver)
     assert_equal(result.objective, 12)
     assert_equal(result.status.value, "Optimal")
-
-
-def test_tight_horizon_results_in_infeasiblity(solver: str):
-    """
-    Tests that a tight horizon results in an infeasible instance.
-    """
-    model = Model()
-
-    job = model.add_job()
-    machine = model.add_machine()
-    task = model.add_task(job=job)
-
-    model.add_mode(task, machine, duration=2)
-    model.set_horizon(1)
-
-    result = model.solve(solver=solver)
-
-    # Processing time is 2, but horizon is 1, so this is infeasible.
-    assert_equal(result.status.value, "Infeasible")
 
 
 @pytest.mark.parametrize(
