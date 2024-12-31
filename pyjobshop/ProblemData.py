@@ -1,14 +1,12 @@
 from collections import Counter
 from copy import deepcopy
 from dataclasses import dataclass
-from enum import Enum
-from typing import Optional, Sequence, TypeVar, Union
+from typing import NamedTuple, Optional, Sequence, TypeVar, Union
 
 import numpy as np
 
 from pyjobshop.constants import MAX_VALUE
 
-_ConstraintsType = dict[tuple[int, int], list["Constraint"]]
 _T = TypeVar("_T")
 
 
@@ -388,44 +386,175 @@ class Mode:
         )
 
 
-class Constraint(str, Enum):
+class StartAtStart(NamedTuple):
+    task1: int
+    task2: int
+
+
+class StartAtEnd(NamedTuple):
+    task1: int
+    task2: int
+
+
+class StartBeforeStart(NamedTuple):
+    task1: int
+    task2: int
+
+
+class StartBeforeEnd(NamedTuple):
+    task1: int
+    task2: int
+
+
+class EndAtStart(NamedTuple):
+    task1: int
+    task2: int
+
+
+class EndAtEnd(NamedTuple):
+    task1: int
+    task2: int
+
+
+class EndBeforeStart(NamedTuple):
+    task1: int
+    task2: int
+
+
+class EndBeforeEnd(NamedTuple):
+    task1: int
+    task2: int
+
+
+class IdenticalResources(NamedTuple):
+    task1: int
+    task2: int
+
+
+class DifferentResources(NamedTuple):
+    task1: int
+    task2: int
+
+
+class Consecutive(NamedTuple):
+    task1: int
+    task2: int
+
+
+class Constraints:
     """
-    Enum that defines different types of constraints between two tasks
-    :math:`i` and :math:`k`.
+    Container class for storing all constraints.
+
+    Parameters
+    ----------
+    start_at_start
+        List of start-at-start constraints.
+    start_at_end
+        List of start-at-end constraints.
+    start_before_start
+        List of start-before-start constraints.
+    start_before_end
+        List of start-before-end constraints.
+    end_at_start
+        List of end-at-start constraints.
+    end_at_end
+        List of end-at-end constraints.
+    end_before_start
+        List of end-before-start constraints.
+    end_before_end
+        List of end-before-end constraints.
+    identical_resources
+        List of identical resources constraints.
+    different_resources
+        List of different resources constraints.
+    consecutive
+        List of consecutive constraints.
     """
 
-    #: Task :math:`i` must start when task :math:`k` starts.
-    START_AT_START = "start_at_start"
+    def __init__(
+        self,
+        start_at_start: Optional[list[StartAtStart]] = None,
+        start_at_end: Optional[list[StartAtEnd]] = None,
+        start_before_start: Optional[list[StartBeforeStart]] = None,
+        start_before_end: Optional[list[StartBeforeEnd]] = None,
+        end_at_start: Optional[list[EndAtStart]] = None,
+        end_at_end: Optional[list[EndAtEnd]] = None,
+        end_before_start: Optional[list[EndBeforeStart]] = None,
+        end_before_end: Optional[list[EndBeforeEnd]] = None,
+        identical_resources: Optional[list[IdenticalResources]] = None,
+        different_resources: Optional[list[DifferentResources]] = None,
+        consecutive: Optional[list[Consecutive]] = None,
+    ):
+        self._start_at_start = start_at_start or []
+        self._start_at_end = start_at_end or []
+        self._start_before_start = start_before_start or []
+        self._start_before_end = start_before_end or []
+        self._end_at_start = end_at_start or []
+        self._end_at_end = end_at_end or []
+        self._end_before_start = end_before_start or []
+        self._end_before_end = end_before_end or []
+        self._identical_resources = identical_resources or []
+        self._different_resources = different_resources or []
+        self._consecutive = consecutive or []
 
-    #: Task :math:`i` must at start when task :math:`k` ends.
-    START_AT_END = "start_at_end"
+    def __eq__(self, other) -> bool:
+        return (
+            self.start_at_start == other.start_at_start
+            and self.start_at_end == other.start_at_end
+            and self.start_before_start == other.start_before_start
+            and self.start_before_end == other.start_before_end
+            and self.end_at_start == other.end_at_start
+            and self.end_at_end == other.end_at_end
+            and self.end_before_start == other.end_before_start
+            and self.end_before_end == other.end_before_end
+            and self.identical_resources == other.identical_resources
+            and self.different_resources == other.different_resources
+            and self.consecutive == other.consecutive
+        )
 
-    #: Task :math:`i` must start before task :math:`k` starts.
-    START_BEFORE_START = "start_before_start"
+    @property
+    def start_at_start(self) -> list[StartAtStart]:
+        return self._start_at_start
 
-    #: Task :math:`i` must start before task :math:`k` ends.
-    START_BEFORE_END = "start_before_end"
+    @property
+    def start_at_end(self) -> list[StartAtEnd]:
+        return self._start_at_end
 
-    #: Task :math:`i` must end when task :math:`k` starts.
-    END_AT_START = "end_at_start"
+    @property
+    def start_before_start(self) -> list[StartBeforeStart]:
+        return self._start_before_start
 
-    #: Task :math:`i` must end when task :math:`k` ends.
-    END_AT_END = "end_at_end"
+    @property
+    def start_before_end(self) -> list[StartBeforeEnd]:
+        return self._start_before_end
 
-    #: Task :math:`i` must end before task :math:`k` starts.
-    END_BEFORE_START = "end_before_start"
+    @property
+    def end_at_start(self) -> list[EndAtStart]:
+        return self._end_at_start
 
-    #: Task :math:`i` must end before task :math:`k` ends.
-    END_BEFORE_END = "end_before_end"
+    @property
+    def end_at_end(self) -> list[EndAtEnd]:
+        return self._end_at_end
 
-    #: Tasks :math:`i` and :math:`k` must use modes with identical resources.
-    IDENTICAL_RESOURCES = "identical_resources"
+    @property
+    def end_before_start(self) -> list[EndBeforeStart]:
+        return self._end_before_start
 
-    #: Tasks :math:`i` and :math:`k` must use modes with disjoint resources.
-    DIFFERENT_RESOURCES = "different_resources"
+    @property
+    def end_before_end(self) -> list[EndBeforeEnd]:
+        return self._end_before_end
 
-    #: Sequence task :math:`i` right before :math:`k` on shared machines.
-    CONSECUTIVE = "consecutive"
+    @property
+    def identical_resources(self) -> list[IdenticalResources]:
+        return self._identical_resources
+
+    @property
+    def different_resources(self) -> list[DifferentResources]:
+        return self._different_resources
+
+    @property
+    def consecutive(self) -> list[Consecutive]:
+        return self._consecutive
 
 
 @dataclass
@@ -520,8 +649,7 @@ class ProblemData:
     modes
         List of processing modes of tasks.
     constraints
-        Dict indexed by task pairs with a list of constraints as values.
-        Default is None, which initializes an empty dict.
+        TODO
     setup_times
         Sequence-dependent setup times between tasks on a given resource. The
         first dimension of the array is indexed by the resource index. The last
@@ -536,7 +664,7 @@ class ProblemData:
         resources: Sequence[Resource],
         tasks: list[Task],
         modes: list[Mode],
-        constraints: Optional[_ConstraintsType] = None,
+        constraints: Optional[Constraints] = None,
         setup_times: Optional[np.ndarray] = None,
         objective: Optional[Objective] = None,
     ):
@@ -544,7 +672,9 @@ class ProblemData:
         self._resources = resources
         self._tasks = tasks
         self._modes = modes
-        self._constraints = constraints if constraints is not None else {}
+        self._constraints = (
+            constraints if constraints is not None else Constraints()
+        )
         self._setup_times = setup_times
         self._objective = (
             objective if objective is not None else Objective.makespan()
@@ -632,7 +762,7 @@ class ProblemData:
         resources: Optional[Sequence[Resource]] = None,
         tasks: Optional[list[Task]] = None,
         modes: Optional[list[Mode]] = None,
-        constraints: Optional[_ConstraintsType] = None,
+        constraints: Optional[Constraints] = None,
         setup_times: Optional[np.ndarray] = None,
         objective: Optional[Objective] = None,
     ) -> "ProblemData":
@@ -713,10 +843,9 @@ class ProblemData:
         return self._modes
 
     @property
-    def constraints(self) -> _ConstraintsType:
+    def constraints(self) -> Constraints:
         """
-        Dict indexed by task pairs with a list of constraints as values.
-        Indexed by task pairs.
+        TODO
         """
         return self._constraints
 

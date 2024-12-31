@@ -3,7 +3,14 @@ from numpy.testing import assert_equal
 
 from pyjobshop.Model import Model
 from pyjobshop.ProblemData import (
-    Constraint,
+    Consecutive,
+    Constraints,
+    DifferentResources,
+    EndAtEnd,
+    EndAtStart,
+    EndBeforeEnd,
+    EndBeforeStart,
+    IdenticalResources,
     Job,
     Machine,
     Mode,
@@ -11,6 +18,10 @@ from pyjobshop.ProblemData import (
     Objective,
     ProblemData,
     Renewable,
+    StartAtEnd,
+    StartAtStart,
+    StartBeforeEnd,
+    StartBeforeStart,
     Task,
 )
 from pyjobshop.Solution import Solution, TaskData
@@ -58,26 +69,20 @@ def test_model_to_data():
             Mode(task=1, resources=[1], duration=2),
         ],
     )
-    assert_equal(
-        data.constraints,
-        {
-            (0, 1): [
-                Constraint.START_AT_START,
-                Constraint.START_AT_END,
-                Constraint.START_BEFORE_START,
-                Constraint.START_BEFORE_END,
-                Constraint.END_AT_START,
-                Constraint.END_AT_END,
-                Constraint.END_BEFORE_END,
-                Constraint.END_BEFORE_START,
-            ],
-            (1, 0): [
-                Constraint.IDENTICAL_RESOURCES,
-                Constraint.DIFFERENT_RESOURCES,
-                Constraint.CONSECUTIVE,
-            ],
-        },
-    )
+
+    constraints = data.constraints
+    assert_equal(constraints.start_at_start, [StartAtStart(0, 1)])
+    assert_equal(constraints.start_at_end, [StartAtEnd(0, 1)])
+    assert_equal(constraints.start_before_start, [StartBeforeStart(0, 1)])
+    assert_equal(constraints.start_before_end, [StartBeforeEnd(0, 1)])
+    assert_equal(constraints.end_at_start, [EndAtStart(0, 1)])
+    assert_equal(constraints.end_at_end, [EndAtEnd(0, 1)])
+    assert_equal(constraints.end_before_end, [EndBeforeEnd(0, 1)])
+    assert_equal(constraints.end_before_start, [EndBeforeStart(0, 1)])
+    assert_equal(constraints.identical_resources, [IdenticalResources(1, 0)])
+    assert_equal(constraints.different_resources, [DifferentResources(1, 0)])
+    assert_equal(constraints.consecutive, [Consecutive(1, 0)])
+
     assert_equal(data.setup_times, [[[0, 3], [0, 0]], [[0, 4], [0, 0]]])
     assert_equal(data.objective, Objective.total_flow_time())
 
@@ -92,23 +97,19 @@ def test_from_data():
         [Machine(), Renewable(1), NonRenewable(0)],
         [Task(), Task(job=0), Task()],
         modes=[Mode(0, [0], 1), Mode(1, [1], 2), Mode(2, [1], 2)],
-        constraints={
-            (0, 1): [
-                Constraint.START_AT_START,
-                Constraint.START_AT_END,
-                Constraint.START_BEFORE_START,
-                Constraint.START_BEFORE_END,
-                Constraint.END_AT_START,
-                Constraint.END_AT_END,
-                Constraint.END_BEFORE_START,
-                Constraint.END_BEFORE_END,
-                Constraint.IDENTICAL_RESOURCES,
-                Constraint.DIFFERENT_RESOURCES,
-            ],
-            (1, 2): [
-                Constraint.CONSECUTIVE,
-            ],
-        },
+        constraints=Constraints(
+            start_at_start=[StartAtStart(0, 1)],
+            start_at_end=[StartAtEnd(0, 1)],
+            start_before_start=[StartBeforeStart(0, 1)],
+            start_before_end=[StartBeforeEnd(0, 1)],
+            end_at_start=[EndAtStart(0, 1)],
+            end_at_end=[EndAtEnd(0, 1)],
+            end_before_start=[EndBeforeStart(0, 1)],
+            end_before_end=[EndBeforeEnd(0, 1)],
+            identical_resources=[IdenticalResources(0, 1)],
+            different_resources=[DifferentResources(0, 1)],
+            consecutive=[Consecutive(1, 2)],
+        ),
         setup_times=np.array(
             [
                 np.ones((3, 3)),  # machine
@@ -156,7 +157,7 @@ def test_model_to_data_default_values():
     assert_equal(data.resources, [machine])
     assert_equal(data.tasks, [task])
     assert_equal(data.modes, [Mode(task=0, resources=[0], duration=1)])
-    assert_equal(data.constraints, {})
+    assert_equal(data.constraints, Constraints())
     assert_equal(data.setup_times, None)
     assert_equal(data.objective, Objective.makespan())
 
