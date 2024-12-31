@@ -66,7 +66,7 @@ class Constraints:
                 continue
 
             if not (modes := resource2modes[idx]):
-                continue  # no modes for this machine
+                continue  # skip because cpo warns if there are no modes
 
             seq_var = self._sequence_vars[idx]
 
@@ -74,10 +74,11 @@ class Constraints:
                 # Use the mode's task indices to get the correct setup times.
                 tasks = [data.modes[mode].task for mode in modes]
                 matrix = setups[idx, :, :][np.ix_(tasks, tasks)]
-                if np.any(matrix > 0):
-                    model.add(cpo.no_overlap(seq_var, matrix))
+                matrix = matrix if np.any(matrix > 0) else None
             else:
-                model.add(cpo.no_overlap(seq_var))
+                matrix = None
+
+            model.add(cpo.no_overlap(seq_var, matrix))
 
     def _renewable_capacity(self):
         """
@@ -211,10 +212,6 @@ class Constraints:
                         continue  # skip sequencing on non-machine resources
 
                     seq_var = self._sequence_vars[resource]
-                    if seq_var is None:
-                        msg = f"No sequence var found for resource {resource}."
-                        raise ValueError(msg)
-
                     var1 = self._mode_vars[mode1]
                     var2 = self._mode_vars[mode2]
 

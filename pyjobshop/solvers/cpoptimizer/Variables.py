@@ -1,5 +1,3 @@
-from typing import Optional
-
 from docplex.cp.expression import (
     CpoIntervalVar,
     CpoSequenceVar,
@@ -49,7 +47,7 @@ class Variables:
         return self._mode_vars
 
     @property
-    def sequence_vars(self) -> list[Optional[CpoSequenceVar]]:
+    def sequence_vars(self) -> dict[int, CpoSequenceVar]:
         """
         Returns the sequence variables.
         """
@@ -129,23 +127,20 @@ class Variables:
 
         return variables
 
-    def _make_sequence_variables(self) -> list[Optional[CpoSequenceVar]]:
+    def _make_sequence_variables(self) -> dict[int, CpoSequenceVar]:
         """
-        Creates a sequence variable for each machine, and no variable for
-        general resources.
+        Creates a sequence variable for each machine.
         """
         data = self._data
         resource2modes = utils.resource2modes(data)
-        variables: list[Optional[CpoSequenceVar]] = []
+        variables: dict[int, CpoSequenceVar] = {}
 
         for resource, modes in enumerate(resource2modes):
-            if not isinstance(data.resources[resource], Machine):
-                variables.append(None)
-            else:
+            if isinstance(data.resources[resource], Machine):
                 intervals = [self.mode_vars[mode] for mode in modes]
                 seq_var = sequence_var(name=f"S{resource}", vars=intervals)
                 self._model.add(seq_var)
-                variables.append(seq_var)
+                variables[resource] = seq_var
 
         return variables
 
