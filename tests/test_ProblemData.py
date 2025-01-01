@@ -912,7 +912,7 @@ def test_resource_non_renewable_capacity(solver: str):
 
 
 @pytest.mark.parametrize(
-    "attr,prec_type,expected_makespan",
+    "attr,constraint,expected_makespan",
     [
         # start 0 == start 0
         ("start_at_start", StartAtStart, 2),
@@ -934,7 +934,7 @@ def test_resource_non_renewable_capacity(solver: str):
         ("different_resources", DifferentResources, 2),
     ],
 )
-def test_constraints(solver, attr: str, prec_type, expected_makespan: int):
+def test_constraints(solver, attr: str, constraint, expected_makespan: int):
     """
     Tests that constraints are respected. This example uses two tasks and two
     resources with processing times of 2.
@@ -950,7 +950,7 @@ def test_constraints(solver, attr: str, prec_type, expected_makespan: int):
         for task in range(len(tasks))
     ]
     constraints = Constraints()
-    getattr(constraints, attr).append(prec_type(0, 1))  # a bit hacky
+    getattr(constraints, attr).append(constraint(0, 1))  # a bit hacky
 
     data = ProblemData([job], resources, tasks, modes, constraints)
     result = solve(data, solver=solver)

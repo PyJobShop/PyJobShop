@@ -463,8 +463,7 @@ class Objective:
 
 class ProblemData:
     """
-    The problem data that contains all information need to solve the scheduling
-    problem instance.
+    Class that contains all data needed to solve the scheduling problem.
 
     Parameters
     ----------

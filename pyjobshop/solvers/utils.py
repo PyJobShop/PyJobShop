@@ -218,7 +218,7 @@ def setup_times_matrix(data: ProblemData) -> Optional[np.ndarray]:
     Transforms the setup times constraints to a setup times matrix if there
     are setup times, otherwise return None.
     """
-    if data.constraints.setup_times is None:
+    if not data.constraints.setup_times:
         return None
 
     num_res = len(data.resources)
