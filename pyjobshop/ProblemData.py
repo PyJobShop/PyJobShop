@@ -551,9 +551,6 @@ class ProblemData:
                 msg = f"All modes for task {task} have infeasible demands."
                 raise ValueError(msg)
 
-        if any(duration < 0 for *_, duration in self.constraints.setup_times):
-            raise ValueError("Setup times must be non-negative.")
-
         for res_idx, *_, duration in self.constraints.setup_times:
             if duration < 0:
                 raise ValueError("Setup time must be non-negative.")

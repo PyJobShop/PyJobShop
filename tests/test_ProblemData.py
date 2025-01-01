@@ -1,4 +1,3 @@
-import numpy as np
 import pytest
 from numpy.testing import assert_, assert_equal, assert_raises
 
@@ -412,40 +411,33 @@ def test_problem_data_all_modes_demand_infeasible():
         )
 
 
-@pytest.mark.parametrize(
-    "setup_times",
-    [
-        (np.ones((1, 1, 1)) * -1),  # negative setup times
-        (np.ones((2, 2, 2))),  # invalid setup times shape
-    ],
-)
-def test_problem_data_raises_when_invalid_arguments(setup_times: np.ndarray):
+def test_problem_data_raises_negative_setup_times():
     """
-    Tests that the ProblemData class raises an error when invalid arguments are
-    passed.
+    Tests that the ProblemData class raises an error when negative setup times
+    are passed.
     """
     with assert_raises(ValueError):
         ProblemData(
             [Job()],
-            [Renewable(0)],
-            [Task()],
-            modes=[Mode(0, [0], 1)],
-            constraints=Constraints(setup_times=setup_times.astype(int)),
+            [Machine()],
+            [Task(), Task()],
+            [Mode(0, [0], 0), Mode(0, [0], 0)],
+            constraints=Constraints(setup_times=[SetupTime(0, 0, 1, -1)]),
         )
 
 
-def test_problem_data_raises_capacitated_resources_and_setup_times():
+def test_problem_data_raises_capacitated_resources_and_setup_times(resource):
     """
-    Tests that the ProblemData class raises an error when resources with
-    nonzero capacities have setup times.
+    Tests that the ProblemData class raises an error when capacitated resources
+    with have setup times.
     """
     with assert_raises(ValueError):
         ProblemData(
             [Job()],
-            [Renewable(capacity=2)],
-            [Task()],
-            [Mode(0, [0], 0)],
-            constraints=Constraints(setup_times=np.array([[[1]]])),
+            [resource],
+            [Task(), Task()],
+            [Mode(0, [0], 0), Mode(0, [0], 0)],
+            constraints=Constraints(setup_times=[SetupTime(0, 0, 1, 1)]),
         )
 
 
