@@ -10,7 +10,7 @@ _T = TypeVar("_T")
 
 class Job:
     """
-    Simple dataclass for storing all job-related data.
+    Simple dataclass for storing job related data.
 
     Parameters
     ----------
@@ -216,7 +216,7 @@ Resource = Union[Machine, Renewable, NonRenewable]
 
 class Task:
     """
-    Simple dataclass for storing all task related data.
+    Simple dataclass for storing task related data.
 
     Parameters
     ----------
@@ -318,7 +318,7 @@ class Task:
 
 class Mode:
     """
-    Simpel dataclass for storing processing mode data.
+    Simple dataclass for storing processing mode data.
 
     Parameters
     ----------
