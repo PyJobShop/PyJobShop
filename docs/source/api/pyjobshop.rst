@@ -74,6 +74,9 @@ PyJobShop
     .. autoclass:: Consecutive
         :exclude-members: count, index
 
+    .. autoclass:: SetupTime
+        :exclude-members: count, index
+
 .. automodule:: pyjobshop.Solution
 
    .. autoclass:: Solution

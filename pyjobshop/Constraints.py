@@ -105,10 +105,10 @@ class Consecutive(NamedTuple):
 class SetupTime(NamedTuple):
     """
     Sequence-dependent setup time between task 1 and task 2 on the given
-    machine resource.
+    machine.
     """
 
-    resource: int
+    machine: int
     task1: int
     task2: int
     duration: int
