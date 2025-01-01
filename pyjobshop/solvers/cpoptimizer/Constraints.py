@@ -163,25 +163,25 @@ class Constraints:
 
     def _identical_and_different_resource_constraints(self):
         """
-        Creates constraints for the same and different resource constraints.
+        Creates constraints for identical and different resources constraints.
         """
         model, data = self._model, self._data
 
         for idx1, idx2 in data.constraints.identical_resources:
             for mode1, modes2 in utils.identical_modes(data, idx1, idx2):
-                var1 = cpo.presence_of(self._mode_vars[mode1])
-                vars2 = [
+                expr1 = cpo.presence_of(self._mode_vars[mode1])
+                expr2 = sum(
                     cpo.presence_of(self._mode_vars[mode2]) for mode2 in modes2
-                ]
-                model.add(var1 <= sum(vars2))
+                )
+                model.add(expr1 <= expr2)
 
         for idx1, idx2 in data.constraints.different_resources:
             for mode1, modes2 in utils.different_modes(data, idx1, idx2):
-                var1 = cpo.presence_of(self._mode_vars[mode1])
-                vars2 = [
+                expr1 = cpo.presence_of(self._mode_vars[mode1])
+                expr2 = sum(
                     cpo.presence_of(self._mode_vars[mode2]) for mode2 in modes2
-                ]
-                model.add(var1 <= sum(vars2))
+                )
+                model.add(expr1 <= expr2)
 
     def _consecutive_constraints(self):
         """

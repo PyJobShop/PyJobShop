@@ -77,7 +77,7 @@ class ModeVar:
         The duration variable of the interval.
     end
         The end time variable of the interval.
-    is_present
+    present
         The boolean variable indicating whether the interval is present.
     """
 
@@ -86,7 +86,7 @@ class ModeVar:
     start: IntVar
     duration: IntVar
     end: IntVar
-    is_present: BoolVarT
+    present: BoolVarT
 
 
 @dataclass
@@ -267,9 +267,9 @@ class Variables:
                 ub=min(task.latest_end, MAX_VALUE),
                 name=f"{name}_start",
             )
-            is_present = model.new_bool_var(f"{name}_is_present")
+            present = model.new_bool_var(f"{name}_present")
             interval = model.new_optional_interval_var(
-                start, duration, end, is_present, f"{name}_interval"
+                start, duration, end, present, f"{name}_interval"
             )
             var = ModeVar(
                 task_idx=mode.task,
@@ -277,7 +277,7 @@ class Variables:
                 start=start,
                 duration=duration,
                 end=end,
-                is_present=is_present,
+                present=present,
             )
             variables.append(var)
 
@@ -340,4 +340,4 @@ class Variables:
             model.add_hint(var.start, sol_task.start)
             model.add_hint(var.duration, sol_task.end - sol_task.start)
             model.add_hint(var.end, sol_task.end)
-            model.add_hint(var.is_present, idx == sol_task.mode)
+            model.add_hint(var.present, idx == sol_task.mode)
