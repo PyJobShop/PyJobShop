@@ -143,10 +143,7 @@ class Constraints:
     consecutive
         List of consecutive constraints.
     setup_times
-        Optional sequence-dependent setup times between tasks on a given
-        resource. The first dimension of the array is indexed by the resource
-        index. The last two dimensions of the array are indexed by task
-        indices.
+        List of setup time constraints.
     """
 
     def __init__(
