@@ -68,11 +68,13 @@ class Constraints:
                 continue  # skip because cpo warns if there are no modes
 
             seq_var = self._sequence_vars[idx]
+            setup_times = utils.setup_times_matrix(data)
 
-            if (setups := data.constraints.setup_times) is not None:
-                # Use the mode's task indices to get the correct setup times.
+            if setup_times is not None:
+                # Slice the setup times matrix to get only durations for the
+                # tasks corresponding to the modes of this machine.
                 tasks = [data.modes[mode].task for mode in modes]
-                matrix = setups[idx, :, :][np.ix_(tasks, tasks)]
+                matrix = setup_times[idx, :, :][np.ix_(tasks, tasks)]
                 matrix = matrix if np.any(matrix > 0) else None
             else:
                 matrix = None

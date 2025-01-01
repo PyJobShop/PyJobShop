@@ -1,4 +1,3 @@
-import numpy as np
 from numpy.testing import assert_equal
 
 from pyjobshop.Constraints import (
@@ -10,6 +9,7 @@ from pyjobshop.Constraints import (
     EndBeforeEnd,
     EndBeforeStart,
     IdenticalResources,
+    SetupTime,
     StartAtEnd,
     StartAtStart,
     StartBeforeEnd,
@@ -84,7 +84,9 @@ def test_model_to_data():
     assert_equal(constraints.identical_resources, [IdenticalResources(1, 0)])
     assert_equal(constraints.different_resources, [DifferentResources(1, 0)])
     assert_equal(constraints.consecutive, [Consecutive(1, 0)])
-    assert_equal(constraints.setup_times, [[[0, 3], [0, 0]], [[0, 4], [0, 0]]])
+    assert_equal(
+        constraints.setup_times, [SetupTime(0, 0, 1, 3), SetupTime(1, 0, 1, 4)]
+    )
     assert_equal(data.objective, Objective.total_flow_time())
 
 
@@ -110,13 +112,11 @@ def test_from_data():
             identical_resources=[IdenticalResources(0, 1)],
             different_resources=[DifferentResources(0, 1)],
             consecutive=[Consecutive(1, 2)],
-            setup_times=np.array(
-                [
-                    np.ones((3, 3)),  # machine
-                    np.zeros((3, 3)),  # renewable
-                    np.zeros((3, 3)),  # non-renewable
-                ]
-            ),
+            setup_times=[
+                SetupTime(0, 0, 1, 1),  # machine
+                SetupTime(1, 0, 1, 0),  # renewable
+                SetupTime(2, 0, 1, 0),  # non-renewable
+            ],
         ),
         objective=Objective(
             weight_makespan=2,

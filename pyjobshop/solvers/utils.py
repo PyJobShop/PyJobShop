@@ -1,5 +1,8 @@
 from collections import defaultdict
 from itertools import product
+from typing import Optional
+
+import numpy as np
 
 from pyjobshop.ProblemData import ProblemData
 
@@ -208,3 +211,21 @@ def find_modes_with_disjoint_resources(
             disjoint[idx1].append(idx2)
 
     return disjoint
+
+
+def setup_times_matrix(data: ProblemData) -> Optional[np.ndarray]:
+    """
+    Transforms the setup times constraints to a setup times matrix if there
+    are setup times, otherwise return None.
+    """
+    if data.constraints.setup_times is None:
+        return None
+
+    num_res = len(data.resources)
+    num_tasks = len(data.tasks)
+    setup = np.zeros((num_res, num_tasks, num_tasks), dtype=int)
+
+    for res, task1, task2, duration in data.constraints.setup_times:
+        setup[res, task1, task2] = duration
+
+    return setup

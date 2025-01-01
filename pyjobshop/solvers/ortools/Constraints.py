@@ -202,7 +202,7 @@ class Constraints:
         the CP-SAT model to enforce setup times.
         """
         model, data = self._model, self._data
-        setup_times = data.constraints.setup_times
+        setup_times = utils.setup_times_matrix(data)
 
         for idx, resource in enumerate(data.resources):
             if not isinstance(resource, Machine):
@@ -244,6 +244,7 @@ class Constraints:
         sequencing constraints (consecutive and setup times).
         """
         model, data = self._model, self._data
+        setup_times = utils.setup_times_matrix(data)
 
         for idx, resource in enumerate(data.resources):
             if not isinstance(resource, Machine):
@@ -283,12 +284,9 @@ class Constraints:
                     model.add_implication(arc, var1.is_present)
                     model.add_implication(arc, var2.is_present)
 
-                    # Use the mode's task idx to get the correct setup times.
                     setup = (
-                        data.constraints.setup_times[
-                            idx, var1.task_idx, var2.task_idx
-                        ]
-                        if data.constraints.setup_times is not None
+                        setup_times[idx, var1.task_idx, var2.task_idx]
+                        if setup_times is not None
                         else 0
                     )
                     expr = var1.end + setup <= var2.start

@@ -1,7 +1,5 @@
 from typing import NamedTuple, Optional
 
-import numpy as np
-
 
 class StartAtStart(NamedTuple):
     """
@@ -104,6 +102,18 @@ class Consecutive(NamedTuple):
     task2: int
 
 
+class SetupTime(NamedTuple):
+    """
+    Sequence-dependent setup time between task 1 and task 2 on the given
+    machine resource.
+    """
+
+    resource: int
+    task1: int
+    task2: int
+    duration: int
+
+
 class Constraints:
     """
     Container class for storing all constraints.
@@ -152,7 +162,7 @@ class Constraints:
         identical_resources: Optional[list[IdenticalResources]] = None,
         different_resources: Optional[list[DifferentResources]] = None,
         consecutive: Optional[list[Consecutive]] = None,
-        setup_times: Optional[np.ndarray] = None,
+        setup_times: Optional[list[SetupTime]] = None,
     ):
         self._start_at_start = start_at_start or []
         self._start_at_end = start_at_end or []
@@ -165,7 +175,7 @@ class Constraints:
         self._identical_resources = identical_resources or []
         self._different_resources = different_resources or []
         self._consecutive = consecutive or []
-        self._setup_times = setup_times
+        self._setup_times = setup_times or []
 
     def __eq__(self, other) -> bool:
         return (
@@ -180,14 +190,7 @@ class Constraints:
             and self.identical_resources == other.identical_resources
             and self.different_resources == other.different_resources
             and self.consecutive == other.consecutive
-            and (
-                (self.setup_times is None and other.setup_times is None)
-                or (
-                    self.setup_times is not None
-                    and other.setup_times is not None
-                    and np.array_equal(self.setup_times, other.setup_times)
-                )
-            )
+            and self.setup_times == other.setup_times
         )
 
     def __len__(self) -> int:
@@ -203,7 +206,7 @@ class Constraints:
             + len(self.identical_resources)
             + len(self.different_resources)
             + len(self.consecutive)
-            # TODO add setup times
+            + len(self._setup_times)
         )
 
     @property
@@ -284,15 +287,8 @@ class Constraints:
         return self._consecutive
 
     @property
-    def setup_times(self) -> Optional[np.ndarray]:
+    def setup_times(self) -> list[SetupTime]:
         """
-        Returns the array of sequence-dependent setup times.
+        Returns the list of setup times constraints.
         """
         return self._setup_times
-
-    @setup_times.setter
-    def setup_times(self, value: np.ndarray):
-        """
-        Sets the array of sequence-dependent setup times.
-        """
-        self._setup_times = value

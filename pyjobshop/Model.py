@@ -1,7 +1,5 @@
 from typing import Optional, Sequence, Union
 
-import numpy as np
-
 from pyjobshop.constants import MAX_VALUE
 from pyjobshop.Constraints import (
     Consecutive,
@@ -12,6 +10,7 @@ from pyjobshop.Constraints import (
     EndBeforeEnd,
     EndBeforeStart,
     IdenticalResources,
+    SetupTime,
     StartAtEnd,
     StartAtStart,
     StartBeforeEnd,
@@ -44,8 +43,6 @@ class Model:
         self._tasks: list[Task] = []
         self._modes: list[Mode] = []
         self._constraints = Constraints()
-
-        self._setup_times: dict[tuple[int, int, int], int] = {}
         self._objective: Objective = Objective.makespan()
 
         self._id2job: dict[int, int] = {}
@@ -79,6 +76,13 @@ class Model:
         Returns the list of modes in the model.
         """
         return self._modes
+
+    @property
+    def constraints(self) -> Constraints:
+        """
+        Returns the constraints in this model.
+        """
+        return self._constraints
 
     @property
     def objective(self) -> Objective:
@@ -173,15 +177,13 @@ class Model:
         for idx1, idx2 in data.constraints.consecutive:
             model.add_consecutive(tasks[idx1], tasks[idx2])
 
-        if (setups := data.constraints.setup_times) is not None:
-            for (res, idx1, idx2), duration in np.ndenumerate(setups):
-                if duration != 0:
-                    model.add_setup_time(
-                        machine=model.resources[res],
-                        task1=tasks[idx1],
-                        task2=tasks[idx2],
-                        duration=duration,
-                    )
+        for res_idx, idx1, idx2, duration in data.constraints.setup_times:
+            model.add_setup_time(
+                machine=model.resources[res_idx],  # type: ignore
+                task1=tasks[idx1],
+                task2=tasks[idx2],
+                duration=duration,
+            )
 
         model.set_objective(
             weight_makespan=data.objective.weight_makespan,
@@ -199,25 +201,13 @@ class Model:
         """
         Returns a ProblemData object containing the problem instance.
         """
-        num_tasks = len(self.tasks)
-        num_res = len(self.resources)
-
-        # Convert setup times into a 3D array if there are any setup times,
-        # otherwise return None.
-        if self._setup_times:
-            setup = np.zeros((num_res, num_tasks, num_tasks), dtype=int)
-            for (res, task1, task2), duration in self._setup_times.items():
-                setup[res, task1, task2] = duration
-
-            self._constraints.setup_times = setup
-
         return ProblemData(
             jobs=self.jobs,
             resources=self.resources,
             tasks=self.tasks,
-            modes=self._modes,
-            constraints=self._constraints,
-            objective=self._objective,
+            modes=self.modes,
+            constraints=self.constraints,
+            objective=self.objective,
         )
 
     def add_job(
@@ -535,7 +525,8 @@ class Model:
         task_idx1 = self._id2task[id(task1)]
         task_idx2 = self._id2task[id(task2)]
 
-        self._setup_times[machine_idx, task_idx1, task_idx2] = duration
+        constraint = SetupTime(machine_idx, task_idx1, task_idx2, duration)
+        self._constraints._setup_times.append(constraint)
 
     def set_objective(
         self,

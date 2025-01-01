@@ -3,8 +3,6 @@ from copy import deepcopy
 from dataclasses import dataclass
 from typing import Optional, Sequence, TypeVar, Union
 
-import numpy as np
-
 from pyjobshop.constants import MAX_VALUE
 from pyjobshop.Constraints import Constraints
 
@@ -554,22 +552,18 @@ class ProblemData:
                 msg = f"All modes for task {task} have infeasible demands."
                 raise ValueError(msg)
 
-        setup_times = self.constraints.setup_times
-        if setup_times is not None:
-            if np.any(setup_times < 0):
-                raise ValueError("Setup times must be non-negative.")
+        if any(duration < 0 for *_, duration in self.constraints.setup_times):
+            raise ValueError("Setup times must be non-negative.")
 
-            if setup_times.shape != (num_res, num_tasks, num_tasks):
-                shape = "(num_resources, num_tasks, num_tasks)"
-                raise ValueError(f"Setup times shape must be {shape}.")
+        for res_idx, *_, duration in self.constraints.setup_times:
+            if duration < 0:
+                raise ValueError("Setup time must be non-negative.")
 
-            for idx, resource in enumerate(self.resources):
-                is_machine = isinstance(resource, Machine)
-                has_setup_times = np.any(setup_times[idx] > 0)
+            is_machine = isinstance(self.resources[res_idx], Machine)
+            has_setup_times = duration > 0
 
-                if not is_machine and has_setup_times:
-                    msg = "Setup times only allowed for machines."
-                    raise ValueError(msg)
+            if not is_machine and has_setup_times:
+                raise ValueError("Setup times only allowed for machines.")
 
         if (
             self.objective.weight_tardy_jobs > 0

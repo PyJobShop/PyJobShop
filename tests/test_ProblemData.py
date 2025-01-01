@@ -11,6 +11,7 @@ from pyjobshop.Constraints import (
     EndBeforeEnd,
     EndBeforeStart,
     IdenticalResources,
+    SetupTime,
     StartAtEnd,
     StartAtStart,
     StartBeforeEnd,
@@ -551,12 +552,7 @@ def test_problem_data_replace_with_changes():
         ],
         constraints=Constraints(
             end_before_start=[EndBeforeStart(1, 0)],
-            setup_times=np.array(
-                [
-                    np.zeros((2, 2)),  # resource without setup times
-                    np.ones((2, 2)),  # resource with setup times
-                ],
-            ),
+            setup_times=[SetupTime(0, 0, 1, 0), SetupTime(1, 0, 1, 10)],
         ),
         objective=Objective.total_tardiness(),
     )
