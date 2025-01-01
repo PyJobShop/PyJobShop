@@ -414,7 +414,8 @@ class Model:
         the second task starts.
         """
         idx1, idx2 = self._id2task[id(task1)], self._id2task[id(task2)]
-        self._constraints.start_at_start.append(StartAtStart(idx1, idx2))
+        constraint = StartAtStart(idx1, idx2)
+        self._constraints.start_at_start.append(constraint)
 
     def add_start_at_end(self, task1: Task, task2: Task):
         """
@@ -422,7 +423,8 @@ class Model:
         the second task ends.
         """
         idx1, idx2 = self._id2task[id(task1)], self._id2task[id(task2)]
-        self._constraints.start_at_end.append(StartAtEnd(idx1, idx2))
+        constraint = StartAtEnd(idx1, idx2)
+        self._constraints.start_at_end.append(constraint)
 
     def add_start_before_start(self, task1: Task, task2: Task):
         """
@@ -430,9 +432,8 @@ class Model:
         starts.
         """
         idx1, idx2 = self._id2task[id(task1)], self._id2task[id(task2)]
-        self._constraints.start_before_start.append(
-            StartBeforeStart(idx1, idx2)
-        )
+        constraint = StartBeforeStart(idx1, idx2)
+        self._constraints.start_before_start.append(constraint)
 
     def add_start_before_end(self, task1: Task, task2: Task):
         """
@@ -440,7 +441,8 @@ class Model:
         ends.
         """
         idx1, idx2 = self._id2task[id(task1)], self._id2task[id(task2)]
-        self._constraints.start_before_end.append(StartBeforeEnd(idx1, idx2))
+        constraint = StartBeforeEnd(idx1, idx2)
+        self._constraints.start_before_end.append(constraint)
 
     def add_end_at_end(self, task1: Task, task2: Task):
         """
@@ -448,7 +450,8 @@ class Model:
         second task ends.
         """
         idx1, idx2 = self._id2task[id(task1)], self._id2task[id(task2)]
-        self._constraints.end_at_end.append(EndAtEnd(idx1, idx2))
+        constraint = EndAtEnd(idx1, idx2)
+        self._constraints.end_at_end.append(constraint)
 
     def add_end_at_start(self, task1: Task, task2: Task):
         """
@@ -456,7 +459,8 @@ class Model:
         second task starts.
         """
         idx1, idx2 = self._id2task[id(task1)], self._id2task[id(task2)]
-        self._constraints.end_at_start.append(EndAtStart(idx1, idx2))
+        constraint = EndAtStart(idx1, idx2)
+        self._constraints.end_at_start.append(constraint)
 
     def add_end_before_start(self, task1: Task, task2: Task):
         """
@@ -464,7 +468,8 @@ class Model:
         starts.
         """
         idx1, idx2 = self._id2task[id(task1)], self._id2task[id(task2)]
-        self._constraints.end_before_start.append(EndBeforeStart(idx1, idx2))
+        constraint = EndBeforeStart(idx1, idx2)
+        self._constraints.end_before_start.append(constraint)
 
     def add_end_before_end(self, task1: Task, task2: Task):
         """
@@ -472,7 +477,8 @@ class Model:
         ends.
         """
         idx1, idx2 = self._id2task[id(task1)], self._id2task[id(task2)]
-        self._constraints.end_before_end.append(EndBeforeEnd(idx1, idx2))
+        constraint = EndBeforeEnd(idx1, idx2)
+        self._constraints.end_before_end.append(constraint)
 
     def add_identical_resources(self, task1: Task, task2: Task):
         """
@@ -480,9 +486,8 @@ class Model:
         require identical resources.
         """
         idx1, idx2 = self._id2task[id(task1)], self._id2task[id(task2)]
-        self._constraints.identical_resources.append(
-            IdenticalResources(idx1, idx2)
-        )
+        constraint = IdenticalResources(idx1, idx2)
+        self._constraints.identical_resources.append(constraint)
 
     def add_different_resource(self, task1: Task, task2: Task):
         """
@@ -490,9 +495,8 @@ class Model:
         require different resources.
         """
         idx1, idx2 = self._id2task[id(task1)], self._id2task[id(task2)]
-        self._constraints.different_resources.append(
-            DifferentResources(idx1, idx2)
-        )
+        constraint = DifferentResources(idx1, idx2)
+        self._constraints.different_resources.append(constraint)
 
     def add_consecutive(self, task1: Task, task2: Task):
         """
@@ -501,7 +505,8 @@ class Model:
         on machines that they are both scheduled on.
         """
         idx1, idx2 = self._id2task[id(task1)], self._id2task[id(task2)]
-        self._constraints.consecutive.append(Consecutive(idx1, idx2))
+        constraint = Consecutive(idx1, idx2)
+        self._constraints.consecutive.append(constraint)
 
     def add_setup_time(
         self, machine: Machine, task1: Task, task2: Task, duration: int
