@@ -249,7 +249,7 @@ class Constraints:
                 graph.append((-1, idx1, model.new_bool_var("")))
                 graph.append((idx1, -1, model.new_bool_var("")))
 
-                # Self arc if the task is not prpresent
+                # Self arc if the task is not present
                 graph.append((idx1, idx1, ~var1.present))
 
                 # If the circuit is empty then the present not be present.
