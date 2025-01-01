@@ -82,7 +82,10 @@ if __name__ == "__main__":
         model = Model()
 
         for res in instance.resources:
-            model.add_resource(capacity=res.capacity, renewable=res.renewable)
+            if res.renewable:
+                model.add_renewable(capacity=res.capacity)
+            else:
+                model.add_non_renewable(capacity=res.capacity)
 
         tasks = [
             model.add_task(optional=task.optional) for task in instance.tasks
