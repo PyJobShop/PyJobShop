@@ -10,6 +10,7 @@ from pyjobshop.ProblemData import (
     EndBeforeEnd,
     EndBeforeStart,
     IdenticalResources,
+    IfThen,
     Job,
     Machine,
     Mode,
@@ -519,7 +520,8 @@ class Model:
         idx1 = self._id2task[id(pred)]
         succs = [succs] if isinstance(succs, Task) else succs
         idcs2 = [self._id2task[id(succ)] for succ in succs]
-        self._constraints[idx1, tuple(idcs2)].append(Constraint.IF_THEN)
+        constraint = IfThen(idx1, tuple(idcs2))
+        self._constraints.if_then.append(constraint)
 
     def add_setup_time(
         self, machine: Machine, task1: Task, task2: Task, duration: int

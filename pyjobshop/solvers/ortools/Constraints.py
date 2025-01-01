@@ -217,9 +217,9 @@ class Constraints:
             modes1 = task2modes[idx1]
             for mode1 in modes1:
                 identical_modes2 = identical[mode1]
-                var1 = self._mode_vars[mode1].is_present
+                var1 = self._mode_vars[mode1].present
                 vars2 = [
-                    self._mode_vars[mode2].is_present
+                    self._mode_vars[mode2].present
                     for mode2 in identical_modes2
                 ]
                 model.add(sum(vars2) >= var1)
@@ -231,10 +231,9 @@ class Constraints:
             modes1 = task2modes[idx1]
             for mode1 in modes1:
                 disjoint_modes2 = disjoint[mode1]
-                var1 = self._mode_vars[mode1].is_present
+                var1 = self._mode_vars[mode1].present
                 vars2 = [
-                    self._mode_vars[mode2].is_present
-                    for mode2 in disjoint_modes2
+                    self._mode_vars[mode2].present for mode2 in disjoint_modes2
                 ]
                 model.add(sum(vars2) >= var1)
 
@@ -244,10 +243,7 @@ class Constraints:
         """
         model, data = self._model, self._data
 
-        for (idx1, idcs2), constraints in data.constraints.items():
-            if Constraint.IF_THEN not in constraints:
-                continue
-
+        for idx1, idcs2 in data.constraints.if_then:
             pred = self._task_vars[idx1].present
             succs = sum(self._task_vars[idx2].present for idx2 in idcs2)
             model.add(pred <= succs)

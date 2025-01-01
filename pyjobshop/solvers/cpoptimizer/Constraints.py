@@ -211,10 +211,7 @@ class Constraints:
         """
         model, data = self._model, self._data
 
-        for (idx1, idcs2), constraints in data.constraints.items():
-            if Constraint.IF_THEN not in constraints:
-                continue
-
+        for idx1, idcs2 in data.constraints.if_then:
             present1 = presence_of(self._task_vars[idx1])
             present2 = sum(presence_of(self._task_vars[idx]) for idx in idcs2)
             model.add(present1 <= present2)
