@@ -5,7 +5,6 @@ from docplex.cp.model import CpoModel
 
 import pyjobshop.solvers.utils as utils
 from pyjobshop.ProblemData import (
-    Constraint,
     Machine,
     NonRenewable,
     ProblemData,
@@ -78,11 +77,13 @@ class Constraints:
                 continue  # skip because cpo warns if there are no modes
 
             seq_var = self._sequence_vars[idx]
+            setup_times = utils.setup_times_matrix(data)
 
-            if (setups := data.setup_times) is not None:
-                # Use the mode's task indices to get the correct setup times.
+            if setup_times is not None:
+                # Slice the setup times matrix to get only durations for the
+                # tasks corresponding to the modes of this machine.
                 tasks = [data.modes[mode].task for mode in modes]
-                matrix = setups[idx, :, :][np.ix_(tasks, tasks)]
+                matrix = setup_times[idx, :, :][np.ix_(tasks, tasks)]
                 matrix = matrix if np.any(matrix > 0) else None
             else:
                 matrix = None
@@ -129,36 +130,45 @@ class Constraints:
         """
         model, data = self._model, self._data
 
-        for (idx1, idx2), constraints in data.constraints.items():
-            if isinstance(idx2, tuple):
-                continue  # HACK for if-then constraints
+        for idx1, idx2 in data.constraints.start_at_start:
+            task_var1 = self._task_vars[idx1]
+            task_var2 = self._task_vars[idx2]
+            model.add(cpo.start_at_start(task_var1, task_var2))
 
-            task1 = self._task_vars[idx1]
-            task2 = self._task_vars[idx2]
+        for idx1, idx2 in data.constraints.start_at_end:
+            task_var1 = self._task_vars[idx1]
+            task_var2 = self._task_vars[idx2]
+            model.add(cpo.start_at_end(task_var1, task_var2))
 
-            if Constraint.START_AT_START in constraints:
-                model.add(cpo.start_at_start(task1, task2))
+        for idx1, idx2 in data.constraints.start_before_start:
+            task_var1 = self._task_vars[idx1]
+            task_var2 = self._task_vars[idx2]
+            model.add(cpo.start_before_start(task_var1, task_var2))
 
-            if Constraint.START_AT_END in constraints:
-                model.add(cpo.start_at_end(task1, task2))
+        for idx1, idx2 in data.constraints.start_before_end:
+            task_var1 = self._task_vars[idx1]
+            task_var2 = self._task_vars[idx2]
+            model.add(cpo.start_before_end(task_var1, task_var2))
 
-            if Constraint.START_BEFORE_START in constraints:
-                model.add(cpo.start_before_start(task1, task2))
+        for idx1, idx2 in data.constraints.end_at_start:
+            task_var1 = self._task_vars[idx1]
+            task_var2 = self._task_vars[idx2]
+            model.add(cpo.end_at_start(task_var1, task_var2))
 
-            if Constraint.START_BEFORE_END in constraints:
-                model.add(cpo.start_before_end(task1, task2))
+        for idx1, idx2 in data.constraints.end_at_end:
+            task_var1 = self._task_vars[idx1]
+            task_var2 = self._task_vars[idx2]
+            model.add(cpo.end_at_end(task_var1, task_var2))
 
-            if Constraint.END_AT_START in constraints:
-                model.add(cpo.end_at_start(task1, task2))
+        for idx1, idx2 in data.constraints.end_before_start:
+            task_var1 = self._task_vars[idx1]
+            task_var2 = self._task_vars[idx2]
+            model.add(cpo.end_before_start(task_var1, task_var2))
 
-            if Constraint.END_AT_END in constraints:
-                model.add(cpo.end_at_end(task1, task2))
-
-            if Constraint.END_BEFORE_START in constraints:
-                model.add(cpo.end_before_start(task1, task2))
-
-            if Constraint.END_BEFORE_END in constraints:
-                model.add(cpo.end_before_end(task1, task2))
+        for idx1, idx2 in data.constraints.end_before_end:
+            task_var1 = self._task_vars[idx1]
+            task_var2 = self._task_vars[idx2]
+            model.add(cpo.end_before_end(task_var1, task_var2))
 
     def _identical_and_different_resource_constraints(self):
         """
@@ -166,42 +176,34 @@ class Constraints:
         """
         model, data = self._model, self._data
         task2modes = utils.task2modes(data)
-        relevant = {
-            Constraint.IDENTICAL_RESOURCES,
-            Constraint.DIFFERENT_RESOURCES,
-        }
 
-        for (task1, task2), constraints in data.constraints.items():
-            assignment_constraints = set(constraints) & relevant
-            if not assignment_constraints:
-                continue
-
+        for idx1, idx2 in data.constraints.identical_resources:
             identical = utils.find_modes_with_identical_resources(
-                data, task1, task2
+                data, idx1, idx2
             )
-            disjoint = utils.find_modes_with_disjoint_resources(
-                data, task1, task2
-            )
-
-            modes1 = task2modes[task1]
+            modes1 = task2modes[idx1]
             for mode1 in modes1:
-                if Constraint.IDENTICAL_RESOURCES in assignment_constraints:
-                    identical_modes2 = identical[mode1]
-                    var1 = presence_of(self._mode_vars[mode1])
-                    vars2 = [
-                        presence_of(self._mode_vars[mode2])
-                        for mode2 in identical_modes2
-                    ]
-                    model.add(sum(vars2) >= var1)
+                identical_modes2 = identical[mode1]
+                var1 = cpo.presence_of(self._mode_vars[mode1])
+                vars2 = [
+                    cpo.presence_of(self._mode_vars[mode2])
+                    for mode2 in identical_modes2
+                ]
+                model.add(sum(vars2) >= var1)
 
-                if Constraint.DIFFERENT_RESOURCES in assignment_constraints:
-                    disjoint_modes2 = disjoint[mode1]
-                    var1 = presence_of(self._mode_vars[mode1])
-                    vars2 = [
-                        presence_of(self._mode_vars[mode2])
-                        for mode2 in disjoint_modes2
-                    ]
-                    model.add(sum(vars2) >= var1)
+        for idx1, idx2 in data.constraints.different_resources:
+            disjoint = utils.find_modes_with_disjoint_resources(
+                data, idx1, idx2
+            )
+            modes1 = task2modes[idx1]
+            for mode1 in modes1:
+                disjoint_modes2 = disjoint[mode1]
+                var1 = cpo.presence_of(self._mode_vars[mode1])
+                vars2 = [
+                    cpo.presence_of(self._mode_vars[mode2])
+                    for mode2 in disjoint_modes2
+                ]
+                model.add(sum(vars2) >= var1)
 
     def _if_then_constraints(self):
         """
@@ -223,19 +225,14 @@ class Constraints:
         """
         model, data = self._model, self._data
 
-        for (task1, task2), constraints in data.constraints.items():
-            if Constraint.CONSECUTIVE not in constraints:
-                continue
-
-            # Find the modes of the task that have intersecting resources,
-            # because we need to enforce consecutive constraints on them.
+        for idx1, idx2 in data.constraints.consecutive:
             intersecting = utils.find_modes_with_intersecting_resources(
-                data, task1, task2
+                data, idx1, idx2
             )
             for mode1, mode2, resources in intersecting:
                 for resource in resources:
                     if not isinstance(data.resources[resource], Machine):
-                        continue  # skip sequencing on non-machine resources
+                        continue
 
                     seq_var = self._sequence_vars[resource]
                     var1 = self._mode_vars[mode1]

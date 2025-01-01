@@ -4,7 +4,6 @@ from ortools.sat.python.cp_model import BoolVarT, CpModel, LinearExpr
 import pyjobshop.solvers.utils as utils
 from pyjobshop.constants import MAX_VALUE
 from pyjobshop.ProblemData import (
-    Constraint,
     Machine,
     NonRenewable,
     ProblemData,
@@ -146,45 +145,62 @@ class Constraints:
         """
         model, data = self._model, self._data
 
-        for (idx1, idx2), constraints in data.constraints.items():
-            if isinstance(idx2, tuple):
-                continue  # HACK for if-then constraints
-
+        for idx1, idx2 in data.constraints.start_at_start:
             task_var1 = self._task_vars[idx1]
             task_var2 = self._task_vars[idx2]
             both_present = [task_var1.present, task_var2.present]
 
-            if Constraint.START_AT_START in constraints:
-                expr = task_var1.start == task_var2.start
-                model.add(expr).only_enforce_if(both_present)
+            expr = task_var1.start == task_var2.start
+            model.add(expr).only_enforce_if(both_present)
 
-            if Constraint.START_AT_END in constraints:
-                expr = task_var1.start == task_var2.end
-                model.add(expr).only_enforce_if(both_present)
+        for idx1, idx2 in data.constraints.start_at_end:
+            task_var1 = self._task_vars[idx1]
+            task_var2 = self._task_vars[idx2]
+            both_present = [task_var1.present, task_var2.present]
+            expr = task_var1.start == task_var2.end
+            model.add(expr).only_enforce_if(both_present)
 
-            if Constraint.START_BEFORE_START in constraints:
-                expr = task_var1.start <= task_var2.start
-                model.add(expr).only_enforce_if(both_present)
+        for idx1, idx2 in data.constraints.start_before_start:
+            task_var1 = self._task_vars[idx1]
+            task_var2 = self._task_vars[idx2]
+            both_present = [task_var1.present, task_var2.present]
+            expr = task_var1.start <= task_var2.start
+            model.add(expr).only_enforce_if(both_present)
 
-            if Constraint.START_BEFORE_END in constraints:
-                expr = task_var1.start <= task_var2.end
-                model.add(expr).only_enforce_if(both_present)
+        for idx1, idx2 in data.constraints.start_before_end:
+            task_var1 = self._task_vars[idx1]
+            task_var2 = self._task_vars[idx2]
+            both_present = [task_var1.present, task_var2.present]
+            expr = task_var1.start <= task_var2.end
+            model.add(expr).only_enforce_if(both_present)
 
-            if Constraint.END_AT_START in constraints:
-                expr = task_var1.end == task_var2.start
-                model.add(expr).only_enforce_if(both_present)
+        for idx1, idx2 in data.constraints.end_at_start:
+            task_var1 = self._task_vars[idx1]
+            task_var2 = self._task_vars[idx2]
+            both_present = [task_var1.present, task_var2.present]
+            expr = task_var1.end == task_var2.start
+            model.add(expr).only_enforce_if(both_present)
 
-            if Constraint.END_AT_END in constraints:
-                expr = task_var1.end == task_var2.end
-                model.add(expr).only_enforce_if(both_present)
+        for idx1, idx2 in data.constraints.end_at_end:
+            task_var1 = self._task_vars[idx1]
+            task_var2 = self._task_vars[idx2]
+            both_present = [task_var1.present, task_var2.present]
+            expr = task_var1.end == task_var2.end
+            model.add(expr).only_enforce_if(both_present)
 
-            if Constraint.END_BEFORE_START in constraints:
-                expr = task_var1.end <= task_var2.start
-                model.add(expr).only_enforce_if(both_present)
+        for idx1, idx2 in data.constraints.end_before_start:
+            task_var1 = self._task_vars[idx1]
+            task_var2 = self._task_vars[idx2]
+            both_present = [task_var1.present, task_var2.present]
+            expr = task_var1.end <= task_var2.start
+            model.add(expr).only_enforce_if(both_present)
 
-            if Constraint.END_BEFORE_END in constraints:
-                expr = task_var1.end <= task_var2.end
-                model.add(expr).only_enforce_if(both_present)
+        for idx1, idx2 in data.constraints.end_before_end:
+            task_var1 = self._task_vars[idx1]
+            task_var2 = self._task_vars[idx2]
+            both_present = [task_var1.present, task_var2.present]
+            expr = task_var1.end <= task_var2.end
+            model.add(expr).only_enforce_if(both_present)
 
     def _identical_and_different_resource_constraints(self):
         """
@@ -192,47 +208,35 @@ class Constraints:
         """
         model, data = self._model, self._data
         task2modes = utils.task2modes(data)
-        relevant = {
-            Constraint.IDENTICAL_RESOURCES,
-            Constraint.DIFFERENT_RESOURCES,
-        }
 
-        for (task1, task2), constraints in data.constraints.items():
-            assignment_constraints = set(constraints) & relevant
-            if not assignment_constraints:
-                continue
-
+        for idx1, idx2 in data.constraints.identical_resources:
             identical = utils.find_modes_with_identical_resources(
-                data, task1, task2
-            )
-            disjoint = utils.find_modes_with_disjoint_resources(
-                data, task1, task2
+                data, idx1, idx2
             )
 
-            modes1 = task2modes[task1]
-            both_present = [
-                self._task_vars[task1].present,
-                self._task_vars[task2].present,
-            ]
-
+            modes1 = task2modes[idx1]
             for mode1 in modes1:
-                if Constraint.IDENTICAL_RESOURCES in assignment_constraints:
-                    identical_modes2 = identical[mode1]
-                    var1 = self._mode_vars[mode1].present
-                    vars2 = [
-                        self._mode_vars[mode2].present
-                        for mode2 in identical_modes2
-                    ]
-                    model.add(sum(vars2) >= var1).only_enforce_if(both_present)
+                identical_modes2 = identical[mode1]
+                var1 = self._mode_vars[mode1].is_present
+                vars2 = [
+                    self._mode_vars[mode2].is_present
+                    for mode2 in identical_modes2
+                ]
+                model.add(sum(vars2) >= var1)
 
-                if Constraint.DIFFERENT_RESOURCES in assignment_constraints:
-                    disjoint_modes2 = disjoint[mode1]
-                    var1 = self._mode_vars[mode1].present
-                    vars2 = [
-                        self._mode_vars[mode2].present
-                        for mode2 in disjoint_modes2
-                    ]
-                    model.add(sum(vars2) >= var1).only_enforce_if(both_present)
+        for idx1, idx2 in data.constraints.different_resources:
+            disjoint = utils.find_modes_with_disjoint_resources(
+                data, idx1, idx2
+            )
+            modes1 = task2modes[idx1]
+            for mode1 in modes1:
+                disjoint_modes2 = disjoint[mode1]
+                var1 = self._mode_vars[mode1].is_present
+                vars2 = [
+                    self._mode_vars[mode2].is_present
+                    for mode2 in disjoint_modes2
+                ]
+                model.add(sum(vars2) >= var1)
 
     def _if_then_constraints(self):
         """
@@ -255,12 +259,13 @@ class Constraints:
         the CP-SAT model to enforce setup times.
         """
         model, data = self._model, self._data
+        setup_times = utils.setup_times_matrix(data)
 
         for idx, resource in enumerate(data.resources):
             if not isinstance(resource, Machine):
                 continue
 
-            if data.setup_times is not None and np.any(data.setup_times[idx]):
+            if setup_times is not None and np.any(setup_times[idx]):
                 self._sequence_vars[idx].activate(model)
 
     def _consecutive_constraints(self):
@@ -269,19 +274,14 @@ class Constraints:
         """
         model, data = self._model, self._data
 
-        for (task1, task2), constraints in data.constraints.items():
-            if Constraint.CONSECUTIVE not in constraints:
-                continue
-
-            # Find the modes of the task that have intersecting resources,
-            # because we need to enforce consecutive constraints on them.
+        for idx1, idx2 in data.constraints.consecutive:
             intersecting = utils.find_modes_with_intersecting_resources(
-                data, task1, task2
+                data, idx1, idx2
             )
             for mode1, mode2, resources in intersecting:
                 for resource in resources:
                     if not isinstance(data.resources[resource], Machine):
-                        continue  # skip sequencing on non-machine resources
+                        continue
 
                     seq_var = self._sequence_vars[resource]
                     seq_var.activate(model)
@@ -301,6 +301,7 @@ class Constraints:
         sequencing constraints (consecutive and setup times).
         """
         model, data = self._model, self._data
+        setup_times = utils.setup_times_matrix(data)
 
         for idx, resource in enumerate(data.resources):
             if not isinstance(resource, Machine):
@@ -340,10 +341,9 @@ class Constraints:
                     model.add_implication(arc, var1.present)
                     model.add_implication(arc, var2.present)
 
-                    # Use the mode's task idx to get the correct setup times.
                     setup = (
-                        data.setup_times[idx, var1.task_idx, var2.task_idx]
-                        if data.setup_times is not None
+                        setup_times[idx, var1.task_idx, var2.task_idx]
+                        if setup_times is not None
                         else 0
                     )
                     expr = var1.end + setup <= var2.start
