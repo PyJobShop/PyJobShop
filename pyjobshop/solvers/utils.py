@@ -143,6 +143,107 @@ def find_modes_with_intersecting_resources(
     return intersecting
 
 
+def identical_modes(data, task1, task2):
+    """
+    Find modes with identical resources for two tasks.
+
+    Parameters
+    ----------
+    data
+        The problem data instance.
+    task1
+        The first task index.
+    task2
+        The second task index.
+
+    Returns
+    -------
+    list[tuple[int, int]]
+        A list of tuples containing the mode indices of the first and second
+        task that have identical resources.
+    """
+    modes1 = [mode for mode in data.modes if mode.task == task1]
+    modes2 = [mode for mode in data.modes if mode.task == task2]
+
+    for mode1 in modes1:
+        identical = []
+        resources1 = set(mode1.resources)
+        for mode2 in modes2:
+            if resources1 == set(mode2.resources):
+                idx2 = data.modes.index(mode2)
+                identical.append(idx2)
+
+        idx1 = data.modes.index(mode1)
+        yield idx1, identical
+
+
+def different_modes(data, task1, task2):
+    """
+    Find modes with disjoint resources for two tasks.
+
+    Parameters
+    ----------
+    data
+        The problem data instance.
+    task1
+        The first task index.
+    task2
+        The second task index.
+
+    Returns
+    -------
+    list[tuple[int, int]]
+        A list of tuples containing the mode indices of the first and second
+        task that have disjoint resources.
+    """
+    modes1 = [mode for mode in data.modes if mode.task == task1]
+    modes2 = [mode for mode in data.modes if mode.task == task2]
+
+    for mode1 in modes1:
+        disjoint = []
+        resources1 = set(mode1.resources)
+        for mode2 in modes2:
+            if resources1.isdisjoint(set(mode2.resources)):
+                idx2 = data.modes.index(mode2)
+                disjoint.append(idx2)
+
+        idx1 = data.modes.index(mode1)
+        yield idx1, disjoint
+
+
+def intersecting_modes(data: ProblemData, task1: int, task2: int):
+    """
+    Finds the intersection of resources for modes associated with two tasks.
+    Specific utility function for the consecutive constraints.
+
+    Parameters
+    ----------
+    data
+        The problem data instance.
+    task1
+        The first task index.
+    task2
+        The second task index.
+
+    Returns
+    -------
+    list[tuple[int, int, list[int]]]
+        A list of tuples containing the mode indices of the first and second
+        task and the resources they have in common.
+    """
+    modes1 = [mode for mode in data.modes if mode.task == task1]
+    modes2 = [mode for mode in data.modes if mode.task == task2]
+
+    for mode1 in modes1:
+        resources1 = set(mode1.resources)
+        for mode2 in modes2:
+            in_common = sorted(resources1.intersection(set(mode2.resources)))
+            if in_common:
+                idx1 = data.modes.index(mode1)
+                idx2 = data.modes.index(mode2)
+                yield idx1, idx2, in_common
+
+
 def find_modes_with_identical_resources(
     data: ProblemData, task1: int, task2: int
 ) -> dict[int, list[int]]:

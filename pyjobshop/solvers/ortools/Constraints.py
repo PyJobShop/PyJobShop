@@ -165,35 +165,22 @@ class Constraints:
         Creates constraints for the same and different resource constraints.
         """
         model, data = self._model, self._data
-        task2modes = utils.task2modes(data)
 
         for idx1, idx2 in data.constraints.identical_resources:
-            identical = utils.find_modes_with_identical_resources(
-                data, idx1, idx2
-            )
-            modes1 = task2modes[idx1]
-            for mode1 in modes1:
-                identical_modes2 = identical[mode1]
-                var1 = self._mode_vars[mode1].is_present
-                vars2 = [
-                    self._mode_vars[mode2].is_present
-                    for mode2 in identical_modes2
-                ]
-                model.add(var1 <= sum(vars2))
+            for mode1, modes2 in utils.identical_modes(data, idx1, idx2):
+                expr1 = self._mode_vars[mode1].is_present
+                expr2 = sum(
+                    self._mode_vars[mode2].is_present for mode2 in modes2
+                )
+                model.add(expr1 <= expr2)
 
         for idx1, idx2 in data.constraints.different_resources:
-            disjoint = utils.find_modes_with_disjoint_resources(
-                data, idx1, idx2
-            )
-            modes1 = task2modes[idx1]
-            for mode1 in modes1:
-                disjoint_modes2 = disjoint[mode1]
-                var1 = self._mode_vars[mode1].is_present
-                vars2 = [
-                    self._mode_vars[mode2].is_present
-                    for mode2 in disjoint_modes2
-                ]
-                model.add(var1 <= sum(vars2))
+            for mode1, modes2 in utils.different_modes(data, idx1, idx2):
+                expr1 = self._mode_vars[mode1].is_present
+                expr2 = sum(
+                    self._mode_vars[mode2].is_present for mode2 in modes2
+                )
+                model.add(expr1 <= expr2)
 
     def _activate_setup_times(self):
         """
@@ -218,9 +205,7 @@ class Constraints:
         model, data = self._model, self._data
 
         for idx1, idx2 in data.constraints.consecutive:
-            intersecting = utils.find_modes_with_intersecting_resources(
-                data, idx1, idx2
-            )
+            intersecting = utils.intersecting_modes(data, idx1, idx2)
             for mode1, mode2, resources in intersecting:
                 for resource in resources:
                     if not isinstance(data.resources[resource], Machine):
