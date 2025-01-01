@@ -179,7 +179,7 @@ class Constraints:
                     self._mode_vars[mode2].is_present
                     for mode2 in identical_modes2
                 ]
-                model.add(sum(vars2) >= var1)
+                model.add(var1 <= sum(vars2))
 
         for idx1, idx2 in data.constraints.different_resources:
             disjoint = utils.find_modes_with_disjoint_resources(
@@ -193,7 +193,7 @@ class Constraints:
                     self._mode_vars[mode2].is_present
                     for mode2 in disjoint_modes2
                 ]
-                model.add(sum(vars2) >= var1)
+                model.add(var1 <= sum(vars2))
 
     def _activate_setup_times(self):
         """
