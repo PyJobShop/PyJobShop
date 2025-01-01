@@ -296,13 +296,21 @@ def test_problem_data_non_input_parameter_attributes():
         Mode(task=1, resources=[0], duration=1),
         Mode(task=0, resources=[2], duration=1),
     ]
+    constraints = Constraints(
+        start_at_end=[StartAtEnd(1, 1)],
+        start_before_start=[StartBeforeStart(1, 1)],
+        start_before_end=[StartBeforeEnd(1, 1)],
+        end_at_start=[EndAtStart(1, 1)],
+        end_before_end=[EndBeforeEnd(1, 1)],
+    )
 
-    data = ProblemData(jobs, resources, tasks, modes)
+    data = ProblemData(jobs, resources, tasks, modes, constraints)
 
     assert_equal(data.num_jobs, 1)
     assert_equal(data.num_resources, 3)
     assert_equal(data.num_tasks, 3)
     assert_equal(data.num_modes, 4)
+    assert_equal(data.num_constraints, 5)
 
 
 def test_problem_data_default_values():

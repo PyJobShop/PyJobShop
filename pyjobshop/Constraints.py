@@ -190,54 +190,109 @@ class Constraints:
             )
         )
 
+    def __len__(self) -> int:
+        return (
+            len(self.start_at_start)
+            + len(self.start_at_end)
+            + len(self.start_before_start)
+            + len(self.start_before_end)
+            + len(self.end_at_start)
+            + len(self.end_at_end)
+            + len(self.end_before_start)
+            + len(self.end_before_end)
+            + len(self.identical_resources)
+            + len(self.different_resources)
+            + len(self.consecutive)
+            # TODO add setup times
+        )
+
     @property
     def start_at_start(self) -> list[StartAtStart]:
+        """
+        Returns the list of start-at-start constraints.
+        """
         return self._start_at_start
 
     @property
     def start_at_end(self) -> list[StartAtEnd]:
+        """
+        Returns the list of start-at-end constraints.
+        """
         return self._start_at_end
 
     @property
     def start_before_start(self) -> list[StartBeforeStart]:
+        """
+        Returns the list of start-before-start constraints.
+        """
         return self._start_before_start
 
     @property
     def start_before_end(self) -> list[StartBeforeEnd]:
+        """
+        Returns the list of start-before-end constraints.
+        """
         return self._start_before_end
 
     @property
     def end_at_start(self) -> list[EndAtStart]:
+        """
+        Returns the list of end-at-start constraints.
+        """
         return self._end_at_start
 
     @property
     def end_at_end(self) -> list[EndAtEnd]:
+        """
+        Returns the list of end-at-end constraints.
+        """
         return self._end_at_end
 
     @property
     def end_before_start(self) -> list[EndBeforeStart]:
+        """
+        Returns the list of end-before-start constraints.
+        """
         return self._end_before_start
 
     @property
     def end_before_end(self) -> list[EndBeforeEnd]:
+        """
+        Returns the list of end-before-end constraints.
+        """
         return self._end_before_end
 
     @property
     def identical_resources(self) -> list[IdenticalResources]:
+        """
+        Returns the list of identical resources constraints.
+        """
         return self._identical_resources
 
     @property
     def different_resources(self) -> list[DifferentResources]:
+        """
+        Returns the list of different resources constraints.
+        """
         return self._different_resources
 
     @property
     def consecutive(self) -> list[Consecutive]:
+        """
+        Returns the list of consecutive task constraints.
+        """
         return self._consecutive
 
     @property
     def setup_times(self) -> Optional[np.ndarray]:
+        """
+        Returns the array of sequence-dependent setup times.
+        """
         return self._setup_times
 
     @setup_times.setter
     def setup_times(self, value: np.ndarray):
+        """
+        Sets the array of sequence-dependent setup times.
+        """
         self._setup_times = value

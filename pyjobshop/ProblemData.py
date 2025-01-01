@@ -28,9 +28,9 @@ class Job:
         the latest completion time. Default ``MAX_VALUE``.
     due_date
         The latest time that the job should be completed before incurring
-        penalties. Default is None, meaning that there is no due date.
+        penalties. Default ``None``, meaning that there is no due date.
     tasks
-        List of task indices that belong to this job. Default is None,
+        List of task indices that belong to this job. Default ``None``,
         which initializes an empty list.
     name
         Name of the job.
@@ -465,8 +465,8 @@ class Objective:
 
 class ProblemData:
     """
-    Creates a problem data instance. This instance contains all information
-    need to solve the scheduling problem.
+    The problem data that contains all information need to solve the scheduling
+    problem instance.
 
     Parameters
     ----------
@@ -479,7 +479,8 @@ class ProblemData:
     modes
         List of processing modes of tasks.
     constraints
-        TODO
+        The constraints of this problem data instance. Default is no
+        constraints.
     objective
         The objective function. Default is minimizing the makespan.
     """
@@ -605,7 +606,7 @@ class ProblemData:
         modes
             Optional processing modes of tasks.
         constraints
-            Optional constraints between tasks.
+            Optional constraints.
         objective
             Optional objective function.
 
@@ -665,14 +666,14 @@ class ProblemData:
     @property
     def constraints(self) -> Constraints:
         """
-        TODO
+        Returns the constraints of this problem instance.
         """
         return self._constraints
 
     @property
     def objective(self) -> Objective:
         """
-        The objective function.
+        Returns the objective function of this problem instance.
         """
         return self._objective
 
@@ -703,3 +704,10 @@ class ProblemData:
         Returns the number of modes in this instance.
         """
         return len(self._modes)
+
+    @property
+    def num_constraints(self) -> int:
+        """
+        Returns the number of constraints in this instance.
+        """
+        return len(self._constraints)
