@@ -5,7 +5,7 @@ import numpy as np
 
 class StartAtStart(NamedTuple):
     """
-    Test docstring TODO
+    Start task 1 at the same time as task 2 starts.
     """
 
     task1: int
@@ -13,51 +13,93 @@ class StartAtStart(NamedTuple):
 
 
 class StartAtEnd(NamedTuple):
+    """
+    Start task 1 at the same time as task 2 finishes.
+    """
+
     task1: int
     task2: int
 
 
 class StartBeforeStart(NamedTuple):
+    """
+    Start task 1 before task 2 starts.
+    """
+
     task1: int
     task2: int
 
 
 class StartBeforeEnd(NamedTuple):
+    """
+    Start task 1 before task 2 finishes.
+    """
+
     task1: int
     task2: int
 
 
 class EndAtStart(NamedTuple):
+    """
+    End task 1 at the same time as task 2 starts.
+    """
+
     task1: int
     task2: int
 
 
 class EndAtEnd(NamedTuple):
+    """
+    End task 1 at the same time as task 2 finishes.
+    """
+
     task1: int
     task2: int
 
 
 class EndBeforeStart(NamedTuple):
+    """
+    End task 1 before task 2 starts.
+    """
+
     task1: int
     task2: int
 
 
 class EndBeforeEnd(NamedTuple):
+    """
+    End task 1 before task 2 finishes.
+    """
+
     task1: int
     task2: int
 
 
 class IdenticalResources(NamedTuple):
+    """
+    Select a mode for task 1 and task 2 that use the same resources.
+    """
+
     task1: int
     task2: int
 
 
 class DifferentResources(NamedTuple):
+    """
+    Select a mode for task 1 and task 2 that use different resources, that is,
+    the intersection of the resources used by the two modes is empty.
+    """
+
     task1: int
     task2: int
 
 
 class Consecutive(NamedTuple):
+    """
+    Sequence task 1 right before task 2 on the machines they are both assigned
+    to, meaning that no task is allowed to schedule between them.
+    """
+
     task1: int
     task2: int
 

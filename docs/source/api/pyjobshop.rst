@@ -39,37 +39,40 @@ PyJobShop
 .. automodule:: pyjobshop.Constraints
 
     .. autoclass:: Constraints
+        :members:
 
+    .. autoclass:: StartAtStart
+        :exclude-members: count, index
 
     .. autoclass:: StartAtEnd
-        :members:
+        :exclude-members: count, index
 
     .. autoclass:: StartBeforeStart
-        :members:
+        :exclude-members: count, index
 
     .. autoclass:: StartBeforeEnd
-        :members:
+        :exclude-members: count, index
 
     .. autoclass:: EndAtStart
-        :members:
+        :exclude-members: count, index
 
     .. autoclass:: EndAtEnd
-        :members:
+        :exclude-members: count, index
 
     .. autoclass:: EndBeforeStart
-        :members:
+        :exclude-members: count, index
 
     .. autoclass:: EndBeforeEnd
-        :members:
+        :exclude-members: count, index
 
     .. autoclass:: IdenticalResources
-        :members:
+        :exclude-members: count, index
 
     .. autoclass:: DifferentResources
-        :members:
+        :exclude-members: count, index
 
     .. autoclass:: Consecutive
-        :members:
+        :exclude-members: count, index
 
 .. automodule:: pyjobshop.Solution
 
