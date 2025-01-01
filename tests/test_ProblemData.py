@@ -1,11 +1,16 @@
-import numpy as np
 import pytest
 from numpy.testing import assert_, assert_equal, assert_raises
 
 from pyjobshop.constants import MAX_VALUE
 from pyjobshop.Model import Model
 from pyjobshop.ProblemData import (
-    Constraint,
+    Constraints,
+    DifferentResources,
+    EndAtEnd,
+    EndAtStart,
+    EndBeforeEnd,
+    EndBeforeStart,
+    IdenticalResources,
     Job,
     Machine,
     Mode,
@@ -13,6 +18,11 @@ from pyjobshop.ProblemData import (
     Objective,
     ProblemData,
     Renewable,
+    SetupTime,
+    StartAtEnd,
+    StartAtStart,
+    StartBeforeEnd,
+    StartBeforeStart,
     Task,
 )
 from pyjobshop.Solution import TaskData as TaskData
@@ -214,10 +224,13 @@ def test_problem_data_input_parameter_attributes():
         for task in range(5)
         for resource in range(5)
     ]
-    constraints = {
-        key: [Constraint.END_BEFORE_START] for key in ((0, 1), (2, 3), (4, 5))
-    }
-    setup_times = np.ones((5, 5, 5), dtype=int)
+    constraints = Constraints(
+        end_before_start=[
+            EndBeforeStart(0, 1),
+            EndBeforeStart(2, 3),
+            EndBeforeStart(4, 5),
+        ]
+    )
     objective = Objective.total_flow_time()
 
     data = ProblemData(
@@ -226,7 +239,6 @@ def test_problem_data_input_parameter_attributes():
         tasks,
         modes,
         constraints,
-        setup_times,
         objective,
     )
 
@@ -235,7 +247,6 @@ def test_problem_data_input_parameter_attributes():
     assert_equal(data.tasks, tasks)
     assert_equal(data.modes, modes)
     assert_equal(data.constraints, constraints)
-    assert_equal(data.setup_times, setup_times)
     assert_equal(data.objective, objective)
 
 
@@ -283,13 +294,21 @@ def test_problem_data_non_input_parameter_attributes():
         Mode(task=1, resources=[0], duration=1),
         Mode(task=0, resources=[2], duration=1),
     ]
+    constraints = Constraints(
+        start_at_end=[StartAtEnd(1, 1)],
+        start_before_start=[StartBeforeStart(1, 1)],
+        start_before_end=[StartBeforeEnd(1, 1)],
+        end_at_start=[EndAtStart(1, 1)],
+        end_before_end=[EndBeforeEnd(1, 1)],
+    )
 
-    data = ProblemData(jobs, resources, tasks, modes)
+    data = ProblemData(jobs, resources, tasks, modes, constraints)
 
     assert_equal(data.num_jobs, 1)
     assert_equal(data.num_resources, 3)
     assert_equal(data.num_tasks, 3)
     assert_equal(data.num_modes, 4)
+    assert_equal(data.num_constraints, 5)
 
 
 def test_problem_data_default_values():
@@ -302,8 +321,7 @@ def test_problem_data_default_values():
     modes = [Mode(task=0, resources=[0], duration=1)]
     data = ProblemData(jobs, resources, tasks, modes)
 
-    assert_equal(data.constraints, {})
-    assert_equal(data.setup_times, None)
+    assert_equal(data.constraints, Constraints())
     assert_equal(data.objective, Objective.makespan())
 
 
@@ -391,40 +409,36 @@ def test_problem_data_all_modes_demand_infeasible():
         )
 
 
-@pytest.mark.parametrize(
-    "setup_times",
-    [
-        (np.ones((1, 1, 1)) * -1),  # negative setup times
-        (np.ones((2, 2, 2))),  # invalid setup times shape
-    ],
-)
-def test_problem_data_raises_when_invalid_arguments(setup_times: np.ndarray):
+def test_problem_data_raises_negative_setup_times():
     """
-    Tests that the ProblemData class raises an error when invalid arguments are
-    passed.
+    Tests that the ProblemData class raises an error when negative setup times
+    are passed.
     """
     with assert_raises(ValueError):
         ProblemData(
             [Job()],
-            [Renewable(0)],
-            [Task()],
-            modes=[Mode(0, [0], 1)],
-            setup_times=setup_times.astype(int),
+            [Machine()],
+            [Task(), Task()],
+            [Mode(0, [0], 0), Mode(1, [0], 0)],
+            Constraints(setup_times=[SetupTime(0, 0, 1, -1)]),
         )
 
 
-def test_problem_data_raises_capacitated_resources_and_setup_times():
+@pytest.mark.parametrize(
+    "resource", [Renewable(capacity=1), NonRenewable(capacity=1)]
+)
+def test_problem_data_raises_capacitated_resources_and_setup_times(resource):
     """
-    Tests that the ProblemData class raises an error when resources with
-    nonzero capacities have setup times.
+    Tests that the ProblemData class raises an error when capacitated resources
+    with have setup times.
     """
     with assert_raises(ValueError):
         ProblemData(
             [Job()],
-            [Renewable(capacity=2)],
-            [Task()],
-            [Mode(0, [0], 0)],
-            setup_times=np.array([[[1]]]),
+            [resource],
+            [Task(), Task()],
+            [Mode(0, [0], 0), Mode(1, [0], 0)],
+            Constraints(setup_times=[SetupTime(0, 0, 1, 1)]),
         )
 
 
@@ -466,8 +480,7 @@ def make_replace_data():
         Mode(task=0, resources=[0], duration=1),
         Mode(task=1, resources=[1], duration=2),
     ]
-    constraints = {(0, 1): [Constraint.END_BEFORE_START]}
-    setup_times = np.zeros((2, 2, 2))
+    constraints = Constraints(end_before_start=[EndBeforeStart(0, 1)])
     objective = Objective.makespan()
 
     return ProblemData(
@@ -476,7 +489,6 @@ def make_replace_data():
         tasks,
         modes,
         constraints,
-        setup_times,
         objective,
     )
 
@@ -514,7 +526,6 @@ def test_problem_data_replace_no_changes():
         assert_equal(new.modes[idx].duration, data.modes[idx].duration)
 
     assert_equal(new.constraints, data.constraints)
-    assert_equal(new.setup_times, data.setup_times)
     assert_equal(new.objective, data.objective)
 
 
@@ -532,12 +543,9 @@ def test_problem_data_replace_with_changes():
             Mode(task=0, resources=[0], duration=20),
             Mode(task=1, resources=[1], duration=10),
         ],
-        constraints={(1, 0): [Constraint.END_BEFORE_START]},
-        setup_times=np.array(
-            [
-                np.zeros((2, 2)),  # resource without setup times
-                np.ones((2, 2)),  # resource with setup times
-            ],
+        constraints=Constraints(
+            end_before_start=[EndBeforeStart(1, 0)],
+            setup_times=[SetupTime(0, 0, 1, 0), SetupTime(1, 0, 1, 10)],
         ),
         objective=Objective.total_tardiness(),
     )
@@ -563,7 +571,6 @@ def test_problem_data_replace_with_changes():
         assert_(new.modes[idx].duration != data.modes[idx].duration)
 
     assert_(new.constraints != data.constraints)
-    assert_(not np.array_equal(new.setup_times, data.setup_times))
     assert_(new.objective != data.objective)
 
 
@@ -898,29 +905,29 @@ def test_resource_non_renewable_capacity(solver: str):
 
 
 @pytest.mark.parametrize(
-    "prec_type,expected_makespan",
+    "attr,constraint,expected_makespan",
     [
         # start 0 == start 0
-        (Constraint.START_AT_START, 2),
+        ("start_at_start", StartAtStart, 2),
         # start 2 == end 2
-        (Constraint.START_AT_END, 4),
+        ("start_at_end", StartAtEnd, 4),
         # start 0 <= start 0
-        (Constraint.START_BEFORE_START, 2),
+        ("start_before_start", StartBeforeStart, 2),
         # start 0 <= end 2
-        (Constraint.START_BEFORE_END, 2),
+        ("start_before_end", StartBeforeEnd, 2),
         # end 2 == start 2
-        (Constraint.END_AT_START, 4),
+        ("end_at_start", EndAtStart, 4),
         # end 2 == end 2
-        (Constraint.END_AT_END, 2),
+        ("end_at_end", EndAtEnd, 2),
         # end 2 <= start 2
-        (Constraint.END_BEFORE_START, 4),
+        ("end_before_start", EndBeforeStart, 4),
         # end 2 <= end 2
-        (Constraint.END_BEFORE_END, 2),
-        (Constraint.IDENTICAL_RESOURCES, 4),
-        (Constraint.DIFFERENT_RESOURCES, 2),
+        ("end_before_end", EndBeforeEnd, 2),
+        ("identical_resources", IdenticalResources, 4),
+        ("different_resources", DifferentResources, 2),
     ],
 )
-def test_constraints(solver, prec_type: Constraint, expected_makespan: int):
+def test_constraints(solver, attr: str, constraint, expected_makespan: int):
     """
     Tests that constraints are respected. This example uses two tasks and two
     resources with processing times of 2.
@@ -935,8 +942,10 @@ def test_constraints(solver, prec_type: Constraint, expected_makespan: int):
         for resource in range(len(resources))
         for task in range(len(tasks))
     ]
+    constraints = Constraints()
+    getattr(constraints, attr).append(constraint(0, 1))  # a bit hacky
 
-    data = ProblemData([job], resources, tasks, modes, {(0, 1): [prec_type]})
+    data = ProblemData([job], resources, tasks, modes, constraints)
     result = solve(data, solver=solver)
 
     assert_equal(result.objective, expected_makespan)
