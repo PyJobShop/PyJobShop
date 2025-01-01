@@ -419,8 +419,8 @@ def test_problem_data_raises_negative_setup_times():
             [Job()],
             [Machine()],
             [Task(), Task()],
-            [Mode(0, [0], 0), Mode(0, [0], 0)],
-            constraints=Constraints(setup_times=[SetupTime(0, 0, 1, -1)]),
+            [Mode(0, [0], 0), Mode(1, [0], 0)],
+            Constraints(setup_times=[SetupTime(0, 0, 1, -1)]),
         )
 
 
@@ -437,8 +437,8 @@ def test_problem_data_raises_capacitated_resources_and_setup_times(resource):
             [Job()],
             [resource],
             [Task(), Task()],
-            [Mode(0, [0], 0), Mode(0, [0], 0)],
-            constraints=Constraints(setup_times=[SetupTime(0, 0, 1, 1)]),
+            [Mode(0, [0], 0), Mode(1, [0], 0)],
+            Constraints(setup_times=[SetupTime(0, 0, 1, 1)]),
         )
 
 
