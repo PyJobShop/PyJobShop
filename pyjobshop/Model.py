@@ -1,7 +1,7 @@
 from typing import Optional, Sequence, Union
 
 from pyjobshop.constants import MAX_VALUE
-from pyjobshop.Constraints import (
+from pyjobshop.ProblemData import (
     Consecutive,
     Constraints,
     DifferentResources,
@@ -10,13 +10,6 @@ from pyjobshop.Constraints import (
     EndBeforeEnd,
     EndBeforeStart,
     IdenticalResources,
-    SetupTime,
-    StartAtEnd,
-    StartAtStart,
-    StartBeforeEnd,
-    StartBeforeStart,
-)
-from pyjobshop.ProblemData import (
     Job,
     Machine,
     Mode,
@@ -25,6 +18,11 @@ from pyjobshop.ProblemData import (
     ProblemData,
     Renewable,
     Resource,
+    SetupTime,
+    StartAtEnd,
+    StartAtStart,
+    StartBeforeEnd,
+    StartBeforeStart,
     Task,
 )
 from pyjobshop.Result import Result

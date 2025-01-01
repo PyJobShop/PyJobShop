@@ -2,7 +2,8 @@ import pytest
 from numpy.testing import assert_, assert_equal, assert_raises
 
 from pyjobshop.constants import MAX_VALUE
-from pyjobshop.Constraints import (
+from pyjobshop.Model import Model
+from pyjobshop.ProblemData import (
     Constraints,
     DifferentResources,
     EndAtEnd,
@@ -10,14 +11,6 @@ from pyjobshop.Constraints import (
     EndBeforeEnd,
     EndBeforeStart,
     IdenticalResources,
-    SetupTime,
-    StartAtEnd,
-    StartAtStart,
-    StartBeforeEnd,
-    StartBeforeStart,
-)
-from pyjobshop.Model import Model
-from pyjobshop.ProblemData import (
     Job,
     Machine,
     Mode,
@@ -25,6 +18,11 @@ from pyjobshop.ProblemData import (
     Objective,
     ProblemData,
     Renewable,
+    SetupTime,
+    StartAtEnd,
+    StartAtStart,
+    StartBeforeEnd,
+    StartBeforeStart,
     Task,
 )
 from pyjobshop.Solution import TaskData as TaskData
@@ -426,6 +424,9 @@ def test_problem_data_raises_negative_setup_times():
         )
 
 
+@pytest.mark.parametrize(
+    "resource", [Renewable(capacity=1), NonRenewable(capacity=1)]
+)
 def test_problem_data_raises_capacitated_resources_and_setup_times(resource):
     """
     Tests that the ProblemData class raises an error when capacitated resources

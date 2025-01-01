@@ -33,11 +33,6 @@ PyJobShop
     .. autoclass:: Mode
        :members:
 
-    .. autoclass:: Objective
-       :members:
-
-.. automodule:: pyjobshop.Constraints
-
     .. autoclass:: Constraints
         :members:
 
@@ -76,6 +71,9 @@ PyJobShop
 
     .. autoclass:: SetupTime
         :exclude-members: count, index
+
+    .. autoclass:: Objective
+       :members:
 
 .. automodule:: pyjobshop.Solution
 
