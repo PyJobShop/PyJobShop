@@ -121,43 +121,43 @@ class Constraints:
         model, data = self._model, self._data
 
         for idx1, idx2, delay in data.constraints.start_at_start:
-            expr1 = self._task_vars[idx1].start
-            expr2 = self._task_vars[idx2].start + delay
+            expr1 = self._task_vars[idx1].start + delay
+            expr2 = self._task_vars[idx2].start
             model.add(expr1 == expr2)
 
         for idx1, idx2, delay in data.constraints.start_at_end:
-            expr1 = self._task_vars[idx1].start
-            expr2 = self._task_vars[idx2].end + delay
+            expr1 = self._task_vars[idx1].start + delay
+            expr2 = self._task_vars[idx2].end
             model.add(expr1 == expr2)
 
         for idx1, idx2, delay in data.constraints.start_before_start:
-            expr1 = self._task_vars[idx1].start
-            expr2 = self._task_vars[idx2].start + delay
+            expr1 = self._task_vars[idx1].start + delay
+            expr2 = self._task_vars[idx2].start
             model.add(expr1 <= expr2)
 
         for idx1, idx2, delay in data.constraints.start_before_end:
-            expr1 = self._task_vars[idx1].start
-            expr2 = self._task_vars[idx2].end + delay
+            expr1 = self._task_vars[idx1].start + delay
+            expr2 = self._task_vars[idx2].end
             model.add(expr1 <= expr2)
 
         for idx1, idx2, delay in data.constraints.end_at_start:
-            expr1 = self._task_vars[idx1].end
-            expr2 = self._task_vars[idx2].start + delay
+            expr1 = self._task_vars[idx1].end + delay
+            expr2 = self._task_vars[idx2].start
             model.add(expr1 == expr2)
 
         for idx1, idx2, delay in data.constraints.end_at_end:
-            expr1 = self._task_vars[idx1].end
-            expr2 = self._task_vars[idx2].end + delay
+            expr1 = self._task_vars[idx1].end + delay
+            expr2 = self._task_vars[idx2].end
             model.add(expr1 == expr2)
 
         for idx1, idx2, delay in data.constraints.end_before_start:
-            expr1 = self._task_vars[idx1].end
-            expr2 = self._task_vars[idx2].start + delay
+            expr1 = self._task_vars[idx1].end + delay
+            expr2 = self._task_vars[idx2].start
             model.add(expr1 <= expr2)
 
         for idx1, idx2, delay in data.constraints.end_before_end:
-            expr1 = self._task_vars[idx1].end
-            expr2 = self._task_vars[idx2].end + delay
+            expr1 = self._task_vars[idx1].end + delay
+            expr2 = self._task_vars[idx2].end
             model.add(expr1 <= expr2)
 
     def _identical_and_different_resource_constraints(self):
