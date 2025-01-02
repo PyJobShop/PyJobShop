@@ -54,7 +54,7 @@ class Solver:
         tasks = {}
 
         for idx, var in enumerate(self._variables.mode_vars):
-            if cp_solver.value(var.is_present):
+            if cp_solver.value(var.present):
                 start = cp_solver.value(var.start)
                 end = cp_solver.value(var.end)
                 mode = self._data.modes[idx]
