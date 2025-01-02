@@ -142,29 +142,29 @@ class Model:
 
         tasks = model.tasks
 
-        for idx1, idx2 in data.constraints.start_at_start:
-            model.add_start_at_start(tasks[idx1], tasks[idx2])
+        for idx1, idx2, delay in data.constraints.start_at_start:
+            model.add_start_at_start(tasks[idx1], tasks[idx2], delay)
 
-        for idx1, idx2 in data.constraints.start_at_end:
-            model.add_start_at_end(tasks[idx1], tasks[idx2])
+        for idx1, idx2, delay in data.constraints.start_at_end:
+            model.add_start_at_end(tasks[idx1], tasks[idx2], delay)
 
-        for idx1, idx2 in data.constraints.start_before_start:
-            model.add_start_before_start(tasks[idx1], tasks[idx2])
+        for idx1, idx2, delay in data.constraints.start_before_start:
+            model.add_start_before_start(tasks[idx1], tasks[idx2], delay)
 
-        for idx1, idx2 in data.constraints.start_before_end:
-            model.add_start_before_end(tasks[idx1], tasks[idx2])
+        for idx1, idx2, delay in data.constraints.start_before_end:
+            model.add_start_before_end(tasks[idx1], tasks[idx2], delay)
 
-        for idx1, idx2 in data.constraints.end_at_start:
-            model.add_end_at_start(tasks[idx1], tasks[idx2])
+        for idx1, idx2, delay in data.constraints.end_at_start:
+            model.add_end_at_start(tasks[idx1], tasks[idx2], delay)
 
-        for idx1, idx2 in data.constraints.end_at_end:
-            model.add_end_at_end(tasks[idx1], tasks[idx2])
+        for idx1, idx2, delay in data.constraints.end_at_end:
+            model.add_end_at_end(tasks[idx1], tasks[idx2], delay)
 
-        for idx1, idx2 in data.constraints.end_before_start:
-            model.add_end_before_start(tasks[idx1], tasks[idx2])
+        for idx1, idx2, delay in data.constraints.end_before_start:
+            model.add_end_before_start(tasks[idx1], tasks[idx2], delay)
 
-        for idx1, idx2 in data.constraints.end_before_end:
-            model.add_end_before_end(tasks[idx1], tasks[idx2])
+        for idx1, idx2, delay in data.constraints.end_before_end:
+            model.add_end_before_end(tasks[idx1], tasks[idx2], delay)
 
         for idx1, idx2 in data.constraints.identical_resources:
             model.add_identical_resources(tasks[idx1], tasks[idx2])
@@ -315,92 +315,106 @@ class Model:
 
         return mode
 
-    def add_start_at_start(self, task1: Task, task2: Task) -> StartAtStart:
+    def add_start_at_start(
+        self, task1: Task, task2: Task, delay: int = 0
+    ) -> StartAtStart:
         """
         Adds a constraint that the first task must start at the same time as
         the second task starts.
         """
         idx1, idx2 = self._id2task[id(task1)], self._id2task[id(task2)]
-        constraint = StartAtStart(idx1, idx2)
+        constraint = StartAtStart(idx1, idx2, delay)
         self._constraints.start_at_start.append(constraint)
 
         return constraint
 
-    def add_start_at_end(self, task1: Task, task2: Task) -> StartAtEnd:
+    def add_start_at_end(
+        self, task1: Task, task2: Task, delay: int = 0
+    ) -> StartAtEnd:
         """
         Adds a constraint that the first task must start at the same time as
         the second task ends.
         """
         idx1, idx2 = self._id2task[id(task1)], self._id2task[id(task2)]
-        constraint = StartAtEnd(idx1, idx2)
+        constraint = StartAtEnd(idx1, idx2, delay)
         self._constraints.start_at_end.append(constraint)
 
         return constraint
 
     def add_start_before_start(
-        self, task1: Task, task2: Task
+        self, task1: Task, task2: Task, delay: int = 0
     ) -> StartBeforeStart:
         """
         Adds a constraint that the first task must start before the second task
         starts.
         """
         idx1, idx2 = self._id2task[id(task1)], self._id2task[id(task2)]
-        constraint = StartBeforeStart(idx1, idx2)
+        constraint = StartBeforeStart(idx1, idx2, delay)
         self._constraints.start_before_start.append(constraint)
 
         return constraint
 
-    def add_start_before_end(self, task1: Task, task2: Task) -> StartBeforeEnd:
+    def add_start_before_end(
+        self, task1: Task, task2: Task, delay: int = 0
+    ) -> StartBeforeEnd:
         """
         Adds a constraint that the first task must start before the second task
         ends.
         """
         idx1, idx2 = self._id2task[id(task1)], self._id2task[id(task2)]
-        constraint = StartBeforeEnd(idx1, idx2)
+        constraint = StartBeforeEnd(idx1, idx2, delay)
         self._constraints.start_before_end.append(constraint)
 
         return constraint
 
-    def add_end_at_end(self, task1: Task, task2: Task) -> EndAtEnd:
+    def add_end_at_end(
+        self, task1: Task, task2: Task, delay: int = 0
+    ) -> EndAtEnd:
         """
         Adds a constraint that the first task must end at the same time as the
         second task ends.
         """
         idx1, idx2 = self._id2task[id(task1)], self._id2task[id(task2)]
-        constraint = EndAtEnd(idx1, idx2)
+        constraint = EndAtEnd(idx1, idx2, delay)
         self._constraints.end_at_end.append(constraint)
 
         return constraint
 
-    def add_end_at_start(self, task1: Task, task2: Task) -> EndAtStart:
+    def add_end_at_start(
+        self, task1: Task, task2: Task, delay: int = 0
+    ) -> EndAtStart:
         """
         Adds a constraint that the first task must end at the same time as the
         second task starts.
         """
         idx1, idx2 = self._id2task[id(task1)], self._id2task[id(task2)]
-        constraint = EndAtStart(idx1, idx2)
+        constraint = EndAtStart(idx1, idx2, delay)
         self._constraints.end_at_start.append(constraint)
 
         return constraint
 
-    def add_end_before_start(self, task1: Task, task2: Task) -> EndBeforeStart:
+    def add_end_before_start(
+        self, task1: Task, task2: Task, delay: int = 0
+    ) -> EndBeforeStart:
         """
         Adds a constraint that the first task must end before the second task
         starts.
         """
         idx1, idx2 = self._id2task[id(task1)], self._id2task[id(task2)]
-        constraint = EndBeforeStart(idx1, idx2)
+        constraint = EndBeforeStart(idx1, idx2, delay)
         self._constraints.end_before_start.append(constraint)
 
         return constraint
 
-    def add_end_before_end(self, task1: Task, task2: Task) -> EndBeforeEnd:
+    def add_end_before_end(
+        self, task1: Task, task2: Task, delay: int = 0
+    ) -> EndBeforeEnd:
         """
         Adds a constraint that the first task must end before the second task
         ends.
         """
         idx1, idx2 = self._id2task[id(task1)], self._id2task[id(task2)]
-        constraint = EndBeforeEnd(idx1, idx2)
+        constraint = EndBeforeEnd(idx1, idx2, delay)
         self._constraints.end_before_end.append(constraint)
 
         return constraint

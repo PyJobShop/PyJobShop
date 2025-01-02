@@ -394,6 +394,7 @@ class StartAtStart(NamedTuple):
 
     task1: int
     task2: int
+    delay: int = 0
 
 
 class StartAtEnd(NamedTuple):
@@ -403,6 +404,7 @@ class StartAtEnd(NamedTuple):
 
     task1: int
     task2: int
+    delay: int = 0
 
 
 class StartBeforeStart(NamedTuple):
@@ -412,6 +414,7 @@ class StartBeforeStart(NamedTuple):
 
     task1: int
     task2: int
+    delay: int = 0
 
 
 class StartBeforeEnd(NamedTuple):
@@ -421,6 +424,7 @@ class StartBeforeEnd(NamedTuple):
 
     task1: int
     task2: int
+    delay: int = 0
 
 
 class EndAtStart(NamedTuple):
@@ -430,6 +434,7 @@ class EndAtStart(NamedTuple):
 
     task1: int
     task2: int
+    delay: int = 0
 
 
 class EndAtEnd(NamedTuple):
@@ -439,6 +444,7 @@ class EndAtEnd(NamedTuple):
 
     task1: int
     task2: int
+    delay: int = 0
 
 
 class EndBeforeStart(NamedTuple):
@@ -448,6 +454,7 @@ class EndBeforeStart(NamedTuple):
 
     task1: int
     task2: int
+    delay: int = 0
 
 
 class EndBeforeEnd(NamedTuple):
@@ -457,6 +464,7 @@ class EndBeforeEnd(NamedTuple):
 
     task1: int
     task2: int
+    delay: int = 0
 
 
 class IdenticalResources(NamedTuple):
