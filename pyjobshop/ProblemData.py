@@ -395,7 +395,7 @@ class StartAtStart(NamedTuple):
 
 class StartAtEnd(NamedTuple):
     """
-    Start task 1 at the same time as task 2 finishes.
+    Start task 1 at the same time as task 2 ends.
     """
 
     task1: int
@@ -413,7 +413,7 @@ class StartBeforeStart(NamedTuple):
 
 class StartBeforeEnd(NamedTuple):
     """
-    Start task 1 before task 2 finishes.
+    Start task 1 before task 2 ends.
     """
 
     task1: int
@@ -431,7 +431,7 @@ class EndAtStart(NamedTuple):
 
 class EndAtEnd(NamedTuple):
     """
-    End task 1 at the same time as task 2 finishes.
+    End task 1 at the same time as task 2 ends.
     """
 
     task1: int
@@ -449,7 +449,7 @@ class EndBeforeStart(NamedTuple):
 
 class EndBeforeEnd(NamedTuple):
     """
-    End task 1 before task 2 finishes.
+    End task 1 before task 2 ends.
     """
 
     task1: int
