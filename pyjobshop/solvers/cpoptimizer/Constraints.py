@@ -119,7 +119,7 @@ class Constraints:
                 continue
 
             usage = [
-                cpo.presence_of(self._mode_vars[mode]) * demand
+                presence_of(self._mode_vars[mode]) * demand
                 for (mode, demand) in zip(res2modes[idx], res2demands[idx])
             ]
             model.add(model.sum(usage) <= resource.capacity)
@@ -172,38 +172,25 @@ class Constraints:
 
     def _identical_and_different_resource_constraints(self):
         """
-        Creates constraints for the same and different resource constraints.
+        Creates constraints for identical and different resources constraints.
         """
         model, data = self._model, self._data
-        task2modes = utils.task2modes(data)
 
         for idx1, idx2 in data.constraints.identical_resources:
-            identical = utils.find_modes_with_identical_resources(
-                data, idx1, idx2
-            )
-            modes1 = task2modes[idx1]
-            for mode1 in modes1:
-                identical_modes2 = identical[mode1]
-                var1 = cpo.presence_of(self._mode_vars[mode1])
-                vars2 = [
-                    cpo.presence_of(self._mode_vars[mode2])
-                    for mode2 in identical_modes2
-                ]
-                model.add(sum(vars2) >= var1)
+            for mode1, modes2 in utils.identical_modes(data, idx1, idx2):
+                expr1 = presence_of(self._mode_vars[mode1])
+                expr2 = sum(
+                    presence_of(self._mode_vars[mode2]) for mode2 in modes2
+                )
+                model.add(expr1 <= expr2)
 
         for idx1, idx2 in data.constraints.different_resources:
-            disjoint = utils.find_modes_with_disjoint_resources(
-                data, idx1, idx2
-            )
-            modes1 = task2modes[idx1]
-            for mode1 in modes1:
-                disjoint_modes2 = disjoint[mode1]
-                var1 = cpo.presence_of(self._mode_vars[mode1])
-                vars2 = [
-                    cpo.presence_of(self._mode_vars[mode2])
-                    for mode2 in disjoint_modes2
-                ]
-                model.add(sum(vars2) >= var1)
+            for mode1, modes2 in utils.different_modes(data, idx1, idx2):
+                expr1 = presence_of(self._mode_vars[mode1])
+                expr2 = sum(
+                    presence_of(self._mode_vars[mode2]) for mode2 in modes2
+                )
+                model.add(expr1 <= expr2)
 
     def _if_then_constraints(self):
         """
@@ -223,9 +210,7 @@ class Constraints:
         model, data = self._model, self._data
 
         for idx1, idx2 in data.constraints.consecutive:
-            intersecting = utils.find_modes_with_intersecting_resources(
-                data, idx1, idx2
-            )
+            intersecting = utils.intersecting_modes(data, idx1, idx2)
             for mode1, mode2, resources in intersecting:
                 for resource in resources:
                     if not isinstance(data.resources[resource], Machine):

@@ -30,10 +30,12 @@ def show_versions():
      pyjobshop: 0.0.2b0
     matplotlib: 3.9.2
        ortools: 9.10.4067
-       docplex: 2.28.240
-         cplex: not installed
+       fjsplib: 0.0.1
+        psplib: 0.0.1
           tqdm: 4.66.5
          tomli: 2.0.1
+       docplex: 2.28.240
+         cplex: not installed
         Python: 3.10.10
     """
     python_version = ".".join(map(str, sys.version_info[:3]))
@@ -43,9 +45,10 @@ def show_versions():
     print(f" pyjobshop: {_version('pyjobshop')}")
     print(f"matplotlib: {_version('matplotlib')}")
     print(f"   ortools: {_version('ortools')}")
-    print(f"enum-tools: {_version('enum_tools')}")
-    print(f"   docplex: {_version('docplex')}")
-    print(f"     cplex: {_version('cplex')}")
+    print(f"   fjsplib: {_version('fjsplib')}")
+    print(f"    psplib: {_version('psplib')}")
     print(f"      tqdm: {_version('tqdm')}")
     print(f"     tomli: {_version('tomli')}")
+    print(f"   docplex: {_version('docplex')}")
+    print(f"     cplex: {_version('cplex')}")
     print(f"    Python: {python_version}")
