@@ -95,6 +95,7 @@ class Constraints:
             pulses = [
                 cpo.pulse(self._mode_vars[mode], demand)
                 for (mode, demand) in zip(res2modes[idx], res2demands[idx])
+                if demand > 0  # avoids cpo warnings
             ]
             model.add(model.sum(pulses) <= resource.capacity)
 
