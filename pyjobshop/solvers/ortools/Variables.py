@@ -339,7 +339,11 @@ class Variables:
             model.add_hint(task_var.start, sol_task.start)
             model.add_hint(task_var.duration, sol_task.end - sol_task.start)
             model.add_hint(task_var.end, sol_task.end)
-            # TODO: add hint for present
+
+            if data.tasks[idx].optional:
+                # OR-Tools complains about adding presence hints to interval
+                # variables that are present (i.e., non-optional tasks).
+                model.add_hint(task_var.present, sol_task.present)
 
         for idx in range(len(data.modes)):
             var = mode_vars[idx]

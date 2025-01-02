@@ -149,7 +149,7 @@ class Variables:
         Warmstarts the variables based on the given solution.
         """
         data = self._data
-        stp = self._model.create_empty_solution()
+        init = self._model.create_empty_solution()
 
         for idx in range(data.num_jobs):
             job = data.jobs[idx]
@@ -159,7 +159,7 @@ class Variables:
             job_start = min(task.start for task in sol_tasks)
             job_end = max(task.end for task in sol_tasks)
 
-            stp.add_interval_var_solution(
+            init.add_interval_var_solution(
                 job_var, start=job_start, end=job_end
             )
 
@@ -167,8 +167,9 @@ class Variables:
             task_var = self.task_vars[idx]
             sol_task = solution.tasks[idx]
 
-            stp.add_interval_var_solution(
+            init.add_interval_var_solution(
                 task_var,
+                presence=sol_task.present,
                 start=sol_task.start,
                 end=sol_task.end,
                 size=sol_task.end - sol_task.start,
@@ -178,7 +179,7 @@ class Variables:
             sol_task = solution.tasks[mode.task]
             var = self.mode_vars[idx]
 
-            stp.add_interval_var_solution(
+            init.add_interval_var_solution(
                 var,
                 presence=idx == sol_task.mode,
                 start=sol_task.start,
@@ -186,4 +187,4 @@ class Variables:
                 size=sol_task.end - sol_task.start,
             )
 
-        self._model.set_starting_point(stp)
+        self._model.set_starting_point(init)
