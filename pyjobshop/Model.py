@@ -41,7 +41,7 @@ class Model:
         self._tasks: list[Task] = []
         self._modes: list[Mode] = []
         self._constraints = Constraints()
-        self._objective: Objective = Objective.makespan()
+        self._objective: Objective = Objective(weight_makespan=1)
 
         self._id2job: dict[int, int] = {}
         self._id2resource: dict[int, int] = {}

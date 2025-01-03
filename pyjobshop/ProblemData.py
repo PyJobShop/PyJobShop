@@ -703,55 +703,6 @@ class Objective:
     weight_max_tardiness: int = 0
     weight_max_lateness: int = 0
 
-    @classmethod
-    def makespan(cls):
-        """
-        Returns the makespan objective function.
-        """
-        return cls(weight_makespan=1)
-
-    @classmethod
-    def total_flow_time(cls):
-        """
-        Returns the total flow time objective function.
-        """
-        return cls(weight_total_flow_time=1)
-
-    @classmethod
-    def tardy_jobs(cls):
-        """
-        Returns the number of tardy jobs objective function.
-        """
-        return cls(weight_tardy_jobs=1)
-
-    @classmethod
-    def total_tardiness(cls):
-        """
-        Returns the total tardiness objective function.
-        """
-        return cls(weight_total_tardiness=1)
-
-    @classmethod
-    def total_earliness(cls):
-        """
-        Returns the total earliness objective function.
-        """
-        return cls(weight_total_earliness=1)
-
-    @classmethod
-    def max_tardiness(cls):
-        """
-        Returns the maximum tardiness objective function.
-        """
-        return cls(weight_max_tardiness=1)
-
-    @classmethod
-    def max_lateness(cls):
-        """
-        Returns the maximum lateness objective function.
-        """
-        return cls(weight_max_lateness=1)
-
 
 class ProblemData:
     """
@@ -791,7 +742,9 @@ class ProblemData:
             constraints if constraints is not None else Constraints()
         )
         self._objective = (
-            objective if objective is not None else Objective.makespan()
+            objective
+            if objective is not None
+            else Objective(weight_makespan=1)
         )
 
         self._validate_parameters()
