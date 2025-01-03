@@ -231,7 +231,7 @@ def test_problem_data_input_parameter_attributes():
             EndBeforeStart(4, 5),
         ]
     )
-    objective = Objective.total_flow_time()
+    objective = Objective(weight_total_flow_time=1)
 
     data = ProblemData(
         jobs,
@@ -322,7 +322,7 @@ def test_problem_data_default_values():
     data = ProblemData(jobs, resources, tasks, modes)
 
     assert_equal(data.constraints, Constraints())
-    assert_equal(data.objective, Objective.makespan())
+    assert_equal(data.objective, Objective(weight_makespan=1))
 
 
 def test_problem_data_job_references_unknown_task():
@@ -445,11 +445,11 @@ def test_problem_data_raises_capacitated_resources_and_setup_times(resource):
 @pytest.mark.parametrize(
     "objective",
     [
-        Objective.tardy_jobs(),
-        Objective.total_tardiness(),
-        Objective.total_earliness(),
-        Objective.max_tardiness(),
-        Objective.max_lateness(),
+        Objective(weight_tardy_jobs=1),
+        Objective(weight_total_tardiness=1),
+        Objective(weight_total_earliness=1),
+        Objective(weight_max_tardiness=1),
+        Objective(weight_max_lateness=1),
     ],
 )
 def test_problem_data_tardy_objective_without_job_due_dates(
@@ -481,7 +481,7 @@ def make_replace_data():
         Mode(task=1, resources=[1], duration=2),
     ]
     constraints = Constraints(end_before_start=[EndBeforeStart(0, 1)])
-    objective = Objective.makespan()
+    objective = Objective(weight_makespan=1)
 
     return ProblemData(
         jobs,
@@ -547,7 +547,7 @@ def test_problem_data_replace_with_changes():
             end_before_start=[EndBeforeStart(1, 0)],
             setup_times=[SetupTime(0, 0, 1, 0), SetupTime(1, 0, 1, 10)],
         ),
-        objective=Objective.total_tardiness(),
+        objective=Objective(weight_total_tardiness=1),
     )
     assert_(new is not data)
 
@@ -1080,29 +1080,6 @@ def test_consecutive_multiple_machines(solver: str):
     result = model.solve(solver=solver)
     assert_equal(result.objective, 12)
     assert_equal(result.status.value, "Optimal")
-
-
-@pytest.mark.parametrize(
-    "objective, weights",
-    [
-        (Objective.makespan, (1, 0, 0, 0, 0)),
-        (Objective.tardy_jobs, (0, 1, 0, 0, 0)),
-        (Objective.total_tardiness, (0, 0, 1, 0, 0)),
-        (Objective.total_flow_time, (0, 0, 0, 1, 0)),
-        (Objective.total_earliness, (0, 0, 0, 0, 1)),
-    ],
-)
-def test_objective_classmethods_set_attributes_correctly(objective, weights):
-    """
-    Checks that the classmethods of the Objective class set the attributes
-    correctly.
-    """
-    obj = objective()
-    assert_equal(obj.weight_makespan, weights[0])
-    assert_equal(obj.weight_tardy_jobs, weights[1])
-    assert_equal(obj.weight_total_tardiness, weights[2])
-    assert_equal(obj.weight_total_flow_time, weights[3])
-    assert_equal(obj.weight_total_earliness, weights[4])
 
 
 def test_makespan_objective(solver: str):

@@ -33,7 +33,7 @@ from pyjobshop.solve import solve
 
 class Model:
     """
-    Model class to build a problem instance step-by-step.
+    A simple interface for building a scheduling problem step-by-step.
     """
 
     def __init__(self):
@@ -42,7 +42,7 @@ class Model:
         self._tasks: list[Task] = []
         self._modes: list[Mode] = []
         self._constraints = Constraints()
-        self._objective: Objective = Objective.makespan()
+        self._objective: Objective = Objective(weight_makespan=1)
 
         self._id2job: dict[int, int] = {}
         self._id2resource: dict[int, int] = {}
@@ -220,28 +220,6 @@ class Model:
     ) -> Job:
         """
         Adds a job to the model.
-
-        Parameters
-        ----------
-        weight
-            The weight of the job, used as multiplicative factor in the
-            objective function. Default 1.
-        release_date
-            The earliest time that the job may start. Default 0.
-        deadline
-            The latest time by which the job must be completed. Note that a
-            deadline is different from a due date; the latter does not restrict
-            the latest completion time. Default ``MAX_VALUE``.
-        due_date
-            The latest time that the job should be completed before incurring
-            penalties. Default is None, meaning that there is no due date.
-        name
-            Name of the job.
-
-        Returns
-        -------
-        Job
-            The created job.
         """
         job = Job(weight, release_date, deadline, due_date, name=name)
 
@@ -253,16 +231,6 @@ class Model:
     def add_machine(self, name: str = "") -> Machine:
         """
         Adds a machine to the model.
-
-        Parameters
-        ----------
-        name
-            Name of the machine.
-
-        Returns
-        -------
-        Machine
-            The created machine.
         """
         machine = Machine(name=name)
 
@@ -274,18 +242,6 @@ class Model:
     def add_renewable(self, capacity: int, name: str = "") -> Renewable:
         """
         Adds a renewable resource to the model.
-
-        Parameters
-        ----------
-        capacity
-            Capacity of the resource.
-        name
-            Name of the resource.
-
-        Returns
-        -------
-        Renewable
-            The created renewable resource.
         """
         resource = Renewable(capacity=capacity, name=name)
 
@@ -297,18 +253,6 @@ class Model:
     def add_non_renewable(self, capacity: int, name: str = "") -> NonRenewable:
         """
         Adds a non-renewable resource to the model.
-
-        Parameters
-        ----------
-        capacity
-            Capacity of the resource.
-        name
-            Name of the resource.
-
-        Returns
-        -------
-        NonRenewable
-            The created non-renewable resource.
         """
         resource = NonRenewable(capacity=capacity, name=name)
 
@@ -330,30 +274,6 @@ class Model:
     ) -> Task:
         """
         Adds a task to the model.
-
-        Parameters
-        ----------
-        job
-            The job that the task belongs to. Default ``None``.
-        earliest_start
-            Earliest start time of the task. Default ``0``.
-        latest_start
-            Latest start time of the task. Default ``MAX_VALUE``.
-        earliest_end
-            Earliest end time of the task. Default ``0``.
-        latest_end
-            Latest end time of the task. Default ``MAX_VALUE``.
-        fixed_duration
-            Whether the duration of the task is fixed. Default ``True``.
-        optional
-            Whether the task is optional. Default ``False``.
-        name
-            Name of the task. Default ``""``.
-
-        Returns
-        -------
-        Task
-            The created task.
         """
         job_idx = self._id2job[id(job)] if job is not None else None
         task = Task(
@@ -384,20 +304,7 @@ class Model:
         demands: Optional[Union[int, list[int]]] = None,
     ) -> Mode:
         """
-        Adds a processing mode.
-
-        Parameters
-        ----------
-        task
-            The task associated with the mode.
-        resources
-            The resource(s) that the task must be processed on.
-        duration
-            Processing duration of this mode.
-        demands
-            Demands for each resource for this mode. If ``None``, then the
-            demands are initialized as list of zeros with the same length as
-            the resources.
+        Adds a processing mode to the model.
         """
         if isinstance(resources, (Machine, Renewable, NonRenewable)):
             resources = [resources]
@@ -412,7 +319,7 @@ class Model:
 
         return mode
 
-    def add_start_at_start(self, task1: Task, task2: Task):
+    def add_start_at_start(self, task1: Task, task2: Task) -> StartAtStart:
         """
         Adds a constraint that the first task must start at the same time as
         the second task starts.
@@ -421,7 +328,9 @@ class Model:
         constraint = StartAtStart(idx1, idx2)
         self._constraints.start_at_start.append(constraint)
 
-    def add_start_at_end(self, task1: Task, task2: Task):
+        return constraint
+
+    def add_start_at_end(self, task1: Task, task2: Task) -> StartAtEnd:
         """
         Adds a constraint that the first task must start at the same time as
         the second task ends.
@@ -430,7 +339,11 @@ class Model:
         constraint = StartAtEnd(idx1, idx2)
         self._constraints.start_at_end.append(constraint)
 
-    def add_start_before_start(self, task1: Task, task2: Task):
+        return constraint
+
+    def add_start_before_start(
+        self, task1: Task, task2: Task
+    ) -> StartBeforeStart:
         """
         Adds a constraint that the first task must start before the second task
         starts.
@@ -439,7 +352,9 @@ class Model:
         constraint = StartBeforeStart(idx1, idx2)
         self._constraints.start_before_start.append(constraint)
 
-    def add_start_before_end(self, task1: Task, task2: Task):
+        return constraint
+
+    def add_start_before_end(self, task1: Task, task2: Task) -> StartBeforeEnd:
         """
         Adds a constraint that the first task must start before the second task
         ends.
@@ -448,7 +363,9 @@ class Model:
         constraint = StartBeforeEnd(idx1, idx2)
         self._constraints.start_before_end.append(constraint)
 
-    def add_end_at_end(self, task1: Task, task2: Task):
+        return constraint
+
+    def add_end_at_end(self, task1: Task, task2: Task) -> EndAtEnd:
         """
         Adds a constraint that the first task must end at the same time as the
         second task ends.
@@ -457,7 +374,9 @@ class Model:
         constraint = EndAtEnd(idx1, idx2)
         self._constraints.end_at_end.append(constraint)
 
-    def add_end_at_start(self, task1: Task, task2: Task):
+        return constraint
+
+    def add_end_at_start(self, task1: Task, task2: Task) -> EndAtStart:
         """
         Adds a constraint that the first task must end at the same time as the
         second task starts.
@@ -466,7 +385,9 @@ class Model:
         constraint = EndAtStart(idx1, idx2)
         self._constraints.end_at_start.append(constraint)
 
-    def add_end_before_start(self, task1: Task, task2: Task):
+        return constraint
+
+    def add_end_before_start(self, task1: Task, task2: Task) -> EndBeforeStart:
         """
         Adds a constraint that the first task must end before the second task
         starts.
@@ -475,7 +396,9 @@ class Model:
         constraint = EndBeforeStart(idx1, idx2)
         self._constraints.end_before_start.append(constraint)
 
-    def add_end_before_end(self, task1: Task, task2: Task):
+        return constraint
+
+    def add_end_before_end(self, task1: Task, task2: Task) -> EndBeforeEnd:
         """
         Adds a constraint that the first task must end before the second task
         ends.
@@ -484,7 +407,11 @@ class Model:
         constraint = EndBeforeEnd(idx1, idx2)
         self._constraints.end_before_end.append(constraint)
 
-    def add_identical_resources(self, task1: Task, task2: Task):
+        return constraint
+
+    def add_identical_resources(
+        self, task1: Task, task2: Task
+    ) -> IdenticalResources:
         """
         Adds a constraint that two tasks must be scheduled with modes that
         require identical resources.
@@ -493,7 +420,11 @@ class Model:
         constraint = IdenticalResources(idx1, idx2)
         self._constraints.identical_resources.append(constraint)
 
-    def add_different_resource(self, task1: Task, task2: Task):
+        return constraint
+
+    def add_different_resource(
+        self, task1: Task, task2: Task
+    ) -> DifferentResources:
         """
         Adds a constraint that the two tasks must be scheduled with modes that
         require different resources.
@@ -502,7 +433,9 @@ class Model:
         constraint = DifferentResources(idx1, idx2)
         self._constraints.different_resources.append(constraint)
 
-    def add_consecutive(self, task1: Task, task2: Task):
+        return constraint
+
+    def add_consecutive(self, task1: Task, task2: Task) -> Consecutive:
         """
         Adds a constraint that the first task must be scheduled right before
         the second task, meaning that no task is allowed to schedule between,
@@ -512,7 +445,9 @@ class Model:
         constraint = Consecutive(idx1, idx2)
         self._constraints.consecutive.append(constraint)
 
-    def add_if_then(self, pred: Task, succs: Task | list[Task]):
+        return constraint
+
+    def add_if_then(self, pred: Task, succs: Task | list[Task]) -> IfThen:
         """
         Adds a constraint that the successor task(s) must be selected if the
         predecessor task is selected.
@@ -523,23 +458,13 @@ class Model:
         constraint = IfThen(idx1, tuple(idcs2))
         self._constraints.if_then.append(constraint)
 
+        return constraint
+
     def add_setup_time(
         self, machine: Machine, task1: Task, task2: Task, duration: int
-    ):
+    ) -> SetupTime:
         """
         Adds a setup time between two tasks on a machine.
-
-        Parameters
-        ----------
-        machine
-            The machine on which the setup time occurs.
-        task1
-            First task.
-        task2
-            Second task.
-        duration
-            Duration of the setup time when switching from the first task
-            to the second task on the machine.
         """
         machine_idx = self._id2resource[id(machine)]
         task_idx1 = self._id2task[id(task1)]
@@ -547,6 +472,8 @@ class Model:
 
         constraint = SetupTime(machine_idx, task_idx1, task_idx2, duration)
         self._constraints._setup_times.append(constraint)
+
+        return constraint
 
     def set_objective(
         self,
@@ -557,26 +484,9 @@ class Model:
         weight_total_earliness: int = 0,
         weight_max_tardiness: int = 0,
         weight_max_lateness: int = 0,
-    ):
+    ) -> Objective:
         """
         Sets the objective function in this model.
-
-        Parameters
-        ----------
-        weight_makespan
-            Weight of the makespan objective. Default 0.
-        weight_tardy_jobs
-            Weight of the tardy jobs objective. Default 0.
-        weight_total_tardiness
-            Weight of the total tardiness objective. Default 0.
-        weight_total_flow_time
-            Weight of the total flow time objective. Default 0.
-        weight_total_earliness
-            Weight of the total earliness objective. Default 0.
-        weight_max_tardiness
-            Weight of the max tardiness objective. Default 0.
-        weight_max_lateness
-            Weight of the max lateness objective. Default 0.
         """
         self._objective = Objective(
             weight_makespan=weight_makespan,
@@ -587,6 +497,7 @@ class Model:
             weight_max_tardiness=weight_max_tardiness,
             weight_max_lateness=weight_max_lateness,
         )
+        return self._objective
 
     def solve(
         self,

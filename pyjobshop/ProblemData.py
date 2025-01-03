@@ -16,13 +16,14 @@ class Job:
     ----------
     weight
         The weight of the job, used as multiplicative factor in the
-        objective function. Default 1.
+        objective function. Default ``1``.
     release_date
-        The earliest time that the job may start. Default 0.
+        The earliest time that the job may start. Default ``0``.
     deadline
         The latest time by which the job must be completed. Note that a
         deadline is different from a due date; the latter does not restrict
-        the latest completion time. Default ``MAX_VALUE``.
+        the latest completion time.
+        Default :const:`~pyjobshop.constants.MAX_VALUE`.
     due_date
         The latest time that the job should be completed before incurring
         penalties. Default ``None``, meaning that there is no due date.
@@ -226,11 +227,13 @@ class Task:
     earliest_start
         Earliest start time of the task. Default ``0``.
     latest_start
-        Latest start time of the task. Default ``MAX_VALUE``.
+        Latest start time of the task.
+        Default :const:`~pyjobshop.constants.MAX_VALUE`.
     earliest_end
         Earliest end time of the task. Default ``0``.
     latest_end
-        Latest end time of the task. Default ``MAX_VALUE``.
+        Latest end time of the task.
+        Default :const:`~pyjobshop.constants.MAX_VALUE`.
     fixed_duration
         Whether the task has a fixed duration. A fixed duration means that
         the task duration is precisely the processing time (on a given
@@ -406,7 +409,7 @@ class StartAtStart(NamedTuple):
 
 class StartAtEnd(NamedTuple):
     """
-    Start task 1 at the same time as task 2 finishes.
+    Start task 1 at the same time as task 2 ends.
     """
 
     task1: int
@@ -424,7 +427,7 @@ class StartBeforeStart(NamedTuple):
 
 class StartBeforeEnd(NamedTuple):
     """
-    Start task 1 before task 2 finishes.
+    Start task 1 before task 2 ends.
     """
 
     task1: int
@@ -442,7 +445,7 @@ class EndAtStart(NamedTuple):
 
 class EndAtEnd(NamedTuple):
     """
-    End task 1 at the same time as task 2 finishes.
+    End task 1 at the same time as task 2 ends.
     """
 
     task1: int
@@ -460,7 +463,7 @@ class EndBeforeStart(NamedTuple):
 
 class EndBeforeEnd(NamedTuple):
     """
-    End task 1 before task 2 finishes.
+    End task 1 before task 2 ends.
     """
 
     task1: int
@@ -733,55 +736,6 @@ class Objective:
     weight_max_tardiness: int = 0
     weight_max_lateness: int = 0
 
-    @classmethod
-    def makespan(cls):
-        """
-        Returns the makespan objective function.
-        """
-        return cls(weight_makespan=1)
-
-    @classmethod
-    def total_flow_time(cls):
-        """
-        Returns the total flow time objective function.
-        """
-        return cls(weight_total_flow_time=1)
-
-    @classmethod
-    def tardy_jobs(cls):
-        """
-        Returns the number of tardy jobs objective function.
-        """
-        return cls(weight_tardy_jobs=1)
-
-    @classmethod
-    def total_tardiness(cls):
-        """
-        Returns the total tardiness objective function.
-        """
-        return cls(weight_total_tardiness=1)
-
-    @classmethod
-    def total_earliness(cls):
-        """
-        Returns the total earliness objective function.
-        """
-        return cls(weight_total_earliness=1)
-
-    @classmethod
-    def max_tardiness(cls):
-        """
-        Returns the maximum tardiness objective function.
-        """
-        return cls(weight_max_tardiness=1)
-
-    @classmethod
-    def max_lateness(cls):
-        """
-        Returns the maximum lateness objective function.
-        """
-        return cls(weight_max_lateness=1)
-
 
 class ProblemData:
     """
@@ -821,7 +775,9 @@ class ProblemData:
             constraints if constraints is not None else Constraints()
         )
         self._objective = (
-            objective if objective is not None else Objective.makespan()
+            objective
+            if objective is not None
+            else Objective(weight_makespan=1)
         )
 
         self._validate_parameters()

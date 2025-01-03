@@ -85,7 +85,7 @@ def test_model_to_data():
     assert_equal(
         constraints.setup_times, [SetupTime(0, 0, 1, 3), SetupTime(1, 0, 1, 4)]
     )
-    assert_equal(data.objective, Objective.total_flow_time())
+    assert_equal(data.objective, Objective(weight_total_flow_time=1))
 
 
 def test_from_data():
@@ -156,7 +156,7 @@ def test_model_to_data_default_values():
     assert_equal(data.tasks, [task])
     assert_equal(data.modes, [Mode(task=0, resources=[0], duration=1)])
     assert_equal(data.constraints, Constraints())
-    assert_equal(data.objective, Objective.makespan())
+    assert_equal(data.objective, Objective(weight_makespan=1))
 
 
 def test_add_job_attributes():
@@ -291,7 +291,7 @@ def test_model_set_objective():
     model = Model()
 
     # The default objective function is the makespan.
-    assert_equal(model.objective, Objective.makespan())
+    assert_equal(model.objective, Objective(weight_makespan=1))
 
     # Now we set the objective function to a weighted combination
     # this should overwrite the previously set objective.

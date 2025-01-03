@@ -33,7 +33,7 @@ class Solver:
         self._objective = Objective(self._model, data, self._variables)
 
         self._constraints.add_constraints()
-        self._objective.build(self._data.objective)
+        self._objective.add_objective()
 
     def _get_solve_status(self, status: str):
         if status == "OPTIMAL":

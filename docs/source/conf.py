@@ -33,6 +33,7 @@ python_use_unqualified_type_names = True
 autoclass_content = "class"
 autodoc_member_order = "bysource"
 autodoc_typehints = "signature"
+autodoc_preserve_defaults = True
 
 # -- numpydoc
 numpydoc_xref_param_type = True
