@@ -240,6 +240,8 @@ class Task:
         resource). If the duration is not fixed, then the task duration
         can take longer than the processing time, e.g., due to blocking.
         Default ``True``.
+    optional
+        Whether the task is optional. Default ``False``.
     name
         Name of the task.
     """
@@ -252,6 +254,7 @@ class Task:
         earliest_end: int = 0,
         latest_end: int = MAX_VALUE,
         fixed_duration: bool = True,
+        optional: bool = False,
         name: str = "",
     ):
         if earliest_start > latest_start:
@@ -266,6 +269,7 @@ class Task:
         self._earliest_end = earliest_end
         self._latest_end = latest_end
         self._fixed_duration = fixed_duration
+        self._optional = optional
         self._name = name
 
     @property
@@ -310,6 +314,13 @@ class Task:
         Whether the task has a fixed duration.
         """
         return self._fixed_duration
+
+    @property
+    def optional(self) -> bool:
+        """
+        Whether the task is optional.
+        """
+        return self._optional
 
     @property
     def name(self) -> str:
@@ -478,6 +489,15 @@ class DifferentResources(NamedTuple):
     task2: int
 
 
+class IfThen(NamedTuple):
+    """
+    If task 1 is scheduled, then at least one of task 2 must be scheduled.
+    """
+
+    task1: int
+    tasks2: tuple[int, ...]
+
+
 class Consecutive(NamedTuple):
     """
     Sequence task 1 right before task 2 on the machines they are both assigned
@@ -526,6 +546,8 @@ class Constraints:
         List of identical resources constraints.
     different_resources
         List of different resources constraints.
+    if_then
+        List of if-then constraints.
     consecutive
         List of consecutive constraints.
     setup_times
@@ -544,6 +566,7 @@ class Constraints:
         end_before_end: Optional[list[EndBeforeEnd]] = None,
         identical_resources: Optional[list[IdenticalResources]] = None,
         different_resources: Optional[list[DifferentResources]] = None,
+        if_then: Optional[list[IfThen]] = None,
         consecutive: Optional[list[Consecutive]] = None,
         setup_times: Optional[list[SetupTime]] = None,
     ):
@@ -557,6 +580,7 @@ class Constraints:
         self._end_before_end = end_before_end or []
         self._identical_resources = identical_resources or []
         self._different_resources = different_resources or []
+        self._if_then = if_then or []
         self._consecutive = consecutive or []
         self._setup_times = setup_times or []
 
@@ -572,6 +596,7 @@ class Constraints:
             and self.end_before_end == other.end_before_end
             and self.identical_resources == other.identical_resources
             and self.different_resources == other.different_resources
+            and self.if_then == other.if_then
             and self.consecutive == other.consecutive
             and self.setup_times == other.setup_times
         )
@@ -588,6 +613,7 @@ class Constraints:
             + len(self.end_before_end)
             + len(self.identical_resources)
             + len(self.different_resources)
+            + len(self.if_then)
             + len(self.consecutive)
             + len(self._setup_times)
         )
@@ -661,6 +687,13 @@ class Constraints:
         Returns the list of different resources constraints.
         """
         return self._different_resources
+
+    @property
+    def if_then(self) -> list[IfThen]:
+        """
+        Returns the list of if-then constraints.
+        """
+        return self._if_then
 
     @property
     def consecutive(self) -> list[Consecutive]:

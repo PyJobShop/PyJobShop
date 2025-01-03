@@ -10,6 +10,7 @@ from pyjobshop.ProblemData import (
     EndBeforeEnd,
     EndBeforeStart,
     IdenticalResources,
+    IfThen,
     Job,
     Machine,
     Mode,
@@ -129,6 +130,7 @@ class Model:
                 earliest_end=task.earliest_end,
                 latest_end=task.latest_end,
                 fixed_duration=task.fixed_duration,
+                optional=task.optional,
                 name=task.name,
             )
 
@@ -267,6 +269,7 @@ class Model:
         earliest_end: int = 0,
         latest_end: int = MAX_VALUE,
         fixed_duration: bool = True,
+        optional: bool = False,
         name: str = "",
     ) -> Task:
         """
@@ -280,6 +283,7 @@ class Model:
             earliest_end,
             latest_end,
             fixed_duration,
+            optional,
             name,
         )
 
@@ -440,6 +444,19 @@ class Model:
         idx1, idx2 = self._id2task[id(task1)], self._id2task[id(task2)]
         constraint = Consecutive(idx1, idx2)
         self._constraints.consecutive.append(constraint)
+
+        return constraint
+
+    def add_if_then(self, pred: Task, succs: Task | list[Task]) -> IfThen:
+        """
+        Adds a constraint that the successor task(s) must be selected if the
+        predecessor task is selected.
+        """
+        idx1 = self._id2task[id(pred)]
+        succs = [succs] if isinstance(succs, Task) else succs
+        idcs2 = [self._id2task[id(succ)] for succ in succs]
+        constraint = IfThen(idx1, tuple(idcs2))
+        self._constraints.if_then.append(constraint)
 
         return constraint
 
