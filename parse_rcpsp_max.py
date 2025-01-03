@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
-from psplib.ProjectInstance import Mode, ProjectInstance, Resource
+from psplib.ProjectInstance import Mode, Project, ProjectInstance, Resource
 
 from pyjobshop import Model
 
@@ -65,8 +65,8 @@ def parse_rcpsp_max(loc: str | Path) -> list[ProjectInstance]:
 
     capacities = map(int, next(lines).split())
     resources = [Resource(capacity, renewable=True) for capacity in capacities]
-
-    return ProjectInstance(resources, [], activities)
+    project = Project(list(range(num_activities)))
+    return ProjectInstance(resources, project, activities)
 
 
 def _project_instance_to_model(instance: ProjectInstance) -> Model:
