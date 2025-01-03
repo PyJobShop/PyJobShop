@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Union
 
 import networkx as nx
-from psplib.ProjectInstance import Resource
+from psplib.ProjectInstance import Mode, Project, ProjectInstance, Resource
 
 from pyjobshop import Model
 
@@ -15,19 +15,11 @@ def natural_keys(text):
 
 
 @dataclass
-class Task:
-    duration: int
-    demands: list[int]
+class Activity:
+    modes: list[Mode]
     successors: list[int]
-    groups: list[list[int]]
-    optional: bool
-
-
-@dataclass
-class ProjectInstance:
-    # TODO refactor using Project and Activity classes
-    resources: list[Resource]
-    tasks: list[Task]
+    groups: list[list[int]]  # new
+    optional: bool  # new
 
 
 def parse_rcpsp_ps(instance_loc: Union[str, Path]):
@@ -45,7 +37,7 @@ def parse_rcpsp_ps(instance_loc: Union[str, Path]):
         Resource(capacity, idx < num_renewable)
         for idx, capacity in enumerate(capacities)
     ]
-    tasks = []
+    activities = []
 
     for idx in range(num_activities):
         duration, *demands = map(int, next(lines).split())
@@ -58,17 +50,34 @@ def parse_rcpsp_ps(instance_loc: Union[str, Path]):
             groups.append([next(line) for _ in range(num_successors)])
 
         num_successors, *successors = map(int, next(lines).split())
-        tasks.append(
-            Task(
-                duration,
-                demands,
+        activities.append(
+            Activity(
+                [Mode(duration, demands)],
                 successors,
                 groups,
                 optional=idx not in fixed,
             )
         )
 
-    return ProjectInstance(resources, tasks)
+    project = Project(list(range(num_activities)))
+    return ProjectInstance(resources, [project], activities)
+
+
+def check_solution(solution, instance):
+    """
+    Check that there is indeed an (s, t)-path with present activities.
+    """
+    present = [idx for idx, task in enumerate(solution.tasks) if task.present]
+
+    G = nx.DiGraph()
+    for idx, activity in enumerate(instance.activities):
+        for succ in activity.successors:
+            if idx in present and succ in present:
+                G.add_edge(idx, succ)
+
+    source = 0
+    target = len(instance.activities) - 1
+    nx.shortest_path(G, source, target)
 
 
 if __name__ == "__main__":
@@ -88,27 +97,27 @@ if __name__ == "__main__":
                 model.add_non_renewable(capacity=res.capacity)
 
         tasks = [
-            model.add_task(optional=task.optional) for task in instance.tasks
+            model.add_task(optional=activity.optional)
+            for activity in instance.activities
         ]
-        groups = {}
 
-        for idx, task_data in enumerate(instance.tasks):
+        for idx, activity in enumerate(instance.activities):
             model.add_mode(
                 tasks[idx],
                 model.resources,
-                task_data.duration,
-                task_data.demands,
+                activity.modes[0].duration,
+                activity.modes[0].demands,
             )
 
-            for succ in task_data.successors:
+            for succ in activity.successors:
                 model.add_end_before_start(tasks[idx], model.tasks[succ])
 
-            for successors in task_data.groups:
+            for successors in activity.groups:
                 model.add_if_then(
                     tasks[idx], [tasks[succ] for succ in successors]
                 )
 
-        result = model.solve(display=True, time_limit=100, solver="ortools")
+        result = model.solve(display=False, time_limit=100, solver="ortools")
 
         res = (
             instance_loc.stem,
@@ -121,16 +130,4 @@ if __name__ == "__main__":
         with open("other2.txt", "a") as fh:
             fh.write(" ".join(map(str, res)) + "\n")
 
-        # Check that there is indeed an (s, t)-path with present activities.
-        present = [
-            idx for idx, task in enumerate(result.best.tasks) if task.present
-        ]
-        G = nx.DiGraph()
-        for idx, task_data in enumerate(instance.tasks):
-            for succ in task_data.successors:
-                if idx in present and succ in present:
-                    G.add_edge(idx, succ)
-
-        source = 0
-        target = len(instance.tasks) - 1
-        nx.shortest_path(G, source, target)
+        check_solution(result.best, instance)
