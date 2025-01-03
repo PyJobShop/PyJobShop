@@ -92,9 +92,11 @@ def _project_instance_to_model(instance: ProjectInstance) -> Model:
     for idx, activity in enumerate(instance.activities):
         assert activity.delays is not None
         for succ_idx, delay in zip(activity.successors, activity.delays):
-            j = model.tasks[idx]
-            l = model.tasks[succ_idx]
-            model.add_start_before_start(j, l, delay)  # s(j) <= s(l) + delay
+            pred = model.tasks[idx]
+            succ = model.tasks[succ_idx]
+
+            # RCPPS/max precedence: start(pred) + delay <= start(l)
+            model.add_start_before_start(pred, succ, delay)
 
     return model
 
