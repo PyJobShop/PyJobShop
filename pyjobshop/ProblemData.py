@@ -461,7 +461,14 @@ class EndBeforeEnd(NamedTuple):
 
 class IdenticalResources(NamedTuple):
     """
-    Select a mode for task 1 and task 2 that use the same resources.
+    Select modes for task 1 and task 2 that use the same resources.
+
+    Let :math:`m_1, m_2` be the selected modes of task 1 and task 2, and let
+    :math:`R_m` denote the resources required by mode :math:`m`. This
+    constraint ensures that
+
+    .. math::
+        R_{m_1} = R_{m_2}.
     """
 
     task1: int
@@ -470,8 +477,14 @@ class IdenticalResources(NamedTuple):
 
 class DifferentResources(NamedTuple):
     """
-    Select a mode for task 1 and task 2 that use different resources, that is,
-    the intersection of the resources used by the two modes is empty.
+    Select modes for task 1 and task 2 that use different resources.
+
+    Let :math:`m_1, m_2` be the selected modes of task 1 and task 2, and let
+    :math:`R_m` denote the resources required by mode :math:`m`. This
+    constraint ensures that
+
+    .. math::
+        R_{m_1} \\cap R_{m_2} = \\emptyset.
     """
 
     task1: int
@@ -480,8 +493,19 @@ class DifferentResources(NamedTuple):
 
 class Consecutive(NamedTuple):
     """
-    Sequence task 1 right before task 2 on the machines they are both assigned
-    to, meaning that no task is allowed to schedule between them.
+    Sequence task 1 and task 2 consecutively on the machines they are both
+    assigned to, meaning that no other task is allowed to be scheduled between
+    them.
+
+    Hand-waiving some details, let :math:`m_1, m_2` be the selected modes of
+    task 1 and task 2, and let :math:`R` denote the machines that both modes
+    require. This constraint ensures that
+
+    .. math::
+        m_1 \\to m_2 \\quad \\forall r \\in R,
+
+    where :math:`\\to` means that :math:`m_1` is directly followed by
+    :math:`m_2` and no other interval is scheduled between them.
     """
 
     task1: int
@@ -492,6 +516,16 @@ class SetupTime(NamedTuple):
     """
     Sequence-dependent setup time between task 1 and task 2 on the given
     machine.
+
+    Let :math:`e_1` be the end time of task 1 and let :math:`s_2` be the
+    start time of task 2. If the selected modes of task 1 and task 2 both
+    require the given machine, then this constraint ensures that
+
+    .. math::
+        e_1 + d \\leq s_2,
+
+    where :math:`d` is the setup time duration. Note that this also implies
+    an end-before-start relationship between task 1 and task 2.
     """
 
     machine: int
@@ -503,33 +537,6 @@ class SetupTime(NamedTuple):
 class Constraints:
     """
     Container class for storing all constraints.
-
-    Parameters
-    ----------
-    start_at_start
-        List of start-at-start constraints.
-    start_at_end
-        List of start-at-end constraints.
-    start_before_start
-        List of start-before-start constraints.
-    start_before_end
-        List of start-before-end constraints.
-    end_at_start
-        List of end-at-start constraints.
-    end_at_end
-        List of end-at-end constraints.
-    end_before_start
-        List of end-before-start constraints.
-    end_before_end
-        List of end-before-end constraints.
-    identical_resources
-        List of identical resources constraints.
-    different_resources
-        List of different resources constraints.
-    consecutive
-        List of consecutive constraints.
-    setup_times
-        List of setup time constraints.
     """
 
     def __init__(
