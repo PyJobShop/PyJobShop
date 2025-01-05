@@ -252,7 +252,7 @@ class Constraints:
                 # Self arc if the task is not present
                 graph.append((idx1, idx1, ~var1.present))
 
-                # If the circuit is empty then the present not be present.
+                # If the circuit is empty then the var should not be present.
                 model.add_implication(empty, ~var1.present)
 
                 for idx2, var2 in enumerate(modes):
