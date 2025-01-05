@@ -122,16 +122,6 @@ class Constraints:
         """
         model, data = self._model, self._data
 
-        for idx1, idx2, delay in data.constraints.start_at_start:
-            task_var1 = self._task_vars[idx1]
-            task_var2 = self._task_vars[idx2]
-            model.add(cpo.start_at_start(task_var1, task_var2, delay))
-
-        for idx1, idx2, delay in data.constraints.start_at_end:
-            task_var1 = self._task_vars[idx1]
-            task_var2 = self._task_vars[idx2]
-            model.add(cpo.start_at_end(task_var1, task_var2, delay))
-
         for idx1, idx2, delay in data.constraints.start_before_start:
             task_var1 = self._task_vars[idx1]
             task_var2 = self._task_vars[idx2]
@@ -141,16 +131,6 @@ class Constraints:
             task_var1 = self._task_vars[idx1]
             task_var2 = self._task_vars[idx2]
             model.add(cpo.start_before_end(task_var1, task_var2, delay))
-
-        for idx1, idx2, delay in data.constraints.end_at_start:
-            task_var1 = self._task_vars[idx1]
-            task_var2 = self._task_vars[idx2]
-            model.add(cpo.end_at_start(task_var1, task_var2, delay))
-
-        for idx1, idx2, delay in data.constraints.end_at_end:
-            task_var1 = self._task_vars[idx1]
-            task_var2 = self._task_vars[idx2]
-            model.add(cpo.end_at_end(task_var1, task_var2, delay))
 
         for idx1, idx2, delay in data.constraints.end_before_start:
             task_var1 = self._task_vars[idx1]

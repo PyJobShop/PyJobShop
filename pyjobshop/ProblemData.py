@@ -387,34 +387,6 @@ class Mode:
         )
 
 
-class StartAtStart(NamedTuple):
-    """
-    Start task 1 (:math:`s_1`) when task 2 starts (:math:`s_2`), with an
-    optional delay :math:`d`. That is,
-
-    .. math::
-        s_1 + d = s_2.
-    """
-
-    task1: int
-    task2: int
-    delay: int = 0
-
-
-class StartAtEnd(NamedTuple):
-    """
-    Start task 1 (:math:`s_1`) when task 2 ends (:math:`e_2`), with an optional
-    delay :math:`d`. That is,
-
-    .. math::
-        s_1 + d = e_2.
-    """
-
-    task1: int
-    task2: int
-    delay: int = 0
-
-
 class StartBeforeStart(NamedTuple):
     """
     Start task 1 (:math:`s_1`) before task 2 starts (:math:`s_2`), with an
@@ -436,34 +408,6 @@ class StartBeforeEnd(NamedTuple):
 
     .. math::
         s_1 + d \\leq e_2.
-    """
-
-    task1: int
-    task2: int
-    delay: int = 0
-
-
-class EndAtStart(NamedTuple):
-    """
-    End task 1 (:math:`e_1`) when task 2 starts (:math:`s_2`), with an
-    optional delay :math:`d`. That is,
-
-    .. math::
-        e_1 + d = s_2.
-    """
-
-    task1: int
-    task2: int
-    delay: int = 0
-
-
-class EndAtEnd(NamedTuple):
-    """
-    End task 1 (:math:`e_1`) when task 2 ends (:math:`e_2`), with an optional
-    delay :math:`d`. That is,
-
-    .. math::
-        e_1 + d = e_2.
     """
 
     task1: int
@@ -581,12 +525,8 @@ class Constraints:
 
     def __init__(
         self,
-        start_at_start: Optional[list[StartAtStart]] = None,
-        start_at_end: Optional[list[StartAtEnd]] = None,
         start_before_start: Optional[list[StartBeforeStart]] = None,
         start_before_end: Optional[list[StartBeforeEnd]] = None,
-        end_at_start: Optional[list[EndAtStart]] = None,
-        end_at_end: Optional[list[EndAtEnd]] = None,
         end_before_start: Optional[list[EndBeforeStart]] = None,
         end_before_end: Optional[list[EndBeforeEnd]] = None,
         identical_resources: Optional[list[IdenticalResources]] = None,
@@ -594,12 +534,8 @@ class Constraints:
         consecutive: Optional[list[Consecutive]] = None,
         setup_times: Optional[list[SetupTime]] = None,
     ):
-        self._start_at_start = start_at_start or []
-        self._start_at_end = start_at_end or []
         self._start_before_start = start_before_start or []
         self._start_before_end = start_before_end or []
-        self._end_at_start = end_at_start or []
-        self._end_at_end = end_at_end or []
         self._end_before_start = end_before_start or []
         self._end_before_end = end_before_end or []
         self._identical_resources = identical_resources or []
@@ -609,12 +545,8 @@ class Constraints:
 
     def __eq__(self, other) -> bool:
         return (
-            self.start_at_start == other.start_at_start
-            and self.start_at_end == other.start_at_end
-            and self.start_before_start == other.start_before_start
+            self.start_before_start == other.start_before_start
             and self.start_before_end == other.start_before_end
-            and self.end_at_start == other.end_at_start
-            and self.end_at_end == other.end_at_end
             and self.end_before_start == other.end_before_start
             and self.end_before_end == other.end_before_end
             and self.identical_resources == other.identical_resources
@@ -625,12 +557,8 @@ class Constraints:
 
     def __len__(self) -> int:
         return (
-            len(self.start_at_start)
-            + len(self.start_at_end)
-            + len(self.start_before_start)
+            len(self.start_before_start)
             + len(self.start_before_end)
-            + len(self.end_at_start)
-            + len(self.end_at_end)
             + len(self.end_before_start)
             + len(self.end_before_end)
             + len(self.identical_resources)
@@ -638,20 +566,6 @@ class Constraints:
             + len(self.consecutive)
             + len(self._setup_times)
         )
-
-    @property
-    def start_at_start(self) -> list[StartAtStart]:
-        """
-        Returns the list of start-at-start constraints.
-        """
-        return self._start_at_start
-
-    @property
-    def start_at_end(self) -> list[StartAtEnd]:
-        """
-        Returns the list of start-at-end constraints.
-        """
-        return self._start_at_end
 
     @property
     def start_before_start(self) -> list[StartBeforeStart]:
@@ -666,20 +580,6 @@ class Constraints:
         Returns the list of start-before-end constraints.
         """
         return self._start_before_end
-
-    @property
-    def end_at_start(self) -> list[EndAtStart]:
-        """
-        Returns the list of end-at-start constraints.
-        """
-        return self._end_at_start
-
-    @property
-    def end_at_end(self) -> list[EndAtEnd]:
-        """
-        Returns the list of end-at-end constraints.
-        """
-        return self._end_at_end
 
     @property
     def end_before_start(self) -> list[EndBeforeStart]:

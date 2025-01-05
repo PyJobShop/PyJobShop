@@ -6,7 +6,6 @@ from pyjobshop.Model import Model
 from pyjobshop.ProblemData import (
     Constraints,
     DifferentResources,
-    EndAtStart,
     EndBeforeEnd,
     EndBeforeStart,
     IdenticalResources,
@@ -18,7 +17,6 @@ from pyjobshop.ProblemData import (
     ProblemData,
     Renewable,
     SetupTime,
-    StartAtEnd,
     StartBeforeEnd,
     StartBeforeStart,
     Task,
@@ -293,11 +291,10 @@ def test_problem_data_non_input_parameter_attributes():
         Mode(task=0, resources=[2], duration=1),
     ]
     constraints = Constraints(
-        start_at_end=[StartAtEnd(1, 1)],
         start_before_start=[StartBeforeStart(1, 1)],
         start_before_end=[StartBeforeEnd(1, 1)],
-        end_at_start=[EndAtStart(1, 1)],
         end_before_end=[EndBeforeEnd(1, 1)],
+        end_before_start=[EndBeforeStart(1, 1)],
     )
 
     data = ProblemData(jobs, resources, tasks, modes, constraints)
@@ -306,7 +303,7 @@ def test_problem_data_non_input_parameter_attributes():
     assert_equal(data.num_resources, 3)
     assert_equal(data.num_tasks, 3)
     assert_equal(data.num_modes, 4)
-    assert_equal(data.num_constraints, 5)
+    assert_equal(data.num_constraints, 4)
 
 
 def test_problem_data_default_values():
@@ -911,34 +908,6 @@ def timing_constraints_model():
     return model
 
 
-def test_start_at_start(timing_constraints_model: Model, solver: str):
-    """
-    Tests that the start at start constraint is respected.
-    """
-    model = timing_constraints_model
-    model.add_start_at_start(model.tasks[0], model.tasks[1], delay=2)
-
-    # Task 1 starts at 0, task 2 must start at 0 + 2 (delay).
-    result = model.solve(solver=solver)
-    assert_equal(result.objective, 3)
-    assert_equal(result.best.tasks[0].start, 0)
-    assert_equal(result.best.tasks[1].start, 2)
-
-
-def test_start_at_end(timing_constraints_model: Model, solver: str):
-    """
-    Tests that the start at end constraint is respected.
-    """
-    model = timing_constraints_model
-    model.add_start_at_end(model.tasks[0], model.tasks[1], delay=2)
-
-    # Task 1 starts at 0, task 2 must end at 0 + 2 (delay).
-    result = model.solve(solver=solver)
-    assert_equal(result.objective, 2)
-    assert_equal(result.best.tasks[0].start, 0)
-    assert_equal(result.best.tasks[1].end, 2)
-
-
 def test_start_before_start(timing_constraints_model: Model, solver: str):
     """
     Tests that the start before start constraint is respected.
@@ -965,34 +934,6 @@ def test_start_before_end(timing_constraints_model: Model, solver: str):
     assert_equal(result.objective, 2)
     assert_equal(result.best.tasks[0].start, 0)
     assert_equal(result.best.tasks[1].end, 2)
-
-
-def test_end_at_end(timing_constraints_model: Model, solver: str):
-    """
-    Tests that the end at end constraint is respected.
-    """
-    model = timing_constraints_model
-    model.add_end_at_end(model.tasks[0], model.tasks[1], delay=2)
-
-    # Task 1 ends at 1 earliest, task 2 must end at 1 + 2 (delay).
-    result = model.solve(solver=solver)
-    assert_equal(result.objective, 3)
-    assert_equal(result.best.tasks[0].end, 1)
-    assert_equal(result.best.tasks[1].end, 3)
-
-
-def test_end_at_start(timing_constraints_model: Model, solver: str):
-    """
-    Tests that the end at start constraint is respected.
-    """
-    model = timing_constraints_model
-    model.add_end_at_start(model.tasks[0], model.tasks[1], delay=2)
-
-    # Task 1 ends at 1 earliest, task 2 must start at 1 + 2 (delay).
-    result = model.solve(solver=solver)
-    assert_equal(result.objective, 4)
-    assert_equal(result.best.tasks[0].end, 1)
-    assert_equal(result.best.tasks[1].start, 3)
 
 
 def test_end_before_start(timing_constraints_model: Model, solver: str):
