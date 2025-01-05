@@ -319,8 +319,8 @@ class Model:
         self, task1: Task, task2: Task, delay: int = 0
     ) -> StartAtStart:
         """
-        Adds a constraint that the first task must start at the same time as
-        the second task starts.
+        Adds a constraint that task 1 must start when task 2 starts, with an
+        optional delay.
         """
         idx1, idx2 = self._id2task[id(task1)], self._id2task[id(task2)]
         constraint = StartAtStart(idx1, idx2, delay)
@@ -332,8 +332,8 @@ class Model:
         self, task1: Task, task2: Task, delay: int = 0
     ) -> StartAtEnd:
         """
-        Adds a constraint that the first task must start at the same time as
-        the second task ends.
+        Adds a constraint that task 1 must start when task 2 ends, with an
+        optional delay.
         """
         idx1, idx2 = self._id2task[id(task1)], self._id2task[id(task2)]
         constraint = StartAtEnd(idx1, idx2, delay)
@@ -345,8 +345,8 @@ class Model:
         self, task1: Task, task2: Task, delay: int = 0
     ) -> StartBeforeStart:
         """
-        Adds a constraint that the first task must start before the second task
-        starts.
+        Adds a constraint that task 1 must start before task 2 starts, with an
+        optional delay.
         """
         idx1, idx2 = self._id2task[id(task1)], self._id2task[id(task2)]
         constraint = StartBeforeStart(idx1, idx2, delay)
@@ -358,8 +358,8 @@ class Model:
         self, task1: Task, task2: Task, delay: int = 0
     ) -> StartBeforeEnd:
         """
-        Adds a constraint that the first task must start before the second task
-        ends.
+        Adds a constraint that task 1 must start before task 2 ends, with an
+        optional delay.
         """
         idx1, idx2 = self._id2task[id(task1)], self._id2task[id(task2)]
         constraint = StartBeforeEnd(idx1, idx2, delay)
@@ -371,8 +371,8 @@ class Model:
         self, task1: Task, task2: Task, delay: int = 0
     ) -> EndAtEnd:
         """
-        Adds a constraint that the first task must end at the same time as the
-        second task ends.
+        Adds a constraint that task 1 must end when task 2 ends, with an
+        optional delay.
         """
         idx1, idx2 = self._id2task[id(task1)], self._id2task[id(task2)]
         constraint = EndAtEnd(idx1, idx2, delay)
@@ -384,8 +384,8 @@ class Model:
         self, task1: Task, task2: Task, delay: int = 0
     ) -> EndAtStart:
         """
-        Adds a constraint that the first task must end at the same time as the
-        second task starts.
+        Adds a constraint that task 1 must end when task 2 starts, with an
+        optional delay.
         """
         idx1, idx2 = self._id2task[id(task1)], self._id2task[id(task2)]
         constraint = EndAtStart(idx1, idx2, delay)
@@ -397,8 +397,8 @@ class Model:
         self, task1: Task, task2: Task, delay: int = 0
     ) -> EndBeforeStart:
         """
-        Adds a constraint that the first task must end before the second task
-        starts.
+        Adds a constraint that task 1 must end before task 2 starts, with an
+        optional delay.
         """
         idx1, idx2 = self._id2task[id(task1)], self._id2task[id(task2)]
         constraint = EndBeforeStart(idx1, idx2, delay)
@@ -410,8 +410,8 @@ class Model:
         self, task1: Task, task2: Task, delay: int = 0
     ) -> EndBeforeEnd:
         """
-        Adds a constraint that the first task must end before the second task
-        ends.
+        Adds a constraint that task 1 must end before task 2 ends, with an
+        optional delay.
         """
         idx1, idx2 = self._id2task[id(task1)], self._id2task[id(task2)]
         constraint = EndBeforeEnd(idx1, idx2, delay)
