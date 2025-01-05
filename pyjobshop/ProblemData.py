@@ -389,7 +389,11 @@ class Mode:
 
 class StartAtStart(NamedTuple):
     """
-    Start task 1 at the same time as task 2 starts.
+    Start task 1 (:math:`s_1`) when task 2 starts (:math:`s_2`), with an
+    optional delay :math:`d`. That is,
+
+    .. math::
+        s_1 + d = s_2.
     """
 
     task1: int
@@ -399,7 +403,11 @@ class StartAtStart(NamedTuple):
 
 class StartAtEnd(NamedTuple):
     """
-    Start task 1 at the same time as task 2 ends.
+    Start task 1 (:math:`s_1`) when task 2 ends (:math:`e_2`), with an optional
+    delay :math:`d`. That is,
+
+    .. math::
+        s_1 + d = e_2.
     """
 
     task1: int
@@ -409,7 +417,11 @@ class StartAtEnd(NamedTuple):
 
 class StartBeforeStart(NamedTuple):
     """
-    Start task 1 before task 2 starts.
+    Start task 1 (:math:`s_1`) before task 2 starts (:math:`s_2`), with an
+    optional delay :math:`d`. That is,
+
+    .. math::
+        s_1 + d \\leq s_2.
     """
 
     task1: int
@@ -419,7 +431,11 @@ class StartBeforeStart(NamedTuple):
 
 class StartBeforeEnd(NamedTuple):
     """
-    Start task 1 before task 2 ends.
+    Start task 1 (:math:`s_1`) before task 2 ends (:math:`e_2`), with an
+    optional delay :math:`d`. That is,
+
+    .. math::
+        s_1 + d \\leq e_2.
     """
 
     task1: int
@@ -429,7 +445,11 @@ class StartBeforeEnd(NamedTuple):
 
 class EndAtStart(NamedTuple):
     """
-    End task 1 at the same time as task 2 starts.
+    End task 1 (:math:`e_1`) when task 2 starts (:math:`s_2`), with an
+    optional delay :math:`d`. That is,
+
+    .. math::
+        e_1 + d = s_2.
     """
 
     task1: int
@@ -439,7 +459,11 @@ class EndAtStart(NamedTuple):
 
 class EndAtEnd(NamedTuple):
     """
-    End task 1 at the same time as task 2 ends.
+    End task 1 (:math:`e_1`) when task 2 ends (:math:`e_2`), with an optional
+    delay :math:`d`. That is,
+
+    .. math::
+        e_1 + d = e_2.
     """
 
     task1: int
@@ -449,7 +473,11 @@ class EndAtEnd(NamedTuple):
 
 class EndBeforeStart(NamedTuple):
     """
-    End task 1 before task 2 starts.
+    End task 1 (:math:`e_1`) before task 2 starts (:math:`s_2`), with an
+    optional delay :math:`d`. That is,
+
+    .. math::
+        e_1 + d \\leq s_2.
     """
 
     task1: int
@@ -459,7 +487,11 @@ class EndBeforeStart(NamedTuple):
 
 class EndBeforeEnd(NamedTuple):
     """
-    End task 1 before task 2 ends.
+    End task 1 (:math:`e_1`) before task 2 ends (:math:`e_2`), with an
+    optional delay :math:`d`. That is,
+
+    .. math::
+        e_1 + d \\leq e_2.
     """
 
     task1: int
