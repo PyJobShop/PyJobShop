@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union
 
 from psplib.ProjectInstance import Mode, Project, ProjectInstance, Resource
 
@@ -42,7 +42,7 @@ class Activity:
         return len(self.modes)
 
 
-def parse_rcpsp_max(loc: str | Path) -> list[ProjectInstance]:
+def parse_rcpsp_max(loc: Union[str, Path]) -> list[ProjectInstance]:
     with open(loc, "r") as fh:
         lines = iter(line.strip() for line in fh.readlines() if line.strip())
 
