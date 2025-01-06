@@ -8,6 +8,7 @@ from pyjobshop.ProblemData import (
     EndBeforeEnd,
     EndBeforeStart,
     IdenticalResources,
+    IfThen,
     Job,
     Machine,
     Mode,
@@ -42,8 +43,8 @@ def test_model_to_data():
     model.add_end_before_start(task1, task2)
     model.add_identical_resources(task2, task1)
     model.add_different_resource(task2, task1)
+    model.add_if_then(task2, task1)
     model.add_consecutive(task2, task1)
-
     model.add_setup_time(machine1, task1, task2, 3)
     model.add_setup_time(machine2, task1, task2, 4)
 
@@ -69,6 +70,7 @@ def test_model_to_data():
     assert_equal(constraints.end_before_start, [EndBeforeStart(0, 1)])
     assert_equal(constraints.identical_resources, [IdenticalResources(1, 0)])
     assert_equal(constraints.different_resources, [DifferentResources(1, 0)])
+    assert_equal(constraints.if_then, [IfThen(1, [0])])
     assert_equal(constraints.consecutive, [Consecutive(1, 0)])
     assert_equal(
         constraints.setup_times, [SetupTime(0, 0, 1, 3), SetupTime(1, 0, 1, 4)]
@@ -93,6 +95,7 @@ def test_from_data():
             end_before_end=[EndBeforeEnd(0, 1)],
             identical_resources=[IdenticalResources(0, 1)],
             different_resources=[DifferentResources(0, 1)],
+            if_then=[IfThen(1, [0])],
             consecutive=[Consecutive(1, 2)],
             setup_times=[
                 SetupTime(0, 0, 1, 1),  # machine
@@ -249,6 +252,26 @@ def test_add_mode_single_resource():
     assert_equal(mode.resources, [0])
     assert_equal(mode.duration, 1)
     assert_equal(mode.demands, [1])
+
+
+def test_add_if_then_successor_type_cast():
+    """
+    Tests that adding an if-then constraint with successors is correctly
+    cast to a list, if applicable.
+    """
+    model = Model()
+    task1, task2, task3 = [model.add_task() for _ in range(3)]
+
+    # Single successor is allowed, but this should be cast to a list
+    # in the constraint.
+    constraint = model.add_if_then(task1, task2)
+    assert_equal(constraint.task1, 0)
+    assert_equal(constraint.tasks2, [1])
+
+    # Multiple successors are also allwoed.
+    constraint = model.add_if_then(task1, [task2, task3])
+    assert_equal(constraint.task1, 0)
+    assert_equal(constraint.tasks2, [1, 2])
 
 
 def test_model_attributes():

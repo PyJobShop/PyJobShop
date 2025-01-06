@@ -158,6 +158,9 @@ class Model:
         for idx1, idx2 in data.constraints.different_resources:
             model.add_different_resource(tasks[idx1], tasks[idx2])
 
+        for idx1, idcs2 in data.constraints.if_then:
+            model.add_if_then(tasks[idx1], [tasks[idx2] for idx2 in idcs2])
+
         for idx1, idx2 in data.constraints.consecutive:
             model.add_consecutive(tasks[idx1], tasks[idx2])
 
@@ -403,7 +406,7 @@ class Model:
         idx1 = self._id2task[id(pred)]
         succs = [succs] if isinstance(succs, Task) else succs
         idcs2 = [self._id2task[id(succ)] for succ in succs]
-        constraint = IfThen(idx1, tuple(idcs2))
+        constraint = IfThen(idx1, idcs2)
         self._constraints.if_then.append(constraint)
 
         return constraint

@@ -492,7 +492,7 @@ class IfThen(NamedTuple):
     """
 
     task1: int
-    tasks2: tuple[int, ...]
+    tasks2: list[int]
 
 
 class Consecutive(NamedTuple):
