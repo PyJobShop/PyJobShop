@@ -393,7 +393,9 @@ class Model:
 
         return constraint
 
-    def add_if_then(self, pred: Task, succs: Task | list[Task]) -> IfThen:
+    def add_if_then(
+        self, pred: Task, succs: Union[Task, list[Task]]
+    ) -> IfThen:
         """
         Adds a constraint that the successor task(s) must be selected if the
         predecessor task is selected.
