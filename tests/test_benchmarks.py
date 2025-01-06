@@ -1,7 +1,7 @@
 import pytest
 from numpy.testing import assert_, assert_equal
 
-from pyjobshop import Model, solve
+from pyjobshop import Model
 
 from .utils import read
 
@@ -64,7 +64,8 @@ def test_fjsp_classic(solver: str, loc: str, objective: int):
     optimality.
     """
     data = read(loc)
-    result = solve(data, solver=solver)
+    model = Model.from_data(data)
+    result = model.solve(solver=solver)
 
     assert_equal(result.objective, objective)
     assert_equal(result.status.value, "Optimal")

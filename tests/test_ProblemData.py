@@ -5,10 +5,8 @@ from pyjobshop.constants import MAX_VALUE
 from pyjobshop.Model import Model
 from pyjobshop.ProblemData import (
     Constraints,
-    DifferentResources,
     EndBeforeEnd,
     EndBeforeStart,
-    IdenticalResources,
     Job,
     Machine,
     Mode,
@@ -22,7 +20,6 @@ from pyjobshop.ProblemData import (
     Task,
 )
 from pyjobshop.Solution import TaskData as TaskData
-from pyjobshop.solve import solve
 
 
 def test_job_attributes():
@@ -972,15 +969,14 @@ def test_identical_resources(solver: str):
 
     resources = [model.add_machine() for _ in range(2)]
     tasks = [model.add_task() for _ in range(2)]
-    modes = [
+    [
         model.add_mode(task=task, resources=resource, duration=2)
         for resource in resources
         for task in tasks
     ]
-    constraints = Constraints(identical_resources=[IdenticalResources(0, 1)])
+    model.add_identical_resources(tasks[0], tasks[1])
 
-    data = ProblemData([], resources, tasks, modes, constraints)
-    result = solve(data, solver=solver)
+    result = model.solve(solver=solver)
 
     # The identical resources constraint forces the tasks to be scheduled on
     # the same resource (instead of using two different resources), so the
@@ -1038,10 +1034,9 @@ def test_different_resources(solver: str):
     # Processing duration 1 on first resource, 5 on second resource.
     modes = [model.add_mode(task, resources[0], duration=1) for task in tasks]
     modes += [model.add_mode(task, resources[1], duration=5) for task in tasks]
-    constraints = Constraints(different_resources=[DifferentResources(0, 1)])
+    model.add_different_resource(tasks[0], tasks[1])
 
-    data = ProblemData([], resources, tasks, modes, constraints)
-    result = solve(data, solver=solver)
+    result = model.solve(solver=solver)
 
     # The different resources constraint forces the tasks to be scheduled on
     # different resources, so the makespan is 5.
