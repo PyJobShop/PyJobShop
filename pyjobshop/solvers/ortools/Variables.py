@@ -93,8 +93,7 @@ class ModeVar:
 class SequenceVar:
     """
     Represents a sequence of interval variables for all modes that use this
-    machine. Relevant sequence variables are lazily generated when activated
-    by constraints that call the ``activate`` method.
+    machine.
 
     Parameters
     ----------
@@ -107,6 +106,13 @@ class SequenceVar:
     is_active
         A boolean that indicates whether the sequence is active, meaning that a
         circuit constraint must be added for this machine. Default ``False``.
+
+    Notes
+    -----
+    Sequence variables are lazily generated when activated by constraints that
+    call the ``activate`` method. This avoids creating unnecessary variables
+    when the sequence variable is not used in the model.
+
     """
 
     DUMMY = -1

@@ -224,8 +224,8 @@ class Constraints:
             model.add_circuit(graph)
 
             for idx1, var1 in enumerate(mode_vars):
-                # If the self arc or dummy self arc is selected, then the var
-                # must not be present.
+                # If the (dummy) self arc is selected, then the var must not
+                # be present.
                 model.add(arcs[idx1, idx1] <= ~var1.present)
                 model.add(arcs[seq_var.DUMMY, seq_var.DUMMY] <= ~var1.present)
 
