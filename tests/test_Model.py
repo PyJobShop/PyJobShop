@@ -244,11 +244,11 @@ def test_add_mode_single_resource():
     machine = model.add_machine()
     task = model.add_task(job=job)
 
-    mode = model.add_mode(task, machine, 1, 1)
+    mode = model.add_mode(task, machine, duration=1, demands=1)
     assert_equal(mode.task, 0)
     assert_equal(mode.resources, [0])
     assert_equal(mode.duration, 1)
-    assert_equal(mode.demands, [1])  # default
+    assert_equal(mode.demands, [1])
 
 
 def test_model_attributes():
