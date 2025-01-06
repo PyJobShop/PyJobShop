@@ -5,8 +5,6 @@ from pyjobshop.ProblemData import (
     Consecutive,
     Constraints,
     DifferentResources,
-    EndAtEnd,
-    EndAtStart,
     EndBeforeEnd,
     EndBeforeStart,
     IdenticalResources,
@@ -18,8 +16,6 @@ from pyjobshop.ProblemData import (
     ProblemData,
     Renewable,
     SetupTime,
-    StartAtEnd,
-    StartAtStart,
     StartBeforeEnd,
     StartBeforeStart,
     Task,
@@ -40,12 +36,8 @@ def test_model_to_data():
     model.add_mode(task1, machine1, 1)
     model.add_mode(task2, machine2, 2)
 
-    model.add_start_at_start(task1, task2)
-    model.add_start_at_end(task1, task2)
     model.add_start_before_start(task1, task2)
     model.add_start_before_end(task1, task2)
-    model.add_end_at_start(task1, task2)
-    model.add_end_at_end(task1, task2)
     model.add_end_before_end(task1, task2)
     model.add_end_before_start(task1, task2)
     model.add_identical_resources(task2, task1)
@@ -71,12 +63,8 @@ def test_model_to_data():
     )
 
     constraints = data.constraints
-    assert_equal(constraints.start_at_start, [StartAtStart(0, 1)])
-    assert_equal(constraints.start_at_end, [StartAtEnd(0, 1)])
     assert_equal(constraints.start_before_start, [StartBeforeStart(0, 1)])
     assert_equal(constraints.start_before_end, [StartBeforeEnd(0, 1)])
-    assert_equal(constraints.end_at_start, [EndAtStart(0, 1)])
-    assert_equal(constraints.end_at_end, [EndAtEnd(0, 1)])
     assert_equal(constraints.end_before_end, [EndBeforeEnd(0, 1)])
     assert_equal(constraints.end_before_start, [EndBeforeStart(0, 1)])
     assert_equal(constraints.identical_resources, [IdenticalResources(1, 0)])
@@ -99,12 +87,8 @@ def test_from_data():
         [Task(), Task(job=0), Task()],
         modes=[Mode(0, [0], 1), Mode(1, [1], 2), Mode(2, [1], 2)],
         constraints=Constraints(
-            start_at_start=[StartAtStart(0, 1)],
-            start_at_end=[StartAtEnd(0, 1)],
             start_before_start=[StartBeforeStart(0, 1)],
             start_before_end=[StartBeforeEnd(0, 1)],
-            end_at_start=[EndAtStart(0, 1)],
-            end_at_end=[EndAtEnd(0, 1)],
             end_before_start=[EndBeforeStart(0, 1)],
             end_before_end=[EndBeforeEnd(0, 1)],
             identical_resources=[IdenticalResources(0, 1)],
@@ -260,11 +244,11 @@ def test_add_mode_single_resource():
     machine = model.add_machine()
     task = model.add_task(job=job)
 
-    mode = model.add_mode(task, machine, 1, 1)
+    mode = model.add_mode(task, machine, duration=1, demands=1)
     assert_equal(mode.task, 0)
     assert_equal(mode.resources, [0])
     assert_equal(mode.duration, 1)
-    assert_equal(mode.demands, [1])  # default
+    assert_equal(mode.demands, [1])
 
 
 def test_model_attributes():

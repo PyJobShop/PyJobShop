@@ -144,61 +144,32 @@ class Constraints:
         """
         model, data = self._model, self._data
 
-        for idx1, idx2 in data.constraints.start_at_start:
+        for idx1, idx2, delay in data.constraints.start_before_start:
             task_var1 = self._task_vars[idx1]
             task_var2 = self._task_vars[idx2]
             both_present = [task_var1.present, task_var2.present]
-
-            expr = task_var1.start == task_var2.start
+            expr = task_var1.start + delay <= task_var2.start
             model.add(expr).only_enforce_if(both_present)
 
-        for idx1, idx2 in data.constraints.start_at_end:
+        for idx1, idx2, delay in data.constraints.start_before_end:
             task_var1 = self._task_vars[idx1]
             task_var2 = self._task_vars[idx2]
             both_present = [task_var1.present, task_var2.present]
-            expr = task_var1.start == task_var2.end
+            expr = task_var1.start + delay <= task_var2.end
             model.add(expr).only_enforce_if(both_present)
 
-        for idx1, idx2 in data.constraints.start_before_start:
+        for idx1, idx2, delay in data.constraints.end_before_start:
             task_var1 = self._task_vars[idx1]
             task_var2 = self._task_vars[idx2]
             both_present = [task_var1.present, task_var2.present]
-            expr = task_var1.start <= task_var2.start
+            expr = task_var1.end + delay <= task_var2.start
             model.add(expr).only_enforce_if(both_present)
 
-        for idx1, idx2 in data.constraints.start_before_end:
+        for idx1, idx2, delay in data.constraints.end_before_end:
             task_var1 = self._task_vars[idx1]
             task_var2 = self._task_vars[idx2]
             both_present = [task_var1.present, task_var2.present]
-            expr = task_var1.start <= task_var2.end
-            model.add(expr).only_enforce_if(both_present)
-
-        for idx1, idx2 in data.constraints.end_at_start:
-            task_var1 = self._task_vars[idx1]
-            task_var2 = self._task_vars[idx2]
-            both_present = [task_var1.present, task_var2.present]
-            expr = task_var1.end == task_var2.start
-            model.add(expr).only_enforce_if(both_present)
-
-        for idx1, idx2 in data.constraints.end_at_end:
-            task_var1 = self._task_vars[idx1]
-            task_var2 = self._task_vars[idx2]
-            both_present = [task_var1.present, task_var2.present]
-            expr = task_var1.end == task_var2.end
-            model.add(expr).only_enforce_if(both_present)
-
-        for idx1, idx2 in data.constraints.end_before_start:
-            task_var1 = self._task_vars[idx1]
-            task_var2 = self._task_vars[idx2]
-            both_present = [task_var1.present, task_var2.present]
-            expr = task_var1.end <= task_var2.start
-            model.add(expr).only_enforce_if(both_present)
-
-        for idx1, idx2 in data.constraints.end_before_end:
-            task_var1 = self._task_vars[idx1]
-            task_var2 = self._task_vars[idx2]
-            both_present = [task_var1.present, task_var2.present]
-            expr = task_var1.end <= task_var2.end
+            expr = task_var1.end + delay <= task_var2.end
             model.add(expr).only_enforce_if(both_present)
 
     def _identical_and_different_resource_constraints(self):

@@ -36,22 +36,10 @@ PyJobShop
     .. autoclass:: Constraints
         :members:
 
-    .. autoclass:: StartAtStart
-        :exclude-members: count, index
-
-    .. autoclass:: StartAtEnd
-        :exclude-members: count, index
-
     .. autoclass:: StartBeforeStart
         :exclude-members: count, index
 
     .. autoclass:: StartBeforeEnd
-        :exclude-members: count, index
-
-    .. autoclass:: EndAtStart
-        :exclude-members: count, index
-
-    .. autoclass:: EndAtEnd
         :exclude-members: count, index
 
     .. autoclass:: EndBeforeStart

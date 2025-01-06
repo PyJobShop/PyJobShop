@@ -5,12 +5,8 @@ from pyjobshop.constants import MAX_VALUE
 from pyjobshop.Model import Model
 from pyjobshop.ProblemData import (
     Constraints,
-    DifferentResources,
-    EndAtEnd,
-    EndAtStart,
     EndBeforeEnd,
     EndBeforeStart,
-    IdenticalResources,
     Job,
     Machine,
     Mode,
@@ -19,14 +15,11 @@ from pyjobshop.ProblemData import (
     ProblemData,
     Renewable,
     SetupTime,
-    StartAtEnd,
-    StartAtStart,
     StartBeforeEnd,
     StartBeforeStart,
     Task,
 )
 from pyjobshop.Solution import TaskData as TaskData
-from pyjobshop.solve import solve
 
 
 def test_job_attributes():
@@ -295,11 +288,10 @@ def test_problem_data_non_input_parameter_attributes():
         Mode(task=0, resources=[2], duration=1),
     ]
     constraints = Constraints(
-        start_at_end=[StartAtEnd(1, 1)],
         start_before_start=[StartBeforeStart(1, 1)],
         start_before_end=[StartBeforeEnd(1, 1)],
-        end_at_start=[EndAtStart(1, 1)],
         end_before_end=[EndBeforeEnd(1, 1)],
+        end_before_start=[EndBeforeStart(1, 1)],
     )
 
     data = ProblemData(jobs, resources, tasks, modes, constraints)
@@ -308,7 +300,7 @@ def test_problem_data_non_input_parameter_attributes():
     assert_equal(data.num_resources, 3)
     assert_equal(data.num_tasks, 3)
     assert_equal(data.num_modes, 4)
-    assert_equal(data.num_constraints, 5)
+    assert_equal(data.num_constraints, 4)
 
 
 def test_problem_data_default_values():
@@ -651,9 +643,8 @@ def test_task_earliest_start(solver: str):
     """
     model = Model()
 
-    job = model.add_job()
     machine = model.add_machine()
-    task = model.add_task(job=job, earliest_start=1)
+    task = model.add_task(earliest_start=1)
 
     model.add_mode(task, machine, duration=1)
 
@@ -670,11 +661,10 @@ def test_task_latest_start(solver: str):
     """
     model = Model()
 
-    job = model.add_job()
     machine = model.add_machine()
     tasks = [
-        model.add_task(job=job),
-        model.add_task(job=job, latest_start=1),
+        model.add_task(),
+        model.add_task(latest_start=1),
     ]
 
     for task in tasks:
@@ -699,9 +689,8 @@ def test_task_fixed_start(solver: str):
     """
     model = Model()
 
-    job = model.add_job()
     machine = model.add_machine()
-    task = model.add_task(job=job, earliest_start=42, latest_start=42)
+    task = model.add_task(earliest_start=42, latest_start=42)
 
     model.add_mode(task, machine, duration=1)
 
@@ -718,9 +707,8 @@ def test_task_earliest_end(solver: str):
     """
     model = Model()
 
-    job = model.add_job()
     machine = model.add_machine()
-    task = model.add_task(job=job, earliest_end=2)
+    task = model.add_task(earliest_end=2)
 
     model.add_mode(task, machine, duration=1)
 
@@ -738,12 +726,8 @@ def test_task_latest_end(solver: str):
     """
     model = Model()
 
-    job = model.add_job()
     machine = model.add_machine()
-    tasks = [
-        model.add_task(job=job),
-        model.add_task(job=job, latest_end=2),
-    ]
+    tasks = [model.add_task(), model.add_task(latest_end=2)]
 
     for task in tasks:
         model.add_mode(task, machine, duration=2)
@@ -767,9 +751,8 @@ def test_task_fixed_end(solver: str):
     """
     model = Model()
 
-    job = model.add_job()
     machine = model.add_machine()
-    task = model.add_task(job=job, earliest_end=42, latest_end=42)
+    task = model.add_task(earliest_end=42, latest_end=42)
 
     model.add_mode(task, machine, duration=1)
 
@@ -904,51 +887,101 @@ def test_resource_non_renewable_capacity(solver: str):
     assert_equal(result.status.value, "Infeasible")
 
 
-@pytest.mark.parametrize(
-    "attr,constraint,expected_makespan",
-    [
-        # start 0 == start 0
-        ("start_at_start", StartAtStart, 2),
-        # start 2 == end 2
-        ("start_at_end", StartAtEnd, 4),
-        # start 0 <= start 0
-        ("start_before_start", StartBeforeStart, 2),
-        # start 0 <= end 2
-        ("start_before_end", StartBeforeEnd, 2),
-        # end 2 == start 2
-        ("end_at_start", EndAtStart, 4),
-        # end 2 == end 2
-        ("end_at_end", EndAtEnd, 2),
-        # end 2 <= start 2
-        ("end_before_start", EndBeforeStart, 4),
-        # end 2 <= end 2
-        ("end_before_end", EndBeforeEnd, 2),
-        ("identical_resources", IdenticalResources, 4),
-        ("different_resources", DifferentResources, 2),
-    ],
-)
-def test_constraints(solver, attr: str, constraint, expected_makespan: int):
+@pytest.fixture(scope="function")
+def timing_constraints_model():
     """
-    Tests that constraints are respected. This example uses two tasks and two
-    resources with processing times of 2.
+    Sets up a simple model with 2 machines, 2 tasks and unit processing times.
     """
     model = Model()
 
-    job = model.add_job()
-    resources = [model.add_machine() for _ in range(2)]
-    tasks = [model.add_task(job=job) for _ in range(2)]
-    modes = [
-        Mode(task=task, resources=[resource], duration=2)
-        for resource in range(len(resources))
-        for task in range(len(tasks))
+    machines = [model.add_machine() for _ in range(2)]
+    tasks = [model.add_task() for _ in range(2)]
+    [
+        model.add_mode(task, machine, duration=1)
+        for task in tasks
+        for machine in machines
     ]
-    constraints = Constraints()
-    getattr(constraints, attr).append(constraint(0, 1))  # a bit hacky
 
-    data = ProblemData([job], resources, tasks, modes, constraints)
-    result = solve(data, solver=solver)
+    return model
 
-    assert_equal(result.objective, expected_makespan)
+
+def test_start_before_start(timing_constraints_model: Model, solver: str):
+    """
+    Tests that the start before start constraint is respected.
+    """
+    model = timing_constraints_model
+    model.add_start_before_start(model.tasks[0], model.tasks[1], delay=2)
+
+    # Task 1 starts at 0, task 2 can start earliest at 0 + 2 (delay).
+    result = model.solve(solver=solver)
+    assert_equal(result.objective, 3)
+    assert_equal(result.best.tasks[0].start, 0)
+    assert_equal(result.best.tasks[1].start, 2)
+
+
+def test_start_before_end(timing_constraints_model: Model, solver: str):
+    """
+    Tests that the start before end constraint is respected.
+    """
+    model = timing_constraints_model
+    model.add_start_before_end(model.tasks[0], model.tasks[1], delay=2)
+
+    # Task 1 starts at 0, task 2 must end after 0 + 2 (delay).
+    result = model.solve(solver=solver)
+    assert_equal(result.objective, 2)
+    assert_equal(result.best.tasks[0].start, 0)
+    assert_equal(result.best.tasks[1].end, 2)
+
+
+def test_end_before_start(timing_constraints_model: Model, solver: str):
+    """
+    Tests that the end before start constraint is respected.
+    """
+    model = timing_constraints_model
+    model.add_end_before_start(model.tasks[0], model.tasks[1], delay=2)
+
+    # Task 1 ends at 1 earliest, task 2 must start after 1 + 2 (delay).
+    result = model.solve(solver=solver)
+    assert_equal(result.objective, 4)
+    assert_equal(result.best.tasks[0].end, 1)
+    assert_equal(result.best.tasks[1].start, 3)
+
+
+def test_end_before_end(timing_constraints_model: Model, solver: str):
+    """
+    Tests that the end before end constraint is respected.
+    """
+    model = timing_constraints_model
+    model.add_end_before_end(model.tasks[0], model.tasks[1], delay=2)
+
+    # Task 1 ends at 1 earliest, task 2 must end after 1 + 2 (delay).
+    result = model.solve(solver=solver)
+    assert_equal(result.objective, 3)
+    assert_equal(result.best.tasks[0].end, 1)
+    assert_equal(result.best.tasks[1].end, 3)
+
+
+def test_identical_resources(solver: str):
+    """
+    Tests that the identical resources constraint is respected.
+    """
+    model = Model()
+
+    resources = [model.add_machine() for _ in range(2)]
+    tasks = [model.add_task() for _ in range(2)]
+    [
+        model.add_mode(task=task, resources=resource, duration=2)
+        for resource in resources
+        for task in tasks
+    ]
+    model.add_identical_resources(tasks[0], tasks[1])
+
+    result = model.solve(solver=solver)
+
+    # The identical resources constraint forces the tasks to be scheduled on
+    # the same resource (instead of using two different resources), so the
+    # makespan is 4.
+    assert_equal(result.objective, 4)
 
 
 def test_identical_resources_with_modes_and_multiple_resources(solver: str):
@@ -987,6 +1020,27 @@ def test_identical_resources_with_modes_and_multiple_resources(solver: str):
     assert_equal(result.status.value, "Optimal")
     assert_equal(result.best.tasks[0].mode, 2)
     assert_equal(result.best.tasks[1].mode, 3)
+
+
+def test_different_resources(solver: str):
+    """
+    Tests that the different resources constraint is respected.
+    """
+    model = Model()
+
+    resources = [model.add_machine() for _ in range(2)]
+    tasks = [model.add_task() for _ in range(2)]
+
+    # Processing duration 1 on first resource, 5 on second resource.
+    modes = [model.add_mode(task, resources[0], duration=1) for task in tasks]
+    modes += [model.add_mode(task, resources[1], duration=5) for task in tasks]
+    model.add_different_resource(tasks[0], tasks[1])
+
+    result = model.solve(solver=solver)
+
+    # The different resources constraint forces the tasks to be scheduled on
+    # different resources, so the makespan is 5.
+    assert_equal(result.objective, 5)
 
 
 def test_different_resources_with_modes_and_multiple_resources(solver: str):
@@ -1032,10 +1086,9 @@ def test_consecutive_constraint(solver: str):
     """
     model = Model()
 
-    job = model.add_job()
     machine = model.add_machine()
-    task1 = model.add_task(job=job)
-    task2 = model.add_task(job=job)
+    task1 = model.add_task()
+    task2 = model.add_task()
 
     model.add_mode(task1, machine, duration=1)
     model.add_mode(task2, machine, duration=1)
@@ -1088,9 +1141,8 @@ def test_makespan_objective(solver: str):
     """
     model = Model()
 
-    job = model.add_job()
     machine = model.add_machine()
-    tasks = [model.add_task(job=job) for _ in range(2)]
+    tasks = [model.add_task() for _ in range(2)]
 
     for task in tasks:
         model.add_mode(task, machine, duration=2)

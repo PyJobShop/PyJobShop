@@ -49,7 +49,7 @@ def test_solve_time_limit(small, capfd):
 
 def test_solve_num_workers(small, solver, capfd):
     """
-    Tests the dplsay log that the ``num_workers`` parameter is correctly set.
+    Tests the display log that the ``num_workers`` parameter is correctly set.
     """
     solver2msg = {
         "ortools": "num_workers: 2",
