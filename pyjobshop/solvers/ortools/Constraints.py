@@ -1,5 +1,5 @@
 import numpy as np
-from ortools.sat.python.cp_model import BoolVarT, CpModel, LinearExpr
+from ortools.sat.python.cp_model import CpModel, LinearExpr
 
 import pyjobshop.solvers.utils as utils
 from pyjobshop.ProblemData import (
@@ -214,36 +214,29 @@ class Constraints:
             seq_var = self._sequence_vars[idx]
             if not seq_var.is_active:
                 # No sequencing constraints active. Skip the creation of
-                # (expensive) circuit constraints.
+                # expensive circuit constraints.
                 continue
 
-            modes = seq_var.mode_vars
+            mode_vars = seq_var.mode_vars
             arcs = seq_var.arcs
 
-            # Add dummy node self-arc to allow empty circuits.
-            empty = model.new_bool_var("")
-            graph: list[tuple[int, int, BoolVarT]] = [(-1, -1, empty)]
+            graph = [(u, v, var) for (u, v), var in arcs.items()]
+            model.add_circuit(graph)
 
-            for idx1, var1 in enumerate(modes):
-                # Arcs from and to the dummy node.
-                graph.append((-1, idx1, model.new_bool_var("")))
-                graph.append((idx1, -1, model.new_bool_var("")))
+            for idx1, var1 in enumerate(mode_vars):
+                # If the (dummy) self arc is selected, then the var must not
+                # be present.
+                model.add(arcs[idx1, idx1] <= ~var1.present)
+                model.add(arcs[seq_var.DUMMY, seq_var.DUMMY] <= ~var1.present)
 
-                # Self arc if the task is not present
-                graph.append((idx1, idx1, ~var1.present))
-
-                # If the circuit is empty then the var should not be present.
-                model.add_implication(empty, ~var1.present)
-
-                for idx2, var2 in enumerate(modes):
+            for idx1, var1 in enumerate(mode_vars):
+                for idx2, var2 in enumerate(mode_vars):
                     if idx1 == idx2:
                         continue
 
-                    arc = arcs[idx1, idx2]
-                    graph.append((idx1, idx2, arc))
-
-                    model.add_implication(arc, var1.present)
-                    model.add_implication(arc, var2.present)
+                    # If the arc is selected, then both tasks must be present.
+                    model.add(arcs[idx1, idx2] <= var1.present)
+                    model.add(arcs[idx1, idx2] <= var2.present)
 
                     setup = (
                         setup_times[idx, var1.task_idx, var2.task_idx]
@@ -251,9 +244,7 @@ class Constraints:
                         else 0
                     )
                     expr = var1.end + setup <= var2.start
-                    model.add(expr).only_enforce_if(arc)
-
-            model.add_circuit(graph)
+                    model.add(expr).only_enforce_if(arcs[idx1, idx2])
 
     def add_constraints(self):
         """
