@@ -488,8 +488,8 @@ class DifferentResources(NamedTuple):
 
 class IfThen(NamedTuple):
     """
-    If predecessor task is present, then at least one of successor tasks must
-    be present.
+    If predecessor task is present, then at least one of the successor tasks
+    must be present.
     """
 
     predecessor: int
