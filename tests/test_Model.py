@@ -265,13 +265,13 @@ def test_add_if_then_successor_type_cast():
     # Single successor is allowed, but this should be cast to a list
     # in the constraint.
     constraint = model.add_if_then(task1, task2)
-    assert_equal(constraint.task1, 0)
-    assert_equal(constraint.tasks2, [1])
+    assert_equal(constraint.predecessor, 0)
+    assert_equal(constraint.successors, [1])
 
     # Multiple successors are also allwoed.
     constraint = model.add_if_then(task1, [task2, task3])
-    assert_equal(constraint.task1, 0)
-    assert_equal(constraint.tasks2, [1, 2])
+    assert_equal(constraint.predecessor, 0)
+    assert_equal(constraint.successors, [1, 2])
 
 
 def test_model_attributes():

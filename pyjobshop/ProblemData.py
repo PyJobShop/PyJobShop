@@ -488,11 +488,12 @@ class DifferentResources(NamedTuple):
 
 class IfThen(NamedTuple):
     """
-    If task 1 is present, then at least one of task 2 must be present.
+    If predecessor task is present, then at least one of successor tasks must
+    be present.
     """
 
-    task1: int
-    tasks2: list[int]
+    predecessor: int
+    successors: list[int]
 
 
 class Consecutive(NamedTuple):

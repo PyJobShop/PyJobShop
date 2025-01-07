@@ -400,8 +400,8 @@ class Model:
         self, pred: Task, succs: Union[Task, list[Task]]
     ) -> IfThen:
         """
-        Adds a constraint that the successor task(s) must be selected if the
-        predecessor task is selected.
+        Adds a constraint that if the predecessor task is present, then at
+        least one of the successor tasks must be present.
         """
         idx1 = self._id2task[id(pred)]
         succs = [succs] if isinstance(succs, Task) else succs
