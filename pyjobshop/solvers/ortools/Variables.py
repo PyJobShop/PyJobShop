@@ -225,21 +225,11 @@ class Variables:
 
         for idx, task in enumerate(data.tasks):
             name = f"T{idx}"
-            present = (
-                model.new_bool_var(f"{name}_present")
-                if task.optional
-                else model.new_constant(True)
+            start = model.new_int_var(
+                lb=task.earliest_start,
+                ub=min(task.latest_start, MAX_VALUE),
+                name=f"{name}_start",
             )
-            start = model.new_int_var(lb=0, ub=MAX_VALUE, name=f"{name}_start")
-            end = model.new_int_var(lb=0, ub=MAX_VALUE, name=f"{name}_end")
-
-            # If task is not present, then start and end are free variables,
-            # so these bounds are only enforced when the task is present.
-            model.add(start >= task.earliest_start).only_enforce_if(present)
-            model.add(start <= task.latest_start).only_enforce_if(present)
-            model.add(end >= task.earliest_end).only_enforce_if(present)
-            model.add(end <= task.latest_end).only_enforce_if(present)
-
             if task.fixed_duration:
                 duration = model.new_int_var_from_domain(
                     Domain.from_values(task_durations[idx]), f"{name}_duration"
@@ -250,7 +240,16 @@ class Variables:
                     ub=MAX_VALUE,
                     name=f"{name}_duration",
                 )
-
+            end = model.new_int_var(
+                lb=task.earliest_end,
+                ub=min(task.latest_end, MAX_VALUE),
+                name=f"{name}_end",
+            )
+            present = (
+                model.new_bool_var(f"{name}_present")
+                if task.optional
+                else model.new_constant(True)
+            )
             interval = model.new_optional_interval_var(
                 start, duration, end, present, f"interval_{task}"
             )
