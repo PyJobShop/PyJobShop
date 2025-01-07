@@ -42,8 +42,8 @@ class Constraints:
 
     def _select_one_mode(self):
         """
-        Selects one mode for each task if the task is present, ensuring that
-        each present task performs exactly one mode.
+        Selects one mode for each task if and only if the task is present,
+        and synchronizes the selected mode variable with the task variable.
         """
         model, data = self._model, self._data
         task2modes = utils.task2modes(data)
@@ -51,7 +51,7 @@ class Constraints:
         for task in range(data.num_tasks):
             task_var = self._task_vars[task]
 
-            # Select one mode if task is present.
+            # Select one mode if and only if task is present.
             presences = [self._mode_vars[m].present for m in task2modes[task]]
             model.add(sum(presences) == task_var.present)
 
