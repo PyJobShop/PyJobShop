@@ -156,8 +156,8 @@ class Variables:
             job_var = self.job_vars[idx]
             sol_tasks = [solution.tasks[task] for task in job.tasks]
 
-            job_start = min(task.start for task in sol_tasks)
-            job_end = max(task.end for task in sol_tasks)
+            job_start = min(task.start for task in sol_tasks if task.present)
+            job_end = max(task.end for task in sol_tasks if task.present)
 
             init.add_interval_var_solution(
                 job_var, start=job_start, end=job_end
