@@ -350,7 +350,7 @@ class Variables:
 
             if data.tasks[idx].optional:
                 # OR-Tools complains about adding presence hints to interval
-                # variables that are present (i.e., non-optional tasks).
+                # variables that are always present (i.e., non-optional tasks).
                 model.add_hint(task_var.present, sol_task.present)
 
         for idx in range(len(data.modes)):
