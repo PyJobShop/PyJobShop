@@ -1034,7 +1034,7 @@ def test_different_resources(solver: str):
     # Processing duration 1 on first resource, 5 on second resource.
     modes = [model.add_mode(task, resources[0], duration=1) for task in tasks]
     modes += [model.add_mode(task, resources[1], duration=5) for task in tasks]
-    model.add_different_resource(tasks[0], tasks[1])
+    model.add_different_resources(tasks[0], tasks[1])
 
     result = model.solve(solver=solver)
 
@@ -1069,7 +1069,7 @@ def test_different_resources_with_modes_and_multiple_resources(solver: str):
     assert_equal(result.best.tasks[1].mode, 3)
 
     # Now we add the different resource constraint...
-    model.add_different_resource(task1, task2)
+    model.add_different_resources(task1, task2)
 
     # ...so mode 0 and mode 3 can no longer be selected. The only option
     # is to select mode 2 for task 1 and mode 3 for task 2.

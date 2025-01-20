@@ -154,7 +154,7 @@ class Model:
             model.add_identical_resources(tasks[idx1], tasks[idx2])
 
         for idx1, idx2 in data.constraints.different_resources:
-            model.add_different_resource(tasks[idx1], tasks[idx2])
+            model.add_different_resources(tasks[idx1], tasks[idx2])
 
         for idx1, idx2 in data.constraints.consecutive:
             model.add_consecutive(tasks[idx1], tasks[idx2])
@@ -364,7 +364,7 @@ class Model:
 
         return constraint
 
-    def add_different_resource(
+    def add_different_resources(
         self, task1: Task, task2: Task
     ) -> DifferentResources:
         """

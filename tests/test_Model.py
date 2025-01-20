@@ -41,7 +41,7 @@ def test_model_to_data():
     model.add_end_before_end(task1, task2)
     model.add_end_before_start(task1, task2)
     model.add_identical_resources(task2, task1)
-    model.add_different_resource(task2, task1)
+    model.add_different_resources(task2, task1)
     model.add_consecutive(task2, task1)
 
     model.add_setup_time(machine1, task1, task2, 3)
