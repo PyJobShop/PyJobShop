@@ -1,3 +1,5 @@
+from itertools import product
+
 import docplex.cp.modeler as cpo
 import numpy as np
 from docplex.cp.model import CpoModel
@@ -170,18 +172,19 @@ class Constraints:
         """
         model, data = self._model, self._data
 
-        for idx1, idx2 in data.constraints.consecutive:
-            intersecting = utils.intersecting_modes(data, idx1, idx2)
-            for mode1, mode2, resources in intersecting:
-                for resource in resources:
-                    if not isinstance(data.resources[resource], Machine):
-                        continue
+        for idx1, idx2, machine in data.constraints.consecutive:
+            seq_var = self._sequence_vars[machine]
+            modes = utils.resource2modes(data)[machine]
 
-                    seq_var = self._sequence_vars[resource]
-                    var1 = self._mode_vars[mode1]
-                    var2 = self._mode_vars[mode2]
+            # Find the mode variables for these tasks on the machine.
+            modes1 = [mode for mode in modes if data.modes[mode].task == idx1]
+            modes2 = [mode for mode in modes if data.modes[mode].task == idx2]
+            if not modes1 or not modes2:
+                continue  # tasks not both assigned to the machine
 
-                    model.add(cpo.previous(seq_var, var1, var2))
+            for mode1, mode2 in product(modes1, modes2):
+                var1, var2 = self._mode_vars[mode1], self._mode_vars[mode2]
+                model.add(cpo.previous(seq_var, var1, var2))
 
     def add_constraints(self):
         """
