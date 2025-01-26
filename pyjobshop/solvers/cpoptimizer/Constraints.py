@@ -170,7 +170,7 @@ class Constraints:
         """
         model, data = self._model, self._data
 
-        for idx1, idx2 in data.constraints.consecutive:
+        for idx1, idx2, _ in data.constraints.consecutive:
             intersecting = utils.intersecting_modes(data, idx1, idx2)
             for mode1, mode2, resources in intersecting:
                 for resource in resources:

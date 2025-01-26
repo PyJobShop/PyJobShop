@@ -42,7 +42,7 @@ def test_model_to_data():
     model.add_end_before_start(task1, task2)
     model.add_identical_resources(task2, task1)
     model.add_different_resources(task2, task1)
-    model.add_consecutive(task2, task1)
+    model.add_consecutive(task2, task1, machine1)
 
     model.add_setup_time(machine1, task1, task2, 3)
     model.add_setup_time(machine2, task1, task2, 4)
@@ -69,7 +69,7 @@ def test_model_to_data():
     assert_equal(constraints.end_before_start, [EndBeforeStart(0, 1)])
     assert_equal(constraints.identical_resources, [IdenticalResources(1, 0)])
     assert_equal(constraints.different_resources, [DifferentResources(1, 0)])
-    assert_equal(constraints.consecutive, [Consecutive(1, 0)])
+    assert_equal(constraints.consecutive, [Consecutive(1, 0, 0)])
     assert_equal(
         constraints.setup_times, [SetupTime(0, 0, 1, 3), SetupTime(1, 0, 1, 4)]
     )
@@ -93,7 +93,7 @@ def test_from_data():
             end_before_end=[EndBeforeEnd(0, 1)],
             identical_resources=[IdenticalResources(0, 1)],
             different_resources=[DifferentResources(0, 1)],
-            consecutive=[Consecutive(1, 2)],
+            consecutive=[Consecutive(1, 2, 0)],
             setup_times=[
                 SetupTime(0, 0, 1, 1),  # machine
                 SetupTime(1, 0, 1, 0),  # renewable
