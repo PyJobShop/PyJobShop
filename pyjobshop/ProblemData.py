@@ -478,7 +478,7 @@ class DifferentResources(NamedTuple):
 class Consecutive(NamedTuple):
     """
     Sequence task 1 and task 2 consecutively on the given machine, meaning that
-    no other task is allowed to be scheduled between them.
+    no other task is allowed to be scheduled in-between.
     """
 
     task1: int

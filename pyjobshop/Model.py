@@ -386,8 +386,8 @@ class Model:
     ) -> Consecutive:
         """
         Adds a constraint that the first task must be scheduled right before
-        the second task, meaning that no task is allowed to schedule between,
-        on machines that they are both scheduled on.
+        the second task on the given machine, meaning that no other task is
+        allowed to be scheduled in-between.
         """
         idx1, idx2 = self._id2task[id(task1)], self._id2task[id(task2)]
         machine_idx = self._id2resource[id(machine)]
