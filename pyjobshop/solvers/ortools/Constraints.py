@@ -1,3 +1,5 @@
+from itertools import product
+
 import numpy as np
 from ortools.sat.python.cp_model import CpModel, LinearExpr
 
@@ -180,24 +182,22 @@ class Constraints:
         """
         model, data = self._model, self._data
 
-        for idx1, idx2, _ in data.constraints.consecutive:
-            intersecting = utils.intersecting_modes(data, idx1, idx2)
-            for mode1, mode2, resources in intersecting:
-                for resource in resources:
-                    if not isinstance(data.resources[resource], Machine):
-                        continue
+        for idx1, idx2, machine in data.constraints.consecutive:
+            seq_var = self._sequence_vars[machine]
+            seq_var.activate(model)
 
-                    seq_var = self._sequence_vars[resource]
-                    seq_var.activate(model)
-                    var1 = self._mode_vars[mode1]
-                    var2 = self._mode_vars[mode2]
+            modes1 = [var for var in seq_var.mode_vars if var.task_idx == idx1]
+            modes2 = [var for var in seq_var.mode_vars if var.task_idx == idx2]
+            if not modes1 or not modes2:
+                continue  # tasks not both assigned to the machine
 
-                    idx1 = seq_var.mode_vars.index(var1)
-                    idx2 = seq_var.mode_vars.index(var2)
-                    arc = seq_var.arcs[idx1, idx2]
-                    both_present = [var1.present, var2.present]
+            for var1, var2 in product(modes1, modes2):
+                idx1 = seq_var.mode_vars.index(var1)
+                idx2 = seq_var.mode_vars.index(var2)
+                arc = seq_var.arcs[idx1, idx2]
+                both_present = [var1.present, var1.present]
 
-                    model.add(arc == 1).only_enforce_if(both_present)
+                model.add(arc == 1).only_enforce_if(both_present)
 
     def _circuit_constraints(self):
         """
