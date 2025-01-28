@@ -5,7 +5,6 @@ from pyjobshop.solvers.utils import (
     compute_task_durations,
     different_modes,
     identical_modes,
-    intersecting_modes,
     resource2modes,
     task2modes,
 )
@@ -128,33 +127,3 @@ def test_different_modes():
     task1, task2 = (0, 2)
     different = different_modes(data, task1, task2)
     assert_equal(different, [(0, []), (1, [])])
-
-
-def test_intersecting_modes():
-    """
-    Tests that the intersecting modes between two tasks are correctly computed.
-    """
-    data = ProblemData(
-        [Job()],
-        [Renewable(0), Renewable(0), Renewable(0)],
-        [Task(), Task(), Task()],
-        modes=[
-            Mode(0, [0], 1),
-            Mode(0, [0, 1], 10),
-            Mode(1, [0, 1], 0),
-            Mode(1, [2], 0),
-            Mode(2, [0], 1),
-        ],
-    )
-
-    task1, task2 = (0, 1)
-    intersecting = intersecting_modes(data, task1, task2)
-    assert_equal(
-        intersecting,
-        [
-            (0, 2, [0]),
-            (0, 3, []),
-            (1, 2, [0, 1]),
-            (1, 3, []),
-        ],
-    )

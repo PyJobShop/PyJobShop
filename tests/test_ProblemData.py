@@ -1034,7 +1034,7 @@ def test_different_resources(solver: str):
     # Processing duration 1 on first resource, 5 on second resource.
     modes = [model.add_mode(task, resources[0], duration=1) for task in tasks]
     modes += [model.add_mode(task, resources[1], duration=5) for task in tasks]
-    model.add_different_resource(tasks[0], tasks[1])
+    model.add_different_resources(tasks[0], tasks[1])
 
     result = model.solve(solver=solver)
 
@@ -1069,7 +1069,7 @@ def test_different_resources_with_modes_and_multiple_resources(solver: str):
     assert_equal(result.best.tasks[1].mode, 3)
 
     # Now we add the different resource constraint...
-    model.add_different_resource(task1, task2)
+    model.add_different_resources(task1, task2)
 
     # ...so mode 0 and mode 3 can no longer be selected. The only option
     # is to select mode 2 for task 1 and mode 3 for task 2.
@@ -1094,45 +1094,13 @@ def test_consecutive_constraint(solver: str):
     model.add_mode(task2, machine, duration=1)
 
     model.add_setup_time(machine, task2, task1, duration=100)
-    model.add_consecutive(task2, task1)
+    model.add_consecutive(task2, task1, machine)
 
     result = model.solve(solver=solver)
 
     # Task 2 must be scheduled directly before task 1, but the setup time
     # between them is 100, so the makespan is 1 + 100 + 1 = 102.
     assert_equal(result.objective, 102)
-
-
-def test_consecutive_multiple_machines(solver: str):
-    """
-    Test the consecutive constraint with tasks that have modes with multiple
-    machines.
-    """
-    model = Model()
-
-    machine1 = model.add_machine()
-    machine2 = model.add_machine()
-    task1 = model.add_task()
-    task2 = model.add_task()
-
-    model.add_mode(task1, [machine1, machine2], duration=1)
-    model.add_mode(task2, [machine1, machine2], duration=1)
-
-    model.add_setup_time(machine1, task2, task1, duration=10)
-    model.add_setup_time(machine2, task2, task1, duration=10)
-
-    result = model.solve(solver=solver)
-    assert_equal(result.objective, 2)
-    assert_equal(result.status.value, "Optimal")
-
-    # Now we add the consecutive constraint...
-    model.add_consecutive(task2, task1)
-
-    # ...so task 2 must be scheduled directly before task 1, but the setup time
-    # between them is 10, so the makespan is 1 + 10 + 1 = 2.
-    result = model.solve(solver=solver)
-    assert_equal(result.objective, 12)
-    assert_equal(result.status.value, "Optimal")
 
 
 def test_makespan_objective(solver: str):

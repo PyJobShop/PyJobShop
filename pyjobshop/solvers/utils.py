@@ -1,4 +1,3 @@
-from itertools import product
 from typing import Optional
 
 import numpy as np
@@ -176,41 +175,6 @@ def different_modes(
             idx for idx, mode2 in modes2 if res1.isdisjoint(mode2.resources)
         ]
         result.append((idx1, idcs2))
-
-    return result
-
-
-def intersecting_modes(
-    data: ProblemData, task1: int, task2: int
-) -> list[tuple[int, int, list[int]]]:
-    """
-    Returns the mode combinations with intersecting resources for both tasks.
-    Helper function for the consecutive constraints.
-
-    Parameters
-    ----------
-    data
-        The problem data instance.
-    task1
-        The first task index.
-    task2
-        The second task index.
-
-    Returns
-    -------
-    list[tuple[int, int, list[int]]]
-        A list of tuples containing the mode indices of the first and second
-        task and the indices of resources they have in common. In particular,
-        if two modes have no intersecting resources, the list of common
-        resources will be empty.
-    """
-    modes1 = [(idx, m) for idx, m in enumerate(data.modes) if m.task == task1]
-    modes2 = [(idx, m) for idx, m in enumerate(data.modes) if m.task == task2]
-    result = []
-
-    for (idx1, mode1), (idx2, mode2) in product(modes1, modes2):
-        resources = set(mode1.resources).intersection(set(mode2.resources))
-        result.append((idx1, idx2, sorted(resources)))  # sort for determinism
 
     return result
 
