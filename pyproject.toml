@@ -1,6 +1,6 @@
 [project]
 name = "pyjobshop"
-version = "0.0.3a0"
+version = "0.0.3"
 description = "Solving scheduling problems with constraint programming."
 authors = [
     { name = "Leon Lan", email = "l.lan@vu.nl"},
@@ -30,7 +30,7 @@ dependencies = [
     "ortools>=9.10.4067,<10",
     "matplotlib>=3.9.2",
     "fjsplib>=0.1.0",
-    "psplib>=0.1.0",
+    "psplib>=0.2.0",
     "tqdm>=4.66.5",
     "tomli>=2.0.1",
 ]
