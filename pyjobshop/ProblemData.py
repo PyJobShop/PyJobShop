@@ -477,13 +477,23 @@ class DifferentResources(NamedTuple):
 
 class Consecutive(NamedTuple):
     """
-    Sequence task 1 and task 2 consecutively on the given machine, meaning that
-    no other task is allowed to be scheduled in-between.
+    Sequence task 1 and task 2 consecutively on the machines they are both
+    assigned to, meaning that no other task is allowed to be scheduled between
+    them.
+
+    Hand-waiving some details, let :math:`m_1, m_2` be the selected modes of
+    task 1 and task 2, and let :math:`R` denote the machines that both modes
+    require. This constraint ensures that
+
+    .. math::
+        m_1 \\to m_2 \\quad \\forall r \\in R,
+
+    where :math:`\\to` means that :math:`m_1` is directly followed by
+    :math:`m_2` and no other interval is scheduled between them.
     """
 
     task1: int
     task2: int
-    machine: int
 
 
 class SetupTime(NamedTuple):
