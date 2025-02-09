@@ -58,11 +58,11 @@ class Constraints:
                 presences.append(present)
 
                 # Sync each optional interval variable with the main variable.
-                model.add(main.start == opt.start).only_enforce_if(present)
+                model.add(main.start == opt.start)
+                model.add(main.end == opt.end)
                 model.add(main.duration == opt.duration).only_enforce_if(
                     present
                 )
-                model.add(main.end == opt.end).only_enforce_if(present)
 
             # Select exactly one optional interval variable for each task.
             model.add_exactly_one(presences)
