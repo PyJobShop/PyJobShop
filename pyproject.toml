@@ -1,16 +1,19 @@
 [project]
 name = "pyjobshop"
-version = "0.0.3a0"
+version = "0.1.0a"
 description = "Solving scheduling problems with constraint programming."
 authors = [
     { name = "Leon Lan", email = "l.lan@vu.nl"},
+    { name = "Joost Berkhout", email = "joost.berkhout@vu.nl" }
 ]
 license = { text = "MIT License" }
 readme = "README.md"
 keywords = [
     "scheduling",
+    "job shop",
+    "flow shop",
+    "project scheduling",
     "constraint programming",
-    "job shop problem",
 ]
 classifiers = [
     "Intended Audience :: Developers",
@@ -29,8 +32,8 @@ requires-python = ">=3.9,<3.13"
 dependencies = [
     "ortools>=9.10.4067,<10",
     "matplotlib>=3.9.2",
-    "fjsplib>=0.1.0",
-    "psplib>=0.1.0",
+    "fjsplib",
+    "psplib>=0.2.0",
     "tqdm>=4.66.5",
     "tomli>=2.0.1",
 ]

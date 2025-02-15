@@ -93,8 +93,7 @@ class ModeVar:
 class SequenceVar:
     """
     Represents a sequence of interval variables for all modes that use this
-    machine. Relevant sequence variables are lazily generated when activated
-    by constraints that call the ``activate`` method.
+    machine.
 
     Parameters
     ----------
@@ -103,11 +102,20 @@ class SequenceVar:
     arcs
         The arc literals between each pair of intervals in the sequence
         indicating whether intervals are scheduled directly behind each other.
-        Keys are tuples of indices.
+        Also includes arcs to and from a dummy node for each interval.
     is_active
         A boolean that indicates whether the sequence is active, meaning that a
         circuit constraint must be added for this machine. Default ``False``.
+
+    Notes
+    -----
+    Sequence variables are lazily generated when activated by constraints that
+    call the ``activate`` method. This avoids creating unnecessary variables
+    when the sequence variable is not used in the model.
+
     """
+
+    DUMMY = -1
 
     mode_vars: list[ModeVar]
     arcs: dict[tuple[int, int], BoolVarT] = field(default_factory=dict)
@@ -121,14 +129,13 @@ class SequenceVar:
             return
 
         self.is_active = True
-        num_modes = len(self.mode_vars)
 
-        # Arcs indicate if two intervals are scheduled consecutively.
+        # The nodes in the graph are the indices of the mode variables,
+        # plus the index of the dummy node.
+        nodes = list(range(len(self.mode_vars))) + [self.DUMMY]
+
         self.arcs = {
-            (i, j): m.new_bool_var(f"{i}->{j}")
-            for i in range(num_modes)
-            for j in range(num_modes)
-            if i != j
+            (i, j): m.new_bool_var(f"{i}->{j}") for i in nodes for j in nodes
         }
 
 
