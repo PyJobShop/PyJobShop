@@ -63,11 +63,12 @@ If you use PyJobShop in your research, please consider citing the following pape
 Or, using the following BibTeX entry:
 
 ```bibtex
-@unpublished{Lan_Berkhout_2025,
+@misc{Lan_Berkhout_2025,
       title={{PyJobShop}: Solving scheduling problems with constraint programming in {Python}}, 
       author={Leon Lan and Joost Berkhout},
       year={2025},
-      eprint={2502.13483},
       url={https://arxiv.org/abs/2502.13483}, 
+      archivePrefix="arXiv"
+      eprint={2502.13483},
 }
 ```
