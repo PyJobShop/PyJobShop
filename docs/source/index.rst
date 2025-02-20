@@ -34,6 +34,7 @@ Contents
    setup/intro_to_cp
    setup/installation
    setup/getting_help
+   setup/citing
 
 .. toctree::
    :maxdepth: 1

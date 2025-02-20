@@ -56,14 +56,14 @@ When writing your issue or discussion, please follow the instructions [here](htt
 
 If you use PyJobShop in your research, please consider citing the following paper:
 
-> L. Lan, and J. Berkhout (2024).
+> Lan, L., and Berkhout, J. (2025).
 > PyJobShop: Solving scheduling problems with constraint programming in Python.
-> https://doi.org/10.1287/ijoc.2023.0055
+> https://arxiv.org/abs/2502.13483
 
 Or, using the following BibTeX entry:
 
 ```bibtex
-@misc{Lan_Berkhout_2025,
+@unpublished{Lan_Berkhout_2025,
       title={{PyJobShop}: Solving scheduling problems with constraint programming in {Python}}, 
       author={Leon Lan and Joost Berkhout},
       year={2025},
