@@ -20,8 +20,6 @@ class Objective:
         self._task_vars = variables.task_vars
         self._job_vars = variables.job_vars
 
-        self._current_obj_expr = None
-
     def _makespan_expr(self) -> CpoExpr:
         """
         Returns an expression representing the makespan of the model.
@@ -108,13 +106,9 @@ class Objective:
         exprs = [weight * expr() for weight, expr in items if weight > 0]
         return cpo.minimize(cpo.sum(exprs))
 
-    def build(self, objective: DataObjective):
+    def add_objective(self):
         """
-        Builds the objective of the model.
+        Adds the objective expression to the CP model.
         """
-        if self._current_obj_expr is not None:
-            self._model.remove(self._current_obj_expr)
-
-        obj_expr = self._objective_expr(objective)
+        obj_expr = self._objective_expr(self._data.objective)
         self._model.add(obj_expr)
-        self._current_obj_expr = obj_expr

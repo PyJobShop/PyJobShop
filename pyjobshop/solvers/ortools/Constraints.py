@@ -1,10 +1,14 @@
 import numpy as np
-from ortools.sat.python.cp_model import BoolVarT, CpModel, LinearExpr
+from ortools.sat.python.cp_model import CpModel, LinearExpr
 
 import pyjobshop.solvers.utils as utils
-from pyjobshop.ProblemData import Constraint, Machine, ProblemData
-
-from .Variables import Variables
+from pyjobshop.ProblemData import (
+    Machine,
+    NonRenewable,
+    ProblemData,
+    Renewable,
+)
+from pyjobshop.solvers.ortools.Variables import Variables
 
 
 class Constraints:
@@ -46,215 +50,26 @@ class Constraints:
 
         for task in range(data.num_tasks):
             presences = []
+            main = self._task_vars[task]
 
             for mode in task2modes[task]:
-                main = self._task_vars[task]
                 opt = self._mode_vars[mode]
-                is_present = opt.is_present
-                presences.append(is_present)
+                present = opt.present
+                presences.append(present)
 
                 # Sync each optional interval variable with the main variable.
-                model.add(main.start == opt.start).only_enforce_if(is_present)
+                model.add(main.start == opt.start)
+                model.add(main.end == opt.end)
                 model.add(main.duration == opt.duration).only_enforce_if(
-                    is_present
+                    present
                 )
-                model.add(main.end == opt.end).only_enforce_if(is_present)
 
             # Select exactly one optional interval variable for each task.
             model.add_exactly_one(presences)
 
-    def _no_overlap_resources(self):
+    def _machines_no_overlap(self):
         """
-        Creates the no overlap constraints for machines, ensuring that no two
-        intervals in a sequence variable are overlapping.
-        """
-        model, data = self._model, self._data
-
-        for idx, resource in enumerate(data.resources):
-            if isinstance(resource, Machine):
-                seq_var = self._sequence_vars[idx]
-                assert seq_var is not None
-                mode_vars = [var.interval for var in seq_var.mode_vars]
-                model.add_no_overlap(mode_vars)
-
-    def _activate_setup_times(self):
-        """
-        Activates the sequence variables for resources that have setup times.
-        The ``_circuit_constraints`` function will in turn add
-        constraints to the CP-SAT model to enforce setup times.
-        """
-        model, data = self._model, self._data
-
-        for idx, resource in enumerate(data.resources):
-            if not isinstance(resource, Machine):
-                continue
-
-            if data.setup_times is not None and np.any(data.setup_times[idx]):
-                seq_var = self._sequence_vars[idx]
-                assert seq_var is not None
-                seq_var.activate(model)
-
-    def _resource_capacity(self):
-        """
-        Creates constraints for the resource capacity.
-        """
-        model, data = self._model, self._data
-        mode_vars = self._mode_vars
-
-        # Map resources to the relevant modes and their demands.
-        mapper = [[] for _ in range(data.num_resources)]
-        for idx, mode in enumerate(data.modes):
-            for resource, demand in zip(mode.resources, mode.demands):
-                if demand > 0:
-                    mapper[resource].append((idx, demand))
-
-        for idx, resource in enumerate(data.resources):
-            if isinstance(resource, Machine):
-                continue  # handled by no-overlap constraints
-
-            demands = [demand for _, demand in mapper[idx]]
-            if resource.renewable:
-                intvs = [mode_vars[mode].interval for mode, _ in mapper[idx]]
-                model.add_cumulative(intvs, demands, resource.capacity)
-            else:
-                precenses = [
-                    mode_vars[mode].is_present for mode, _ in mapper[idx]
-                ]
-                usage = LinearExpr.weighted_sum(precenses, demands)
-                model.add(usage <= resource.capacity)
-
-    def _timing_constraints(self):
-        """
-        Creates constraints based on the timing relationship between tasks.
-        """
-        model, data = self._model, self._data
-
-        for (idx1, idx2), constraints in data.constraints.items():
-            task_var1 = self._task_vars[idx1]
-            task_var2 = self._task_vars[idx2]
-
-            if Constraint.START_AT_START in constraints:
-                model.add(task_var1.start == task_var2.start)
-
-            if Constraint.START_AT_END in constraints:
-                model.add(task_var1.start == task_var2.end)
-
-            if Constraint.START_BEFORE_START in constraints:
-                model.add(task_var1.start <= task_var2.start)
-
-            if Constraint.START_BEFORE_END in constraints:
-                model.add(task_var1.start <= task_var2.end)
-
-            if Constraint.END_AT_START in constraints:
-                model.add(task_var1.end == task_var2.start)
-
-            if Constraint.END_AT_END in constraints:
-                model.add(task_var1.end == task_var2.end)
-
-            if Constraint.END_BEFORE_START in constraints:
-                model.add(task_var1.end <= task_var2.start)
-
-            if Constraint.END_BEFORE_END in constraints:
-                model.add(task_var1.end <= task_var2.end)
-
-    def _previous_before_constraints(self):
-        """
-        Creates the constraints for the previous and before constraints.
-        """
-        model, data = self._model, self._data
-        relevant = {Constraint.PREVIOUS, Constraint.BEFORE}
-
-        for (task1, task2), constraints in data.constraints.items():
-            sequencing_constraints = set(constraints) & relevant
-            if not sequencing_constraints:
-                continue
-
-            # Find the modes of the task that have intersecting resources,
-            # because we need to enforce sequencing constraints on them.
-            intersecting = utils.find_modes_with_intersecting_resources(
-                data, task1, task2
-            )
-            for mode1, mode2, resources in intersecting:
-                for resource in resources:
-                    if not isinstance(data.resources[resource], Machine):
-                        continue  # skip sequencing on non-machine resources
-
-                    seq_var = self._sequence_vars[resource]
-                    if seq_var is None:
-                        msg = f"No sequence var found for resource {resource}."
-                        raise ValueError(msg)
-
-                    var1 = self._mode_vars[mode1]
-                    var2 = self._mode_vars[mode2]
-
-                    if Constraint.PREVIOUS in sequencing_constraints:
-                        seq_var.activate(model)
-
-                        idx1 = seq_var.mode_vars.index(var1)
-                        idx2 = seq_var.mode_vars.index(var2)
-                        arc = seq_var.arcs[idx1, idx2]
-                        both_present = [var1.is_present, var2.is_present]
-
-                        model.add(arc == 1).only_enforce_if(both_present)
-
-                    if Constraint.BEFORE in sequencing_constraints:
-                        seq_var.activate(model)
-
-                        idx1 = seq_var.mode_vars.index(var1)
-                        idx2 = seq_var.mode_vars.index(var2)
-                        rank1 = seq_var.ranks[idx1]
-                        rank2 = seq_var.ranks[idx2]
-                        both_present = [var1.is_present, var2.is_present]
-
-                        model.add(rank1 <= rank2).only_enforce_if(both_present)
-
-    def _identical_and_different_resource_constraints(self):
-        """
-        Creates constraints for the same and different resource constraints.
-        """
-        model, data = self._model, self._data
-        task2modes = utils.task2modes(data)
-        relevant = {
-            Constraint.IDENTICAL_RESOURCES,
-            Constraint.DIFFERENT_RESOURCES,
-        }
-
-        for (task1, task2), constraints in data.constraints.items():
-            assignment_constraints = set(constraints) & relevant
-            if not assignment_constraints:
-                continue
-
-            identical = utils.find_modes_with_identical_resources(
-                data, task1, task2
-            )
-            disjoint = utils.find_modes_with_disjoint_resources(
-                data, task1, task2
-            )
-
-            modes1 = task2modes[task1]
-            for mode1 in modes1:
-                if Constraint.IDENTICAL_RESOURCES in assignment_constraints:
-                    identical_modes2 = identical[mode1]
-                    var1 = self._mode_vars[mode1].is_present
-                    vars2 = [
-                        self._mode_vars[mode2].is_present
-                        for mode2 in identical_modes2
-                    ]
-                    model.add(sum(vars2) >= var1)
-
-                if Constraint.DIFFERENT_RESOURCES in assignment_constraints:
-                    disjoint_modes2 = disjoint[mode1]
-                    var1 = self._mode_vars[mode1].is_present
-                    vars2 = [
-                        self._mode_vars[mode2].is_present
-                        for mode2 in disjoint_modes2
-                    ]
-                    model.add(sum(vars2) >= var1)
-
-    def _circuit_constraints(self):
-        """
-        Creates the circuit constraints for each machine, if activated by
-        sequencing constraints (before, previous and setup times).
+        Creates no-overlap constraints for machines.
         """
         model, data = self._model, self._data
 
@@ -263,65 +78,173 @@ class Constraints:
                 continue
 
             seq_var = self._sequence_vars[idx]
-            assert seq_var is not None
+            mode_vars = [var.interval for var in seq_var.mode_vars]
+            model.add_no_overlap(mode_vars)
 
-            if not seq_var.is_active:
-                # No sequencing constraints active. Skip the creation of
-                # (expensive) circuit constraints.
+    def _renewable_capacity(self):
+        """
+        Creates capacity constraints for the renewable resources.
+        """
+        model, data = self._model, self._data
+        mode_vars = self._mode_vars
+        res2modes, res2demands = utils.resource2modes_demands(data)
+
+        for idx, resource in enumerate(data.resources):
+            if not isinstance(resource, Renewable):
                 continue
 
-            modes = seq_var.mode_vars
-            starts = seq_var.starts
-            ends = seq_var.ends
-            ranks = seq_var.ranks
+            intervals = [mode_vars[mode].interval for mode in res2modes[idx]]
+            demands = res2demands[idx]
+            model.add_cumulative(intervals, demands, resource.capacity)
+
+    def _non_renewable_capacity(self):
+        """
+        Creates capacity constraints for the non-renewable resources.
+        """
+        model, data = self._model, self._data
+        mode_vars = self._mode_vars
+        res2modes, res2demands = utils.resource2modes_demands(data)
+
+        for idx, resource in enumerate(data.resources):
+            if not isinstance(resource, NonRenewable):
+                continue
+
+            precenses = [mode_vars[mode].present for mode in res2modes[idx]]
+            demands = res2demands[idx]
+            usage = LinearExpr.weighted_sum(precenses, demands)
+            model.add(usage <= resource.capacity)
+
+    def _timing_constraints(self):
+        """
+        Creates constraints based on the timing relationship between tasks.
+        """
+        model, data = self._model, self._data
+
+        for idx1, idx2, delay in data.constraints.start_before_start:
+            expr1 = self._task_vars[idx1].start + delay
+            expr2 = self._task_vars[idx2].start
+            model.add(expr1 <= expr2)
+
+        for idx1, idx2, delay in data.constraints.start_before_end:
+            expr1 = self._task_vars[idx1].start + delay
+            expr2 = self._task_vars[idx2].end
+            model.add(expr1 <= expr2)
+
+        for idx1, idx2, delay in data.constraints.end_before_start:
+            expr1 = self._task_vars[idx1].end + delay
+            expr2 = self._task_vars[idx2].start
+            model.add(expr1 <= expr2)
+
+        for idx1, idx2, delay in data.constraints.end_before_end:
+            expr1 = self._task_vars[idx1].end + delay
+            expr2 = self._task_vars[idx2].end
+            model.add(expr1 <= expr2)
+
+    def _identical_and_different_resource_constraints(self):
+        """
+        Creates constraints for identical and different resources constraints.
+        """
+        model, data = self._model, self._data
+
+        for idx1, idx2 in data.constraints.identical_resources:
+            for mode1, modes2 in utils.identical_modes(data, idx1, idx2):
+                expr1 = self._mode_vars[mode1].present
+                expr2 = sum(self._mode_vars[mode2].present for mode2 in modes2)
+                model.add(expr1 <= expr2)
+
+        for idx1, idx2 in data.constraints.different_resources:
+            for mode1, modes2 in utils.different_modes(data, idx1, idx2):
+                expr1 = self._mode_vars[mode1].present
+                expr2 = sum(self._mode_vars[mode2].present for mode2 in modes2)
+                model.add(expr1 <= expr2)
+
+    def _activate_setup_times(self):
+        """
+        Activates the sequence variables for resources that have setup times.
+        The ``_circuit_constraints`` function will in turn add constraints to
+        the CP-SAT model to enforce setup times.
+        """
+        model, data = self._model, self._data
+        setup_times = utils.setup_times_matrix(data)
+
+        for idx, resource in enumerate(data.resources):
+            if not isinstance(resource, Machine):
+                continue
+
+            if setup_times is not None and np.any(setup_times[idx]):
+                self._sequence_vars[idx].activate(model)
+
+    def _consecutive_constraints(self):
+        """
+        Creates the consecutive constraints.
+        """
+        model, data = self._model, self._data
+
+        for idx1, idx2 in data.constraints.consecutive:
+            intersecting = utils.intersecting_modes(data, idx1, idx2)
+            for mode1, mode2, resources in intersecting:
+                for resource in resources:
+                    if not isinstance(data.resources[resource], Machine):
+                        continue
+
+                    seq_var = self._sequence_vars[resource]
+                    seq_var.activate(model)
+                    var1 = self._mode_vars[mode1]
+                    var2 = self._mode_vars[mode2]
+
+                    idx1 = seq_var.mode_vars.index(var1)
+                    idx2 = seq_var.mode_vars.index(var2)
+                    arc = seq_var.arcs[idx1, idx2]
+                    both_present = [var1.present, var2.present]
+
+                    model.add(arc == 1).only_enforce_if(both_present)
+
+    def _circuit_constraints(self):
+        """
+        Creates the circuit constraints for each machine, if activated by
+        sequencing constraints (consecutive and setup times).
+        """
+        model, data = self._model, self._data
+        setup_times = utils.setup_times_matrix(data)
+
+        for idx, resource in enumerate(data.resources):
+            if not isinstance(resource, Machine):
+                continue
+
+            seq_var = self._sequence_vars[idx]
+            if not seq_var.is_active:
+                # No sequencing constraints active. Skip the creation of
+                # expensive circuit constraints.
+                continue
+
+            mode_vars = seq_var.mode_vars
             arcs = seq_var.arcs
 
-            # Add dummy node self-arc to allow empty circuits.
-            empty = model.new_bool_var(f"empty_circuit_{idx}")
-            graph: list[tuple[int, int, BoolVarT]] = [(-1, -1, empty)]
+            graph = [(u, v, var) for (u, v), var in arcs.items()]
+            model.add_circuit(graph)
 
-            for idx1, var1 in enumerate(modes):
-                start = starts[idx1]  # "is start node" literal
-                end = ends[idx1]  # "is end node" literal
-                rank = ranks[idx1]
+            for idx1, var1 in enumerate(mode_vars):
+                # If the (dummy) self arc is selected, then the var must not
+                # be present.
+                model.add(arcs[idx1, idx1] <= ~var1.present)
+                model.add(arcs[seq_var.DUMMY, seq_var.DUMMY] <= ~var1.present)
 
-                # Arcs from the dummy node to/from a task.
-                graph.append((-1, idx1, start))
-                graph.append((idx1, -1, end))
-
-                # Set rank for first task in the sequence.
-                model.add(rank == 0).only_enforce_if(start)
-
-                # Self arc if the task is not present.
-                graph.append((idx1, idx1, ~var1.is_present))
-                model.add(rank == -1).only_enforce_if(~var1.is_present)
-
-                # If the circuit is empty then the var should not be present.
-                model.add_implication(empty, ~var1.is_present)
-
-                for idx2, var2 in enumerate(modes):
+            for idx1, var1 in enumerate(mode_vars):
+                for idx2, var2 in enumerate(mode_vars):
                     if idx1 == idx2:
                         continue
 
-                    arc = arcs[idx1, idx2]
-                    graph.append((idx1, idx2, arc))
+                    # If the arc is selected, then both tasks must be present.
+                    model.add(arcs[idx1, idx2] <= var1.present)
+                    model.add(arcs[idx1, idx2] <= var2.present)
 
-                    model.add_implication(arc, var1.is_present)
-                    model.add_implication(arc, var2.is_present)
-
-                    # Maintain rank incrementally.
-                    model.add(rank + 1 == ranks[idx2]).only_enforce_if(arc)
-
-                    # Use the mode's task idx to get the correct setup times.
                     setup = (
-                        data.setup_times[idx, var1.task_idx, var2.task_idx]
-                        if data.setup_times is not None
+                        setup_times[idx, var1.task_idx, var2.task_idx]
+                        if setup_times is not None
                         else 0
                     )
                     expr = var1.end + setup <= var2.start
-                    model.add(expr).only_enforce_if(arc)
-
-            model.add_circuit(graph)
+                    model.add(expr).only_enforce_if(arcs[idx1, idx2])
 
     def add_constraints(self):
         """
@@ -329,12 +252,13 @@ class Constraints:
         """
         self._job_spans_tasks()
         self._select_one_mode()
-        self._no_overlap_resources()
-        self._resource_capacity()
-        self._activate_setup_times()
+        self._machines_no_overlap()
+        self._renewable_capacity()
+        self._non_renewable_capacity()
         self._timing_constraints()
-        self._previous_before_constraints()
         self._identical_and_different_resource_constraints()
+        self._activate_setup_times()
+        self._consecutive_constraints()
 
         # From here onwards we know which sequence constraints are active.
         self._circuit_constraints()

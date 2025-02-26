@@ -1,5 +1,4 @@
 from dataclasses import dataclass, field
-from typing import Optional
 
 from ortools.sat.python.cp_model import (
     BoolVarT,
@@ -10,6 +9,7 @@ from ortools.sat.python.cp_model import (
 )
 
 import pyjobshop.solvers.utils as utils
+from pyjobshop.constants import MAX_VALUE
 from pyjobshop.ProblemData import Machine, ProblemData
 from pyjobshop.Solution import Solution
 
@@ -77,7 +77,7 @@ class ModeVar:
         The duration variable of the interval.
     end
         The end time variable of the interval.
-    is_present
+    present
         The boolean variable indicating whether the interval is present.
     """
 
@@ -86,41 +86,38 @@ class ModeVar:
     start: IntVar
     duration: IntVar
     end: IntVar
-    is_present: BoolVarT
+    present: BoolVarT
 
 
 @dataclass
 class SequenceVar:
     """
     Represents a sequence of interval variables for all modes that use this
-    resource. Relevant sequence variables are lazily generated when activated
-    by constraints that call the ``activate`` method.
+    machine.
 
     Parameters
     ----------
     mode_vars
         The mode interval variables belonging to this sequence.
-    starts
-        The start literals for each mode, indicating whether the interval is
-        first in the sequence.
-    ends
-        The end literals for each mode, indicating whether the interval is last
-        in the sequence.
-    ranks
-        The rank variables of each interval on the resource. Used to define the
-        ordering of the intervals in the resource sequence.
     arcs
-        The arc literals between each pair of intervals in the sequence.
-        Keys are tuples of indices.
+        The arc literals between each pair of intervals in the sequence
+        indicating whether intervals are scheduled directly behind each other.
+        Also includes arcs to and from a dummy node for each interval.
     is_active
         A boolean that indicates whether the sequence is active, meaning that a
-        circuit constraint must be added for this resource. Default ``False``.
+        circuit constraint must be added for this machine. Default ``False``.
+
+    Notes
+    -----
+    Sequence variables are lazily generated when activated by constraints that
+    call the ``activate`` method. This avoids creating unnecessary variables
+    when the sequence variable is not used in the model.
+
     """
 
+    DUMMY = -1
+
     mode_vars: list[ModeVar]
-    starts: list[BoolVarT] = field(default_factory=list)
-    ends: list[BoolVarT] = field(default_factory=list)
-    ranks: list[IntVar] = field(default_factory=list)
     arcs: dict[tuple[int, int], BoolVarT] = field(default_factory=dict)
     is_active: bool = False
 
@@ -132,23 +129,13 @@ class SequenceVar:
             return
 
         self.is_active = True
-        num_modes = len(self.mode_vars)
 
-        # Start and end literals define whether the corresponding interval
-        # is first or last in the sequence, respectively.
-        self.starts = [m.new_bool_var("") for _ in range(num_modes)]
-        self.ends = [m.new_bool_var("") for _ in range(num_modes)]
+        # The nodes in the graph are the indices of the mode variables,
+        # plus the index of the dummy node.
+        nodes = list(range(len(self.mode_vars))) + [self.DUMMY]
 
-        # Rank variables define the position of the mode in the sequence.
-        self.ranks = [
-            m.new_int_var(-1, num_modes, "") for _ in range(num_modes)
-        ]
-
-        # Arcs indicate if two intervals are scheduled consecutively.
         self.arcs = {
-            (i, j): m.new_bool_var(f"{i}->{j}")
-            for i in range(num_modes)
-            for j in range(num_modes)
+            (i, j): m.new_bool_var(f"{i}->{j}") for i in nodes for j in nodes
         }
 
 
@@ -188,7 +175,7 @@ class Variables:
         return self._mode_vars
 
     @property
-    def sequence_vars(self) -> list[Optional[SequenceVar]]:
+    def sequence_vars(self) -> dict[int, SequenceVar]:
         """
         Returns the sequence variables.
         """
@@ -205,20 +192,20 @@ class Variables:
             name = f"J{idx}"
             start = model.new_int_var(
                 lb=job.release_date,
-                ub=data.horizon,
+                ub=MAX_VALUE,
                 name=f"{name}_start",
             )
             duration = model.new_int_var(
                 lb=0,
-                ub=min(job.deadline - job.release_date, data.horizon),
+                ub=min(job.deadline - job.release_date, MAX_VALUE),
                 name=f"{name}_duration",
             )
             end = model.new_int_var(
                 lb=0,
-                ub=min(job.deadline, data.horizon),
+                ub=min(job.deadline, MAX_VALUE),
                 name=f"{name}_end",
             )
-            interval = model.NewIntervalVar(
+            interval = model.new_interval_var(
                 start, duration, end, f"{name}_interval"
             )
             variables.append(JobVar(interval, start, duration, end))
@@ -237,7 +224,7 @@ class Variables:
             name = f"T{idx}"
             start = model.new_int_var(
                 lb=task.earliest_start,
-                ub=min(task.latest_start, data.horizon),
+                ub=min(task.latest_start, MAX_VALUE),
                 name=f"{name}_start",
             )
             if task.fixed_duration:
@@ -247,24 +234,22 @@ class Variables:
             else:
                 duration = model.new_int_var(
                     lb=min(task_durations[idx]),
-                    ub=data.horizon,
+                    ub=MAX_VALUE,
                     name=f"{name}_duration",
                 )
             end = model.new_int_var(
                 lb=task.earliest_end,
-                ub=min(task.latest_end, data.horizon),
+                ub=min(task.latest_end, MAX_VALUE),
                 name=f"{name}_end",
             )
-            interval = model.NewIntervalVar(
+            interval = model.new_interval_var(
                 start, duration, end, f"interval_{task}"
             )
             variables.append(TaskVar(interval, start, duration, end))
 
         return variables
 
-    def _make_mode_variables(
-        self,
-    ) -> list[ModeVar]:
+    def _make_mode_variables(self) -> list[ModeVar]:
         """
         Creates an optional interval variable for mode.
         """
@@ -276,22 +261,22 @@ class Variables:
             name = f"M{idx}_{mode.task}"
             start = model.new_int_var(
                 lb=task.earliest_start,
-                ub=min(task.latest_start, data.horizon),
+                ub=min(task.latest_start, MAX_VALUE),
                 name=f"{name}_start",
             )
             duration = model.new_int_var(
                 lb=mode.duration,
-                ub=mode.duration if task.fixed_duration else data.horizon,
+                ub=mode.duration if task.fixed_duration else MAX_VALUE,
                 name=f"{name}_duration",
             )
             end = model.new_int_var(
                 lb=task.earliest_end,
-                ub=min(task.latest_end, data.horizon),
+                ub=min(task.latest_end, MAX_VALUE),
                 name=f"{name}_start",
             )
-            is_present = model.new_bool_var(f"{name}_is_present")
+            present = model.new_bool_var(f"{name}_present")
             interval = model.new_optional_interval_var(
-                start, duration, end, is_present, f"{name}_interval"
+                start, duration, end, present, f"{name}_interval"
             )
             var = ModeVar(
                 task_idx=mode.task,
@@ -299,25 +284,25 @@ class Variables:
                 start=start,
                 duration=duration,
                 end=end,
-                is_present=is_present,
+                present=present,
             )
             variables.append(var)
 
         return variables
 
-    def _make_sequence_variables(self) -> list[Optional[SequenceVar]]:
+    def _make_sequence_variables(self) -> dict[int, SequenceVar]:
         """
-        Creates a sequence variable for each uncapacitated resource. Resources
-        with capacity constraints do not get a sequence variable.
+        Creates a sequence variable for each machine.
         """
-        variables: list[Optional[SequenceVar]] = []
+        data = self._data
+        resource2modes = utils.resource2modes(data)
+        variables: dict[int, SequenceVar] = {}
 
-        for idx, modes in enumerate(utils.resource2modes(self._data)):
-            if isinstance(self._data.resources[idx], Machine):
+        for idx, resource in enumerate(data.resources):
+            if isinstance(resource, Machine):
+                modes = resource2modes[idx]
                 intervals = [self.mode_vars[mode] for mode in modes]
-                variables.append(SequenceVar(intervals))
-            else:
-                variables.append(None)
+                variables[idx] = SequenceVar(intervals)
 
         return variables
 
@@ -362,4 +347,4 @@ class Variables:
             model.add_hint(var.start, sol_task.start)
             model.add_hint(var.duration, sol_task.end - sol_task.start)
             model.add_hint(var.end, sol_task.end)
-            model.add_hint(var.is_present, idx == sol_task.mode)
+            model.add_hint(var.present, idx == sol_task.mode)

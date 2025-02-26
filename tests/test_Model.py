@@ -1,16 +1,23 @@
-import numpy as np
 from numpy.testing import assert_equal
 
-from pyjobshop.constants import MAX_VALUE
 from pyjobshop.Model import Model
 from pyjobshop.ProblemData import (
-    Constraint,
+    Consecutive,
+    Constraints,
+    DifferentResources,
+    EndBeforeEnd,
+    EndBeforeStart,
+    IdenticalResources,
     Job,
     Machine,
     Mode,
+    NonRenewable,
     Objective,
     ProblemData,
-    Resource,
+    Renewable,
+    SetupTime,
+    StartBeforeEnd,
+    StartBeforeStart,
     Task,
 )
 from pyjobshop.Solution import Solution, TaskData
@@ -29,23 +36,17 @@ def test_model_to_data():
     model.add_mode(task1, machine1, 1)
     model.add_mode(task2, machine2, 2)
 
-    model.add_start_at_start(task1, task2)
-    model.add_start_at_end(task1, task2)
     model.add_start_before_start(task1, task2)
     model.add_start_before_end(task1, task2)
-    model.add_end_at_start(task1, task2)
-    model.add_end_at_end(task1, task2)
     model.add_end_before_end(task1, task2)
     model.add_end_before_start(task1, task2)
     model.add_identical_resources(task2, task1)
-    model.add_different_resource(task2, task1)
-    model.add_previous(task2, task1)
-    model.add_before(task2, task1)
+    model.add_different_resources(task2, task1)
+    model.add_consecutive(task2, task1)
 
     model.add_setup_time(machine1, task1, task2, 3)
     model.add_setup_time(machine2, task1, task2, 4)
 
-    model.set_horizon(100)
     model.set_objective(weight_total_flow_time=1)
 
     data = model.data()
@@ -60,30 +61,19 @@ def test_model_to_data():
             Mode(task=1, resources=[1], duration=2),
         ],
     )
+
+    constraints = data.constraints
+    assert_equal(constraints.start_before_start, [StartBeforeStart(0, 1)])
+    assert_equal(constraints.start_before_end, [StartBeforeEnd(0, 1)])
+    assert_equal(constraints.end_before_end, [EndBeforeEnd(0, 1)])
+    assert_equal(constraints.end_before_start, [EndBeforeStart(0, 1)])
+    assert_equal(constraints.identical_resources, [IdenticalResources(1, 0)])
+    assert_equal(constraints.different_resources, [DifferentResources(1, 0)])
+    assert_equal(constraints.consecutive, [Consecutive(1, 0)])
     assert_equal(
-        data.constraints,
-        {
-            (0, 1): [
-                Constraint.START_AT_START,
-                Constraint.START_AT_END,
-                Constraint.START_BEFORE_START,
-                Constraint.START_BEFORE_END,
-                Constraint.END_AT_START,
-                Constraint.END_AT_END,
-                Constraint.END_BEFORE_END,
-                Constraint.END_BEFORE_START,
-            ],
-            (1, 0): [
-                Constraint.IDENTICAL_RESOURCES,
-                Constraint.DIFFERENT_RESOURCES,
-                Constraint.PREVIOUS,
-                Constraint.BEFORE,
-            ],
-        },
+        constraints.setup_times, [SetupTime(0, 0, 1, 3), SetupTime(1, 0, 1, 4)]
     )
-    assert_equal(data.setup_times, [[[0, 3], [0, 0]], [[0, 4], [0, 0]]])
-    assert_equal(data.horizon, 100)
-    assert_equal(data.objective, Objective.total_flow_time())
+    assert_equal(data.objective, Objective(weight_total_flow_time=1))
 
 
 def test_from_data():
@@ -93,34 +83,23 @@ def test_from_data():
     """
     data = ProblemData(
         [Job(due_date=1)],
-        [Resource(1), Machine()],
+        [Machine(), Renewable(1), NonRenewable(0)],
         [Task(), Task(job=0), Task()],
         modes=[Mode(0, [0], 1), Mode(1, [1], 2), Mode(2, [1], 2)],
-        constraints={
-            (0, 1): [
-                Constraint.START_AT_START,
-                Constraint.START_AT_END,
-                Constraint.START_BEFORE_START,
-                Constraint.START_BEFORE_END,
-                Constraint.END_AT_START,
-                Constraint.END_AT_END,
-                Constraint.END_BEFORE_START,
-                Constraint.END_BEFORE_END,
-                Constraint.IDENTICAL_RESOURCES,
-                Constraint.DIFFERENT_RESOURCES,
+        constraints=Constraints(
+            start_before_start=[StartBeforeStart(0, 1)],
+            start_before_end=[StartBeforeEnd(0, 1)],
+            end_before_start=[EndBeforeStart(0, 1)],
+            end_before_end=[EndBeforeEnd(0, 1)],
+            identical_resources=[IdenticalResources(0, 1)],
+            different_resources=[DifferentResources(0, 1)],
+            consecutive=[Consecutive(1, 2)],
+            setup_times=[
+                SetupTime(0, 0, 1, 1),  # machine
+                SetupTime(1, 0, 1, 0),  # renewable
+                SetupTime(2, 0, 1, 0),  # non-renewable
             ],
-            (1, 2): [
-                Constraint.PREVIOUS,
-                Constraint.BEFORE,
-            ],
-        },
-        setup_times=np.array(
-            [
-                np.zeros((3, 3)),  # resource
-                np.ones((3, 3)),  # machine
-            ]
         ),
-        horizon=100,
         objective=Objective(
             weight_makespan=2,
             weight_tardy_jobs=3,
@@ -140,8 +119,6 @@ def test_from_data():
     assert_equal(m_data.num_modes, data.num_modes)
     assert_equal(m_data.modes, data.modes)
     assert_equal(m_data.constraints, data.constraints)
-    assert_equal(m_data.setup_times, data.setup_times)
-    assert_equal(m_data.horizon, data.horizon)
     assert_equal(m_data.objective, data.objective)
 
 
@@ -162,10 +139,8 @@ def test_model_to_data_default_values():
     assert_equal(data.resources, [machine])
     assert_equal(data.tasks, [task])
     assert_equal(data.modes, [Mode(task=0, resources=[0], duration=1)])
-    assert_equal(data.constraints, {})
-    assert_equal(data.setup_times, None)
-    assert_equal(data.horizon, MAX_VALUE)
-    assert_equal(data.objective, Objective.makespan())
+    assert_equal(data.constraints, Constraints())
+    assert_equal(data.objective, Objective(weight_makespan=1))
 
 
 def test_add_job_attributes():
@@ -185,19 +160,6 @@ def test_add_job_attributes():
     assert_equal(job.name, "job")
 
 
-def test_add_resource_attributes():
-    """
-    Tests that adding a resource to the model correctly sets the attributes.
-    """
-    model = Model()
-
-    resource = model.add_resource(capacity=1, renewable=False, name="resource")
-
-    assert_equal(resource.capacity, 1)
-    assert_equal(resource.renewable, False)
-    assert_equal(resource.name, "resource")
-
-
 def test_add_machine_attributes():
     """
     Tests that adding a machine to the model correctly sets the attributes.
@@ -206,6 +168,30 @@ def test_add_machine_attributes():
 
     machine = model.add_machine(name="machine")
     assert_equal(machine.name, "machine")
+
+
+def test_add_renewable_resource_attributes():
+    """
+    Tests that adding a resource to the model correctly sets the attributes.
+    """
+    model = Model()
+
+    renewable = model.add_renewable(capacity=1, name="resource")
+
+    assert_equal(renewable.capacity, 1)
+    assert_equal(renewable.name, "resource")
+
+
+def test_add_non_renewable_resource_attributes():
+    """
+    Tests that adding a resource to the model correctly sets the attributes.
+    """
+    model = Model()
+
+    non_renewable = model.add_non_renewable(capacity=1, name="resource")
+
+    assert_equal(non_renewable.capacity, 1)
+    assert_equal(non_renewable.name, "resource")
 
 
 def test_add_task_attributes():
@@ -258,11 +244,11 @@ def test_add_mode_single_resource():
     machine = model.add_machine()
     task = model.add_task(job=job)
 
-    mode = model.add_mode(task, machine, 1, 1)
+    mode = model.add_mode(task, machine, duration=1, demands=1)
     assert_equal(mode.task, 0)
     assert_equal(mode.resources, [0])
     assert_equal(mode.duration, 1)
-    assert_equal(mode.demands, [1])  # default
+    assert_equal(mode.demands, [1])
 
 
 def test_model_attributes():
@@ -289,7 +275,7 @@ def test_model_set_objective():
     model = Model()
 
     # The default objective function is the makespan.
-    assert_equal(model.objective, Objective.makespan())
+    assert_equal(model.objective, Objective(weight_makespan=1))
 
     # Now we set the objective function to a weighted combination
     # this should overwrite the previously set objective.

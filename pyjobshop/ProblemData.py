@@ -1,37 +1,34 @@
 from collections import Counter
 from copy import deepcopy
 from dataclasses import dataclass
-from enum import Enum
-from typing import Optional, Sequence, TypeVar, Union
-
-import numpy as np
+from typing import NamedTuple, Optional, Sequence, TypeVar, Union
 
 from pyjobshop.constants import MAX_VALUE
 
-_ConstraintsType = dict[tuple[int, int], list["Constraint"]]
 _T = TypeVar("_T")
 
 
 class Job:
     """
-    Simple dataclass for storing all job-related data.
+    Simple dataclass for storing job related data.
 
     Parameters
     ----------
     weight
         The weight of the job, used as multiplicative factor in the
-        objective function. Default 1.
+        objective function. Default ``1``.
     release_date
-        The earliest time that the job may start. Default 0.
+        The earliest time that the job may start. Default ``0``.
     deadline
         The latest time by which the job must be completed. Note that a
         deadline is different from a due date; the latter does not restrict
-        the latest completion time. Default ``MAX_VALUE``.
+        the latest completion time.
+        Default :const:`~pyjobshop.constants.MAX_VALUE`.
     due_date
         The latest time that the job should be completed before incurring
-        penalties. Default is None, meaning that there is no due date.
+        penalties. Default ``None``, meaning that there is no due date.
     tasks
-        List of task indices that belong to this job. Default is None,
+        List of task indices that belong to this job. Default ``None``,
         which initializes an empty list.
     name
         Name of the job.
@@ -124,27 +121,46 @@ class Job:
         self._tasks.append(idx)
 
 
-class Resource:
+class Machine:
     """
-    Simple dataclass for storing all resource-related data.
+    A machine resource is a specialized resource that only processes one task
+    at a time and can handle sequencing constraints.
+
+    Parameters
+    ----------
+    name
+        Name of the machine.
+    """
+
+    def __init__(self, name: str = ""):
+        self._name = name
+
+    @property
+    def name(self) -> str:
+        """
+        Name of the machine.
+        """
+        return self._name
+
+
+class Renewable:
+    """
+    A renewable resource that replenishes its capacity after each task
+    completion.
 
     Parameters
     ----------
     capacity
         Capacity of the resource.
-    renewable
-        Whether the resource is renewable. A renewable resource replenishes
-        its capacity after each task completion. Default ``True``.
     name
         Name of the resource.
     """
 
-    def __init__(self, capacity: int, renewable: bool = True, name: str = ""):
+    def __init__(self, capacity: int, name: str = ""):
         if capacity < 0:
             raise ValueError("Capacity must be non-negative.")
 
         self._capacity = capacity
-        self._renewable = renewable
         self._name = name
 
     @property
@@ -155,11 +171,38 @@ class Resource:
         return self._capacity
 
     @property
-    def renewable(self) -> bool:
+    def name(self) -> str:
         """
-        Whether the resource is renewable.
+        Name of the resource.
         """
-        return self._renewable
+        return self._name
+
+
+class NonRenewable:
+    """
+    A non-renewable resource that does not replenish its capacity.
+
+    Parameters
+    ----------
+    capacity
+        Capacity of the resource.
+    name
+        Name of the resource.
+    """
+
+    def __init__(self, capacity: int, name: str = ""):
+        if capacity < 0:
+            raise ValueError("Capacity must be non-negative.")
+
+        self._capacity = capacity
+        self._name = name
+
+    @property
+    def capacity(self) -> int:
+        """
+        Capacity of the resource.
+        """
+        return self._capacity
 
     @property
     def name(self) -> str:
@@ -169,34 +212,12 @@ class Resource:
         return self._name
 
 
-class Machine(Resource):
-    """
-    Simple dataclass for storing all machine-related data. A machine is a
-    specialized resource type that allows for sequencing constraints.
-
-    Parameters
-    ----------
-    name
-        Name of the machine.
-    """
-
-    def __init__(self, name: str = ""):
-        super().__init__(capacity=0, renewable=True, name=name)
-
-    @property
-    def name(self) -> str:
-        """
-        Name of the machine.
-        """
-        return self._name
-
-
-ResourceType = Union["Resource", "Machine"]
+Resource = Union[Machine, Renewable, NonRenewable]
 
 
 class Task:
     """
-    Simple dataclass for storing all task related data.
+    Simple dataclass for storing task related data.
 
     Parameters
     ----------
@@ -206,11 +227,13 @@ class Task:
     earliest_start
         Earliest start time of the task. Default ``0``.
     latest_start
-        Latest start time of the task. Default ``MAX_VALUE``.
+        Latest start time of the task.
+        Default :const:`~pyjobshop.constants.MAX_VALUE`.
     earliest_end
         Earliest end time of the task. Default ``0``.
     latest_end
-        Latest end time of the task. Default ``MAX_VALUE``.
+        Latest end time of the task.
+        Default :const:`~pyjobshop.constants.MAX_VALUE`.
     fixed_duration
         Whether the task has a fixed duration. A fixed duration means that
         the task duration is precisely the processing time (on a given
@@ -298,7 +321,7 @@ class Task:
 
 class Mode:
     """
-    Simpel dataclass for storing processing mode data.
+    Simple dataclass for storing processing mode data.
 
     Parameters
     ----------
@@ -364,47 +387,241 @@ class Mode:
         )
 
 
-class Constraint(str, Enum):
+class StartBeforeStart(NamedTuple):
     """
-    Enum that defines different types of constraints between two tasks
-    :math:`i` and :math:`k`.
+    Start task 1 (:math:`s_1`) before task 2 starts (:math:`s_2`), with an
+    optional delay :math:`d`. That is,
+
+    .. math::
+        s_1 + d \\leq s_2.
     """
 
-    #: Task :math:`i` must start when task :math:`k` starts.
-    START_AT_START = "start_at_start"
+    task1: int
+    task2: int
+    delay: int = 0
 
-    #: Task :math:`i` must at start when task :math:`k` ends.
-    START_AT_END = "start_at_end"
 
-    #: Task :math:`i` must start before task :math:`k` starts.
-    START_BEFORE_START = "start_before_start"
+class StartBeforeEnd(NamedTuple):
+    """
+    Start task 1 (:math:`s_1`) before task 2 ends (:math:`e_2`), with an
+    optional delay :math:`d`. That is,
 
-    #: Task :math:`i` must start before task :math:`k` ends.
-    START_BEFORE_END = "start_before_end"
+    .. math::
+        s_1 + d \\leq e_2.
+    """
 
-    #: Task :math:`i` must end when task :math:`k` starts.
-    END_AT_START = "end_at_start"
+    task1: int
+    task2: int
+    delay: int = 0
 
-    #: Task :math:`i` must end when task :math:`k` ends.
-    END_AT_END = "end_at_end"
 
-    #: Task :math:`i` must end before task :math:`k` starts.
-    END_BEFORE_START = "end_before_start"
+class EndBeforeStart(NamedTuple):
+    """
+    End task 1 (:math:`e_1`) before task 2 starts (:math:`s_2`), with an
+    optional delay :math:`d`. That is,
 
-    #: Task :math:`i` must end before task :math:`k` ends.
-    END_BEFORE_END = "end_before_end"
+    .. math::
+        e_1 + d \\leq s_2.
+    """
 
-    #: Tasks :math:`i` and :math:`k` must use modes with identical resources.
-    IDENTICAL_RESOURCES = "identical_resources"
+    task1: int
+    task2: int
+    delay: int = 0
 
-    #: Tasks :math:`i` and :math:`k` must use modes with disjoint resources.
-    DIFFERENT_RESOURCES = "different_resources"
 
-    #: Sequence task :math:`i` right before :math:`k` on shared resources.
-    PREVIOUS = "previous"
+class EndBeforeEnd(NamedTuple):
+    """
+    End task 1 (:math:`e_1`) before task 2 ends (:math:`e_2`), with an
+    optional delay :math:`d`. That is,
 
-    #: Sequence task :math:`i` before :math:`k` on shared resources.
-    BEFORE = "before"
+    .. math::
+        e_1 + d \\leq e_2.
+    """
+
+    task1: int
+    task2: int
+    delay: int = 0
+
+
+class IdenticalResources(NamedTuple):
+    """
+    Select modes for task 1 and task 2 that use the same resources.
+
+    Let :math:`m_1, m_2` be the selected modes of task 1 and task 2, and let
+    :math:`R_m` denote the resources required by mode :math:`m`. This
+    constraint ensures that
+
+    .. math::
+        R_{m_1} = R_{m_2}.
+    """
+
+    task1: int
+    task2: int
+
+
+class DifferentResources(NamedTuple):
+    """
+    Select modes for task 1 and task 2 that use different resources.
+
+    Let :math:`m_1, m_2` be the selected modes of task 1 and task 2, and let
+    :math:`R_m` denote the resources required by mode :math:`m`. This
+    constraint ensures that
+
+    .. math::
+        R_{m_1} \\cap R_{m_2} = \\emptyset.
+    """
+
+    task1: int
+    task2: int
+
+
+class Consecutive(NamedTuple):
+    """
+    Sequence task 1 and task 2 consecutively on the machines they are both
+    assigned to, meaning that no other task is allowed to be scheduled between
+    them.
+
+    Hand-waiving some details, let :math:`m_1, m_2` be the selected modes of
+    task 1 and task 2, and let :math:`R` denote the machines that both modes
+    require. This constraint ensures that
+
+    .. math::
+        m_1 \\to m_2 \\quad \\forall r \\in R,
+
+    where :math:`\\to` means that :math:`m_1` is directly followed by
+    :math:`m_2` and no other interval is scheduled between them.
+    """
+
+    task1: int
+    task2: int
+
+
+class SetupTime(NamedTuple):
+    """
+    Sequence-dependent setup time between task 1 and task 2 on the given
+    machine.
+
+    Let :math:`e_1` be the end time of task 1 and let :math:`s_2` be the
+    start time of task 2. If the selected modes of task 1 and task 2 both
+    require the given machine, then this constraint ensures that
+
+    .. math::
+        e_1 + d \\leq s_2,
+
+    where :math:`d` is the setup time duration. Note that this also implies
+    an end-before-start relationship between task 1 and task 2.
+    """
+
+    machine: int
+    task1: int
+    task2: int
+    duration: int
+
+
+class Constraints:
+    """
+    Container class for storing all constraints.
+    """
+
+    def __init__(
+        self,
+        start_before_start: Optional[list[StartBeforeStart]] = None,
+        start_before_end: Optional[list[StartBeforeEnd]] = None,
+        end_before_start: Optional[list[EndBeforeStart]] = None,
+        end_before_end: Optional[list[EndBeforeEnd]] = None,
+        identical_resources: Optional[list[IdenticalResources]] = None,
+        different_resources: Optional[list[DifferentResources]] = None,
+        consecutive: Optional[list[Consecutive]] = None,
+        setup_times: Optional[list[SetupTime]] = None,
+    ):
+        self._start_before_start = start_before_start or []
+        self._start_before_end = start_before_end or []
+        self._end_before_start = end_before_start or []
+        self._end_before_end = end_before_end or []
+        self._identical_resources = identical_resources or []
+        self._different_resources = different_resources or []
+        self._consecutive = consecutive or []
+        self._setup_times = setup_times or []
+
+    def __eq__(self, other) -> bool:
+        return (
+            self.start_before_start == other.start_before_start
+            and self.start_before_end == other.start_before_end
+            and self.end_before_start == other.end_before_start
+            and self.end_before_end == other.end_before_end
+            and self.identical_resources == other.identical_resources
+            and self.different_resources == other.different_resources
+            and self.consecutive == other.consecutive
+            and self.setup_times == other.setup_times
+        )
+
+    def __len__(self) -> int:
+        return (
+            len(self.start_before_start)
+            + len(self.start_before_end)
+            + len(self.end_before_start)
+            + len(self.end_before_end)
+            + len(self.identical_resources)
+            + len(self.different_resources)
+            + len(self.consecutive)
+            + len(self._setup_times)
+        )
+
+    @property
+    def start_before_start(self) -> list[StartBeforeStart]:
+        """
+        Returns the list of start-before-start constraints.
+        """
+        return self._start_before_start
+
+    @property
+    def start_before_end(self) -> list[StartBeforeEnd]:
+        """
+        Returns the list of start-before-end constraints.
+        """
+        return self._start_before_end
+
+    @property
+    def end_before_start(self) -> list[EndBeforeStart]:
+        """
+        Returns the list of end-before-start constraints.
+        """
+        return self._end_before_start
+
+    @property
+    def end_before_end(self) -> list[EndBeforeEnd]:
+        """
+        Returns the list of end-before-end constraints.
+        """
+        return self._end_before_end
+
+    @property
+    def identical_resources(self) -> list[IdenticalResources]:
+        """
+        Returns the list of identical resources constraints.
+        """
+        return self._identical_resources
+
+    @property
+    def different_resources(self) -> list[DifferentResources]:
+        """
+        Returns the list of different resources constraints.
+        """
+        return self._different_resources
+
+    @property
+    def consecutive(self) -> list[Consecutive]:
+        """
+        Returns the list of consecutive task constraints.
+        """
+        return self._consecutive
+
+    @property
+    def setup_times(self) -> list[SetupTime]:
+        """
+        Returns the list of setup times constraints.
+        """
+        return self._setup_times
 
 
 @dataclass
@@ -460,60 +677,10 @@ class Objective:
     weight_max_tardiness: int = 0
     weight_max_lateness: int = 0
 
-    @classmethod
-    def makespan(cls):
-        """
-        Returns the makespan objective function.
-        """
-        return cls(weight_makespan=1)
-
-    @classmethod
-    def total_flow_time(cls):
-        """
-        Returns the total flow time objective function.
-        """
-        return cls(weight_total_flow_time=1)
-
-    @classmethod
-    def tardy_jobs(cls):
-        """
-        Returns the number of tardy jobs objective function.
-        """
-        return cls(weight_tardy_jobs=1)
-
-    @classmethod
-    def total_tardiness(cls):
-        """
-        Returns the total tardiness objective function.
-        """
-        return cls(weight_total_tardiness=1)
-
-    @classmethod
-    def total_earliness(cls):
-        """
-        Returns the total earliness objective function.
-        """
-        return cls(weight_total_earliness=1)
-
-    @classmethod
-    def max_tardiness(cls):
-        """
-        Returns the maximum tardiness objective function.
-        """
-        return cls(weight_max_tardiness=1)
-
-    @classmethod
-    def max_lateness(cls):
-        """
-        Returns the maximum lateness objective function.
-        """
-        return cls(weight_max_lateness=1)
-
 
 class ProblemData:
     """
-    Creates a problem data instance. This instance contains all information
-    need to solve the scheduling problem.
+    Class that contains all data needed to solve the scheduling problem.
 
     Parameters
     ----------
@@ -526,14 +693,8 @@ class ProblemData:
     modes
         List of processing modes of tasks.
     constraints
-        Dict indexed by task pairs with a list of constraints as values.
-        Default is None, which initializes an empty dict.
-    setup_times
-        Sequence-dependent setup times between tasks on a given resource. The
-        first dimension of the array is indexed by the resource index. The last
-        two dimensions of the array are indexed by task indices.
-    horizon
-        The horizon value. Default ``MAX_VALUE``.
+        The constraints of this problem data instance. Default is no
+        constraints.
     objective
         The objective function. Default is minimizing the makespan.
     """
@@ -541,23 +702,23 @@ class ProblemData:
     def __init__(
         self,
         jobs: list[Job],
-        resources: Sequence[ResourceType],
+        resources: Sequence[Resource],
         tasks: list[Task],
         modes: list[Mode],
-        constraints: Optional[_ConstraintsType] = None,
-        setup_times: Optional[np.ndarray] = None,
-        horizon: int = MAX_VALUE,
+        constraints: Optional[Constraints] = None,
         objective: Optional[Objective] = None,
     ):
         self._jobs = jobs
         self._resources = resources
         self._tasks = tasks
         self._modes = modes
-        self._constraints = constraints if constraints is not None else {}
-        self._setup_times = setup_times
-        self._horizon = horizon
+        self._constraints = (
+            constraints if constraints is not None else Constraints()
+        )
         self._objective = (
-            objective if objective is not None else Objective.makespan()
+            objective
+            if objective is not None
+            else Objective(weight_makespan=1)
         )
 
         self._validate_parameters()
@@ -569,14 +730,16 @@ class ProblemData:
         num_res = self.num_resources
         num_tasks = self.num_tasks
 
-        for job in self.jobs:
+        for idx, job in enumerate(self.jobs):
             if any(task < 0 or task >= num_tasks for task in job.tasks):
-                raise ValueError("Job references to unknown task index.")
+                msg = f"Job {idx} references to unknown task index."
+                raise ValueError(msg)
 
-        for task in self.tasks:
+        for idx, task in enumerate(self.tasks):
             if task.job is not None:
                 if task.job < 0 or task.job >= len(self.jobs):
-                    raise ValueError("Task references to unknown job index.")
+                    msg = f"Task {idx} references to unknown job index."
+                    raise ValueError(msg)
 
         for idx, mode in enumerate(self.modes):
             if mode.task < 0 or mode.task >= num_tasks:
@@ -587,10 +750,9 @@ class ProblemData:
                     msg = f"Mode {idx} references unknown resource index."
                     raise ValueError(msg)
 
-        without = set(range(num_tasks)) - {mode.task for mode in self.modes}
-        names = [self.tasks[idx].name or idx for idx in sorted(without)]
-        if names:  # task indices if names are not available
-            raise ValueError(f"Processing modes missing for tasks {without}.")
+        missing = set(range(num_tasks)) - {mode.task for mode in self.modes}
+        if missing := sorted(missing):
+            raise ValueError(f"Processing modes missing for tasks {missing}.")
 
         infeasible_modes = Counter()
         num_modes = Counter()
@@ -598,8 +760,9 @@ class ProblemData:
         for mode in self.modes:
             num_modes[mode.task] += 1
             infeasible_modes[mode.task] += any(
-                demand > self.resources[resource].capacity
-                for demand, resource in zip(mode.demands, mode.resources)
+                # Assumes that machines have zero capacity.
+                demand > getattr(self.resources[res], "capacity", 0)
+                for demand, res in zip(mode.demands, mode.resources)
             )
 
         for task, count in num_modes.items():
@@ -607,24 +770,15 @@ class ProblemData:
                 msg = f"All modes for task {task} have infeasible demands."
                 raise ValueError(msg)
 
-        if self.setup_times is not None:
-            if np.any(self.setup_times < 0):
-                raise ValueError("Setup times must be non-negative.")
+        for res_idx, *_, duration in self.constraints.setup_times:
+            if duration < 0:
+                raise ValueError("Setup time must be non-negative.")
 
-            if self.setup_times.shape != (num_res, num_tasks, num_tasks):
-                shape = "(num_resources, num_tasks, num_tasks)"
-                raise ValueError(f"Setup times shape must be {shape}.")
+            is_machine = isinstance(self.resources[res_idx], Machine)
+            has_setup_times = duration > 0
 
-            for idx, resource in enumerate(self.resources):
-                is_machine = isinstance(resource, Machine)
-                has_setup_times = np.any(self.setup_times[idx] > 0)
-
-                if not is_machine and has_setup_times:
-                    msg = "Setup times only allowed for machines."
-                    raise ValueError(msg)
-
-        if self.horizon < 0:
-            raise ValueError("Horizon must be non-negative.")
+            if not is_machine and has_setup_times:
+                raise ValueError("Setup times only allowed for machines.")
 
         if (
             self.objective.weight_tardy_jobs > 0
@@ -640,12 +794,10 @@ class ProblemData:
     def replace(
         self,
         jobs: Optional[list[Job]] = None,
-        resources: Optional[Sequence[ResourceType]] = None,
+        resources: Optional[Sequence[Resource]] = None,
         tasks: Optional[list[Task]] = None,
         modes: Optional[list[Mode]] = None,
-        constraints: Optional[_ConstraintsType] = None,
-        setup_times: Optional[np.ndarray] = None,
-        horizon: Optional[int] = None,
+        constraints: Optional[Constraints] = None,
         objective: Optional[Objective] = None,
     ) -> "ProblemData":
         """
@@ -663,11 +815,7 @@ class ProblemData:
         modes
             Optional processing modes of tasks.
         constraints
-            Optional constraints between tasks.
-        setup_times
-            Optional sequence-dependent setup times.
-        horizon
-            Optional horizon value.
+            Optional constraints.
         objective
             Optional objective function.
 
@@ -685,8 +833,6 @@ class ProblemData:
         tasks = _deepcopy_if_none(tasks, self.tasks)
         modes = _deepcopy_if_none(modes, self.modes)
         constraints = _deepcopy_if_none(constraints, self.constraints)
-        setup_times = _deepcopy_if_none(setup_times, self.setup_times)
-        horizon = _deepcopy_if_none(horizon, self.horizon)
         objective = _deepcopy_if_none(objective, self.objective)
 
         return ProblemData(
@@ -695,8 +841,6 @@ class ProblemData:
             tasks=tasks,
             modes=modes,
             constraints=constraints,
-            setup_times=setup_times,
-            horizon=horizon,
             objective=objective,
         )
 
@@ -708,7 +852,7 @@ class ProblemData:
         return self._jobs
 
     @property
-    def resources(self) -> Sequence[ResourceType]:
+    def resources(self) -> Sequence[Resource]:
         """
         Returns the resource data of this problem instance.
         """
@@ -729,34 +873,16 @@ class ProblemData:
         return self._modes
 
     @property
-    def constraints(self) -> _ConstraintsType:
+    def constraints(self) -> Constraints:
         """
-        Dict indexed by task pairs with a list of constraints as values.
-        Indexed by task pairs.
+        Returns the constraints of this problem instance.
         """
         return self._constraints
 
     @property
-    def setup_times(self) -> Optional[np.ndarray]:
-        """
-        Optional sequence-dependent setup times between tasks on a given
-        machine. The first index is the resource index and the last two
-        indices are the task indices.
-        """
-        return self._setup_times
-
-    @property
-    def horizon(self) -> int:
-        """
-        The time horizon of this instance. This is an upper bound on the
-        completion time of all tasks.
-        """
-        return self._horizon
-
-    @property
     def objective(self) -> Objective:
         """
-        The objective function.
+        Returns the objective function of this problem instance.
         """
         return self._objective
 
@@ -787,3 +913,10 @@ class ProblemData:
         Returns the number of modes in this instance.
         """
         return len(self._modes)
+
+    @property
+    def num_constraints(self) -> int:
+        """
+        Returns the number of constraints in this instance.
+        """
+        return len(self._constraints)

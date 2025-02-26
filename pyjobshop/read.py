@@ -18,6 +18,7 @@ class InstanceFormat(str, Enum):
     PSPLIB = "psplib"
     MPLIB = "mplib"
     PATTERSON = "patterson"
+    RCPSP_MAX = "rcpsp_max"
 
 
 def read(
@@ -33,6 +34,7 @@ def read(
         InstanceFormat.PSPLIB,
         InstanceFormat.MPLIB,
         InstanceFormat.PATTERSON,
+        InstanceFormat.RCPSP_MAX,
     ]:
         instance = psplib.parse(loc, instance_format)
         return _project_instance_to_data(instance)
@@ -46,22 +48,22 @@ def _read_fjslib(loc: Union[str, Path]) -> ProblemData:
     """
     instance = fjsplib.read(loc)
 
-    m = Model()
+    model = Model()
 
-    jobs = [m.add_job() for _ in range(instance.num_jobs)]
-    resources = [m.add_machine() for _ in range(instance.num_machines)]
+    jobs = [model.add_job() for _ in range(instance.num_jobs)]
+    resources = [model.add_machine() for _ in range(instance.num_machines)]
 
     for job_idx, tasks in enumerate(instance.jobs):
         for task_data in tasks:
-            task = m.add_task(job=jobs[job_idx])
+            task = model.add_task(job=jobs[job_idx])
 
             for resource_idx, duration in task_data:
-                m.add_mode(task, resources[resource_idx], duration)
+                model.add_mode(task, resources[resource_idx], duration)
 
     for frm, to in instance.precedences:
-        m.add_end_before_start(m.tasks[frm], m.tasks[to])
+        model.add_end_before_start(model.tasks[frm], model.tasks[to])
 
-    return m.data()
+    return model.data()
 
 
 def _project_instance_to_data(instance: psplib.ProjectInstance) -> ProblemData:
@@ -70,10 +72,11 @@ def _project_instance_to_data(instance: psplib.ProjectInstance) -> ProblemData:
     """
     model = Model()
 
-    resources = [
-        model.add_resource(capacity=res.capacity, renewable=res.renewable)
-        for res in instance.resources
-    ]
+    for resource in instance.resources:
+        if resource.renewable:
+            model.add_renewable(capacity=resource.capacity)
+        else:
+            model.add_non_renewable(capacity=resource.capacity)
 
     for project in instance.projects:
         job = model.add_job(release_date=project.release_date)
@@ -85,13 +88,21 @@ def _project_instance_to_data(instance: psplib.ProjectInstance) -> ProblemData:
         for mode in activity.modes:
             model.add_mode(
                 task=model.tasks[idx],
-                resources=resources,
+                resources=model.resources,
                 duration=mode.duration,
                 demands=mode.demands,
             )
 
     for idx, activity in enumerate(instance.activities):
-        for succ in activity.successors:
-            model.add_end_before_start(model.tasks[idx], model.tasks[succ])
+        for succ_idx, task_idx in enumerate(activity.successors):
+            pred = model.tasks[idx]
+            succ = model.tasks[task_idx]
+
+            if activity.delays is None:
+                model.add_end_before_start(pred, succ)
+            else:
+                # RCPSP/max precedence type.
+                delay = activity.delays[succ_idx]
+                model.add_start_before_start(pred, succ, delay)
 
     return model.data()

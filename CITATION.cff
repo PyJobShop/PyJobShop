@@ -1,0 +1,25 @@
+cff-version: "1.2.0"
+message: "If you use this software, please cite it using the following metadata."
+authors:
+  - family-names: "Lan"
+    given-names: "Leon"
+    orcid: "https://orcid.org/0000-0001-7479-0218"
+  - family-names: "Berkhout"
+    given-names: "Joost"
+    orcid: "https://orcid.org/0000-0001-5883-9683"
+title: "PyJobShop"
+url: "https://arxiv.org/abs/2502.13483"
+preferred-citation:
+  type: "misc"
+  authors:
+    - family-names: "Lan"
+      given-names: "Leon"
+      orcid: "https://orcid.org/0000-0001-7479-0218"
+    - family-names: "Berkhout"
+      given-names: "Joost"
+      orcid: "https://orcid.org/0000-0001-5883-9683"
+  title: "PyJobShop: Solving scheduling problems with constraint programming in Python"
+  year: 2025
+  url: "https://arxiv.org/abs/2502.13483"
+  archiveprefix: "arXiv"
+  eprint: "2502.13483"

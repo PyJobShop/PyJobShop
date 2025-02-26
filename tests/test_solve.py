@@ -24,9 +24,9 @@ def test_solve_unknown_solver(small):
         solve(small, "unknown")
 
 
-def test_solve_log(small, solver, capfd):
+def test_solve_display(small, solver, capfd):
     """
-    Tests that setting the log flag correctly show solver output.
+    Tests that setting the display flag correctly show solver output.
     """
     solve(small, solver, display=True)
     printed = capfd.readouterr().out
@@ -39,8 +39,8 @@ def test_solve_log(small, solver, capfd):
 
 def test_solve_time_limit(small, capfd):
     """
-    Tests the log that the time limit is set. No test for CP Optimizer
-    because it does not log this setting.
+    Tests that the time limit is set by checking the display log. No test
+    for CP Optimizer because it does not display this setting.
     """
     solve(small, "ortools", time_limit=1.2, display=True)
     printed = capfd.readouterr().out
@@ -49,7 +49,7 @@ def test_solve_time_limit(small, capfd):
 
 def test_solve_num_workers(small, solver, capfd):
     """
-    Tests the log that the ``num_workers`` parameter is correctly set.
+    Tests the display log that the ``num_workers`` parameter is correctly set.
     """
     solver2msg = {
         "ortools": "num_workers: 2",
@@ -64,7 +64,7 @@ def test_solve_num_workers(small, solver, capfd):
 
 def test_solve_initial_solution(small, solver, capfd):
     """
-    Tests that the log message is correct when an initial solution is provided.
+    Tests that the display log is correct when an initial solution is provided.
     """
     solver2msg = {
         # Not all variables are hinted so this message is correct.
@@ -90,7 +90,7 @@ def test_solve_additional_params(small, solver, capfd):
     }
     param, value = solver2param_value[solver]
 
-    # Let's test that setting log to False will not print anything.
+    # Let's test that setting display to ``False`` will not print anything.
     solve(small, solver, display=False)
     printed = capfd.readouterr().out
     assert_equal(printed, "")

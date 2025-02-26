@@ -18,10 +18,13 @@ PyJobShop
     .. autoclass:: Job
        :members:
 
-    .. autoclass:: Resource
+    .. autoclass:: Machine
        :members:
 
-    .. autoclass:: Machine
+    .. autoclass:: Renewable
+       :members:
+
+    .. autoclass:: NonRenewable
        :members:
 
     .. autoclass:: Task
@@ -30,12 +33,35 @@ PyJobShop
     .. autoclass:: Mode
        :members:
 
-    .. autoclass:: Constraint
-       :members:
+    .. autoclass:: Constraints
+        :members:
+
+    .. autoclass:: StartBeforeStart
+        :exclude-members: count, index
+
+    .. autoclass:: StartBeforeEnd
+        :exclude-members: count, index
+
+    .. autoclass:: EndBeforeStart
+        :exclude-members: count, index
+
+    .. autoclass:: EndBeforeEnd
+        :exclude-members: count, index
+
+    .. autoclass:: IdenticalResources
+        :exclude-members: count, index
+
+    .. autoclass:: DifferentResources
+        :exclude-members: count, index
+
+    .. autoclass:: Consecutive
+        :exclude-members: count, index
+
+    .. autoclass:: SetupTime
+        :exclude-members: count, index
 
     .. autoclass:: Objective
        :members:
-
 
 .. automodule:: pyjobshop.Solution
 

@@ -1,11 +1,11 @@
 from numpy.testing import assert_equal
 
-from pyjobshop.ProblemData import Job, Mode, ProblemData, Resource, Task
+from pyjobshop.ProblemData import Job, Mode, ProblemData, Renewable, Task
 from pyjobshop.solvers.utils import (
     compute_task_durations,
-    find_modes_with_disjoint_resources,
-    find_modes_with_identical_resources,
-    find_modes_with_intersecting_resources,
+    different_modes,
+    identical_modes,
+    intersecting_modes,
     resource2modes,
     task2modes,
 )
@@ -17,10 +17,9 @@ def test_compute_task_durations():
     """
     data = ProblemData(
         [Job()],
-        [Resource(0), Resource(0)],
+        [Renewable(0), Renewable(0)],
         [Task(), Task()],
         modes=[Mode(0, [0], 1), Mode(0, [1], 10), Mode(1, [1], 0)],
-        constraints={},
     )
 
     task_durations = compute_task_durations(data)
@@ -38,10 +37,9 @@ def test_resource2modes():
     """
     data = ProblemData(
         [Job()],
-        [Resource(0), Resource(0)],
+        [Renewable(0), Renewable(0)],
         [Task(), Task()],
         modes=[Mode(0, [0], 1), Mode(0, [1], 10), Mode(1, [1], 0)],
-        constraints={},
     )
 
     mapper = resource2modes(data)
@@ -56,10 +54,9 @@ def test_task2modes():
     """
     data = ProblemData(
         [Job()],
-        [Resource(0), Resource(0)],
+        [Renewable(0), Renewable(0)],
         [Task(), Task()],
         modes=[Mode(0, [0], 1), Mode(0, [1], 10), Mode(1, [1], 0)],
-        constraints={},
     )
 
     mapper = task2modes(data)
@@ -67,68 +64,97 @@ def test_task2modes():
     assert_equal(mapper[1], [2])
 
 
-def test_find_modes_with_intersecting_resources():
-    """
-    Tests that the intersecting modes between two tasks are correctly computed.
-    """
-    data = ProblemData(
-        [Job()],
-        [Resource(0), Resource(0), Resource(0)],
-        [Task(), Task()],
-        modes=[
-            Mode(0, [0], 1),
-            Mode(0, [0, 1], 10),
-            Mode(1, [0, 1], 0),
-            Mode(1, [2], 0),
-        ],
-    )
-    intersecting = find_modes_with_intersecting_resources(data, 0, 1)
-
-    # Task 1 has two modes, which both intersect with the first mode of task 2.
-    # The last mode of task 2 does not intersect with any mode of task 1, so
-    # it does not appear in the result.
-    assert_equal(intersecting, [(0, 2, [0]), (1, 2, [0, 1])])
-
-
-def test_find_modes_with_identical_resources():
+def test_identical_modes():
     """
     Tests that the modes with identical resources are correctly computed.
     """
     data = ProblemData(
         [Job()],
-        [Resource(0), Resource(0), Resource(0)],
-        [Task(), Task()],
-        modes=[
+        [Renewable(0), Renewable(0), Renewable(0)],
+        [Task(), Task(), Task()],
+        [
             Mode(0, [0], 1),
             Mode(0, [0, 1], 10),
             Mode(1, [0, 1], 0),
             Mode(1, [2], 0),
+            Mode(2, [0], 1),
         ],
     )
-    identical = find_modes_with_identical_resources(data, 0, 1)
 
-    # The second mode of task 1 has the same resources as the first mode of
-    # task 2. The other modes do not have identical resources.
-    assert_equal(identical, {1: [2]})
+    # Task 1 has two modes (0 and 1) and task 2 has two modes (2 and 3). The
+    # first mode of task 1 does not have any identical resources with any mode
+    # of task 2. The second mode of task 1 has the same resources as the first
+    # mode of task 2.
+    task1, task2 = (0, 1)
+    identical = identical_modes(data, task1, task2)
+    assert_equal(identical, [(0, []), (1, [2])])
+
+    # Task 1 has two modes (0 and 1) and task 2 has one mode (4). The first
+    # mode of task 1 has the same resources as the only mode of task 2. The
+    # second mode of task 1 does not have any identical resources with any mode
+    # of task 2.
+    task1, task2 = (0, 2)
+    identical = identical_modes(data, task1, task2)
+    assert_equal(identical, [(0, [4]), (1, [])])
 
 
-def test_find_disjoint_resources():
+def test_different_modes():
     """
-    Tests that the modes with disjoint resources are correctly computed.
+    Tests that the modes with different resources are correctly computed.
     """
     data = ProblemData(
         [Job()],
-        [Resource(0), Resource(0), Resource(0)],
-        [Task(), Task()],
+        [Renewable(0), Renewable(0), Renewable(0)],
+        [Task(), Task(), Task()],
+        [
+            Mode(0, [0], 1),
+            Mode(0, [0, 1], 10),
+            Mode(1, [0, 1], 0),
+            Mode(1, [2], 0),
+            Mode(2, [0], 1),
+        ],
+    )
+
+    # Task 1 has two modes (0 and 1) and task 2 has two modes (2 and 3). The
+    # first mode of task 1 has resources disjoint from the first mode of
+    # task 2. The second mode of task 1 has the resources disjiont from the
+    # second mode of task 2.
+    task1, task2 = (0, 1)
+    different = different_modes(data, task1, task2)
+    assert_equal(different, [(0, [3]), (1, [3])])
+
+    # Task 1 has two modes (0 and 1) and task 2 has one mode (4). Both modes
+    # of task 1 are not disjoint with the only mode of task 2.
+    task1, task2 = (0, 2)
+    different = different_modes(data, task1, task2)
+    assert_equal(different, [(0, []), (1, [])])
+
+
+def test_intersecting_modes():
+    """
+    Tests that the intersecting modes between two tasks are correctly computed.
+    """
+    data = ProblemData(
+        [Job()],
+        [Renewable(0), Renewable(0), Renewable(0)],
+        [Task(), Task(), Task()],
         modes=[
             Mode(0, [0], 1),
             Mode(0, [0, 1], 10),
             Mode(1, [0, 1], 0),
             Mode(1, [2], 0),
+            Mode(2, [0], 1),
         ],
     )
-    disjoint = find_modes_with_disjoint_resources(data, 0, 1)
 
-    # Both modes of task 1 have disjoint resources with the second mode of
-    # task 2.
-    assert_equal(disjoint, {0: [3], 1: [3]})
+    task1, task2 = (0, 1)
+    intersecting = intersecting_modes(data, task1, task2)
+    assert_equal(
+        intersecting,
+        [
+            (0, 2, [0]),
+            (0, 3, []),
+            (1, 2, [0, 1]),
+            (1, 3, []),
+        ],
+    )

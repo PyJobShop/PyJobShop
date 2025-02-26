@@ -26,14 +26,7 @@ jobs:
         run: uv python install ${{ matrix.python-version }}
 
       - name: Install the project
-        run: |
-          if [ "${{ matrix.python-version }}" != "3.12" ]; then
-            uv sync --all-extras
-          else
-            # CPLEX does not distribute binaries for Python 3.12, so we do not
-            # install its extras dependencies for this version.
-            uv sync
-          fi
+        run: uv sync --all-extras
 
       - name: Cache pre-commit
         uses: actions/cache@v3
@@ -50,14 +43,7 @@ jobs:
         run: uv run pre-commit run --all-files
 
       - name: Run tests
-        run: |
-          if [ "${{ matrix.python-version }}" != "3.12" ]; then
-            uv run pytest --solvers ortools cpoptimizer
-          else
-          # CPLEX does not distribute binaries for Python 3.12,
-          # so we only test ortools on 3.11.
-            uv run pytest --solvers ortools
-          fi
+        run: uv run pytest --solvers ortools cpoptimizer
 
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v3

@@ -33,7 +33,7 @@ class Solver:
         self._objective = Objective(self._model, data, self._variables)
 
         self._constraints.add_constraints()
-        self._objective.build(self._data.objective)
+        self._objective.add_objective()
 
     def _get_solve_status(self, status: str):
         if status == "OPTIMAL":
@@ -54,7 +54,7 @@ class Solver:
         tasks = {}
 
         for idx, var in enumerate(self._variables.mode_vars):
-            if cp_solver.value(var.is_present):
+            if cp_solver.value(var.present):
                 start = cp_solver.value(var.start)
                 end = cp_solver.value(var.end)
                 mode = self._data.modes[idx]
@@ -120,8 +120,9 @@ class Solver:
             objective_value = float("inf")
 
         return Result(
-            self._get_solve_status(status),
-            cp_solver.wall_time,
-            solution,
-            objective_value,
+            objective=objective_value,
+            lower_bound=cp_solver.best_objective_bound,
+            status=self._get_solve_status(status),
+            runtime=cp_solver.wall_time,
+            best=solution,
         )

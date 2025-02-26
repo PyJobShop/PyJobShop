@@ -26,11 +26,13 @@ The documentation is available [here](https://pyjobshop.org/).
 > If you are new to scheduling or constraint programming, you might benefit from first reading the [introduction to scheduling](https://pyjobshop.org/stable/setup/intro_to_scheduling.html) and [introduction to constraint programming](https://pyjobshop.org/stable/setup/intro_to_cp.html) pages.
 
 ## Constraint programming solvers
+
 PyJobShop uses [OR-Tools'](https://github.com/google/or-tools) CP-SAT solver as its default constraint programming solver.
 We also provide support for CP Optimizer. 
 See [our documentation](https://pyjobshop.org/stable/setup/installation.html) for instructions on how to install PyJobShop with CP Optimizer.
 
 ## Examples
+
 We provide example notebooks that show how PyJobShop may be used to solve scheduling problems.
 
 - A short tutorial and introduction to PyJobShop's modeling interface, available [here](https://pyjobshop.org/stable/examples/simple_example.html). This is a great way to get started with PyJobShop.
@@ -38,12 +40,35 @@ We provide example notebooks that show how PyJobShop may be used to solve schedu
 - A notebook showing how to solve different project scheduling problems, [here](https://pyjobshop.org/stable/examples/project_scheduling.html).
 
 ## Contributing
+
 We are very grateful for any contributions you are willing to make. 
 Please have a look [here](https://pyjobshop.org/stable/dev/contributing.html) to get started. 
 If you aim to make a large change, it is helpful to discuss the change first in a new GitHub issue. Feel free to open one!
 
 ## Getting help
+
 Feel free to open an issue or a new discussion thread here on GitHub.
 Please do not e-mail us with questions, modeling issues, or code examples.
 Those are much easier to discuss via GitHub than over e-mail.
 When writing your issue or discussion, please follow the instructions [here](https://pyjobshop.org/stable/setup/getting_help.html).
+
+### How to cite PyJobShop
+
+If you use PyJobShop in your research, please consider citing the following paper:
+
+> Lan, L., and Berkhout, J. (2025).
+> PyJobShop: Solving scheduling problems with constraint programming in Python.
+> https://arxiv.org/abs/2502.13483
+
+Or, using the following BibTeX entry:
+
+```bibtex
+@misc{Lan_Berkhout_2025,
+      title={{PyJobShop}: Solving scheduling problems with constraint programming in {Python}}, 
+      author={Leon Lan and Joost Berkhout},
+      year={2025},
+      url={https://arxiv.org/abs/2502.13483}, 
+      archivePrefix="arXiv"
+      eprint={2502.13483},
+}
+```
