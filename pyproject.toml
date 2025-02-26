@@ -30,7 +30,7 @@ classifiers = [
 ]
 requires-python = ">=3.9,<3.13"
 dependencies = [
-    "ortools>=9.10.4067,<10",
+    "ortools>=9.12.4544,<10",
     "matplotlib>=3.9.2",
     "fjsplib",
     "psplib>=0.2.0",
