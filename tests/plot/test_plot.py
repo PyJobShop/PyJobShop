@@ -27,7 +27,7 @@ def test_plot_machine_gantt():
 
 @img_comp(["plot_resource_usage"], **IMG_KWARGS)
 def test_plot_resource_usage():
-    data = read("data/j102_2.mm", instance_format="psplib")
+    data = read("data/small.mm", instance_format="psplib")
     result = solve(data)
     sol = result.best
 
@@ -36,7 +36,7 @@ def test_plot_resource_usage():
 
 @img_comp(["plot_task_gantt"], **IMG_KWARGS)
 def test_plot_task_gantt():
-    data = read("data/j102_2.mm", instance_format="psplib")
+    data = read("data/small.mm", instance_format="psplib")
     result = solve(data)
     sol = result.best
 
