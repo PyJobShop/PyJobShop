@@ -4,9 +4,10 @@ from ortools.sat.python.cp_model import (
     LinearExprT,
 )
 
+import pyjobshop.solvers.utils as utils
 from pyjobshop.constants import MAX_VALUE
+from pyjobshop.ProblemData import Machine, ProblemData
 from pyjobshop.ProblemData import Objective as DataObjective
-from pyjobshop.ProblemData import ProblemData
 
 from .Variables import Variables
 
@@ -23,6 +24,7 @@ class Objective:
         self._data = data
         self._task_vars = variables.task_vars
         self._job_vars = variables.job_vars
+        self._sequence_vars = variables.sequence_vars
 
     def _makespan_expr(self) -> LinearExprT:
         """
@@ -133,6 +135,40 @@ class Objective:
         model.add_max_equality(max_lateness, lateness_vars)
         return max_lateness
 
+    def _total_setup_time_expr(self) -> LinearExprT:
+        """
+        Returns an expression representing the total setup time of modes.
+        """
+        data = self._data
+        setup_times = utils.setup_times_matrix(data)
+
+        setup_time_vars = []
+        for idx, resource in enumerate(data.resources):
+            if not isinstance(resource, Machine):
+                continue
+
+            seq_var = self._sequence_vars[idx]
+            if not seq_var.is_active:
+                continue
+
+            mode_vars = seq_var.mode_vars
+            arcs = seq_var.arcs
+
+            for idx1, var1 in enumerate(mode_vars):
+                for idx2, var2 in enumerate(mode_vars):
+                    if idx1 == idx2:
+                        continue
+
+                    setup = (
+                        setup_times[idx, var1.task_idx, var2.task_idx]
+                        if setup_times is not None
+                        else 0
+                    )
+                    print(f"{idx1, idx2}: {setup}")
+                    setup_time_vars.append(setup * arcs[idx1, idx2])
+
+        return LinearExpr.sum(setup_time_vars)
+
     def _objective_expr(self, objective: DataObjective) -> LinearExprT:
         """
         Returns the expression corresponding to the given objective.
@@ -145,6 +181,7 @@ class Objective:
             (objective.weight_total_earliness, self._total_earliness_expr),
             (objective.weight_max_tardiness, self._max_tardiness_expr),
             (objective.weight_max_lateness, self._max_lateness_expr),
+            (objective.weight_total_setup_time, self._total_setup_time_expr),
         ]
         exprs = [weight * expr() for weight, expr in items if weight > 0]
         return LinearExpr.sum(exprs)

@@ -664,6 +664,10 @@ class Objective:
         .. math::
             L_{\\max} = \\max_{j \\in J} w_j (C_j - d_j)
 
+    **Total setup time** (:math:`TST`): The sum of the setup times of all modes.
+        .. math::
+            # TODO:
+
     .. note::
         Use :attr:`Job.weight` to set a specific job's weight (:math:`w_j`) in the
         objective function.
@@ -676,6 +680,7 @@ class Objective:
     weight_total_earliness: int = 0
     weight_max_tardiness: int = 0
     weight_max_lateness: int = 0
+    weight_total_setup_time: int = 0
 
 
 class ProblemData:

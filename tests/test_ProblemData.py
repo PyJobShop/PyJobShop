@@ -1314,6 +1314,48 @@ def test_max_lateness(solver: str):
     assert_equal(result.best.tasks[1].end, 2)
 
 
+def test_total_setup_time(solver: str):
+    """
+    Tests that the total setup time objective function is correctly optimized.
+    """
+    model = Model()
+
+    machine = model.add_machine()
+    tasks = [model.add_task() for _ in range(3)]
+
+    for idx in range(2):
+        first = tasks[idx]
+        second = tasks[idx + 1]
+        model.add_end_before_start(first, second)
+
+    for task in tasks:
+        model.add_mode(task, machine, duration=1)
+
+    # Setup times between tasks:
+    # - task0 -> task1 on machine: 1
+    model.add_setup_time(machine, tasks[0], tasks[1], duration=1)
+    # - task1 -> task2 on machine: 3
+    model.add_setup_time(machine, tasks[1], tasks[2], duration=3)
+
+    model.set_objective(weight_total_setup_time=2)
+
+    result = model.solve(solver=solver)
+
+    # The optimal solution has a makespan of 1 + 1 + 3 = 5, and the setup times
+    # are 1 and 3, respectively. The objective value is 2 * (1 + 3) = 8.
+    assert_equal(result.objective, 8)
+    assert_equal(result.status.value, "Optimal")
+
+    assert_equal(result.best.tasks[0].start, 0)
+    assert_equal(result.best.tasks[0].end, 1)
+
+    assert_equal(result.best.tasks[1].start, 2)
+    assert_equal(result.best.tasks[1].end, 3)
+
+    assert_equal(result.best.tasks[2].start, 6)
+    assert_equal(result.best.tasks[2].end, 7)
+
+
 def test_combined_objective(solver: str):
     """
     Tests that a combined objective function of makespan and tardy jobs is
