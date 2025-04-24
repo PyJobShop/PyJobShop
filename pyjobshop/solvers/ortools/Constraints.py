@@ -55,8 +55,9 @@ class Constraints:
             model.add_exactly_one(task_mode_vars.values())
 
             for mode_idx, mode_var in task_mode_vars.items():
-                # Set task duration to the selected mode's duration.
                 mode = data.modes[mode_idx]
+
+                # Set task duration to the selected mode's duration.
                 fixed = data.tasks[task_idx].fixed_duration
                 expr = (
                     task_var.duration == mode.duration
@@ -64,9 +65,6 @@ class Constraints:
                     else task_var.duration >= mode.duration
                 )
                 model.add(expr).only_enforce_if(mode_var)
-
-            for mode_idx, mode_var in task_mode_vars.items():
-                mode = data.modes[mode_idx]
 
                 for res_idx in range(data.num_resources):
                     if (task_idx, res_idx) not in variables.assign_vars:
@@ -245,8 +243,8 @@ class Constraints:
                     model.add(loop == ~present)
 
                     # This handles the case where a machine does not process
-                    # any task. The dummy loop is then selected and as a result
-                    # all intervals must be absent.
+                    # any task. Selecting the dummy loop makes all intervals
+                    # absent, and satisfies the circuit constraint.
                     dummy_loop = arcs[seq_var.DUMMY, seq_var.DUMMY]
                     model.add(dummy_loop <= ~present)
 
