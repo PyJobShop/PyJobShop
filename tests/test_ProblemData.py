@@ -1341,8 +1341,9 @@ def test_total_setup_time(solver: str):
 
     result = model.solve(solver=solver)
 
-    # The optimal solution has a makespan of 1 + 1 + 3 = 5, and the setup times
-    # are 1 and 3, respectively. The objective value is 2 * (1 + 3) = 8.
+    # The optimal solution has a makespan of 1 + 1 + 1 + 3 + 1 = 7,
+    # and the setup times are 1 and 3, respectively.
+    # The objective value is 2 * (1 + 3) = 8.
     assert_equal(result.objective, 8)
     assert_equal(result.status.value, "Optimal")
 

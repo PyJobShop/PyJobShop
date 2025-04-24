@@ -137,7 +137,7 @@ class Objective:
 
     def _total_setup_time_expr(self) -> LinearExprT:
         """
-        Returns an expression representing the total setup time of modes.
+        Returns an expression representing the total setup time of tasks.
         """
         data = self._data
         setup_times = utils.setup_times_matrix(data)
@@ -164,7 +164,6 @@ class Objective:
                         if setup_times is not None
                         else 0
                     )
-                    print(f"{idx1, idx2}: {setup}")
                     setup_time_vars.append(setup * arcs[idx1, idx2])
 
         return LinearExpr.sum(setup_time_vars)
