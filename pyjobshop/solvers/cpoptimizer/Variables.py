@@ -1,4 +1,3 @@
-import docplex.cp.modeler as cpo
 from docplex.cp.expression import (
     CpoIntervalVar,
     CpoSequenceVar,
@@ -24,7 +23,6 @@ class Variables:
 
         self._job_vars = self._make_job_variables()
         self._task_vars = self._make_task_variables()
-        self._assign_vars = self._make_assign_variables(self._task_vars)
         self._mode_vars = self._make_mode_variables()
         self._sequence_vars = self._make_sequence_variables()
 
@@ -41,13 +39,6 @@ class Variables:
         Returns the task variables.
         """
         return self._task_vars
-
-    @property
-    def assign_vars(self) -> dict[tuple[int, int], CpoIntervalVar]:
-        """
-        Returns the assignment variables.
-        """
-        return self._assign_vars
 
     @property
     def mode_vars(self) -> list[CpoIntervalVar]:
@@ -107,31 +98,6 @@ class Variables:
 
         return variables
 
-    def _make_assign_variables(
-        self, task_vars: list[CpoIntervalVar]
-    ) -> dict[tuple[int, int], CpoIntervalVar]:
-        """
-        Creates an optional interval variable for each mode variable.
-        """
-        data = self._data
-        task2resources = utils.task2resources(data)
-        variables = {}
-
-        for task_idx in range(data.num_tasks):
-            for res_idx in task2resources[task_idx]:
-                var = interval_var(
-                    optional=True, name=f"A{task_idx}_{res_idx}"
-                )
-                variables[task_idx, res_idx] = var
-                self._model.add(var)
-
-                # Synchronize task and assignment variables.
-                # TODO is this the right way?
-                self._model.add(cpo.start_at_start(var, task_vars[task_idx]))
-                self._model.add(cpo.end_at_end(var, task_vars[task_idx]))
-
-        return variables
-
     def _make_mode_variables(self) -> list[CpoIntervalVar]:
         """
         Creates an optional interval variable for each mode variable.
@@ -165,27 +131,25 @@ class Variables:
         Creates a sequence variable for each machine.
         """
         data = self._data
+        resource2modes = utils.resource2modes(data)
         variables: dict[int, CpoSequenceVar] = {}
 
         for idx, resource in enumerate(data.resources):
             if isinstance(resource, Machine):
-                intervals = self.res2assign(idx)
+                modes = resource2modes[idx]
+                intervals = [self.mode_vars[mode] for mode in modes]
                 seq_var = sequence_var(name=f"S{resource}", vars=intervals)
                 self._model.add(seq_var)
                 variables[idx] = seq_var
 
         return variables
 
-    def res2assign(self, idx) -> list[CpoIntervalVar]:
-        items = self.assign_vars.items()
-        return [var for (_, res_idx), var in items if res_idx == idx]
-
     def warmstart(self, solution: Solution):
         """
         Warmstarts the variables based on the given solution.
         """
         data = self._data
-        init = self._model.create_empty_solution()
+        stp = self._model.create_empty_solution()
 
         for idx in range(data.num_jobs):
             job = data.jobs[idx]
@@ -195,7 +159,7 @@ class Variables:
             job_start = min(task.start for task in sol_tasks)
             job_end = max(task.end for task in sol_tasks)
 
-            init.add_interval_var_solution(
+            stp.add_interval_var_solution(
                 job_var, start=job_start, end=job_end
             )
 
@@ -203,25 +167,23 @@ class Variables:
             task_var = self.task_vars[idx]
             sol_task = solution.tasks[idx]
 
-            init.add_interval_var_solution(
+            stp.add_interval_var_solution(
                 task_var,
                 start=sol_task.start,
                 end=sol_task.end,
                 size=sol_task.end - sol_task.start,
             )
 
-        for task_idx in range(data.num_tasks):
-            sol_task = solution.tasks[task_idx]
+        for idx, mode in enumerate(data.modes):
+            sol_task = solution.tasks[mode.task]
+            var = self.mode_vars[idx]
 
-            for res_idx in sol_task.resources:
-                if (task_idx, res_idx) in self.assign_vars:
-                    var = self.assign_vars[task_idx, res_idx]
-                    init.add_interval_var_solution(
-                        var,
-                        presence=True,
-                        start=sol_task.start,
-                        end=sol_task.end,
-                        size=sol_task.end - sol_task.start,
-                    )
+            stp.add_interval_var_solution(
+                var,
+                presence=idx == sol_task.mode,
+                start=sol_task.start,
+                end=sol_task.end,
+                size=sol_task.end - sol_task.start,
+            )
 
-        self._model.set_starting_point(init)
+        self._model.set_starting_point(stp)
