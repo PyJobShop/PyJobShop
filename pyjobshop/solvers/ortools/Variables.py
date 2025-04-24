@@ -77,6 +77,8 @@ class AssignVar:
         The end time variable of the interval.
     present
         The boolean variable indicating whether the interval is present.
+    demand
+        TODO
     """
 
     interval: IntervalVar
@@ -84,6 +86,7 @@ class AssignVar:
     duration: IntVar
     end: IntVar
     present: BoolVarT
+    demand: IntVar
 
 
 @dataclass
@@ -178,9 +181,6 @@ class Variables:
         self._task_vars = self._make_task_variables()
         self._mode_vars = self._make_mode_variables()
         self._new_mode_vars = [
-            model.new_bool_var(name="TODO") for _ in range(data.num_modes)
-        ]
-        self._new_mode_vars = [
             {mode: model.new_bool_var(name="TODO") for mode in modes}
             for modes in utils.task2modes(data)
         ]
@@ -207,6 +207,17 @@ class Variables:
         Returns the mode variables.
         """
         return self._mode_vars
+
+    @property
+    def assign_vars(self) -> dict[tuple[int, int], AssignVar]:
+        return self._assign_vars
+
+    @property
+    def new_mode_vars(self) -> list[dict[int, BoolVarT]]:
+        """
+        TODO
+        """
+        return self._new_mode_vars
 
     @property
     def sequence_vars(self) -> dict[int, SequenceVar]:
@@ -291,29 +302,21 @@ class Variables:
         task2resources = utils.task2resources(data)
         variables = {}
 
-        for task_idx, task in enumerate(data.tasks):
+        for task_idx in range(data.num_tasks):
             for res_idx in task2resources[task_idx]:
                 name = f"A_{task_idx}_{res_idx}"
-                start = model.new_int_var(
-                    lb=task.earliest_start,
-                    ub=min(task.latest_start, MAX_VALUE),
-                    name=f"{name}_start",
-                )
-                duration = model.new_int_var(
-                    lb=0,
-                    ub=MAX_VALUE,
-                    name=f"{name}_duration",
-                )
-                end = model.new_int_var(
-                    lb=task.earliest_end,
-                    ub=min(task.latest_end, MAX_VALUE),
-                    name=f"{name}_start",
-                )
+                task_var = self.task_vars[task_idx]
+                start = task_var.start
+                duration = task_var.duration
+                end = task_var.end
                 present = model.new_bool_var(f"{name}_present")
                 interval = model.new_optional_interval_var(
                     start, duration, end, present, f"{name}_interval"
                 )
-                var = AssignVar(interval, start, duration, end, present)
+                demand = model.new_int_var(0, MAX_VALUE, f"{name}_demand")
+                var = AssignVar(
+                    interval, start, duration, end, present, demand
+                )
                 variables[task_idx, res_idx] = var
 
         return variables
