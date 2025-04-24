@@ -1,9 +1,6 @@
 from typing import Optional
 
-from ortools.sat.python.cp_model import (
-    CpModel,
-    CpSolver,
-)
+from ortools.sat.python.cp_model import CpModel, CpSolver
 
 from pyjobshop.ProblemData import ProblemData
 from pyjobshop.Result import Result, SolveStatus
@@ -49,21 +46,21 @@ class Solver:
 
     def _convert_to_solution(self, cp_solver: CpSolver) -> Solution:
         """
-        Converts a result from the OR-Tools CP solver to a Solution object.
+        Converts a result from OR-Tools to a Solution object.
         """
-        tasks = {}
+        tasks = []
         for task_idx, mode_vars in enumerate(self._variables.mode_vars):
             for mode_idx, mode_var in mode_vars.items():
-                if cp_solver.value(mode_var):
+                if cp_solver.value(mode_var):  # selected mode
                     task_var = self._variables.task_vars[task_idx]
                     start = cp_solver.value(task_var.start)
                     end = cp_solver.value(task_var.end)
                     mode = self._data.modes[mode_idx]
-                    tasks[mode.task] = TaskData(
-                        mode_idx, mode.resources, start, end
+                    tasks.append(
+                        TaskData(mode_idx, mode.resources, start, end)
                     )
 
-        return Solution([tasks[idx] for idx in range(self._data.num_tasks)])
+        return Solution(tasks)
 
     def solve(
         self,
