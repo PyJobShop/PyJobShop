@@ -19,8 +19,6 @@ class JobVar:
     """
     Variables that represent a task in the problem.
 
-    # TODO Replace this when OR-Tools provides presence getters.
-
     Parameters
     ----------
     interval
@@ -200,6 +198,13 @@ class Variables:
         """
         return self._sequence_vars
 
+    def res2assign(self, idx: int) -> list[AssignVar]:
+        """
+        Returns all assignment variables using the given resource.
+        """
+        items = self.assign_vars.items()
+        return [var for (_, res_idx), var in items if res_idx == idx]
+
     def _make_job_variables(self) -> list[JobVar]:
         """
         Creates an interval variable for each job.
@@ -342,10 +347,10 @@ class Variables:
             model.add_hint(task_var.duration, sol_task.end - sol_task.start)
             model.add_hint(task_var.end, sol_task.end)
 
-        for idx in range(data.num_tasks):
-            sol_task = solution.tasks[idx]
+        for task_idx in range(data.num_tasks):
+            sol_task = solution.tasks[task_idx]
 
-            for res in sol_task.resources:
-                if (idx, res) in assign_vars:
-                    var = assign_vars[idx, res]
+            for res_idx in sol_task.resources:
+                if (task_idx, res_idx) in assign_vars:
+                    var = assign_vars[task_idx, res_idx]
                     model.add_hint(var.present, True)
