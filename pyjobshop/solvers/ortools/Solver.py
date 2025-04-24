@@ -52,13 +52,16 @@ class Solver:
         Converts a result from the OR-Tools CP solver to a Solution object.
         """
         tasks = {}
-
-        for idx, var in enumerate(self._variables.mode_vars):
-            if cp_solver.value(var.present):
-                start = cp_solver.value(var.start)
-                end = cp_solver.value(var.end)
-                mode = self._data.modes[idx]
-                tasks[mode.task] = TaskData(idx, mode.resources, start, end)
+        for task_idx, mode_vars in enumerate(self._variables.new_mode_vars):
+            for mode_idx, mode_var in mode_vars.items():
+                if cp_solver.value(mode_var):
+                    task_var = self._variables.task_vars[task_idx]
+                    start = cp_solver.value(task_var.start)
+                    end = cp_solver.value(task_var.end)
+                    mode = self._data.modes[mode_idx]
+                    tasks[mode.task] = TaskData(
+                        mode_idx, mode.resources, start, end
+                    )
 
         return Solution([tasks[idx] for idx in range(self._data.num_tasks)])
 

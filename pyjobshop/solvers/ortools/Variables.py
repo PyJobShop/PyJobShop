@@ -90,35 +90,6 @@ class AssignVar:
 
 
 @dataclass
-class ModeVar:
-    """
-    Variables that represent a possible processing mode of a task.
-
-    Parameters
-    ----------
-    task_idx
-        The index of the task.
-    interval
-        The optional interval variable representing the assignment of the task.
-    start
-        The start time variable of the interval.
-    duration
-        The duration variable of the interval.
-    end
-        The end time variable of the interval.
-    present
-        The boolean variable indicating whether the interval is present.
-    """
-
-    task_idx: int
-    interval: IntervalVar
-    start: IntVar
-    duration: IntVar
-    end: IntVar
-    present: BoolVarT
-
-
-@dataclass
 class SequenceVar:
     """
     Represents a sequence of interval variables for all modes that use this
@@ -126,8 +97,6 @@ class SequenceVar:
 
     Parameters
     ----------
-    mode_vars
-        The mode interval variables belonging to this sequence.
     arcs
         The arc literals between each pair of intervals in the sequence
         indicating whether intervals are scheduled directly behind each other.
@@ -146,11 +115,10 @@ class SequenceVar:
 
     DUMMY = -1
 
-    mode_vars: list[ModeVar]
     arcs: dict[tuple[int, int], BoolVarT] = field(default_factory=dict)
     is_active: bool = False
 
-    def activate(self, m: CpModel):
+    def activate(self, m: CpModel, data: ProblemData):
         """
         Activates the sequence variable by creating all relevant literals.
         """
@@ -159,9 +127,9 @@ class SequenceVar:
 
         self.is_active = True
 
-        # The nodes in the graph are the indices of the mode variables,
-        # plus the index of the dummy node.
-        nodes = list(range(len(self.mode_vars))) + [self.DUMMY]
+        # The nodes in the graph are the task indices, plus the index of the
+        # dummy node.
+        nodes = list(range(data.num_tasks)) + [self.DUMMY]
 
         self.arcs = {
             (i, j): m.new_bool_var(f"{i}->{j}") for i in nodes for j in nodes
@@ -179,7 +147,6 @@ class Variables:
 
         self._job_vars = self._make_job_variables()
         self._task_vars = self._make_task_variables()
-        self._mode_vars = self._make_mode_variables()
         self._new_mode_vars = [
             {mode: model.new_bool_var(name="TODO") for mode in modes}
             for modes in utils.task2modes(data)
@@ -200,13 +167,6 @@ class Variables:
         Returns the task variables.
         """
         return self._task_vars
-
-    @property
-    def mode_vars(self) -> list[ModeVar]:
-        """
-        Returns the mode variables.
-        """
-        return self._mode_vars
 
     @property
     def assign_vars(self) -> dict[tuple[int, int], AssignVar]:
@@ -321,60 +281,16 @@ class Variables:
 
         return variables
 
-    def _make_mode_variables(self) -> list[ModeVar]:
-        """
-        Creates an optional interval variable for mode.
-        """
-        model, data = self._model, self._data
-        variables = []
-
-        for idx, mode in enumerate(data.modes):
-            task = data.tasks[mode.task]
-            name = f"M{idx}_{mode.task}"
-            start = model.new_int_var(
-                lb=task.earliest_start,
-                ub=min(task.latest_start, MAX_VALUE),
-                name=f"{name}_start",
-            )
-            duration = model.new_int_var(
-                lb=mode.duration,
-                ub=mode.duration if task.fixed_duration else MAX_VALUE,
-                name=f"{name}_duration",
-            )
-            end = model.new_int_var(
-                lb=task.earliest_end,
-                ub=min(task.latest_end, MAX_VALUE),
-                name=f"{name}_start",
-            )
-            present = model.new_bool_var(f"{name}_present")
-            interval = model.new_optional_interval_var(
-                start, duration, end, present, f"{name}_interval"
-            )
-            var = ModeVar(
-                task_idx=mode.task,
-                interval=interval,
-                start=start,
-                duration=duration,
-                end=end,
-                present=present,
-            )
-            variables.append(var)
-
-        return variables
-
     def _make_sequence_variables(self) -> dict[int, SequenceVar]:
         """
         Creates a sequence variable for each machine.
         """
         data = self._data
-        resource2modes = utils.resource2modes(data)
         variables: dict[int, SequenceVar] = {}
 
         for idx, resource in enumerate(data.resources):
             if isinstance(resource, Machine):
-                modes = resource2modes[idx]
-                intervals = [self.mode_vars[mode] for mode in modes]
-                variables[idx] = SequenceVar(intervals)
+                variables[idx] = SequenceVar()
 
         return variables
 
@@ -383,10 +299,10 @@ class Variables:
         Warmstarts the variables based on the given solution.
         """
         model, data = self._model, self._data
-        job_vars, task_vars, mode_vars = (
+        job_vars, task_vars, assign_vars = (
             self.job_vars,
             self.task_vars,
-            self.mode_vars,
+            self.assign_vars,
         )
 
         model.clear_hints()
@@ -411,12 +327,10 @@ class Variables:
             model.add_hint(task_var.duration, sol_task.end - sol_task.start)
             model.add_hint(task_var.end, sol_task.end)
 
-        for idx in range(len(data.modes)):
-            var = mode_vars[idx]
-            mode = data.modes[idx]
-            sol_task = solution.tasks[mode.task]
+        for idx in range(data.num_tasks):
+            sol_task = solution.tasks[idx]
 
-            model.add_hint(var.start, sol_task.start)
-            model.add_hint(var.duration, sol_task.end - sol_task.start)
-            model.add_hint(var.end, sol_task.end)
-            model.add_hint(var.present, idx == sol_task.mode)
+            for res in sol_task.resources:
+                var = assign_vars.get((idx, res))
+                if var:
+                    model.add_hint(var.present, True)

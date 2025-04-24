@@ -1,3 +1,5 @@
+from itertools import product
+
 import numpy as np
 from ortools.sat.python.cp_model import CpModel, LinearExpr
 
@@ -21,9 +23,10 @@ class Constraints:
     ):
         self._model = model
         self._data = data
+        self._variables = variables
         self._job_vars = variables.job_vars
         self._task_vars = variables.task_vars
-        self._mode_vars = variables.mode_vars
+        self._assign_vars = variables.assign_vars
         self._sequence_vars = variables.sequence_vars
 
     def _job_spans_tasks(self):
@@ -46,55 +49,82 @@ class Constraints:
         exactly one mode.
         """
         model, data = self._model, self._data
-        task2modes = utils.task2modes(data)
+        mode_vars = self._variables.new_mode_vars
+        assign_vars = self._assign_vars
 
-        for task in range(data.num_tasks):
-            presences = []
-            main = self._task_vars[task]
+        for task_idx in range(data.num_tasks):
+            task_var = self._task_vars[task_idx]
+            task_mode_vars = mode_vars[task_idx]
+            model.add_exactly_one(task_mode_vars.values())
 
-            for mode in task2modes[task]:
-                opt = self._mode_vars[mode]
-                present = opt.present
-                presences.append(present)
+            # If mode is selected, then set task_var to corresponding
+            for mode_idx, mode_var in task_mode_vars.items():
+                mode = data.modes[mode_idx]
 
-                # Sync each optional interval variable with the main variable.
-                model.add(main.start == opt.start)
-                model.add(main.end == opt.end)
-                model.add(main.duration == opt.duration).only_enforce_if(
-                    present
-                )
+                if data.tasks[task_idx].fixed_duration:
+                    expr = task_var.duration == mode.duration
+                else:
+                    expr = task_var.duration >= mode.duration
 
-            # Select exactly one optional interval variable for each task.
-            model.add_exactly_one(presences)
+                model.add(expr).only_enforce_if(mode_var)
+
+            for mode_idx, mode_var in task_mode_vars.items():
+                mode = data.modes[mode_idx]
+
+                for res_idx in range(data.num_resources):
+                    assign_var = assign_vars.get((task_idx, res_idx))
+                    if assign_var is None:
+                        continue
+
+                    present = assign_var.present
+
+                    if res_idx in mode.resources:
+                        # TODO explain why this is necessary
+                        model.add(present == 1).only_enforce_if(mode_var)
+                    else:
+                        model.add(present == 0).only_enforce_if(mode_var)
+
+                for res_idx, demand in zip(mode.resources, mode.demands):
+                    demand_var = assign_vars[task_idx, res_idx].demand
+                    model.add(demand_var == demand).only_enforce_if(mode_var)
 
     def _machines_no_overlap(self):
         """
         Creates no-overlap constraints for machines.
         """
         model, data = self._model, self._data
+        assign_vars = self._assign_vars
 
         for idx, resource in enumerate(data.resources):
             if not isinstance(resource, Machine):
                 continue
 
-            seq_var = self._sequence_vars[idx]
-            mode_vars = [var.interval for var in seq_var.mode_vars]
-            model.add_no_overlap(mode_vars)
+            res_assign_vars = [
+                var
+                for (_, res_idx), var in assign_vars.items()
+                if res_idx == idx
+            ]
+            intervals = [var.interval for var in res_assign_vars]
+            model.add_no_overlap(intervals)
 
     def _renewable_capacity(self):
         """
         Creates capacity constraints for the renewable resources.
         """
         model, data = self._model, self._data
-        mode_vars = self._mode_vars
-        res2modes, res2demands = utils.resource2modes_demands(data)
+        assign_vars = self._assign_vars
 
         for idx, resource in enumerate(data.resources):
             if not isinstance(resource, Renewable):
                 continue
 
-            intervals = [mode_vars[mode].interval for mode in res2modes[idx]]
-            demands = res2demands[idx]
+            res_assign_vars = [
+                var
+                for (_, res_idx), var in assign_vars.items()
+                if res_idx == idx
+            ]
+            intervals = [var.interval for var in res_assign_vars]
+            demands = [var.demand for var in res_assign_vars]
             model.add_cumulative(intervals, demands, resource.capacity)
 
     def _non_renewable_capacity(self):
@@ -102,16 +132,19 @@ class Constraints:
         Creates capacity constraints for the non-renewable resources.
         """
         model, data = self._model, self._data
-        mode_vars = self._mode_vars
-        res2modes, res2demands = utils.resource2modes_demands(data)
+        assign_vars = self._assign_vars
 
         for idx, resource in enumerate(data.resources):
             if not isinstance(resource, NonRenewable):
                 continue
 
-            precenses = [mode_vars[mode].present for mode in res2modes[idx]]
-            demands = res2demands[idx]
-            usage = LinearExpr.weighted_sum(precenses, demands)
+            res_assign_vars = [
+                var
+                for (_, res_idx), var in assign_vars.items()
+                if res_idx == idx
+            ]
+            demands = [var.demand for var in res_assign_vars]
+            usage = LinearExpr.sum(demands)
             model.add(usage <= resource.capacity)
 
     def _timing_constraints(self):
@@ -145,18 +178,31 @@ class Constraints:
         Creates constraints for identical and different resources constraints.
         """
         model, data = self._model, self._data
+        assign_vars = self._assign_vars
 
+        collect = []
         for idx1, idx2 in data.constraints.identical_resources:
-            for mode1, modes2 in utils.identical_modes(data, idx1, idx2):
-                expr1 = self._mode_vars[mode1].present
-                expr2 = sum(self._mode_vars[mode2].present for mode2 in modes2)
-                model.add(expr1 <= expr2)
+            for res_idx in range(data.num_resources):
+                assign1 = assign_vars.get((idx1, res_idx))
+                assign2 = assign_vars.get((idx2, res_idx))
+                presence1 = assign1.present if assign1 else 0
+                presence2 = assign2.present if assign2 else 0
+
+                # TODO why does this not work?
+                expr = presence1 <= presence2
+                collect.append(
+                    [idx1, idx2, res_idx, presence1, presence2, expr]
+                )
+                model.add(presence1 == presence2)
 
         for idx1, idx2 in data.constraints.different_resources:
-            for mode1, modes2 in utils.different_modes(data, idx1, idx2):
-                expr1 = self._mode_vars[mode1].present
-                expr2 = sum(self._mode_vars[mode2].present for mode2 in modes2)
-                model.add(expr1 <= expr2)
+            for res_idx in range(data.num_resources):
+                assign1 = assign_vars.get((idx1, res_idx))
+                assign2 = assign_vars.get((idx2, res_idx))
+                presence1 = assign1.present if assign1 else 0
+                presence2 = assign2.present if assign2 else 0
+
+                model.add(presence2 == 0).only_enforce_if(presence1)
 
     def _activate_setup_times(self):
         """
@@ -172,7 +218,7 @@ class Constraints:
                 continue
 
             if setup_times is not None and np.any(setup_times[idx]):
-                self._sequence_vars[idx].activate(model)
+                self._sequence_vars[idx].activate(model, data)
 
     def _consecutive_constraints(self):
         """
@@ -181,23 +227,22 @@ class Constraints:
         model, data = self._model, self._data
 
         for idx1, idx2 in data.constraints.consecutive:
-            intersecting = utils.intersecting_modes(data, idx1, idx2)
-            for mode1, mode2, resources in intersecting:
-                for resource in resources:
-                    if not isinstance(data.resources[resource], Machine):
-                        continue
+            for res_idx in range(data.num_resources):
+                if not isinstance(data.resources[res_idx], Machine):
+                    continue
 
-                    seq_var = self._sequence_vars[resource]
-                    seq_var.activate(model)
-                    var1 = self._mode_vars[mode1]
-                    var2 = self._mode_vars[mode2]
+                seq_var = self._sequence_vars[res_idx]
+                seq_var.activate(model, data)
+                var1 = self._assign_vars.get((idx1, res_idx))
+                var2 = self._assign_vars.get((idx2, res_idx))
 
-                    idx1 = seq_var.mode_vars.index(var1)
-                    idx2 = seq_var.mode_vars.index(var2)
-                    arc = seq_var.arcs[idx1, idx2]
-                    both_present = [var1.present, var2.present]
+                if not (var1 and var2):
+                    continue
 
-                    model.add(arc == 1).only_enforce_if(both_present)
+                arc = seq_var.arcs[idx1, idx2]
+                both_present = [var1.present, var2.present]
+
+                model.add(arc == 1).only_enforce_if(both_present)
 
     def _circuit_constraints(self):
         """
@@ -205,46 +250,52 @@ class Constraints:
         sequencing constraints (consecutive and setup times).
         """
         model, data = self._model, self._data
+        assign_vars = self._assign_vars
         setup_times = utils.setup_times_matrix(data)
 
-        for idx, resource in enumerate(data.resources):
+        for res_idx, resource in enumerate(data.resources):
             if not isinstance(resource, Machine):
                 continue
 
-            seq_var = self._sequence_vars[idx]
+            seq_var = self._sequence_vars[res_idx]
             if not seq_var.is_active:
                 # No sequencing constraints active. Skip the creation of
                 # expensive circuit constraints.
                 continue
 
-            mode_vars = seq_var.mode_vars
             arcs = seq_var.arcs
-
             graph = [(u, v, var) for (u, v), var in arcs.items()]
             model.add_circuit(graph)
 
-            for idx1, var1 in enumerate(mode_vars):
-                # If the (dummy) self arc is selected, then the var must not
-                # be present.
-                model.add(arcs[idx1, idx1] <= ~var1.present)
-                model.add(arcs[seq_var.DUMMY, seq_var.DUMMY] <= ~var1.present)
+            for idx1 in range(data.num_tasks):
+                var1 = assign_vars.get((idx1, res_idx))
+                if var1:
+                    # If the (dummy) self arc is selected, then the var must
+                    # not be present.
+                    present1 = var1.present
+                    model.add(arcs[idx1, idx1] <= ~present1)
+                    model.add(arcs[seq_var.DUMMY, seq_var.DUMMY] <= ~present1)
 
-            for idx1, var1 in enumerate(mode_vars):
-                for idx2, var2 in enumerate(mode_vars):
-                    if idx1 == idx2:
-                        continue
+            for idx1, idx2 in product(range(data.num_tasks), repeat=2):
+                if idx1 == idx2:
+                    continue
 
-                    # If the arc is selected, then both tasks must be present.
-                    model.add(arcs[idx1, idx2] <= var1.present)
-                    model.add(arcs[idx1, idx2] <= var2.present)
+                var1 = assign_vars.get((idx1, res_idx))
+                var2 = assign_vars.get((idx2, res_idx))
+                if not (var1 and var2):
+                    continue
 
-                    setup = (
-                        setup_times[idx, var1.task_idx, var2.task_idx]
-                        if setup_times is not None
-                        else 0
-                    )
-                    expr = var1.end + setup <= var2.start
-                    model.add(expr).only_enforce_if(arcs[idx1, idx2])
+                # If the arc is selected, then both tasks must be present.
+                model.add(arcs[idx1, idx2] <= var1.present)
+                model.add(arcs[idx1, idx2] <= var2.present)
+
+                setup = (
+                    setup_times[res_idx, idx1, idx2]
+                    if setup_times is not None
+                    else 0
+                )
+                expr = var1.end + setup <= var2.start
+                model.add(expr).only_enforce_if(arcs[idx1, idx2])
 
     def add_constraints(self):
         """
