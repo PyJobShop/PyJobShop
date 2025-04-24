@@ -49,7 +49,7 @@ class Constraints:
         exactly one mode.
         """
         model, data = self._model, self._data
-        mode_vars = self._variables.new_mode_vars
+        mode_vars = self._variables.mode_vars
         assign_vars = self._assign_vars
 
         for task_idx in range(data.num_tasks):

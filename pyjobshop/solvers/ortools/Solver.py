@@ -52,7 +52,7 @@ class Solver:
         Converts a result from the OR-Tools CP solver to a Solution object.
         """
         tasks = {}
-        for task_idx, mode_vars in enumerate(self._variables.new_mode_vars):
+        for task_idx, mode_vars in enumerate(self._variables.mode_vars):
             for mode_idx, mode_var in mode_vars.items():
                 if cp_solver.value(mode_var):
                     task_var = self._variables.task_vars[task_idx]

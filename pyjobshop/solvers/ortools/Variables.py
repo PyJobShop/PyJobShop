@@ -17,24 +17,29 @@ from pyjobshop.Solution import Solution
 @dataclass
 class JobVar:
     """
-    Variables that represent a job in the problem.
+    Variables that represent a task in the problem.
+
+    # TODO Replace this when OR-Tools provides presence getters.
 
     Parameters
     ----------
     interval
         The interval variable representing the job.
-    start
-        The start time variable of the interval.
-    duration
-        The duration variable of the interval.
-    end
-        The end time variable of the interval.
     """
 
     interval: IntervalVar
-    start: IntVar
-    duration: IntVar
-    end: IntVar
+
+    @property
+    def start(self) -> IntVar:
+        return self.interval.start_expr()
+
+    @property
+    def duration(self) -> IntVar:
+        return self.interval.size_expr()
+
+    @property
+    def end(self) -> IntVar:
+        return self.interval.end_expr()
 
 
 @dataclass
@@ -46,61 +51,67 @@ class TaskVar:
     ----------
     interval
         The interval variable representing the task.
-    start
-        The start time variable of the interval.
-    duration
-        The duration variable of the interval.
-    end
-        The end time variable of the interval.
     """
 
     interval: IntervalVar
-    start: IntVar
-    duration: IntVar
-    end: IntVar
+
+    @property
+    def start(self) -> IntVar:
+        return self.interval.start_expr()
+
+    @property
+    def duration(self) -> IntVar:
+        return self.interval.size_expr()
+
+    @property
+    def end(self) -> IntVar:
+        return self.interval.end_expr()
 
 
 @dataclass
 class AssignVar:
     """
-    Variable that represents a task-resource assignment.
+    Variables that represent a task-resource assignment.
 
     Parameters
     ----------
     interval
-        The interval variable representing the task.
-    start
-        The start time variable of the interval.
-    duration
-        The duration variable of the interval.
-    end
-        The end time variable of the interval.
+        The interval variable representing the task-resource assignment.
     present
         The boolean variable indicating whether the interval is present.
     demand
-        TODO
+        The demand consumed by the task-resource.
     """
 
     interval: IntervalVar
-    start: IntVar
-    duration: IntVar
-    end: IntVar
     present: BoolVarT
     demand: IntVar
+
+    @property
+    def start(self) -> IntVar:
+        return self.interval.start_expr()
+
+    @property
+    def duration(self) -> IntVar:
+        return self.interval.size_expr()
+
+    @property
+    def end(self) -> IntVar:
+        return self.interval.end_expr()
 
 
 @dataclass
 class SequenceVar:
     """
-    Represents a sequence of interval variables for all modes that use this
-    machine.
+    Represents a sequence of interval variables for all tasks that may
+    require this machine.
 
     Parameters
     ----------
     arcs
-        The arc literals between each pair of intervals in the sequence
-        indicating whether intervals are scheduled directly behind each other.
-        Also includes arcs to and from a dummy node for each interval.
+        The arc literals between each pair of intervals indicating whether
+        intervals are scheduled directly behind each other. Includes arcs
+        to and from a dummy node for each interval.
     is_active
         A boolean that indicates whether the sequence is active, meaning that a
         circuit constraint must be added for this machine. Default ``False``.
@@ -147,11 +158,11 @@ class Variables:
 
         self._job_vars = self._make_job_variables()
         self._task_vars = self._make_task_variables()
-        self._new_mode_vars = [
-            {mode: model.new_bool_var(name="TODO") for mode in modes}
+        self._mode_vars = [
+            {mode: model.new_bool_var(name="") for mode in modes}
             for modes in utils.task2modes(data)
         ]
-        self._assign_vars = self._make_assign_variables()
+        self._assign_vars = self._make_assign_variables(self._task_vars)
         self._sequence_vars = self._make_sequence_variables()
 
     @property
@@ -170,14 +181,17 @@ class Variables:
 
     @property
     def assign_vars(self) -> dict[tuple[int, int], AssignVar]:
+        """
+        Retruns the assignment variables.
+        """
         return self._assign_vars
 
     @property
-    def new_mode_vars(self) -> list[dict[int, BoolVarT]]:
+    def mode_vars(self) -> list[dict[int, BoolVarT]]:
         """
-        TODO
+        Returns the mode variables.
         """
-        return self._new_mode_vars
+        return self._mode_vars
 
     @property
     def sequence_vars(self) -> dict[int, SequenceVar]:
@@ -213,7 +227,7 @@ class Variables:
             interval = model.new_interval_var(
                 start, duration, end, f"{name}_interval"
             )
-            variables.append(JobVar(interval, start, duration, end))
+            variables.append(JobVar(interval))
 
         return variables
 
@@ -250,11 +264,13 @@ class Variables:
             interval = model.new_interval_var(
                 start, duration, end, f"interval_{task}"
             )
-            variables.append(TaskVar(interval, start, duration, end))
+            variables.append(TaskVar(interval))
 
         return variables
 
-    def _make_assign_variables(self) -> dict[tuple[int, int], AssignVar]:
+    def _make_assign_variables(
+        self, task_vars: list[TaskVar]
+    ) -> dict[tuple[int, int], AssignVar]:
         """
         Creates an optional interval variable for each task-resource pair.
         """
@@ -265,18 +281,17 @@ class Variables:
         for task_idx in range(data.num_tasks):
             for res_idx in task2resources[task_idx]:
                 name = f"A_{task_idx}_{res_idx}"
-                task_var = self.task_vars[task_idx]
-                start = task_var.start
-                duration = task_var.duration
-                end = task_var.end
+                task_var = task_vars[task_idx]
                 present = model.new_bool_var(f"{name}_present")
                 interval = model.new_optional_interval_var(
-                    start, duration, end, present, f"{name}_interval"
+                    task_var.start,
+                    task_var.duration,
+                    task_var.end,
+                    present,
+                    f"{name}_interval",
                 )
                 demand = model.new_int_var(0, MAX_VALUE, f"{name}_demand")
-                var = AssignVar(
-                    interval, start, duration, end, present, demand
-                )
+                var = AssignVar(interval, present, demand)
                 variables[task_idx, res_idx] = var
 
         return variables
@@ -331,6 +346,6 @@ class Variables:
             sol_task = solution.tasks[idx]
 
             for res in sol_task.resources:
-                var = assign_vars.get((idx, res))
-                if var:
+                if (idx, res) in assign_vars:
+                    var = assign_vars[idx, res]
                     model.add_hint(var.present, True)
