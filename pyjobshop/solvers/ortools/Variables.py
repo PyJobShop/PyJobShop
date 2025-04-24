@@ -61,6 +61,32 @@ class TaskVar:
 
 
 @dataclass
+class AssignVar:
+    """
+    Variable that represents a task-resource assignment.
+
+    Parameters
+    ----------
+    interval
+        The interval variable representing the task.
+    start
+        The start time variable of the interval.
+    duration
+        The duration variable of the interval.
+    end
+        The end time variable of the interval.
+    present
+        The boolean variable indicating whether the interval is present.
+    """
+
+    interval: IntervalVar
+    start: IntVar
+    duration: IntVar
+    end: IntVar
+    present: BoolVarT
+
+
+@dataclass
 class ModeVar:
     """
     Variables that represent a possible processing mode of a task.
@@ -151,6 +177,14 @@ class Variables:
         self._job_vars = self._make_job_variables()
         self._task_vars = self._make_task_variables()
         self._mode_vars = self._make_mode_variables()
+        self._new_mode_vars = [
+            model.new_bool_var(name="TODO") for _ in range(data.num_modes)
+        ]
+        self._new_mode_vars = [
+            {mode: model.new_bool_var(name="TODO") for mode in modes}
+            for modes in utils.task2modes(data)
+        ]
+        self._assign_vars = self._make_assign_variables()
         self._sequence_vars = self._make_sequence_variables()
 
     @property
@@ -246,6 +280,41 @@ class Variables:
                 start, duration, end, f"interval_{task}"
             )
             variables.append(TaskVar(interval, start, duration, end))
+
+        return variables
+
+    def _make_assign_variables(self) -> dict[tuple[int, int], AssignVar]:
+        """
+        Creates an optional interval variable for each task-resource pair.
+        """
+        model, data = self._model, self._data
+        task2resources = utils.task2resources(data)
+        variables = {}
+
+        for task_idx, task in enumerate(data.tasks):
+            for res_idx in task2resources[task_idx]:
+                name = f"A_{task_idx}_{res_idx}"
+                start = model.new_int_var(
+                    lb=task.earliest_start,
+                    ub=min(task.latest_start, MAX_VALUE),
+                    name=f"{name}_start",
+                )
+                duration = model.new_int_var(
+                    lb=0,
+                    ub=MAX_VALUE,
+                    name=f"{name}_duration",
+                )
+                end = model.new_int_var(
+                    lb=task.earliest_end,
+                    ub=min(task.latest_end, MAX_VALUE),
+                    name=f"{name}_start",
+                )
+                present = model.new_bool_var(f"{name}_present")
+                interval = model.new_optional_interval_var(
+                    start, duration, end, present, f"{name}_interval"
+                )
+                var = AssignVar(interval, start, duration, end, present)
+                variables[task_idx, res_idx] = var
 
         return variables
 

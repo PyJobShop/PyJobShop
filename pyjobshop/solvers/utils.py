@@ -101,6 +101,18 @@ def task2modes(data: ProblemData) -> list[list[int]]:
     return result
 
 
+def task2resources(data: ProblemData) -> list[list[int]]:
+    """
+    Returns the list of resource indices that are used by each task.
+    """
+    result: list[set[int]] = [set() for _ in range(data.num_tasks)]
+
+    for mode in data.modes:
+        result[mode.task].update(mode.resources)
+
+    return [sorted(resources) for resources in result]
+
+
 # --- Constraints utilities ---
 
 
