@@ -286,11 +286,19 @@ class Variables:
         Creates an optional interval variable for each task-resource pair.
         """
         model, data = self._model, self._data
-        task2resources = utils.task2resources(data)
+        task2modes = utils.task2modes(data)
         variables = {}
 
         for task_idx in range(data.num_tasks):
-            for res_idx in task2resources[task_idx]:
+            # Only create assignment variables for (task, resource) pairs
+            # that are actually used in the problem.
+            resources = {
+                res
+                for mode in task2modes[task_idx]
+                for res in data.modes[mode].resources
+            }
+
+            for res_idx in resources:
                 name = f"A_{task_idx}_{res_idx}"
                 task_var = task_vars[task_idx]
                 present = model.new_bool_var(f"{name}_present")
