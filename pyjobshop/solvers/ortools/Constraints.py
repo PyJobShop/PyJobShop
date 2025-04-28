@@ -187,7 +187,7 @@ class Constraints:
                 continue
 
             if setup_times is not None and np.any(setup_times[idx]):
-                variables._sequence_vars[idx].activate(model, data)
+                variables.sequence_vars[idx].activate(model, data)
 
     def _consecutive_constraints(self):
         """
