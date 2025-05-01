@@ -1,8 +1,9 @@
 import docplex.cp.modeler as cpo
 from docplex.cp.model import CpoExpr, CpoModel
 
+import pyjobshop.solvers.utils as utils
+from pyjobshop.ProblemData import Machine, ProblemData
 from pyjobshop.ProblemData import Objective as DataObjective
-from pyjobshop.ProblemData import ProblemData
 
 from .Variables import Variables
 
@@ -19,12 +20,13 @@ class Objective:
         self._data = data
         self._task_vars = variables.task_vars
         self._job_vars = variables.job_vars
+        self._sequence_vars = variables.sequence_vars
 
     def _makespan_expr(self) -> CpoExpr:
         """
         Returns an expression representing the makespan of the model.
         """
-        return cpo.max(cpo.end_of(var) for var in self._task_vars)
+        return cpo.max(cpo.end_of(var) for var in self._task_vars)  # type: ignore
 
     def _tardy_jobs_expr(self) -> CpoExpr:
         """
@@ -94,7 +96,30 @@ class Objective:
         """
         Returns an expression representing the total setup times.
         """
-        total = []  # type: ignore # TODO
+        data = self._data
+        resource2modes = utils.resource2modes(data)
+        total = []
+
+        for res_idx, resource in enumerate(data.resources):
+            if not isinstance(resource, Machine):
+                continue
+
+            if (setup_times := utils.setup_times_matrix(data)) is None:
+                continue
+
+            seq_var = self._sequence_vars[res_idx]
+            intervals = seq_var.get_interval_variables()
+            task_idcs = [data.modes[m].task for m in resource2modes[res_idx]]
+
+            for idx, interval in enumerate(intervals):
+                task_idx = task_idcs[idx]
+                setup_array = setup_times[res_idx, task_idx, :].tolist() + [0]
+                next_idx = cpo.type_of_next(
+                    seq_var, interval, data.num_tasks, data.num_tasks
+                )
+                setup_time = cpo.element(setup_array, next_idx)
+                total.append(setup_time)
+
         return cpo.sum(total)  # type: ignore
 
     def _objective_expr(self, objective: DataObjective) -> CpoExpr:
