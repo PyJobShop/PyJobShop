@@ -33,13 +33,11 @@ class Constraints:
 
         for idx, job in enumerate(data.jobs):
             job_var = variables.job_vars[idx]
-            task_starts = [
-                variables.task_vars[task].start for task in job.tasks
-            ]
-            task_ends = [variables.task_vars[task].end for task in job.tasks]
+            starts = [variables.task_vars[task].start for task in job.tasks]
+            ends = [variables.task_vars[task].end for task in job.tasks]
 
-            model.add_min_equality(job_var.start, task_starts)
-            model.add_max_equality(job_var.end, task_ends)
+            model.add_min_equality(job_var.start, starts)
+            model.add_max_equality(job_var.end, ends)
 
     def _select_one_mode(self):
         """
