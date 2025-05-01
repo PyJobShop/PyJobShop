@@ -112,10 +112,17 @@ class Objective:
             task_idcs = [data.modes[m].task for m in resource2modes[res_idx]]
 
             for idx, interval in enumerate(intervals):
+                # The setup time for the current interval is a variable that
+                # depends on the next interval's task in the sequence. If the
+                # interval is last or absent, we set the setup time to 0.
                 task_idx = task_idcs[idx]
-                setup_array = setup_times[res_idx, task_idx, :].tolist() + [0]
+                setup_array = setup_times[res_idx, task_idx, :].tolist()
+                setup_array.append(0)  # padding for last or absent
                 next_idx = cpo.type_of_next(
-                    seq_var, interval, data.num_tasks, data.num_tasks
+                    seq_var,
+                    interval,
+                    lastValue=data.num_tasks,
+                    absentValue=data.num_tasks,
                 )
                 setup_time = cpo.element(setup_array, next_idx)
                 total.append(setup_time)
