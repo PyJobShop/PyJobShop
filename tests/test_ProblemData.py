@@ -461,6 +461,21 @@ def test_problem_data_tardy_objective_without_job_due_dates(
         )
 
 
+def test_problem_data_setup_times_objective_without_setup_times_constraints():
+    """
+    Tests that an error is raised when setup times are not defined in the
+    constraints and the total setup times objective is selected.
+    """
+    with assert_raises(ValueError):
+        ProblemData(
+            [Job()],
+            [Renewable(0)],
+            [Task()],
+            [Mode(0, [0], 0)],
+            objective=Objective(weight_total_setup_time=1),
+        )
+
+
 def make_replace_data():
     jobs = [Job(due_date=1, deadline=1), Job(due_date=2, deadline=2)]
     resources = [
