@@ -25,16 +25,13 @@ class Objective:
         self._model = model
         self._data = data
         self._variables = variables
-        self._task_vars = variables.task_vars
-        self._job_vars = variables.job_vars
-        self._sequence_vars = variables.sequence_vars
 
     def _makespan_expr(self) -> LinearExprT:
         """
         Returns an expression representing the makespan of the model.
         """
         makespan = self._model.new_int_var(0, MAX_VALUE, "makespan")
-        completion_times = [var.end for var in self._task_vars]
+        completion_times = [var.end for var in self._variables.task_vars]
         self._model.add_max_equality(makespan, completion_times)
         return makespan
 
@@ -45,7 +42,7 @@ class Objective:
         model, data = self._model, self._data
         is_tardy_vars = []
 
-        for job, job_var in zip(data.jobs, self._job_vars):
+        for job, job_var in zip(data.jobs, self._variables.job_vars):
             assert job.due_date is not None
             is_tardy = model.new_bool_var(f"is_tardy_{job}")
             model.add(job_var.end > job.due_date).only_enforce_if(is_tardy)
@@ -62,7 +59,7 @@ class Objective:
         model, data = self._model, self._data
         flow_time_vars = []
 
-        for job, var in zip(data.jobs, self._job_vars):
+        for job, var in zip(data.jobs, self._variables.job_vars):
             flow_time = model.new_int_var(0, MAX_VALUE, f"flow_time_{job}")
             model.add_max_equality(flow_time, [0, var.end - job.release_date])
             flow_time_vars.append(flow_time)
@@ -77,7 +74,7 @@ class Objective:
         model, data = self._model, self._data
         tardiness_vars = []
 
-        for job, var in zip(data.jobs, self._job_vars):
+        for job, var in zip(data.jobs, self._variables.job_vars):
             assert job.due_date is not None
             tardiness = model.new_int_var(0, MAX_VALUE, f"tardiness_{job}")
             model.add_max_equality(tardiness, [0, var.end - job.due_date])
@@ -93,7 +90,7 @@ class Objective:
         model, data = self._model, self._data
         earliness_vars = []
 
-        for job, var in zip(data.jobs, self._job_vars):
+        for job, var in zip(data.jobs, self._variables.job_vars):
             assert job.due_date is not None
             earliness = model.new_int_var(0, MAX_VALUE, f"earliness_{job}")
             model.add_max_equality(earliness, [0, job.due_date - var.end])
@@ -109,7 +106,7 @@ class Objective:
         model, data = self._model, self._data
         tardiness_vars = []
 
-        for job, var in zip(data.jobs, self._job_vars):
+        for job, var in zip(data.jobs, self._variables.job_vars):
             assert job.due_date is not None
             tardiness = model.new_int_var(0, MAX_VALUE, f"tardiness_{job}")
             model.add_max_equality(tardiness, [0, var.end - job.due_date])
@@ -126,7 +123,7 @@ class Objective:
         model, data = self._model, self._data
         lateness_vars = []
 
-        for job, var in zip(data.jobs, self._job_vars):
+        for job, var in zip(data.jobs, self._variables.job_vars):
             assert job.due_date is not None
             lateness = model.new_int_var(
                 -MAX_VALUE, MAX_VALUE, f"lateness_{job}"
@@ -150,7 +147,7 @@ class Objective:
             if not isinstance(resource, Machine):
                 continue
 
-            seq_var = self._sequence_vars[res_idx]
+            seq_var = self._variables.sequence_vars[res_idx]
             if not seq_var.is_active:
                 continue
 
