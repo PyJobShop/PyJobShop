@@ -1326,23 +1326,21 @@ def test_total_setup_time(solver: str):
     for task in tasks:
         model.add_mode(task, machine, duration=1)
 
-    setup_times = [
+    setups = [
         [100, 1, 100],
         [100, 100, 3],
         [100, 100, 100],
     ]
     for idx1, task1 in enumerate(tasks):
         for idx2, task2 in enumerate(tasks):
-            model.add_setup_time(
-                machine, task1, task2, setup_times[idx1][idx2]
-            )
+            model.add_setup_time(machine, task1, task2, setups[idx1][idx2])
 
     model.set_objective(weight_total_setup_time=2)
     result = model.solve(solver=solver)
 
-    # Tasks 0, 1 and 2 are scheduled consecutively on a single machine
-    # with the setup times 1 and 3, respectively. Combined with an objective
-    # weight of two, the objective value is 2 * (1 + 3) = 8.
+    # Tasks 0, 1 and 2 are scheduled consecutively on a single machine with
+    # setup times 1 and 3, respectively. Combined with an objective weight of
+    # two, the objective value is 2 * (1 + 3) = 8.
     assert_equal(result.objective, 8)
     assert_equal(result.status.value, "Optimal")
 
