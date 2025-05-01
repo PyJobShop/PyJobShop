@@ -106,6 +106,7 @@ select = [
 ignore = [
     "E741",  # ambiguous variable name, needed for indexing
     "C901",  # too complex
+    "B905",  # allow zip without strict for conciseness
 ]
 
 
