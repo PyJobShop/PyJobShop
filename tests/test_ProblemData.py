@@ -1314,6 +1314,38 @@ def test_max_lateness(solver: str):
     assert_equal(result.best.tasks[1].end, 2)
 
 
+def test_total_setup_time():  # TODO implement for CP Optimizer
+    """
+    Tests that the total setup time objective function is correctly optimized.
+    """
+    model = Model()
+
+    machine = model.add_machine()
+    tasks = [model.add_task() for _ in range(3)]
+
+    for idx in range(2):
+        first = tasks[idx]
+        second = tasks[idx + 1]
+        model.add_end_before_start(first, second)
+
+    for task in tasks:
+        model.add_mode(task, machine, duration=1)
+
+    model.add_setup_time(machine, tasks[0], tasks[1], duration=1)
+    model.add_setup_time(machine, tasks[1], tasks[2], duration=3)
+
+    model.set_objective(weight_total_setup_time=2)
+
+    result = model.solve(solver="ortools")
+
+    # Tasks 0, 1 and 2 are scheduled consecutively on a single machine
+    # because of the precedence constraints, so the setup times are 1 and 3,
+    # respectively. Combined with an objective weight of two, the objective
+    # value is 2 * (1 + 3) = 8.
+    assert_equal(result.objective, 8)
+    assert_equal(result.status.value, "Optimal")
+
+
 def test_combined_objective(solver: str):
     """
     Tests that a combined objective function of makespan and tardy jobs is

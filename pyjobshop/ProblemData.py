@@ -664,6 +664,10 @@ class Objective:
         .. math::
             L_{\\max} = \\max_{j \\in J} w_j (C_j - d_j)
 
+    **Total setup time** (:math:`TST`): The sum of all sequence-dependent setup times between consecutive tasks on each machine, where :math:`R` denotes the set of machines, :math:`M^R_r` denotes the set of modes requiring :math:`r \\in R`, :math:`s_{t_u, t_v, r}` denotes the setup time between tasks :math:`t_u` and :math:`t_v` on machine :math:`r` and :math:`b_{ruv}` is the binary variable indicating whether task :math:`t_u` is followed by task :math:`t_v` on machine :math:`r`.
+        .. math::
+            TST = \\sum_{r \\in R} \\sum_{u, v \\in M^R_r} s_{t_u, t_v, r} b_{ruv}
+
     .. note::
         Use :attr:`Job.weight` to set a specific job's weight (:math:`w_j`) in the
         objective function.
@@ -676,6 +680,7 @@ class Objective:
     weight_total_earliness: int = 0
     weight_max_tardiness: int = 0
     weight_max_lateness: int = 0
+    weight_total_setup_time: int = 0
 
 
 class ProblemData:
