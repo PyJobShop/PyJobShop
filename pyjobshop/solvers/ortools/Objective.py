@@ -1,3 +1,5 @@
+from itertools import product
+
 from ortools.sat.python.cp_model import (
     CpModel,
     LinearExpr,
@@ -22,6 +24,7 @@ class Objective:
     ):
         self._model = model
         self._data = data
+        self._variables = variables
         self._task_vars = variables.task_vars
         self._job_vars = variables.job_vars
         self._sequence_vars = variables.sequence_vars
@@ -139,32 +142,31 @@ class Objective:
         """
         Returns an expression representing the total setup time of tasks.
         """
-        data = self._data
+        data, variables = self._data, self._variables
         setup_times = utils.setup_times_matrix(data)
 
         setup_time_vars = []
-        for idx, resource in enumerate(data.resources):
+        for res_idx, resource in enumerate(data.resources):
             if not isinstance(resource, Machine):
                 continue
 
-            seq_var = self._sequence_vars[idx]
+            seq_var = self._sequence_vars[res_idx]
             if not seq_var.is_active:
                 continue
 
-            mode_vars = seq_var.mode_vars
-            arcs = seq_var.arcs
+            for idx1, idx2 in product(range(data.num_tasks), repeat=2):
+                var1 = variables.assign_vars.get((idx1, res_idx))
+                var2 = variables.assign_vars.get((idx2, res_idx))
+                if not (var1 and var2):
+                    continue
 
-            for idx1, var1 in enumerate(mode_vars):
-                for idx2, var2 in enumerate(mode_vars):
-                    if idx1 == idx2:
-                        continue
-
-                    setup = (
-                        setup_times[idx, var1.task_idx, var2.task_idx]
-                        if setup_times is not None
-                        else 0
-                    )
-                    setup_time_vars.append(setup * arcs[idx1, idx2])
+                setup = (
+                    setup_times[res_idx, idx1, idx2]
+                    if setup_times is not None
+                    else 0
+                )
+                arc_selected = seq_var.arcs[idx1, idx2]
+                setup_time_vars.append(arc_selected * setup)
 
         return LinearExpr.sum(setup_time_vars)
 
