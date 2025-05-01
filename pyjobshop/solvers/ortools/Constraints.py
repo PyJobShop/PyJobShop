@@ -200,8 +200,8 @@ class Constraints:
 
                 seq_var = variables.sequence_vars[res_idx]
                 seq_var.activate(model, data)
-                var1 = self._variables.assign_vars.get((idx1, res_idx))
-                var2 = self._variables.assign_vars.get((idx2, res_idx))
+                var1 = variables.assign_vars.get((idx1, res_idx))
+                var2 = variables.assign_vars.get((idx2, res_idx))
 
                 if not (var1 and var2):
                     continue

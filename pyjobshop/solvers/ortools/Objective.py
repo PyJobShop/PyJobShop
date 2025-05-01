@@ -147,7 +147,7 @@ class Objective:
             if not isinstance(resource, Machine):
                 continue
 
-            seq_var = self._variables.sequence_vars[res_idx]
+            seq_var = variables.sequence_vars[res_idx]
             if not seq_var.is_active:
                 continue
 
