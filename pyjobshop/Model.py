@@ -161,12 +161,8 @@ class Model:
         for idx1, idcs2 in data.constraints.if_then:
             model.add_if_then(tasks[idx1], [tasks[idx2] for idx2 in idcs2])
 
-        for idx1, idx2, res_idx in data.constraints.consecutive:
-            model.add_consecutive(
-                tasks[idx1],
-                tasks[idx2],
-                model.resources[res_idx],  # type: ignore
-            )
+        for idx1, idx2 in data.constraints.consecutive:
+            model.add_consecutive(tasks[idx1], tasks[idx2])
 
         for res_idx, idx1, idx2, duration in data.constraints.setup_times:
             model.add_setup_time(
@@ -184,6 +180,7 @@ class Model:
             weight_total_earliness=data.objective.weight_total_earliness,
             weight_max_tardiness=data.objective.weight_max_tardiness,
             weight_max_lateness=data.objective.weight_max_lateness,
+            weight_total_setup_time=data.objective.weight_total_setup_time,
         )
 
         return model
@@ -388,17 +385,14 @@ class Model:
 
         return constraint
 
-    def add_consecutive(
-        self, task1: Task, task2: Task, machine: Machine
-    ) -> Consecutive:
+    def add_consecutive(self, task1: Task, task2: Task) -> Consecutive:
         """
         Adds a constraint that the first task must be scheduled right before
-        the second task on the given machine, meaning that no other task is
-        allowed to be scheduled in-between.
+        the second task, meaning that no task is allowed to schedule between,
+        on machines that they are both scheduled on.
         """
         idx1, idx2 = self._id2task[id(task1)], self._id2task[id(task2)]
-        machine_idx = self._id2resource[id(machine)]
-        constraint = Consecutive(idx1, idx2, machine_idx)
+        constraint = Consecutive(idx1, idx2)
         self._constraints.consecutive.append(constraint)
 
         return constraint
@@ -442,6 +436,7 @@ class Model:
         weight_total_earliness: int = 0,
         weight_max_tardiness: int = 0,
         weight_max_lateness: int = 0,
+        weight_total_setup_time: int = 0,
     ) -> Objective:
         """
         Sets the objective function in this model.
@@ -454,6 +449,7 @@ class Model:
             weight_total_earliness=weight_total_earliness,
             weight_max_tardiness=weight_max_tardiness,
             weight_max_lateness=weight_max_lateness,
+            weight_total_setup_time=weight_total_setup_time,
         )
         return self._objective
 

@@ -44,7 +44,7 @@ def test_model_to_data():
     model.add_identical_resources(task2, task1)
     model.add_different_resources(task2, task1)
     model.add_if_then(task2, task1)
-    model.add_consecutive(task2, task1, machine1)
+    model.add_consecutive(task2, task1)
 
     model.add_setup_time(machine1, task1, task2, 3)
     model.add_setup_time(machine2, task1, task2, 4)
@@ -72,7 +72,7 @@ def test_model_to_data():
     assert_equal(constraints.identical_resources, [IdenticalResources(1, 0)])
     assert_equal(constraints.different_resources, [DifferentResources(1, 0)])
     assert_equal(constraints.if_then, [IfThen(1, [0])])
-    assert_equal(constraints.consecutive, [Consecutive(1, 0, 0)])
+    assert_equal(constraints.consecutive, [Consecutive(1, 0)])
     assert_equal(
         constraints.setup_times, [SetupTime(0, 0, 1, 3), SetupTime(1, 0, 1, 4)]
     )
@@ -97,7 +97,7 @@ def test_from_data():
             identical_resources=[IdenticalResources(0, 1)],
             different_resources=[DifferentResources(0, 1)],
             if_then=[IfThen(1, [0])],
-            consecutive=[Consecutive(1, 2, 0)],
+            consecutive=[Consecutive(1, 2)],
             setup_times=[
                 SetupTime(0, 0, 1, 1),  # machine
                 SetupTime(1, 0, 1, 0),  # renewable
@@ -311,6 +311,7 @@ def test_model_set_objective():
         weight_total_earliness=5,
         weight_max_tardiness=6,
         weight_max_lateness=7,
+        weight_total_setup_time=8,
     )
 
     assert_equal(model.objective.weight_makespan, 1)
@@ -320,6 +321,7 @@ def test_model_set_objective():
     assert_equal(model.objective.weight_total_earliness, 5)
     assert_equal(model.objective.weight_max_tardiness, 6)
     assert_equal(model.objective.weight_max_lateness, 7)
+    assert_equal(model.objective.weight_total_setup_time, 8)
 
 
 def test_solve(solver: str):

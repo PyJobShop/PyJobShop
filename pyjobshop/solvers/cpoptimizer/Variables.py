@@ -138,7 +138,10 @@ class Variables:
             if isinstance(resource, Machine):
                 modes = resource2modes[idx]
                 intervals = [self.mode_vars[mode] for mode in modes]
-                seq_var = sequence_var(name=f"S{resource}", vars=intervals)
+                tasks = [data.modes[mode].task for mode in modes]
+                seq_var = sequence_var(
+                    name=f"S{resource}", types=tasks, vars=intervals
+                )
                 self._model.add(seq_var)
                 variables[idx] = seq_var
 

@@ -461,6 +461,21 @@ def test_problem_data_tardy_objective_without_job_due_dates(
         )
 
 
+def test_problem_data_setup_times_objective_without_setup_times_constraints():
+    """
+    Tests that an error is raised when setup times are not defined in the
+    constraints and the total setup times objective is selected.
+    """
+    with assert_raises(ValueError):
+        ProblemData(
+            [Job()],
+            [Renewable(0)],
+            [Task()],
+            [Mode(0, [0], 0)],
+            objective=Objective(weight_total_setup_time=1),
+        )
+
+
 def make_replace_data():
     jobs = [Job(due_date=1, deadline=1), Job(due_date=2, deadline=2)]
     resources = [
@@ -1094,13 +1109,45 @@ def test_consecutive_constraint(solver: str):
     model.add_mode(task2, machine, duration=1)
 
     model.add_setup_time(machine, task2, task1, duration=100)
-    model.add_consecutive(task2, task1, machine)
+    model.add_consecutive(task2, task1)
 
     result = model.solve(solver=solver)
 
     # Task 2 must be scheduled directly before task 1, but the setup time
     # between them is 100, so the makespan is 1 + 100 + 1 = 102.
     assert_equal(result.objective, 102)
+
+
+def test_consecutive_multiple_machines(solver: str):
+    """
+    Test the consecutive constraint with tasks that have modes with multiple
+    machines.
+    """
+    model = Model()
+
+    machine1 = model.add_machine()
+    machine2 = model.add_machine()
+    task1 = model.add_task()
+    task2 = model.add_task()
+
+    model.add_mode(task1, [machine1, machine2], duration=1)
+    model.add_mode(task2, [machine1, machine2], duration=1)
+
+    model.add_setup_time(machine1, task2, task1, duration=10)
+    model.add_setup_time(machine2, task2, task1, duration=10)
+
+    result = model.solve(solver=solver)
+    assert_equal(result.objective, 2)
+    assert_equal(result.status.value, "Optimal")
+
+    # Now we add the consecutive constraint...
+    model.add_consecutive(task2, task1)
+
+    # ...so task 2 must be scheduled directly before task 1, but the setup time
+    # between them is 10, so the makespan is 1 + 10 + 1 = 2.
+    result = model.solve(solver=solver)
+    assert_equal(result.objective, 12)
+    assert_equal(result.status.value, "Optimal")
 
 
 def test_makespan_objective(solver: str):
@@ -1280,6 +1327,37 @@ def test_max_lateness(solver: str):
     assert_equal(result.objective, -4)
     assert_equal(result.best.tasks[0].end, 2)
     assert_equal(result.best.tasks[1].end, 2)
+
+
+def test_total_setup_time(solver: str):
+    """
+    Tests that the total setup time objective function is correctly optimized.
+    """
+    model = Model()
+
+    machine = model.add_machine()
+    tasks = [model.add_task() for _ in range(3)]
+
+    for task in tasks:
+        model.add_mode(task, machine, duration=1)
+
+    setups = [
+        [100, 1, 100],
+        [100, 100, 3],
+        [100, 100, 100],
+    ]
+    for idx1, task1 in enumerate(tasks):
+        for idx2, task2 in enumerate(tasks):
+            model.add_setup_time(machine, task1, task2, setups[idx1][idx2])
+
+    model.set_objective(weight_total_setup_time=2)
+    result = model.solve(solver=solver)
+
+    # Tasks 0, 1 and 2 are scheduled consecutively on a single machine with
+    # setup times 1 and 3, respectively. Combined with an objective weight of
+    # two, the objective value is 2 * (1 + 3) = 8.
+    assert_equal(result.objective, 8)
+    assert_equal(result.status.value, "Optimal")
 
 
 def test_combined_objective(solver: str):

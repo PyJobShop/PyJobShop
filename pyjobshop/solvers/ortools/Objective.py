@@ -1,12 +1,15 @@
+from itertools import product
+
 from ortools.sat.python.cp_model import (
     CpModel,
     LinearExpr,
     LinearExprT,
 )
 
+import pyjobshop.solvers.utils as utils
 from pyjobshop.constants import MAX_VALUE
+from pyjobshop.ProblemData import Machine, ProblemData
 from pyjobshop.ProblemData import Objective as DataObjective
-from pyjobshop.ProblemData import ProblemData
 
 from .Variables import Variables
 
@@ -21,8 +24,7 @@ class Objective:
     ):
         self._model = model
         self._data = data
-        self._task_vars = variables.task_vars
-        self._job_vars = variables.job_vars
+        self._variables = variables
 
     def _makespan_expr(self) -> LinearExprT:
         """
@@ -31,7 +33,7 @@ class Objective:
         makespan = self._model.new_int_var(0, MAX_VALUE, "makespan")
         completion_times = []
 
-        for task, var in zip(self._data.tasks, self._task_vars):
+        for task, var in zip(self._data.tasks, self._variables.task_vars):
             if task.optional:
                 # When the task is absent, it should not restrict the makespan.
                 task_end = self._model.new_int_var(0, MAX_VALUE, "")
@@ -52,7 +54,7 @@ class Objective:
         model, data = self._model, self._data
         is_tardy_vars = []
 
-        for job, job_var in zip(data.jobs, self._job_vars):
+        for job, job_var in zip(data.jobs, self._variables.job_vars):
             assert job.due_date is not None
             is_tardy = model.new_bool_var(f"is_tardy_{job}")
             model.add(job_var.end > job.due_date).only_enforce_if(is_tardy)
@@ -69,7 +71,7 @@ class Objective:
         model, data = self._model, self._data
         flow_time_vars = []
 
-        for job, var in zip(data.jobs, self._job_vars):
+        for job, var in zip(data.jobs, self._variables.job_vars):
             flow_time = model.new_int_var(0, MAX_VALUE, f"flow_time_{job}")
             model.add_max_equality(flow_time, [0, var.end - job.release_date])
             flow_time_vars.append(flow_time)
@@ -84,7 +86,7 @@ class Objective:
         model, data = self._model, self._data
         tardiness_vars = []
 
-        for job, var in zip(data.jobs, self._job_vars):
+        for job, var in zip(data.jobs, self._variables.job_vars):
             assert job.due_date is not None
             tardiness = model.new_int_var(0, MAX_VALUE, f"tardiness_{job}")
             model.add_max_equality(tardiness, [0, var.end - job.due_date])
@@ -100,7 +102,7 @@ class Objective:
         model, data = self._model, self._data
         earliness_vars = []
 
-        for job, var in zip(data.jobs, self._job_vars):
+        for job, var in zip(data.jobs, self._variables.job_vars):
             assert job.due_date is not None
             earliness = model.new_int_var(0, MAX_VALUE, f"earliness_{job}")
             model.add_max_equality(earliness, [0, job.due_date - var.end])
@@ -116,7 +118,7 @@ class Objective:
         model, data = self._model, self._data
         tardiness_vars = []
 
-        for job, var in zip(data.jobs, self._job_vars):
+        for job, var in zip(data.jobs, self._variables.job_vars):
             assert job.due_date is not None
             tardiness = model.new_int_var(0, MAX_VALUE, f"tardiness_{job}")
             model.add_max_equality(tardiness, [0, var.end - job.due_date])
@@ -133,7 +135,7 @@ class Objective:
         model, data = self._model, self._data
         lateness_vars = []
 
-        for job, var in zip(data.jobs, self._job_vars):
+        for job, var in zip(data.jobs, self._variables.job_vars):
             assert job.due_date is not None
             lateness = model.new_int_var(
                 -MAX_VALUE, MAX_VALUE, f"lateness_{job}"
@@ -144,6 +146,38 @@ class Objective:
         max_lateness = model.new_int_var(-MAX_VALUE, MAX_VALUE, "max_lateness")
         model.add_max_equality(max_lateness, lateness_vars)
         return max_lateness
+
+    def _total_setup_time_expr(self) -> LinearExprT:
+        """
+        Returns an expression representing the total setup time of tasks.
+        """
+        data, variables = self._data, self._variables
+        setup_times = utils.setup_times_matrix(data)
+
+        setup_time_vars = []
+        for res_idx, resource in enumerate(data.resources):
+            if not isinstance(resource, Machine):
+                continue
+
+            seq_var = self._variables.sequence_vars[res_idx]
+            if not seq_var.is_active:
+                continue
+
+            for idx1, idx2 in product(range(data.num_tasks), repeat=2):
+                var1 = variables.assign_vars.get((idx1, res_idx))
+                var2 = variables.assign_vars.get((idx2, res_idx))
+                if not (var1 and var2):
+                    continue
+
+                setup = (
+                    setup_times[res_idx, idx1, idx2]
+                    if setup_times is not None
+                    else 0
+                )
+                arc_selected = seq_var.arcs[idx1, idx2]
+                setup_time_vars.append(arc_selected * setup)
+
+        return LinearExpr.sum(setup_time_vars)
 
     def _objective_expr(self, objective: DataObjective) -> LinearExprT:
         """
@@ -157,6 +191,7 @@ class Objective:
             (objective.weight_total_earliness, self._total_earliness_expr),
             (objective.weight_max_tardiness, self._max_tardiness_expr),
             (objective.weight_max_lateness, self._max_lateness_expr),
+            (objective.weight_total_setup_time, self._total_setup_time_expr),
         ]
         exprs = [weight * expr() for weight, expr in items if weight > 0]
         return LinearExpr.sum(exprs)

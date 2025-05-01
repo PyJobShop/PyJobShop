@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.axes import Axes
 
-from pyjobshop import ProblemData, Solution
+from pyjobshop import NonRenewable, ProblemData, Renewable, Solution
 
 
 def plot_resource_usage(
@@ -42,6 +42,7 @@ def plot_resource_usage(
         resources = list(range(data.num_resources))
 
     usages = _compute_usage(solution, data)
+
     for resource in resources:
         usage = usages[resource]
         ax = axes[resource]
@@ -55,14 +56,22 @@ def plot_resource_usage(
 
 def _compute_usage(solution: Solution, data: ProblemData) -> np.ndarray:
     """
-    Computes the resource usage for each resource and time step.
+    Computes the resource usage for the each resource and each time step.
     """
     usages = np.zeros((data.num_resources, solution.makespan))
 
     for task in solution.tasks:
         mode = data.modes[task.mode]
 
-        for resource, demand in zip(mode.resources, mode.demands):
-            usages[resource, task.start : task.end] += demand
+        for resource_idx, demand in zip(mode.resources, mode.demands):
+            resource = data.resources[resource_idx]
+
+            if isinstance(resource, Renewable):
+                usages[resource_idx, task.start : task.end] += demand
+            elif isinstance(resource, NonRenewable):
+                usages[resource_idx, task.start :] += demand
+            else:
+                # Machine is a unary renewable resource.
+                usages[resource_idx, task.start : task.end] += 1
 
     return usages

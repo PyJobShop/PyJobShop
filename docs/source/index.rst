@@ -8,7 +8,7 @@ It currently supports the following scheduling problems:
 
 - **Resource environments:** single machines, parallel machines, hybrid flow shops, open shops, job shops, flexible job shops, renewable resources and non-renewable resources.
 - **Constraints:** release dates, deadlines, due dates, multiple modes, sequence-dependent setup times, no-wait, blocking, and arbitrary precedence constraints.
-- **Objective functions:** minimizing makespan, total flow time, number of tardy jobs, total tardiness, total earliness, maximum tardiness and maximum lateness.
+- **Objective functions:** minimizing makespan, total flow time, number of tardy jobs, total tardiness, total earliness, maximum tardiness, maximum lateness, and total setup times.
 
 You can find PyJobShop on the Python Package Index under the name ``pyjobshop``.
 To install it, simply run:
@@ -34,6 +34,7 @@ Contents
    setup/intro_to_cp
    setup/installation
    setup/getting_help
+   setup/citing
 
 .. toctree::
    :maxdepth: 1
@@ -44,6 +45,7 @@ Contents
    examples/flexible_job_shop
    examples/project_scheduling
    examples/quick_examples
+   examples/objectives_examples
 
 .. toctree::
    :maxdepth: 1

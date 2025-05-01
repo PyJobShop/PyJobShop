@@ -498,13 +498,23 @@ class IfThen(NamedTuple):
 
 class Consecutive(NamedTuple):
     """
-    Sequence task 1 and task 2 consecutively on the given machine, meaning that
-    no other task is allowed to be scheduled in-between.
+    Sequence task 1 and task 2 consecutively on the machines they are both
+    assigned to, meaning that no other task is allowed to be scheduled between
+    them.
+
+    Hand-waiving some details, let :math:`m_1, m_2` be the selected modes of
+    task 1 and task 2, and let :math:`R` denote the machines that both modes
+    require. This constraint ensures that
+
+    .. math::
+        m_1 \\to m_2 \\quad \\forall r \\in R,
+
+    where :math:`\\to` means that :math:`m_1` is directly followed by
+    :math:`m_2` and no other interval is scheduled between them.
     """
 
     task1: int
     task2: int
-    machine: int
 
 
 class SetupTime(NamedTuple):
@@ -649,20 +659,51 @@ class Constraints:
 @dataclass
 class Objective:
     """
-    Represents a weighted sum of the following objective functions:
+    The objective class represents a weighted sum of objective functions :math:`f`, calculated as:
+    :math:`\\sum_f \\text{weight}_f \\cdot \\text{value}_f`. The objective functions :math:`f` are defined below.
 
-    * Makespan
-    * Number of tardy jobs
-    * Total flow time
-    * Total tardiness
-    * Total earliness
-    * Maximum tardiness
-    * Maximum lateness
+    In the following, let :math:`J` denote the set of jobs, :math:`T` denote the set of tasks,
+    :math:`C_j` denote the completion time of job :math:`j`, and :math:`C_t` denote the completion time of
+    task :math:`t`.
+
+    **Makespan** (:math:`C_{\\max}`): The finish time of the latest task.
+        .. math::
+            C_{\\max} = \\max_{t \\in T} C_t
+
+    **Number of tardy jobs** (:math:`NTJ`): The weighted sum of all tardy jobs, where a job is tardy when it does not meet its due date :math:`d_j`.
+        .. math::
+            NTJ = \\sum_{j \\in J} w_j \\mathbb{1}_{\\{C_j - d_j > 0\\}}
+
+    where :math:`\\mathbb{1}_{\\{x\\}}` is the indicator function.
+
+    **Total flow time** (:math:`TFT`): The weighted sum of the length of stay in the system of each job, from their release date to their completion.
+        .. math::
+            TFT = \\sum_{j \\in J} w_j ( C_j - r_j )
+
+    **Total tardiness** (:math:`TT`): The weighted sum of the tardiness of each job, where the tardiness is the difference between completion time and due date :math:`d_j` (0 if completed before due date).
+        .. math::
+            TT = \\sum_{j \\in J} w_j U_j
+
+    **Total earliness** (:math:`TE`): The weighted sum of the earliness of each job, where earliness is the difference between due date :math:`d_j` and completion time (0 if completed after due date).
+        .. math::
+            TE = \\sum_{j \\in J} w_j (\\max(d_j - C_j, 0))
+
+    **Maximum tardiness** (:math:`U_{\\max}`): The weighted maximum tardiness of all jobs.
+        .. math::
+            U_{\\max} = \\max_{j \\in J} w_j (\\max(C_j - d_j, 0))
+
+    **Maximum lateness** (:math:`L_{\\max}`): The weighted maximum lateness of all jobs. Lateness can be negative, unlike tardiness.
+        .. math::
+            L_{\\max} = \\max_{j \\in J} w_j (C_j - d_j)
+
+    **Total setup time** (:math:`TST`): The sum of all sequence-dependent setup times between consecutive tasks on each machine, where :math:`R` denotes the set of machines, :math:`M^R_r` denotes the set of modes requiring :math:`r \\in R`, :math:`s_{t_u, t_v, r}` denotes the setup time between tasks :math:`t_u` and :math:`t_v` on machine :math:`r` and :math:`b_{ruv}` is the binary variable indicating whether task :math:`t_u` is followed by task :math:`t_v` on machine :math:`r`.
+        .. math::
+            TST = \\sum_{r \\in R} \\sum_{u, v \\in M^R_r} s_{t_u, t_v, r} b_{ruv}
 
     .. note::
-        Use :attr:`Job.weight` to set a specific job's weight in the
+        Use :attr:`Job.weight` to set a specific job's weight (:math:`w_j`) in the
         objective function.
-    """
+    """  # noqa: E501
 
     weight_makespan: int = 0
     weight_tardy_jobs: int = 0
@@ -671,6 +712,7 @@ class Objective:
     weight_total_earliness: int = 0
     weight_max_tardiness: int = 0
     weight_max_lateness: int = 0
+    weight_total_setup_time: int = 0
 
 
 class ProblemData:
@@ -785,6 +827,13 @@ class ProblemData:
             if any(job.due_date is None for job in self.jobs):
                 msg = "Job due dates required for due date-based objectives."
                 raise ValueError(msg)
+
+        if (
+            self.objective.weight_total_setup_time > 0
+            and not self.constraints.setup_times
+        ):
+            msg = "Setup times required for total setup times objective."
+            raise ValueError(msg)
 
     def replace(
         self,
