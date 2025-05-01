@@ -461,6 +461,21 @@ def test_problem_data_tardy_objective_without_job_due_dates(
         )
 
 
+def test_problem_data_setup_times_objective_without_setup_times_constraints():
+    """
+    Tests that an error is raised when setup times are not defined in the
+    constraints and the total setup times objective is selected.
+    """
+    with assert_raises(ValueError):
+        ProblemData(
+            [Job()],
+            [Renewable(0)],
+            [Task()],
+            [Mode(0, [0], 0)],
+            objective=Objective(weight_total_setup_time=1),
+        )
+
+
 def make_replace_data():
     jobs = [Job(due_date=1, deadline=1), Job(due_date=2, deadline=2)]
     resources = [
@@ -1314,7 +1329,7 @@ def test_max_lateness(solver: str):
     assert_equal(result.best.tasks[1].end, 2)
 
 
-def test_total_setup_time():  # TODO implement for CP Optimizer
+def test_total_setup_time(solver: str):
     """
     Tests that the total setup time objective function is correctly optimized.
     """
@@ -1323,25 +1338,24 @@ def test_total_setup_time():  # TODO implement for CP Optimizer
     machine = model.add_machine()
     tasks = [model.add_task() for _ in range(3)]
 
-    for idx in range(2):
-        first = tasks[idx]
-        second = tasks[idx + 1]
-        model.add_end_before_start(first, second)
-
     for task in tasks:
         model.add_mode(task, machine, duration=1)
 
-    model.add_setup_time(machine, tasks[0], tasks[1], duration=1)
-    model.add_setup_time(machine, tasks[1], tasks[2], duration=3)
+    setups = [
+        [100, 1, 100],
+        [100, 100, 3],
+        [100, 100, 100],
+    ]
+    for idx1, task1 in enumerate(tasks):
+        for idx2, task2 in enumerate(tasks):
+            model.add_setup_time(machine, task1, task2, setups[idx1][idx2])
 
     model.set_objective(weight_total_setup_time=2)
+    result = model.solve(solver=solver)
 
-    result = model.solve(solver="ortools")
-
-    # Tasks 0, 1 and 2 are scheduled consecutively on a single machine
-    # because of the precedence constraints, so the setup times are 1 and 3,
-    # respectively. Combined with an objective weight of two, the objective
-    # value is 2 * (1 + 3) = 8.
+    # Tasks 0, 1 and 2 are scheduled consecutively on a single machine with
+    # setup times 1 and 3, respectively. Combined with an objective weight of
+    # two, the objective value is 2 * (1 + 3) = 8.
     assert_equal(result.objective, 8)
     assert_equal(result.status.value, "Optimal")
 

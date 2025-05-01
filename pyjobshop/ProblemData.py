@@ -796,6 +796,13 @@ class ProblemData:
                 msg = "Job due dates required for due date-based objectives."
                 raise ValueError(msg)
 
+        if (
+            self.objective.weight_total_setup_time > 0
+            and not self.constraints.setup_times
+        ):
+            msg = "Setup times required for total setup times objective."
+            raise ValueError(msg)
+
     def replace(
         self,
         jobs: Optional[list[Job]] = None,
