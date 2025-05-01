@@ -78,7 +78,7 @@ class Objective:
             job.weight * cpo.max(0, cpo.end_of(var) - job.due_date)
             for job, var in zip(self._data.jobs, self._job_vars)
         ]
-        return cpo.max(tardiness)
+        return cpo.max(tardiness)  # type: ignore
 
     def _max_lateness_expr(self) -> CpoExpr:
         """
@@ -88,7 +88,14 @@ class Objective:
             job.weight * (cpo.end_of(var) - job.due_date)
             for job, var in zip(self._data.jobs, self._job_vars)
         ]
-        return cpo.max(lateness)
+        return cpo.max(lateness)  # type: ignore
+
+    def _total_setup_time_expr(self) -> CpoExpr:
+        """
+        Returns an expression representing the total setup times.
+        """
+        total = []  # type: ignore # TODO
+        return cpo.sum(total)  # type: ignore
 
     def _objective_expr(self, objective: DataObjective) -> CpoExpr:
         """
@@ -102,6 +109,7 @@ class Objective:
             (objective.weight_total_earliness, self._total_earliness_expr),
             (objective.weight_max_tardiness, self._max_tardiness_expr),
             (objective.weight_max_lateness, self._max_lateness_expr),
+            (objective.weight_total_setup_time, self._total_setup_time_expr),
         ]
         exprs = [weight * expr() for weight, expr in items if weight > 0]
         return cpo.minimize(cpo.sum(exprs))
