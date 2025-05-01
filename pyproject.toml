@@ -23,14 +23,10 @@ classifiers = [
     "Topic :: Scientific/Engineering",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
 ]
-requires-python = ">=3.9,<3.13"
+requires-python = ">=3.10"
 dependencies = [
-    "ortools>=9.12.4544,<10",
+    "ortools>=9.12.4544",
     "matplotlib>=3.9.2",
     "fjsplib",
     "psplib>=0.2.0",
@@ -110,6 +106,7 @@ select = [
 ignore = [
     "E741",  # ambiguous variable name, needed for indexing
     "C901",  # too complex
+    "B905",  # allow zip without strict for conciseness
 ]
 
 
