@@ -1314,7 +1314,7 @@ def test_max_lateness(solver: str):
     assert_equal(result.best.tasks[1].end, 2)
 
 
-def test_total_setup_time():  # TODO implement for CP Optimizer
+def test_total_setup_time(solver: str):
     """
     Tests that the total setup time objective function is correctly optimized.
     """
@@ -1336,7 +1336,7 @@ def test_total_setup_time():  # TODO implement for CP Optimizer
 
     model.set_objective(weight_total_setup_time=2)
 
-    result = model.solve(solver="ortools")
+    result = model.solve(solver=solver)
 
     # Tasks 0, 1 and 2 are scheduled consecutively on a single machine
     # because of the precedence constraints, so the setup times are 1 and 3,
