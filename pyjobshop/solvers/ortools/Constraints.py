@@ -252,12 +252,13 @@ class Constraints:
 
                 var1 = variables.assign_vars.get((idx1, res_idx))
                 var2 = variables.assign_vars.get((idx2, res_idx))
+
                 if not (var1 and var2):
                     continue
 
-                # If the arc is selected, then both tasks must be present.
-                model.add(arcs[idx1, idx2] <= var1.present)
-                model.add(arcs[idx1, idx2] <= var2.present)
+                arc_selected = arcs[idx1, idx2]
+                model.add(arc_selected <= var1.present)
+                model.add(arc_selected <= var2.present)
 
                 setup = (
                     setup_times[res_idx, idx1, idx2]
@@ -265,7 +266,7 @@ class Constraints:
                     else 0
                 )
                 expr = var1.end + setup <= var2.start
-                model.add(expr).only_enforce_if(arcs[idx1, idx2])
+                model.add(expr).only_enforce_if(arc_selected)
 
     def add_constraints(self):
         """
