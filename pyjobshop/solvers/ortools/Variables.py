@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from typing import TypeAlias
 
 from ortools.sat.python.cp_model import (
     BoolVarT,
@@ -6,12 +7,17 @@ from ortools.sat.python.cp_model import (
     Domain,
     IntervalVar,
     IntVar,
+    LinearExprT,
 )
 
 import pyjobshop.solvers.utils as utils
 from pyjobshop.constants import MAX_VALUE
 from pyjobshop.ProblemData import Machine, ProblemData
 from pyjobshop.Solution import Solution
+
+TaskIdx = int
+ResourceIdx = int
+ModeVar: TypeAlias = IntVar  # actually BoolVarT
 
 
 @dataclass
@@ -23,18 +29,21 @@ class JobVar:
     ----------
     interval
         The interval variable representing the job.
-    start
-        The start time variable of the interval.
-    duration
-        The duration variable of the interval.
-    end
-        The end time variable of the interval.
     """
 
     interval: IntervalVar
-    start: IntVar
-    duration: IntVar
-    end: IntVar
+
+    @property
+    def start(self) -> LinearExprT:
+        return self.interval.start_expr()
+
+    @property
+    def duration(self) -> LinearExprT:
+        return self.interval.size_expr()
+
+    @property
+    def end(self) -> LinearExprT:
+        return self.interval.end_expr()
 
 
 @dataclass
@@ -46,63 +55,67 @@ class TaskVar:
     ----------
     interval
         The interval variable representing the task.
-    start
-        The start time variable of the interval.
-    duration
-        The duration variable of the interval.
-    end
-        The end time variable of the interval.
     """
 
     interval: IntervalVar
-    start: IntVar
-    duration: IntVar
-    end: IntVar
+
+    @property
+    def start(self) -> LinearExprT:
+        return self.interval.start_expr()
+
+    @property
+    def duration(self) -> LinearExprT:
+        return self.interval.size_expr()
+
+    @property
+    def end(self) -> LinearExprT:
+        return self.interval.end_expr()
 
 
 @dataclass
-class ModeVar:
+class AssignVar:
     """
-    Variables that represent a possible processing mode of a task.
+    Variables that represent a task-resource assignment in the problem.
 
     Parameters
     ----------
-    task_idx
-        The index of the task.
     interval
-        The optional interval variable representing the assignment of the task.
-    start
-        The start time variable of the interval.
-    duration
-        The duration variable of the interval.
-    end
-        The end time variable of the interval.
+        The interval variable representing the task-resource assignment.
     present
         The boolean variable indicating whether the interval is present.
+    demand
+        The demand consumed by the task-resource pair.
     """
 
-    task_idx: int
     interval: IntervalVar
-    start: IntVar
-    duration: IntVar
-    end: IntVar
     present: BoolVarT
+    demand: LinearExprT
+
+    @property
+    def start(self) -> LinearExprT:
+        return self.interval.start_expr()
+
+    @property
+    def duration(self) -> LinearExprT:
+        return self.interval.size_expr()
+
+    @property
+    def end(self) -> LinearExprT:
+        return self.interval.end_expr()
 
 
 @dataclass
 class SequenceVar:
     """
-    Represents a sequence of interval variables for all modes that use this
-    machine.
+    Represents the sequence of interval variables for all tasks that may
+    be assigned to this machine.
 
     Parameters
     ----------
-    mode_vars
-        The mode interval variables belonging to this sequence.
     arcs
-        The arc literals between each pair of intervals in the sequence
-        indicating whether intervals are scheduled directly behind each other.
-        Also includes arcs to and from a dummy node for each interval.
+        The arc literals between each pair of intervals indicating whether
+        intervals are scheduled directly behind each other. Includes arcs
+        to and from a dummy node for each interval.
     is_active
         A boolean that indicates whether the sequence is active, meaning that a
         circuit constraint must be added for this machine. Default ``False``.
@@ -117,23 +130,19 @@ class SequenceVar:
 
     DUMMY = -1
 
-    mode_vars: list[ModeVar]
-    arcs: dict[tuple[int, int], BoolVarT] = field(default_factory=dict)
+    arcs: dict[tuple[TaskIdx, TaskIdx], BoolVarT] = field(default_factory=dict)
     is_active: bool = False
 
-    def activate(self, m: CpModel):
+    def activate(self, m: CpModel, data: ProblemData):
         """
         Activates the sequence variable by creating all relevant literals.
         """
         if self.is_active:
             return
 
+        nodes = list(range(data.num_tasks)) + [self.DUMMY]
+
         self.is_active = True
-
-        # The nodes in the graph are the indices of the mode variables,
-        # plus the index of the dummy node.
-        nodes = list(range(len(self.mode_vars))) + [self.DUMMY]
-
         self.arcs = {
             (i, j): m.new_bool_var(f"{i}->{j}") for i in nodes for j in nodes
         }
@@ -150,7 +159,11 @@ class Variables:
 
         self._job_vars = self._make_job_variables()
         self._task_vars = self._make_task_variables()
-        self._mode_vars = self._make_mode_variables()
+        self._mode_vars = [
+            {mode: model.new_bool_var(name="") for mode in modes}
+            for modes in utils.task2modes(data)
+        ]
+        self._assign_vars = self._make_assign_variables(self._task_vars)
         self._sequence_vars = self._make_sequence_variables()
 
     @property
@@ -168,7 +181,14 @@ class Variables:
         return self._task_vars
 
     @property
-    def mode_vars(self) -> list[ModeVar]:
+    def assign_vars(self) -> dict[tuple[TaskIdx, ResourceIdx], AssignVar]:
+        """
+        Retruns the assignment variables.
+        """
+        return self._assign_vars
+
+    @property
+    def mode_vars(self) -> list[dict[int, ModeVar]]:
         """
         Returns the mode variables.
         """
@@ -180,6 +200,13 @@ class Variables:
         Returns the sequence variables.
         """
         return self._sequence_vars
+
+    def res2assign(self, idx: int) -> list[AssignVar]:
+        """
+        Returns all assignment variables for the given resource.
+        """
+        items = self.assign_vars.items()
+        return [var for (_, res_idx), var in items if res_idx == idx]
 
     def _make_job_variables(self) -> list[JobVar]:
         """
@@ -208,7 +235,7 @@ class Variables:
             interval = model.new_interval_var(
                 start, duration, end, f"{name}_interval"
             )
-            variables.append(JobVar(interval, start, duration, end))
+            variables.append(JobVar(interval))
 
         return variables
 
@@ -245,64 +272,56 @@ class Variables:
             interval = model.new_interval_var(
                 start, duration, end, f"interval_{task}"
             )
-            variables.append(TaskVar(interval, start, duration, end))
+            variables.append(TaskVar(interval))
 
         return variables
 
-    def _make_mode_variables(self) -> list[ModeVar]:
+    def _make_assign_variables(
+        self, task_vars: list[TaskVar]
+    ) -> dict[tuple[TaskIdx, ResourceIdx], AssignVar]:
         """
-        Creates an optional interval variable for mode.
+        Creates an optional interval variable for each task-resource pair.
         """
         model, data = self._model, self._data
-        variables = []
+        task2modes = utils.task2modes(data)
+        variables = {}
 
-        for idx, mode in enumerate(data.modes):
-            task = data.tasks[mode.task]
-            name = f"M{idx}_{mode.task}"
-            start = model.new_int_var(
-                lb=task.earliest_start,
-                ub=min(task.latest_start, MAX_VALUE),
-                name=f"{name}_start",
-            )
-            duration = model.new_int_var(
-                lb=mode.duration,
-                ub=mode.duration if task.fixed_duration else MAX_VALUE,
-                name=f"{name}_duration",
-            )
-            end = model.new_int_var(
-                lb=task.earliest_end,
-                ub=min(task.latest_end, MAX_VALUE),
-                name=f"{name}_start",
-            )
-            present = model.new_bool_var(f"{name}_present")
-            interval = model.new_optional_interval_var(
-                start, duration, end, present, f"{name}_interval"
-            )
-            var = ModeVar(
-                task_idx=mode.task,
-                interval=interval,
-                start=start,
-                duration=duration,
-                end=end,
-                present=present,
-            )
-            variables.append(var)
+        for task_idx in range(data.num_tasks):
+            # Only create assignment variables for (task, resource) pairs
+            # that are actually used in the problem.
+            resources = {
+                res
+                for mode in task2modes[task_idx]
+                for res in data.modes[mode].resources
+            }
+
+            for res_idx in resources:
+                name = f"A_{task_idx}_{res_idx}"
+                task_var = task_vars[task_idx]
+                present = model.new_bool_var(f"{name}_present")
+                interval = model.new_optional_interval_var(
+                    task_var.start,
+                    task_var.duration,
+                    task_var.end,
+                    present,
+                    f"{name}_interval",
+                )
+                demand = model.new_int_var(0, MAX_VALUE, f"{name}_demand")
+                var = AssignVar(interval, present, demand)
+                variables[task_idx, res_idx] = var
 
         return variables
 
-    def _make_sequence_variables(self) -> dict[int, SequenceVar]:
+    def _make_sequence_variables(self) -> dict[ResourceIdx, SequenceVar]:
         """
         Creates a sequence variable for each machine.
         """
         data = self._data
-        resource2modes = utils.resource2modes(data)
-        variables: dict[int, SequenceVar] = {}
+        variables: dict[ResourceIdx, SequenceVar] = {}
 
         for idx, resource in enumerate(data.resources):
             if isinstance(resource, Machine):
-                modes = resource2modes[idx]
-                intervals = [self.mode_vars[mode] for mode in modes]
-                variables[idx] = SequenceVar(intervals)
+                variables[idx] = SequenceVar()
 
         return variables
 
@@ -311,10 +330,10 @@ class Variables:
         Warmstarts the variables based on the given solution.
         """
         model, data = self._model, self._data
-        job_vars, task_vars, mode_vars = (
+        job_vars, task_vars, assign_vars = (
             self.job_vars,
             self.task_vars,
-            self.mode_vars,
+            self.assign_vars,
         )
 
         model.clear_hints()
@@ -326,25 +345,25 @@ class Variables:
 
             job_start = min(task.start for task in sol_tasks)
             job_end = max(task.end for task in sol_tasks)
+            job_duration = job_end - job_start
 
-            model.add_hint(job_var.start, job_start)
-            model.add_hint(job_var.duration, job_end - job_start)
-            model.add_hint(job_var.end, job_end)
+            model.add_hint(job_var.start, job_start)  # type: ignore
+            model.add_hint(job_var.duration, job_duration)  # type: ignore
+            model.add_hint(job_var.end, job_end)  # type: ignore
 
         for idx in range(data.num_tasks):
             task_var = task_vars[idx]
             sol_task = solution.tasks[idx]
+            task_duration = sol_task.end - sol_task.start
 
-            model.add_hint(task_var.start, sol_task.start)
-            model.add_hint(task_var.duration, sol_task.end - sol_task.start)
-            model.add_hint(task_var.end, sol_task.end)
+            model.add_hint(task_var.start, sol_task.start)  # type: ignore
+            model.add_hint(task_var.duration, task_duration)  # type: ignore
+            model.add_hint(task_var.end, sol_task.end)  # type: ignore
 
-        for idx in range(len(data.modes)):
-            var = mode_vars[idx]
-            mode = data.modes[idx]
-            sol_task = solution.tasks[mode.task]
+        for task_idx in range(data.num_tasks):
+            sol_task = solution.tasks[task_idx]
 
-            model.add_hint(var.start, sol_task.start)
-            model.add_hint(var.duration, sol_task.end - sol_task.start)
-            model.add_hint(var.end, sol_task.end)
-            model.add_hint(var.present, idx == sol_task.mode)
+            for res_idx in sol_task.resources:
+                if (task_idx, res_idx) in assign_vars:
+                    var = assign_vars[task_idx, res_idx]
+                    model.add_hint(var.present, True)
