@@ -41,7 +41,7 @@ class Constraints:
                 task_var = variables.task_vars[task]
 
                 if data.tasks[task].optional:
-                    # When tasks are absent, they should not restrict the job's
+                    # When tasks are absent, they should not affect the job's
                     # start and end times.
                     task_start = model.new_int_var(0, MAX_VALUE, "")
                     task_end = model.new_int_var(0, MAX_VALUE, "")
@@ -70,6 +70,7 @@ class Constraints:
         model, data, variables = self._model, self._data, self._variables
 
         for task_idx in range(data.num_tasks):
+            # Select exactly one mode iff the task is present.
             task_var = variables.task_vars[task_idx]
             task_mode_vars = variables.mode_vars[task_idx]
             model.add(sum(task_mode_vars.values()) == task_var.present)
@@ -110,7 +111,7 @@ class Constraints:
                 task_var = variables.task_vars[task_idx]
                 assign_var = variables.assign_vars[task_idx, res_idx]
 
-                # Assignment variable can only be preesent if task is present.
+                # Assignment variable can only be present if task is present.
                 model.add(assign_var.present <= task_var.present)
 
     def _machines_no_overlap(self):
