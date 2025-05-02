@@ -55,12 +55,6 @@ class TaskVar:
     ----------
     interval
         The interval variable representing the task.
-    start
-        The start time variable of the interval.
-    duration
-        The duration variable of the interval.
-    end
-        The end time variable of the interval.
     present
         The boolean variable indicating whether the interval is present.
     """
@@ -116,8 +110,8 @@ class AssignVar:
 @dataclass
 class SequenceVar:
     """
-    Represents a sequence of interval variables for all tasks that may
-    require this machine.
+    Represents the sequence of interval variables for all tasks that may
+    be assigned to this machine.
 
     Parameters
     ----------
@@ -149,12 +143,9 @@ class SequenceVar:
         if self.is_active:
             return
 
-        self.is_active = True
-
-        # The nodes in the graph are the task indices, plus the index of the
-        # dummy node.
         nodes = list(range(data.num_tasks)) + [self.DUMMY]
 
+        self.is_active = True
         self.arcs = {
             (i, j): m.new_bool_var(f"{i}->{j}") for i in nodes for j in nodes
         }

@@ -161,31 +161,31 @@ class Constraints:
         model, data, variables = self._model, self._data, self._variables
 
         for idx1, idx2, delay in data.constraints.start_before_start:
-            task_var1 = variables.task_vars[idx1]
-            task_var2 = variables.task_vars[idx2]
-            both_present = [task_var1.present, task_var2.present]
-            expr = task_var1.start + delay <= task_var2.start
+            var1 = variables.task_vars[idx1]
+            var2 = variables.task_vars[idx2]
+            both_present = [var1.present, var2.present]
+            expr = var1.start + delay <= var2.start
             model.add(expr).only_enforce_if(both_present)
 
         for idx1, idx2, delay in data.constraints.start_before_end:
-            task_var1 = variables.task_vars[idx1]
-            task_var2 = variables.task_vars[idx2]
-            both_present = [task_var1.present, task_var2.present]
-            expr = task_var1.start + delay <= task_var2.end
+            var1 = variables.task_vars[idx1]
+            var2 = variables.task_vars[idx2]
+            both_present = [var1.present, var2.present]
+            expr = var1.start + delay <= var2.end
             model.add(expr).only_enforce_if(both_present)
 
         for idx1, idx2, delay in data.constraints.end_before_start:
-            task_var1 = variables.task_vars[idx1]
-            task_var2 = variables.task_vars[idx2]
-            both_present = [task_var1.present, task_var2.present]
-            expr = task_var1.end + delay <= task_var2.start
+            var1 = variables.task_vars[idx1]
+            var2 = variables.task_vars[idx2]
+            both_present = [var1.present, var2.present]
+            expr = var1.end + delay <= var2.start
             model.add(expr).only_enforce_if(both_present)
 
         for idx1, idx2, delay in data.constraints.end_before_end:
-            task_var1 = variables.task_vars[idx1]
-            task_var2 = variables.task_vars[idx2]
-            both_present = [task_var1.present, task_var2.present]
-            expr = task_var1.end + delay <= task_var2.end
+            var1 = variables.task_vars[idx1]
+            var2 = variables.task_vars[idx2]
+            both_present = [var1.present, var2.present]
+            expr = var1.end + delay <= var2.end
             model.add(expr).only_enforce_if(both_present)
 
     def _identical_and_different_resource_constraints(self):
@@ -252,8 +252,9 @@ class Constraints:
 
                 seq_var = variables.sequence_vars[res_idx]
                 seq_var.activate(model, data)
-                var1 = self._variables.assign_vars.get((idx1, res_idx))
-                var2 = self._variables.assign_vars.get((idx2, res_idx))
+
+                var1 = variables.assign_vars.get((idx1, res_idx))
+                var2 = variables.assign_vars.get((idx2, res_idx))
 
                 if not (var1 and var2):
                     continue
@@ -307,9 +308,9 @@ class Constraints:
                 if not (var1 and var2):
                     continue
 
-                # If the arc is selected, then both tasks must be present.
-                model.add(arcs[idx1, idx2] <= var1.present)
-                model.add(arcs[idx1, idx2] <= var2.present)
+                arc_selected = arcs[idx1, idx2]
+                model.add(arc_selected <= var1.present)
+                model.add(arc_selected <= var2.present)
 
                 setup = (
                     setup_times[res_idx, idx1, idx2]
@@ -317,7 +318,7 @@ class Constraints:
                     else 0
                 )
                 expr = var1.end + setup <= var2.start
-                model.add(expr).only_enforce_if(arcs[idx1, idx2])
+                model.add(expr).only_enforce_if(arc_selected)
 
     def add_constraints(self):
         """
