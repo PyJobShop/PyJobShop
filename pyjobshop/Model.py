@@ -13,6 +13,7 @@ from pyjobshop.ProblemData import (
     Mode,
     NonRenewable,
     Objective,
+    Permutation,
     ProblemData,
     Renewable,
     Resource,
@@ -136,6 +137,7 @@ class Model:
                 demands=mode.demands,
             )
 
+        resources = model.resources
         tasks = model.tasks
 
         for idx1, idx2, delay in data.constraints.start_before_start:
@@ -159,9 +161,12 @@ class Model:
         for idx1, idx2 in data.constraints.consecutive:
             model.add_consecutive(tasks[idx1], tasks[idx2])
 
+        for idx1, idx2 in data.constraints.permutation:
+            model.add_permutation(resources[idx1], resources[idx2])
+
         for res_idx, idx1, idx2, duration in data.constraints.setup_times:
             model.add_setup_time(
-                machine=model.resources[res_idx],  # type: ignore
+                machine=resources[res_idx],  # type: ignore
                 task1=tasks[idx1],
                 task2=tasks[idx2],
                 duration=duration,
@@ -387,6 +392,21 @@ class Model:
         idx1, idx2 = self._id2task[id(task1)], self._id2task[id(task2)]
         constraint = Consecutive(idx1, idx2)
         self._constraints.consecutive.append(constraint)
+
+        return constraint
+
+    def add_permutation(
+        self, machine1: Machine, machine2: Machine
+    ) -> Permutation:
+        """
+        Adds a permutation constraint that requires the two machines to be
+        scheduled in the same order.
+        """
+        machine_idx1 = self._id2resource[id(machine1)]
+        machine_idx2 = self._id2resource[id(machine2)]
+
+        constraint = Permutation(machine_idx1, machine_idx2)
+        self._constraints.permutation.append(constraint)
 
         return constraint
 

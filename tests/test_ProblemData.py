@@ -12,6 +12,7 @@ from pyjobshop.ProblemData import (
     Mode,
     NonRenewable,
     Objective,
+    Permutation,
     ProblemData,
     Renewable,
     SetupTime,
@@ -399,6 +400,52 @@ def test_problem_data_all_modes_demand_infeasible():
                 Mode(0, [0], 2, demands=[2]),  # infeasible
             ],
         )
+
+
+@pytest.mark.parametrize(
+    "resource", [Renewable(capacity=1), NonRenewable(capacity=1)]
+)
+def test_problem_data_raises_capacitated_resources_and_permutation(resource):
+    """
+    Tests that the ProblemData class raises an error when capacitated resources
+    are used with permutation constraints.
+    """
+    with assert_raises(ValueError):
+        ProblemData(
+            [Job()],
+            [Machine(), resource],
+            [Task(), Task()],
+            [Mode(0, [0], 0), Mode(1, [0], 0)],
+            Constraints(permutation=[Permutation(0, 1)]),
+        )
+
+
+def test_problem_data_raises_permutation_requires_same_set_of_tasks():
+    """
+    Tests that ProblemData raises an error if a permutation constraint is
+    imposed between two machines, but both machines don't process the same
+    set of tasks.
+    """
+    # machine1 and machine 2 process different sets of tasks. This is not
+    # allowed because it's unclear how to enforce a permutation constraint.
+    tasks = [Task(), Task(), Task()]
+    machines = [Machine(), Machine()]
+    modes = [Mode(0, [0], 1), Mode(1, [0], 1)]
+    modes += [Mode(0, [1], 1), Mode(1, [1], 1), Mode(2, [1], 1)]
+    constraints = Constraints(permutation=[Permutation(0, 1)])
+
+    with assert_raises(ValueError):
+        ProblemData([], machines, tasks, modes, constraints)
+
+    # If the tasks are the same between machines, then it's OK.
+    tasks = [Task(), Task()]
+    machines = [Machine(), Machine()]
+    modes = [
+        Mode(task_idx, [mach_idx], 1)
+        for task_idx in range(len(tasks))
+        for mach_idx in range(len(machines))
+    ]
+    ProblemData([], machines, tasks, modes, constraints)
 
 
 def test_problem_data_raises_negative_setup_times():
@@ -1146,6 +1193,39 @@ def test_consecutive_multiple_machines(solver: str):
     # ...so task 2 must be scheduled directly before task 1, but the setup time
     # between them is 10, so the makespan is 1 + 10 + 1 = 2.
     result = model.solve(solver=solver)
+    assert_equal(result.objective, 12)
+    assert_equal(result.status.value, "Optimal")
+
+
+def test_permutation_constraint(solver: str):
+    """
+    Tests whether the permutation constraint works correctly.
+    """
+    model = Model()
+
+    # TODO validate permutation, no intersection between tasks,
+    # pass a sequence of tasks
+    machine1, machine2 = [model.add_machine() for _ in range(2)]
+    task1, task2 = [model.add_task() for _ in range(2)]
+    task3, task4 = [model.add_task() for _ in range(2)]
+    tasks1 = [task1, task2]
+    tasks2 = [task3, task4]
+    # [
+    #     model.add_mode(task, machine, 1)
+    #     for machine in [machine1, machine2]
+    #     for task in [task1, task2]
+    # ]
+    model.add_permutation(machine1, machine2, tasks1, tasks2)
+    model.add_setup_time(machine1, task2, task1, 10)
+    model.add_setup_time(machine2, task1, task2, 50)
+
+    # In a non-permutation setting, it would be best to schedule task1 before
+    # task2 on machine1, and task2 before task1 on machine2. That results in
+    # a makespan of 2. However, because of the permutation constraint, both
+    # tasks must be scheduled in the same order on both machines, so scheduling
+    # task1 before task2 on both machines is optimal, incurring setup times and
+    # resulting in a makespan of 12.
+    result = model.solve()
     assert_equal(result.objective, 12)
     assert_equal(result.status.value, "Optimal")
 

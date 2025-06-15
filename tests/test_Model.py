@@ -13,6 +13,7 @@ from pyjobshop.ProblemData import (
     Mode,
     NonRenewable,
     Objective,
+    Permutation,
     ProblemData,
     Renewable,
     SetupTime,
@@ -30,11 +31,12 @@ def test_model_to_data():
     model = Model()
 
     job = model.add_job()
-    machine1, machine2 = [model.add_machine() for _ in range(2)]
+    machine1, machine2, machine3 = [model.add_machine() for _ in range(3)]
     task1, task2 = [model.add_task(job=job) for _ in range(2)]
 
     model.add_mode(task1, machine1, 1)
     model.add_mode(task2, machine2, 2)
+    model.add_mode(task2, machine3, 1)
 
     model.add_start_before_start(task1, task2)
     model.add_start_before_end(task1, task2)
@@ -43,6 +45,7 @@ def test_model_to_data():
     model.add_identical_resources(task2, task1)
     model.add_different_resources(task2, task1)
     model.add_consecutive(task2, task1)
+    model.add_permutation(machine2, machine3)
 
     model.add_setup_time(machine1, task1, task2, 3)
     model.add_setup_time(machine2, task1, task2, 4)
@@ -52,13 +55,14 @@ def test_model_to_data():
     data = model.data()
 
     assert_equal(data.jobs, [job])
-    assert_equal(data.resources, [machine1, machine2])
+    assert_equal(data.resources, [machine1, machine2, machine3])
     assert_equal(data.tasks, [task1, task2])
     assert_equal(
         data.modes,
         [
             Mode(task=0, resources=[0], duration=1),
             Mode(task=1, resources=[1], duration=2),
+            Mode(task=1, resources=[2], duration=1),
         ],
     )
 
@@ -70,6 +74,7 @@ def test_model_to_data():
     assert_equal(constraints.identical_resources, [IdenticalResources(1, 0)])
     assert_equal(constraints.different_resources, [DifferentResources(1, 0)])
     assert_equal(constraints.consecutive, [Consecutive(1, 0)])
+    assert_equal(constraints.permutation, [Permutation(1, 2)])
     assert_equal(
         constraints.setup_times, [SetupTime(0, 0, 1, 3), SetupTime(1, 0, 1, 4)]
     )
@@ -83,9 +88,14 @@ def test_from_data():
     """
     data = ProblemData(
         [Job(due_date=1)],
-        [Machine(), Renewable(1), NonRenewable(0)],
+        [Machine(), Renewable(1), NonRenewable(0), Machine()],
         [Task(), Task(job=0), Task()],
-        modes=[Mode(0, [0], 1), Mode(1, [1], 2), Mode(2, [1], 2)],
+        modes=[
+            Mode(0, [0], 1),
+            Mode(1, [1], 2),
+            Mode(2, [1], 2),
+            Mode(0, [3], 1),
+        ],
         constraints=Constraints(
             start_before_start=[StartBeforeStart(0, 1)],
             start_before_end=[StartBeforeEnd(0, 1)],
@@ -94,6 +104,7 @@ def test_from_data():
             identical_resources=[IdenticalResources(0, 1)],
             different_resources=[DifferentResources(0, 1)],
             consecutive=[Consecutive(1, 2)],
+            permutation=[Permutation(0, 3)],
             setup_times=[
                 SetupTime(0, 0, 1, 1),  # machine
                 SetupTime(1, 0, 1, 0),  # renewable

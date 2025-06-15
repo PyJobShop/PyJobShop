@@ -514,6 +514,16 @@ class Consecutive(IterableMixin):
 
 
 @dataclass
+class Permutation(IterableMixin):
+    """
+    Sequence all tasks on machine1 and machine2 in the same order.
+    """
+
+    machine1: int
+    machine2: int
+
+
+@dataclass
 class SetupTime(IterableMixin):
     """
     Sequence-dependent setup time between task 1 and task 2 on the given
@@ -550,6 +560,7 @@ class Constraints:
         identical_resources: Optional[list[IdenticalResources]] = None,
         different_resources: Optional[list[DifferentResources]] = None,
         consecutive: Optional[list[Consecutive]] = None,
+        permutation: Optional[list[Permutation]] = None,
         setup_times: Optional[list[SetupTime]] = None,
     ):
         self._start_before_start = start_before_start or []
@@ -559,6 +570,7 @@ class Constraints:
         self._identical_resources = identical_resources or []
         self._different_resources = different_resources or []
         self._consecutive = consecutive or []
+        self._permutation = permutation or []
         self._setup_times = setup_times or []
 
     def __eq__(self, other) -> bool:
@@ -570,6 +582,7 @@ class Constraints:
             and self.identical_resources == other.identical_resources
             and self.different_resources == other.different_resources
             and self.consecutive == other.consecutive
+            and self.permutation == other.permutation
             and self.setup_times == other.setup_times
         )
 
@@ -582,6 +595,7 @@ class Constraints:
             + len(self.identical_resources)
             + len(self.different_resources)
             + len(self.consecutive)
+            + len(self.permutation)
             + len(self._setup_times)
         )
 
@@ -633,6 +647,13 @@ class Constraints:
         Returns the list of consecutive task constraints.
         """
         return self._consecutive
+
+    @property
+    def permutation(self) -> list[Permutation]:
+        """
+        Returns the list of permutation constraints.
+        """
+        return self._permutation
 
     @property
     def setup_times(self) -> list[SetupTime]:
@@ -791,6 +812,25 @@ class ProblemData:
         for task, count in num_modes.items():
             if infeasible_modes[task] == count:
                 msg = f"All modes for task {task} have infeasible demands."
+                raise ValueError(msg)
+
+        machine_idcs = [
+            idx
+            for idx, res in enumerate(self.resources)
+            if isinstance(res, Machine)
+        ]
+
+        for res_idx1, res_idx2 in self.constraints.permutation:
+            if res_idx1 not in machine_idcs or res_idx2 not in machine_idcs:
+                msg = "Permutation constraints only allowed for machines."
+                raise ValueError(msg)
+
+            # TODO refactor
+            tasks1 = {m.task for m in self._modes if res_idx1 in m.resources}
+            tasks2 = {m.task for m in self._modes if res_idx2 in m.resources}
+
+            if set(tasks1) != set(tasks2):
+                msg = "Both machines must process the same set of tasks."
                 raise ValueError(msg)
 
         for res_idx, *_, duration in self.constraints.setup_times:
