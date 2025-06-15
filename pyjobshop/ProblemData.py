@@ -1,7 +1,7 @@
 from collections import Counter
 from copy import deepcopy
-from dataclasses import dataclass
-from typing import NamedTuple, Optional, Sequence, TypeVar, Union
+from dataclasses import dataclass, fields
+from typing import Optional, Sequence, TypeVar, Union
 
 from pyjobshop.constants import MAX_VALUE
 
@@ -387,7 +387,18 @@ class Mode:
         )
 
 
-class StartBeforeStart(NamedTuple):
+class IterableMixin:
+    """
+    Mixin class for making dataclases iterable (and thus unpackable). This
+    makes the implementation of constraints more concise and readable.
+    """
+
+    def __iter__(self):
+        return iter(getattr(self, field.name) for field in fields(self))
+
+
+@dataclass
+class StartBeforeStart(IterableMixin):
     """
     Start task 1 (:math:`s_1`) before task 2 starts (:math:`s_2`), with an
     optional delay :math:`d`. That is,
@@ -401,7 +412,8 @@ class StartBeforeStart(NamedTuple):
     delay: int = 0
 
 
-class StartBeforeEnd(NamedTuple):
+@dataclass
+class StartBeforeEnd(IterableMixin):
     """
     Start task 1 (:math:`s_1`) before task 2 ends (:math:`e_2`), with an
     optional delay :math:`d`. That is,
@@ -415,7 +427,8 @@ class StartBeforeEnd(NamedTuple):
     delay: int = 0
 
 
-class EndBeforeStart(NamedTuple):
+@dataclass
+class EndBeforeStart(IterableMixin):
     """
     End task 1 (:math:`e_1`) before task 2 starts (:math:`s_2`), with an
     optional delay :math:`d`. That is,
@@ -429,7 +442,8 @@ class EndBeforeStart(NamedTuple):
     delay: int = 0
 
 
-class EndBeforeEnd(NamedTuple):
+@dataclass
+class EndBeforeEnd(IterableMixin):
     """
     End task 1 (:math:`e_1`) before task 2 ends (:math:`e_2`), with an
     optional delay :math:`d`. That is,
@@ -443,7 +457,8 @@ class EndBeforeEnd(NamedTuple):
     delay: int = 0
 
 
-class IdenticalResources(NamedTuple):
+@dataclass
+class IdenticalResources(IterableMixin):
     """
     Select modes for task 1 and task 2 that use the same resources.
 
@@ -459,7 +474,8 @@ class IdenticalResources(NamedTuple):
     task2: int
 
 
-class DifferentResources(NamedTuple):
+@dataclass
+class DifferentResources(IterableMixin):
     """
     Select modes for task 1 and task 2 that use different resources.
 
@@ -475,7 +491,8 @@ class DifferentResources(NamedTuple):
     task2: int
 
 
-class Consecutive(NamedTuple):
+@dataclass
+class Consecutive(IterableMixin):
     """
     Sequence task 1 and task 2 consecutively on the machines they are both
     assigned to, meaning that no other task is allowed to be scheduled between
@@ -496,7 +513,8 @@ class Consecutive(NamedTuple):
     task2: int
 
 
-class SetupTime(NamedTuple):
+@dataclass
+class SetupTime(IterableMixin):
     """
     Sequence-dependent setup time between task 1 and task 2 on the given
     machine.
