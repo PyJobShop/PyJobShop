@@ -387,13 +387,18 @@ class Mode:
         )
 
 
-class Unpackable:
+class IterableMixin:
+    """
+    Mixin class for making dataclases iterable (and thus unpackable). This
+    makes the implementation of constraints more concise and readable.
+    """
+
     def __iter__(self):
         return iter(getattr(self, field.name) for field in fields(self))
 
 
 @dataclass
-class StartBeforeStart(Unpackable):
+class StartBeforeStart(IterableMixin):
     """
     Start task 1 (:math:`s_1`) before task 2 starts (:math:`s_2`), with an
     optional delay :math:`d`. That is,
@@ -408,7 +413,7 @@ class StartBeforeStart(Unpackable):
 
 
 @dataclass
-class StartBeforeEnd(Unpackable):
+class StartBeforeEnd(IterableMixin):
     """
     Start task 1 (:math:`s_1`) before task 2 ends (:math:`e_2`), with an
     optional delay :math:`d`. That is,
@@ -423,7 +428,7 @@ class StartBeforeEnd(Unpackable):
 
 
 @dataclass
-class EndBeforeStart(Unpackable):
+class EndBeforeStart(IterableMixin):
     """
     End task 1 (:math:`e_1`) before task 2 starts (:math:`s_2`), with an
     optional delay :math:`d`. That is,
@@ -438,7 +443,7 @@ class EndBeforeStart(Unpackable):
 
 
 @dataclass
-class EndBeforeEnd(Unpackable):
+class EndBeforeEnd(IterableMixin):
     """
     End task 1 (:math:`e_1`) before task 2 ends (:math:`e_2`), with an
     optional delay :math:`d`. That is,
@@ -453,7 +458,7 @@ class EndBeforeEnd(Unpackable):
 
 
 @dataclass
-class IdenticalResources(Unpackable):
+class IdenticalResources(IterableMixin):
     """
     Select modes for task 1 and task 2 that use the same resources.
 
@@ -470,7 +475,7 @@ class IdenticalResources(Unpackable):
 
 
 @dataclass
-class DifferentResources(Unpackable):
+class DifferentResources(IterableMixin):
     """
     Select modes for task 1 and task 2 that use different resources.
 
@@ -487,7 +492,7 @@ class DifferentResources(Unpackable):
 
 
 @dataclass
-class Consecutive(Unpackable):
+class Consecutive(IterableMixin):
     """
     Sequence task 1 and task 2 consecutively on the machines they are both
     assigned to, meaning that no other task is allowed to be scheduled between
@@ -509,7 +514,7 @@ class Consecutive(Unpackable):
 
 
 @dataclass
-class SetupTime(Unpackable):
+class SetupTime(IterableMixin):
     """
     Sequence-dependent setup time between task 1 and task 2 on the given
     machine.
