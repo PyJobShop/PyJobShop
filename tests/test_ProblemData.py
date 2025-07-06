@@ -1150,6 +1150,36 @@ def test_consecutive_multiple_machines(solver: str):
     assert_equal(result.status.value, "Optimal")
 
 
+def test_setup_time_bug(solver: str):
+    """
+    Tests that a bug identified in #307 is correctly fixed. This bug caused
+    setup times to be ignored because dummy assignment variables were not
+    properly deactivated for absent (task, machine) pairs.
+    """
+    model = Model()
+
+    job = model.add_job()
+    task1 = model.add_task(job)
+    machine1 = model.add_machine()
+    model.add_mode(task1, machine1, 1)
+
+    machine2 = model.add_machine()
+    task2 = model.add_task(job)
+    task3 = model.add_task(job)
+    model.add_mode(task2, machine2, 1)
+    model.add_mode(task3, machine2, 1)
+
+    for task_from in model.tasks:
+        for task_to in model.tasks:
+            model.add_setup_time(machine2, task_from, task_to, 1)
+
+    # Before fixing this bug, the solver would incorrecty ignore the setup
+    # time between task 2 and task 3 (due to a dummy assignment variable).
+    result = model.solve(solver=solver)
+    assert_equal(result.objective, 3)
+    assert_equal(result.status.value, "Optimal")
+
+
 def test_makespan_objective(solver: str):
     """
     Tests that the makespan objective is correctly optimized.
