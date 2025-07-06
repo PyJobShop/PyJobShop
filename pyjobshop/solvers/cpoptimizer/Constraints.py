@@ -71,8 +71,8 @@ class Constraints:
             setup_times = utils.setup_times_matrix(data)
 
             if setup_times is not None:
-                # The indexing of setup times is handled by the interval
-                # variable "types" in the sequence variable.
+                # The indexing of setup times is correctly handled by the
+                # interval variable's task index "type".
                 matrix = setup_times[idx, :, :]
                 matrix = matrix if np.any(matrix > 0) else None
             else:
