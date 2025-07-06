@@ -254,6 +254,8 @@ class Constraints:
                 var2 = variables.assign_vars.get((idx2, res_idx))
 
                 if not (var1 and var2):
+                    # Deactivate arc if tasks are not assigned to this machine.
+                    model.add(arcs[idx1, idx2] == 0)
                     continue
 
                 arc_selected = arcs[idx1, idx2]

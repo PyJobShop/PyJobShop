@@ -64,17 +64,16 @@ class Constraints:
             if not isinstance(resource, Machine):
                 continue
 
-            if not (modes := resource2modes[idx]):
+            if not resource2modes[idx]:
                 continue  # skip because cpo warns if there are no modes
 
             seq_var = self._sequence_vars[idx]
             setup_times = utils.setup_times_matrix(data)
 
             if setup_times is not None:
-                # Slice the setup times matrix to get only durations for the
-                # tasks corresponding to the modes of this machine.
-                tasks = [data.modes[mode].task for mode in modes]
-                matrix = setup_times[idx, :, :][np.ix_(tasks, tasks)]
+                # The indexing of setup times is correctly handled by the
+                # interval variable's task index "type".
+                matrix = setup_times[idx, :, :]
                 matrix = matrix if np.any(matrix > 0) else None
             else:
                 matrix = None

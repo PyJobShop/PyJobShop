@@ -140,7 +140,9 @@ class Variables:
                 intervals = [self.mode_vars[mode] for mode in modes]
                 tasks = [data.modes[mode].task for mode in modes]
                 seq_var = sequence_var(
-                    name=f"S{resource}", types=tasks, vars=intervals
+                    name=f"S{resource}",
+                    types=tasks,  # needed for total_setup_times objective
+                    vars=intervals,
                 )
                 self._model.add(seq_var)
                 variables[idx] = seq_var
