@@ -503,7 +503,7 @@ class DifferentResources(IterableMixin):
 
 
 @dataclass
-class IfThenAtleastOne(IterableMixin):
+class IfThenAtLeastOne(IterableMixin):
     """
     If predecessor task is present, then at least one of the successor tasks
     must be present.
@@ -571,7 +571,7 @@ class Constraints:
         end_before_end: list[EndBeforeEnd] | None = None,
         identical_resources: list[IdenticalResources] | None = None,
         different_resources: list[DifferentResources] | None = None,
-        if_then_at_least_one: list[IfThenAtleastOne] | None = None,
+        if_then_at_least_one: list[IfThenAtLeastOne] | None = None,
         consecutive: list[Consecutive] | None = None,
         setup_times: list[SetupTime] | None = None,
     ):
@@ -654,7 +654,7 @@ class Constraints:
         return self._different_resources
 
     @property
-    def if_then_at_least_one(self) -> list[IfThenAtleastOne]:
+    def if_then_at_least_one(self) -> list[IfThenAtLeastOne]:
         """
         Returns the list of if-then constraints.
         """

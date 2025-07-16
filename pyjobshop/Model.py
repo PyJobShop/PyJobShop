@@ -8,7 +8,7 @@ from pyjobshop.ProblemData import (
     EndBeforeEnd,
     EndBeforeStart,
     IdenticalResources,
-    IfThenAtleastOne,
+    IfThenAtLeastOne,
     Job,
     Machine,
     Mode,
@@ -401,7 +401,7 @@ class Model:
 
     def add_if_then_at_least_one(
         self, pred: Task, succs: Task | list[Task]
-    ) -> IfThenAtleastOne:
+    ) -> IfThenAtLeastOne:
         """
         Adds a constraint that if the predecessor task is present, then at
         least one of the successor tasks must be present.
@@ -409,7 +409,7 @@ class Model:
         idx1 = self._id2task[id(pred)]
         succs = [succs] if isinstance(succs, Task) else succs
         idcs2 = [self._id2task[id(succ)] for succ in succs]
-        constraint = IfThenAtleastOne(idx1, idcs2)
+        constraint = IfThenAtLeastOne(idx1, idcs2)
         self._constraints.if_then_at_least_one.append(constraint)
 
         return constraint

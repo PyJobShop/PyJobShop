@@ -8,7 +8,7 @@ from pyjobshop.ProblemData import (
     EndBeforeEnd,
     EndBeforeStart,
     IdenticalResources,
-    IfThenAtleastOne,
+    IfThenAtLeastOne,
     Job,
     Machine,
     Mode,
@@ -71,7 +71,7 @@ def test_model_to_data():
     assert_equal(constraints.end_before_start, [EndBeforeStart(0, 1)])
     assert_equal(constraints.identical_resources, [IdenticalResources(1, 0)])
     assert_equal(constraints.different_resources, [DifferentResources(1, 0)])
-    assert_equal(constraints.if_then_at_least_one, [IfThenAtleastOne(1, [0])])
+    assert_equal(constraints.if_then_at_least_one, [IfThenAtLeastOne(1, [0])])
     assert_equal(constraints.consecutive, [Consecutive(1, 0)])
     assert_equal(
         constraints.setup_times, [SetupTime(0, 0, 1, 3), SetupTime(1, 0, 1, 4)]
@@ -96,7 +96,7 @@ def test_from_data():
             end_before_end=[EndBeforeEnd(0, 1)],
             identical_resources=[IdenticalResources(0, 1)],
             different_resources=[DifferentResources(0, 1)],
-            if_then_at_least_one=[IfThenAtleastOne(1, [0])],
+            if_then_at_least_one=[IfThenAtLeastOne(1, [0])],
             consecutive=[Consecutive(1, 2)],
             setup_times=[
                 SetupTime(0, 0, 1, 1),  # machine
