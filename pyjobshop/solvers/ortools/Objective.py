@@ -1,5 +1,3 @@
-from itertools import product
-
 from ortools.sat.python.cp_model import (
     CpModel,
     LinearExpr,
@@ -151,19 +149,20 @@ class Objective:
             if not seq_var.is_active:
                 continue
 
-            for idx1, idx2 in product(range(data.num_tasks), repeat=2):
-                var1 = variables.assign_vars.get((idx1, res_idx))
-                var2 = variables.assign_vars.get((idx2, res_idx))
-                if not (var1 and var2):
-                    continue
+            for task_idx1 in range(data.num_tasks):
+                for task_idx2 in range(data.num_tasks):
+                    var1 = variables.assign_vars.get((task_idx1, res_idx))
+                    var2 = variables.assign_vars.get((task_idx2, res_idx))
+                    if not (var1 and var2):
+                        continue
 
-                setup = (
-                    setup_times[res_idx, idx1, idx2]
-                    if setup_times is not None
-                    else 0
-                )
-                arc_selected = seq_var.arcs[idx1, idx2]
-                setup_time_vars.append(arc_selected * setup)
+                    setup = (
+                        setup_times[res_idx, task_idx1, task_idx2]
+                        if setup_times is not None
+                        else 0
+                    )
+                    arc_selected = seq_var.arcs[task_idx1, task_idx2]
+                    setup_time_vars.append(arc_selected * setup)
 
         return LinearExpr.sum(setup_time_vars)
 
