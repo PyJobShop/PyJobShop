@@ -1,5 +1,4 @@
 from collections import defaultdict
-from typing import Optional
 
 import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
@@ -13,9 +12,9 @@ from .utils import get_colors as _get_colors
 def plot_machine_gantt(
     solution: Solution,
     data: ProblemData,
-    resources: Optional[list[int]] = None,
+    resources: list[int] | None = None,
     plot_labels: bool = False,
-    ax: Optional[Axes] = None,
+    ax: Axes | None = None,
 ):
     """
     Plots a Gantt chart of the solution, where each row represents a machine

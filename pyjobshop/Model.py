@@ -1,4 +1,4 @@
-from typing import Optional, Sequence, Union
+from typing import Sequence
 
 from pyjobshop.constants import MAX_VALUE
 from pyjobshop.ProblemData import (
@@ -203,7 +203,7 @@ class Model:
         weight: int = 1,
         release_date: int = 0,
         deadline: int = MAX_VALUE,
-        due_date: Optional[int] = None,
+        due_date: int | None = None,
         name: str = "",
     ) -> Job:
         """
@@ -251,7 +251,7 @@ class Model:
 
     def add_task(
         self,
-        job: Optional[Job] = None,
+        job: Job | None = None,
         earliest_start: int = 0,
         latest_start: int = MAX_VALUE,
         earliest_end: int = 0,
@@ -287,9 +287,9 @@ class Model:
     def add_mode(
         self,
         task: Task,
-        resources: Union[Resource, Sequence[Resource]],
+        resources: Resource | Sequence[Resource],
         duration: int,
-        demands: Optional[Union[int, list[int]]] = None,
+        demands: int | list[int] | None = None,
     ) -> Mode:
         """
         Adds a processing mode to the model.
@@ -397,9 +397,7 @@ class Model:
 
         return constraint
 
-    def add_if_then(
-        self, pred: Task, succs: Union[Task, list[Task]]
-    ) -> IfThen:
+    def add_if_then(self, pred: Task, succs: Task | list[Task]) -> IfThen:
         """
         Adds a constraint that if the predecessor task is present, then at
         least one of the successor tasks must be present.
@@ -458,8 +456,8 @@ class Model:
         solver: str = "ortools",
         time_limit: float = float("inf"),
         display: bool = True,
-        num_workers: Optional[int] = None,
-        initial_solution: Optional[Solution] = None,
+        num_workers: int | None = None,
+        initial_solution: Solution | None = None,
         **kwargs,
     ) -> Result:
         """

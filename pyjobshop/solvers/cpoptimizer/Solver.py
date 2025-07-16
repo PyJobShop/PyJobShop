@@ -1,5 +1,3 @@
-from typing import Optional
-
 from docplex.cp.model import CpoModel
 from docplex.cp.solution import CpoSolveResult
 
@@ -72,8 +70,8 @@ class Solver:
         self,
         time_limit: float = float("inf"),
         display: bool = False,
-        num_workers: Optional[int] = None,
-        initial_solution: Optional[Solution] = None,
+        num_workers: int | None = None,
+        initial_solution: Solution | None = None,
         **kwargs,
     ) -> Result:
         """

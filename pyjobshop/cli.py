@@ -3,7 +3,6 @@ import warnings
 from functools import partial
 from multiprocessing import cpu_count
 from pathlib import Path
-from typing import Optional
 
 import numpy as np
 import tomli
@@ -115,8 +114,8 @@ def _solve(
     time_limit: float,
     display: bool,
     num_workers_per_instance: int,
-    config_loc: Optional[Path],
-    sol_dir: Optional[Path],
+    config_loc: Path | None,
+    sol_dir: Path | None,
 ) -> tuple[str, str, float, float, float]:
     """
     Solves a single instance.
@@ -150,7 +149,7 @@ def _solve(
 
 
 def _check_cpu_usage(
-    num_parallel_instances: int, num_workers_per_instance: Optional[int]
+    num_parallel_instances: int, num_workers_per_instance: int | None
 ):
     """
     Warns if the number of workers per instance times the number of parallel
