@@ -31,14 +31,11 @@ class Objective:
         makespan = self._model.new_int_var(0, MAX_VALUE, "makespan")
         completion_times = []
 
-        for task, var in zip(self._data.tasks, self._variables.task_vars):
-            if task.optional:
-                # When the task is absent, it should not restrict the makespan.
-                task_end = self._model.new_int_var(0, MAX_VALUE, "")
-                expr = task_end == var.end
-                self._model.add(expr).only_enforce_if(var.present)
-            else:
-                task_end = var.end
+        for var in self._variables.task_vars:
+            # When the task is absent, it should not restrict the makespan.
+            task_end = self._model.new_int_var(0, MAX_VALUE, "")
+            expr = task_end == var.end
+            self._model.add(expr).only_enforce_if(var.present)
 
             completion_times.append(task_end)
 

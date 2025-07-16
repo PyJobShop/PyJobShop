@@ -38,20 +38,17 @@ class Constraints:
             for task in job.tasks:
                 task_var = variables.task_vars[task]
 
-                if data.tasks[task].optional:
-                    # When tasks are absent, they should not affect the job's
-                    # start and end times.
-                    task_start = model.new_int_var(0, MAX_VALUE, "")
-                    task_end = model.new_int_var(0, MAX_VALUE, "")
+                # Introduce intermediate task start and end variables. When
+                # tasks are absent, they should not affect the job's start and
+                # end times.
+                task_start = model.new_int_var(0, MAX_VALUE, "")
+                task_end = model.new_int_var(0, MAX_VALUE, "")
 
-                    expr = task_start == task_var.start
-                    model.add(expr).only_enforce_if(task_var.present)
+                expr = task_start == task_var.start
+                model.add(expr).only_enforce_if(task_var.present)
 
-                    expr = task_end == task_var.end
-                    model.add(expr).only_enforce_if(task_var.present)
-                else:
-                    task_start = task_var.start
-                    task_end = task_var.end
+                expr = task_end == task_var.end
+                model.add(expr).only_enforce_if(task_var.present)
 
                 starts.append(task_start)
                 ends.append(task_end)
