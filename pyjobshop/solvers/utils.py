@@ -1,5 +1,4 @@
 from itertools import product
-from typing import Optional
 
 import numpy as np
 
@@ -215,7 +214,7 @@ def intersecting_modes(
     return result
 
 
-def setup_times_matrix(data: ProblemData) -> Optional[np.ndarray]:
+def setup_times_matrix(data: ProblemData) -> np.ndarray | None:
     """
     Transforms the setup times constraints to a setup times matrix if there
     are setup times, otherwise return None.

@@ -1,5 +1,3 @@
-from typing import Optional
-
 import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
 
@@ -10,9 +8,9 @@ from pyjobshop.Solution import Solution
 def plot_task_gantt(
     solution: Solution,
     data: ProblemData,
-    tasks: Optional[list[int]] = None,
+    tasks: list[int] | None = None,
     plot_labels: bool = False,
-    ax: Optional[Axes] = None,
+    ax: Axes | None = None,
 ):
     """
     Plots a task Gantt chart, which plots each task on a separate row.

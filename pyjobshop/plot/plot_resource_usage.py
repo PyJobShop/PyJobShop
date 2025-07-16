@@ -1,5 +1,3 @@
-from typing import Optional
-
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.axes import Axes
@@ -10,8 +8,8 @@ from pyjobshop import NonRenewable, ProblemData, Renewable, Solution
 def plot_resource_usage(
     solution: Solution,
     data: ProblemData,
-    resources: Optional[list[int]] = None,
-    axes: Optional[list[Axes]] = None,
+    resources: list[int] | None = None,
+    axes: list[Axes] | None = None,
 ):
     """
     Plots the resource usage for each resource and time step.
