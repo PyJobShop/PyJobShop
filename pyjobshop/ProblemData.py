@@ -1,7 +1,7 @@
 from collections import Counter
 from copy import deepcopy
 from dataclasses import dataclass, fields
-from typing import Optional, Sequence, TypeVar, Union
+from typing import Sequence, TypeVar
 
 from pyjobshop.constants import MAX_VALUE
 
@@ -39,8 +39,8 @@ class Job:
         weight: int = 1,
         release_date: int = 0,
         deadline: int = MAX_VALUE,
-        due_date: Optional[int] = None,
-        tasks: Optional[list[int]] = None,
+        due_date: int | None = None,
+        tasks: list[int] | None = None,
         name: str = "",
     ):
         if weight < 0:
@@ -88,7 +88,7 @@ class Job:
         return self._deadline
 
     @property
-    def due_date(self) -> Optional[int]:
+    def due_date(self) -> int | None:
         """
         The latest time that the job should be completed before incurring
         penalties.
@@ -212,7 +212,7 @@ class NonRenewable:
         return self._name
 
 
-Resource = Union[Machine, Renewable, NonRenewable]
+Resource = Machine | Renewable | NonRenewable
 
 
 class Task:
@@ -246,7 +246,7 @@ class Task:
 
     def __init__(
         self,
-        job: Optional[int] = None,
+        job: int | None = None,
         earliest_start: int = 0,
         latest_start: int = MAX_VALUE,
         earliest_end: int = 0,
@@ -269,7 +269,7 @@ class Task:
         self._name = name
 
     @property
-    def job(self) -> Optional[int]:
+    def job(self) -> int | None:
         """
         The index of the job that this task belongs to. None if the task
         does not belong to any job.
@@ -342,7 +342,7 @@ class Mode:
         task: int,
         resources: list[int],
         duration: int,
-        demands: Optional[list[int]] = None,
+        demands: list[int] | None = None,
     ):
         if len(set(resources)) != len(resources):
             raise ValueError("Mode resources must be unique.")
@@ -543,14 +543,14 @@ class Constraints:
 
     def __init__(
         self,
-        start_before_start: Optional[list[StartBeforeStart]] = None,
-        start_before_end: Optional[list[StartBeforeEnd]] = None,
-        end_before_start: Optional[list[EndBeforeStart]] = None,
-        end_before_end: Optional[list[EndBeforeEnd]] = None,
-        identical_resources: Optional[list[IdenticalResources]] = None,
-        different_resources: Optional[list[DifferentResources]] = None,
-        consecutive: Optional[list[Consecutive]] = None,
-        setup_times: Optional[list[SetupTime]] = None,
+        start_before_start: list[StartBeforeStart] | None = None,
+        start_before_end: list[StartBeforeEnd] | None = None,
+        end_before_start: list[EndBeforeStart] | None = None,
+        end_before_end: list[EndBeforeEnd] | None = None,
+        identical_resources: list[IdenticalResources] | None = None,
+        different_resources: list[DifferentResources] | None = None,
+        consecutive: list[Consecutive] | None = None,
+        setup_times: list[SetupTime] | None = None,
     ):
         self._start_before_start = start_before_start or []
         self._start_before_end = start_before_end or []
@@ -728,8 +728,8 @@ class ProblemData:
         resources: Sequence[Resource],
         tasks: list[Task],
         modes: list[Mode],
-        constraints: Optional[Constraints] = None,
-        objective: Optional[Objective] = None,
+        constraints: Constraints | None = None,
+        objective: Objective | None = None,
     ):
         self._jobs = jobs
         self._resources = resources
@@ -823,12 +823,12 @@ class ProblemData:
 
     def replace(
         self,
-        jobs: Optional[list[Job]] = None,
-        resources: Optional[Sequence[Resource]] = None,
-        tasks: Optional[list[Task]] = None,
-        modes: Optional[list[Mode]] = None,
-        constraints: Optional[Constraints] = None,
-        objective: Optional[Objective] = None,
+        jobs: list[Job] | None = None,
+        resources: Sequence[Resource] | None = None,
+        tasks: list[Task] | None = None,
+        modes: list[Mode] | None = None,
+        constraints: Constraints | None = None,
+        objective: Objective | None = None,
     ) -> "ProblemData":
         """
         Returns a new ProblemData instance with possibly replaced data. If a
@@ -855,7 +855,7 @@ class ProblemData:
             A new ProblemData instance with possibly replaced data.
         """
 
-        def _deepcopy_if_none(value: Optional[_T], default: _T) -> _T:
+        def _deepcopy_if_none(value: _T | None, default: _T) -> _T:
             return value if value is not None else deepcopy(default)
 
         jobs = _deepcopy_if_none(jobs, self.jobs)

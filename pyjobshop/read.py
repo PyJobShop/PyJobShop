@@ -1,6 +1,5 @@
 from enum import Enum
 from pathlib import Path
-from typing import Union
 
 import fjsplib
 import psplib
@@ -22,7 +21,7 @@ class InstanceFormat(str, Enum):
 
 
 def read(
-    loc: Union[str, Path],
+    loc: str | Path,
     instance_format: InstanceFormat = InstanceFormat.FJSPLIB,
 ) -> ProblemData:
     """
@@ -42,7 +41,7 @@ def read(
     raise ValueError(f"Unknown instance format: {instance_format}")
 
 
-def _read_fjslib(loc: Union[str, Path]) -> ProblemData:
+def _read_fjslib(loc: str | Path) -> ProblemData:
     """
     Reads an FJSPLIB instance and returns a ProblemData object.
     """
