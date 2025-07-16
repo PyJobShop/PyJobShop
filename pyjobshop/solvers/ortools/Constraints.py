@@ -307,17 +307,17 @@ class Constraints:
                         model.add(arcs[task_idx1, task_idx2] == 0)
                         continue
 
-                        arc_selected = arcs[task_idx1, task_idx2]
-                        model.add(arc_selected <= var1.present)
-                        model.add(arc_selected <= var2.present)
+                    arc_selected = arcs[task_idx1, task_idx2]
+                    model.add(arc_selected <= var1.present)
+                    model.add(arc_selected <= var2.present)
 
-                        setup = (
-                            setup_times[res_idx, task_idx1, task_idx2]
-                            if setup_times is not None
-                            else 0
-                        )
-                        expr = var1.end + setup <= var2.start
-                        model.add(expr).only_enforce_if(arc_selected)
+                    setup = (
+                        setup_times[res_idx, task_idx1, task_idx2]
+                        if setup_times is not None
+                        else 0
+                    )
+                    expr = var1.end + setup <= var2.start
+                    model.add(expr).only_enforce_if(arc_selected)
 
     def add_constraints(self):
         """
