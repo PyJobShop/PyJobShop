@@ -503,7 +503,7 @@ class DifferentResources(IterableMixin):
 
 
 @dataclass
-class IfThen(IterableMixin):
+class IfThenAtleastOne(IterableMixin):
     """
     If predecessor task is present, then at least one of the successor tasks
     must be present.
@@ -571,7 +571,7 @@ class Constraints:
         end_before_end: list[EndBeforeEnd] | None = None,
         identical_resources: list[IdenticalResources] | None = None,
         different_resources: list[DifferentResources] | None = None,
-        if_then: list[IfThen] | None = None,
+        if_then_at_least_one: list[IfThenAtleastOne] | None = None,
         consecutive: list[Consecutive] | None = None,
         setup_times: list[SetupTime] | None = None,
     ):
@@ -581,7 +581,7 @@ class Constraints:
         self._end_before_end = end_before_end or []
         self._identical_resources = identical_resources or []
         self._different_resources = different_resources or []
-        self._if_then = if_then or []
+        self._if_then_at_least_one = if_then_at_least_one or []
         self._consecutive = consecutive or []
         self._setup_times = setup_times or []
 
@@ -593,7 +593,7 @@ class Constraints:
             and self.end_before_end == other.end_before_end
             and self.identical_resources == other.identical_resources
             and self.different_resources == other.different_resources
-            and self.if_then == other.if_then
+            and self.if_then_at_least_one == other.if_then_at_least_one
             and self.consecutive == other.consecutive
             and self.setup_times == other.setup_times
         )
@@ -606,7 +606,7 @@ class Constraints:
             + len(self.end_before_end)
             + len(self.identical_resources)
             + len(self.different_resources)
-            + len(self.if_then)
+            + len(self.if_then_at_least_one)
             + len(self.consecutive)
             + len(self._setup_times)
         )
@@ -654,11 +654,11 @@ class Constraints:
         return self._different_resources
 
     @property
-    def if_then(self) -> list[IfThen]:
+    def if_then_at_least_one(self) -> list[IfThenAtleastOne]:
         """
         Returns the list of if-then constraints.
         """
-        return self._if_then
+        return self._if_then_at_least_one
 
     @property
     def consecutive(self) -> list[Consecutive]:

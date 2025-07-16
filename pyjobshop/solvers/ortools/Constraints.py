@@ -214,7 +214,7 @@ class Constraints:
         """
         model, data, variables = self._model, self._data, self._variables
 
-        for idx1, idcs2 in data.constraints.if_then:
+        for idx1, idcs2 in data.constraints.if_then_at_least_one:
             pred = variables.task_vars[idx1].present
             succs = sum(variables.task_vars[idx2].present for idx2 in idcs2)
             model.add(succs >= 1).only_enforce_if(pred)
