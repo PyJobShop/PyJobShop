@@ -1037,6 +1037,101 @@ def test_identical_resources_with_modes_and_multiple_resources(solver: str):
     assert_equal(result.best.tasks[1].mode, 3)
 
 
+def test_if_then_constraint(solver: str):
+    """
+    Tests that the if-then constraint works correctly for a pair of tasks.
+    """
+    model = Model()
+    machine = model.add_machine()
+
+    task1 = model.add_task(optional=True)
+    model.add_mode(task1, machine, duration=1)
+
+    task2 = model.add_task(optional=True)
+    model.add_mode(task2, machine, duration=1)
+
+    model.add_if_then(task1, task2)
+
+    # Task 1 is optional, so task 2 does not need to be scheduled.
+    result = model.solve(solver=solver)
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.objective, 0)
+
+    for task in result.best.tasks:
+        assert_(not task.present)
+
+    # Let's add a third task, which is required.
+    task3 = model.add_task()
+    model.add_mode(task3, machine, duration=1)
+
+    model.add_if_then(task3, task1)
+
+    # Combined with the new if-then constraint, task 1 must be scheduled,
+    # so task 2 must also be scheduled.
+    result = model.solve(solver=solver)
+
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.objective, 3)
+
+    for task in result.best.tasks:
+        assert_(task.present)
+
+
+def test_if_then_schedules_at_least_one_successor(solver: str):
+    """
+    Tests that the if-then constraint works correctly when the successor
+    tasks consist of multiple tasks.
+    """
+    model = Model()
+    machine = model.add_machine()
+
+    task1 = model.add_task()
+    model.add_mode(task1, machine, duration=1)
+
+    task2 = model.add_task(optional=True)
+    model.add_mode(task2, machine, duration=1)
+
+    task3 = model.add_task(optional=True)
+    model.add_mode(task3, machine, duration=2)
+
+    model.add_if_then(task1, [task2, task3])
+
+    # At least one of the successor tasks must be scheduled. The successor task
+    # with lowest duration should be scheduled, which is the first one.
+    result = model.solve(solver=solver)
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.objective, 2)
+
+    sol_tasks = result.best.tasks
+    assert_(sol_tasks[0].present)
+    assert_(sol_tasks[1].present)
+    assert_(not sol_tasks[2].present)
+
+
+def test_if_then_schedules_multile_successors(solver: str):
+    """
+    Tests that if-then constraint is allowed to schedule multiple successors.
+    """
+    model = Model()
+    machine = model.add_machine()
+
+    task1 = model.add_task()
+    model.add_mode(task1, machine, duration=1)
+
+    task2 = model.add_task()
+    model.add_mode(task2, machine, duration=1)
+
+    task3 = model.add_task()
+    model.add_mode(task3, machine, duration=1)
+
+    model.add_if_then(task1, [task2, task3])
+
+    # All tasks are required, but this should still work.
+    result = model.solve(solver=solver)
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.objective, 3)
+
+
 def test_different_resources(solver: str):
     """
     Tests that the different resources constraint is respected.

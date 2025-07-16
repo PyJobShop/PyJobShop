@@ -217,7 +217,7 @@ class Constraints:
         for idx1, idcs2 in data.constraints.if_then:
             pred = variables.task_vars[idx1].present
             succs = sum(variables.task_vars[idx2].present for idx2 in idcs2)
-            model.add(succs == 1).only_enforce_if(pred)
+            model.add(succs >= 1).only_enforce_if(pred)
 
     def _activate_setup_times(self):
         """
