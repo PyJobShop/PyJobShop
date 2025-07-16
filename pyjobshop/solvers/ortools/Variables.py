@@ -349,10 +349,10 @@ class Variables:
         for idx in range(data.num_jobs):
             job = data.jobs[idx]
             job_var = job_vars[idx]
-            sol_tasks = [solution.tasks[task] for task in job.tasks]
+            job_tasks = [solution.tasks[task] for task in job.tasks]
 
-            job_start = min(task.start for task in sol_tasks)
-            job_end = max(task.end for task in sol_tasks)
+            job_start = min(task.start for task in job_tasks)
+            job_end = max(task.end for task in job_tasks)
             job_duration = job_end - job_start
 
             model.add_hint(job_var.start, job_start)  # type: ignore

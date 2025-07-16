@@ -41,7 +41,7 @@ class Constraints:
             task_vars = [self._task_vars[task] for task in job.tasks]
 
             if all(data.tasks[task].optional for task in job.tasks):
-                # ``span`` requires at least one present interval variable
+                # ``span()`` requires at least one present interval variable
                 # because the job interval is always present, so we add a
                 # present dummy interval to be sure this is true.
                 task_vars += [interval_var(name="dummy")]
