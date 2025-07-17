@@ -777,9 +777,9 @@ class ProblemData:
                     msg = f"Mode {idx} references unknown resource index."
                     raise ValueError(msg)
 
-        missing = set(range(num_tasks)) - {mode.task for mode in self.modes}
-        if missing := sorted(missing):
-            raise ValueError(f"Processing modes missing for tasks {missing}.")
+        missing_tasks = set(range(num_tasks)) - {m.task for m in self.modes}
+        for idx in sorted(missing_tasks):
+            raise ValueError(f"Processing modes missing for task {idx}.")
 
         infeasible_modes = Counter()
         num_modes = Counter()
