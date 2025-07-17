@@ -269,6 +269,16 @@ class Constraints:
                     expr = var1.end + setup <= var2.start
                     model.add(expr).only_enforce_if(arc_selected)
 
+    def _mode_dependencies(self):
+        """
+        Creates constraints for identical and different resources constraints.
+        """
+        model, data, variables = self._model, self._data, self._variables
+
+        for mode_idx1, mode_indices2 in data.constraints.mode_dependencies:
+            # TODO: implement for Google OR Tools
+            raise NotImplementedError
+
     def add_constraints(self):
         """
         Adds all the constraints to the CP model.
@@ -282,6 +292,7 @@ class Constraints:
         self._identical_and_different_resource_constraints()
         self._activate_setup_times()
         self._consecutive_constraints()
+        self._mode_dependencies()
 
         # From here onwards we know which sequence constraints are active.
         self._circuit_constraints()

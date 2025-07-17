@@ -182,6 +182,22 @@ class Constraints:
 
                     model.add(cpo.previous(seq_var, var1, var2))
 
+    def _mode_dependencies(self):
+        """
+        Implements the mode dependency constraints
+        """
+        model, data = self._model, self._data
+
+        for mode_idx1, mode_indices2 in data.constraints.mode_dependencies:
+            mode_var1 = self._mode_vars[mode_idx1]
+            modes_vars2 = [self._mode_vars[idx] for idx in mode_indices2]
+            expr1 = cpo.presence_of(mode_var1)
+            expr2 = sum(
+                cpo.presence_of(mode2) for mode2 in modes_vars2
+            )
+
+            model.add(expr1 <= expr2)
+
     def add_constraints(self):
         """
         Adds all the constraints to the CP model.
@@ -194,3 +210,4 @@ class Constraints:
         self._timing_constraints()
         self._identical_and_different_resource_constraints()
         self._consecutive_constraints()
+        self._mode_dependencies()
