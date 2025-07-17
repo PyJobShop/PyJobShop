@@ -20,6 +20,7 @@ from pyjobshop.ProblemData import (
     Task,
 )
 from pyjobshop.Solution import TaskData as TaskData
+from pyjobshop.solve import solve
 
 
 def test_job_attributes():
@@ -607,8 +608,8 @@ def test_empty_problem_instance(solver: str):
     """
     Tests that an empty problem data instance can be solved.
     """
-    model = Model()
-    result = model.solve(solver=solver)
+    data = ProblemData([], [], [], [])
+    result = solve(data, solver=solver)
     assert_equal(result.status.value, "Optimal")
     assert_equal(result.objective, 0)
 
