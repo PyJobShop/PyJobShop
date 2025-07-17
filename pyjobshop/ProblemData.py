@@ -754,6 +754,10 @@ class ProblemData:
         num_tasks = self.num_tasks
 
         for idx, job in enumerate(self.jobs):
+            if len(job.tasks) == 0:
+                msg = f"Job {idx} does not reference any task."
+                raise ValueError(msg)
+
             if any(task < 0 or task >= num_tasks for task in job.tasks):
                 msg = f"Job {idx} references to unknown task index."
                 raise ValueError(msg)

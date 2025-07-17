@@ -317,6 +317,19 @@ def test_problem_data_default_values():
     assert_equal(data.objective, Objective(weight_makespan=1))
 
 
+def test_problem_data_job_must_reference_at_least_one_task():
+    """
+    Tests that an error is raised when a job does not reference any tasks.
+    """
+    with assert_raises(ValueError):
+        ProblemData(
+            [Job(tasks=[])],
+            [Renewable(0)],
+            [Task()],
+            [Mode(0, [0], 1)],
+        )
+
+
 def test_problem_data_job_references_unknown_task():
     """
     Tests that an error is raised when a job references an unknown task.
@@ -379,7 +392,7 @@ def test_problem_data_all_modes_demand_infeasible():
 
     # This is OK: at least one mode is feasible.
     ProblemData(
-        [Job()],
+        [Job(tasks=[0])],
         [Renewable(capacity=1)],
         [Task()],
         [
@@ -391,7 +404,7 @@ def test_problem_data_all_modes_demand_infeasible():
     with assert_raises(ValueError):
         # This is not OK: no mode is feasible.
         ProblemData(
-            [Job()],
+            [Job(tasks=[0])],
             [Renewable(capacity=1)],
             [Task()],
             [
@@ -477,7 +490,10 @@ def test_problem_data_setup_times_objective_without_setup_times_constraints():
 
 
 def make_replace_data():
-    jobs = [Job(due_date=1, deadline=1), Job(due_date=2, deadline=2)]
+    jobs = [
+        Job(tasks=[0], due_date=1, deadline=1),
+        Job(tasks=[1], due_date=2, deadline=2),
+    ]
     resources = [
         Renewable(capacity=0, name="resource"),
         NonRenewable(capacity=0, name="resource"),
@@ -543,7 +559,10 @@ def test_problem_data_replace_with_changes():
     """
     data = make_replace_data()
     new = data.replace(
-        jobs=[Job(due_date=2, deadline=2), Job(due_date=1, deadline=1)],
+        jobs=[
+            Job(tasks=[1], due_date=2, deadline=2),
+            Job(tasks=[0], due_date=1, deadline=1),
+        ],
         resources=[Renewable(capacity=0, name="new"), Machine(name="new")],
         tasks=[Task(earliest_start=2), Task(earliest_start=2)],
         modes=[
