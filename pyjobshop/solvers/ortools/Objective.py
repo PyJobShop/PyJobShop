@@ -29,7 +29,6 @@ class Objective:
         Returns an expression representing the makespan of the model.
         """
         if not self._variables.task_vars:
-            # Need at least one task for ``add_max_equality()``.
             return LinearExpr.constant(0)
 
         makespan = self._model.new_int_var(0, MAX_VALUE, "makespan")
