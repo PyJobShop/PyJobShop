@@ -350,7 +350,7 @@ def test_problem_data_task_references_unknown_job():
     """
     with assert_raises(ValueError):
         ProblemData(
-            [Job()],
+            [Job(tasks=[0])],
             [Renewable(0)],
             [Task(job=42)],
             [Mode(0, [0], 1)],
@@ -370,7 +370,7 @@ def test_problem_data_mode_references_unknown_data(mode):
     """
     with assert_raises(ValueError):
         ProblemData(
-            [Job()],
+            [Job(tasks=[0])],
             [Renewable(0)],
             [Task()],
             [mode],
@@ -382,7 +382,7 @@ def test_problem_data_task_without_modes():
     Tests that an error is raised when a task has no processing modes.
     """
     with assert_raises(ValueError):
-        ProblemData([Job()], [Renewable(0)], [Task()], [])
+        ProblemData([Job(tasks=[0])], [Renewable(0)], [Task()], [])
 
 
 def test_problem_data_all_modes_demand_infeasible():
@@ -422,7 +422,7 @@ def test_problem_data_raises_negative_setup_times():
     """
     with assert_raises(ValueError):
         ProblemData(
-            [Job()],
+            [Job(tasks=[0])],
             [Machine()],
             [Task(), Task()],
             [Mode(0, [0], 0), Mode(1, [0], 0)],
@@ -440,7 +440,7 @@ def test_problem_data_raises_capacitated_resources_and_setup_times(resource):
     """
     with assert_raises(ValueError):
         ProblemData(
-            [Job()],
+            [Job(tasks=[0])],
             [resource],
             [Task(), Task()],
             [Mode(0, [0], 0), Mode(1, [0], 0)],
@@ -467,7 +467,7 @@ def test_problem_data_tardy_objective_without_job_due_dates(
     """
     with assert_raises(ValueError):
         ProblemData(
-            [Job()],
+            [Job(tasks=[0])],
             [Renewable(0)],
             [Task()],
             [Mode(0, [0], 0)],
@@ -482,7 +482,7 @@ def test_problem_data_setup_times_objective_without_setup_times_constraints():
     """
     with assert_raises(ValueError):
         ProblemData(
-            [Job()],
+            [Job(tasks=[0])],
             [Renewable(0)],
             [Task()],
             [Mode(0, [0], 0)],
