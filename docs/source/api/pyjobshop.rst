@@ -60,6 +60,9 @@ PyJobShop
     .. autoclass:: SetupTime
         :exclude-members: count, index
 
+    .. autoclass:: ModeDependency
+            :exclude-members: count, index
+
     .. autoclass:: Objective
        :members:
 
