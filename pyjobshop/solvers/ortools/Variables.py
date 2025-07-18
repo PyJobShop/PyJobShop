@@ -55,9 +55,12 @@ class TaskVar:
     ----------
     interval
         The interval variable representing the task.
+    present
+        The boolean variable indicating whether the interval is present.
     """
 
     interval: IntervalVar
+    present: BoolVarT
 
     @property
     def start(self) -> LinearExprT:
@@ -269,10 +272,15 @@ class Variables:
                 ub=min(task.latest_end, MAX_VALUE),
                 name=f"{name}_end",
             )
-            interval = model.new_interval_var(
-                start, duration, end, f"interval_{task}"
+            present = (
+                model.new_bool_var(f"{name}_present")
+                if task.optional
+                else model.new_constant(True)
             )
-            variables.append(TaskVar(interval))
+            interval = model.new_optional_interval_var(
+                start, duration, end, present, f"interval_{task}"
+            )
+            variables.append(TaskVar(interval, present))
 
         return variables
 
@@ -341,10 +349,10 @@ class Variables:
         for idx in range(data.num_jobs):
             job = data.jobs[idx]
             job_var = job_vars[idx]
-            sol_tasks = [solution.tasks[task] for task in job.tasks]
+            job_tasks = [solution.tasks[task] for task in job.tasks]
 
-            job_start = min(task.start for task in sol_tasks)
-            job_end = max(task.end for task in sol_tasks)
+            job_start = min(task.start for task in job_tasks)
+            job_end = max(task.end for task in job_tasks)
             job_duration = job_end - job_start
 
             model.add_hint(job_var.start, job_start)  # type: ignore
@@ -359,6 +367,11 @@ class Variables:
             model.add_hint(task_var.start, sol_task.start)  # type: ignore
             model.add_hint(task_var.duration, task_duration)  # type: ignore
             model.add_hint(task_var.end, sol_task.end)  # type: ignore
+
+            if data.tasks[idx].optional:
+                # OR-Tools complains about adding presence hints to interval
+                # variables that are always present (i.e., non-optional tasks).
+                model.add_hint(task_var.present, sol_task.present)
 
         for task_idx in range(data.num_tasks):
             sol_task = solution.tasks[task_idx]

@@ -48,6 +48,12 @@ class Solver:
         """
         tasks = []
         for task_idx, mode_vars in enumerate(self._variables.mode_vars):
+            task_var = self._variables.task_vars[task_idx]
+
+            if not cp_solver.value(task_var.present):
+                tasks.append(TaskData(0, [], 0, 0, present=False))
+                continue
+
             for mode_idx, mode_var in mode_vars.items():
                 if cp_solver.value(mode_var):  # selected mode
                     task_var = self._variables.task_vars[task_idx]

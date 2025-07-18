@@ -26,7 +26,7 @@ class Objective:
         """
         Returns an expression representing the makespan of the model.
         """
-        return cpo.max(cpo.end_of(var) for var in self._task_vars)  # type: ignore
+        return cpo.max(cpo.end_of(var, 0) for var in self._task_vars)  # type: ignore
 
     def _tardy_jobs_expr(self) -> CpoExpr:
         """
