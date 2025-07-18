@@ -20,6 +20,7 @@ from pyjobshop.ProblemData import (
     Task,
 )
 from pyjobshop.Solution import TaskData as TaskData
+from pyjobshop.solve import solve
 
 
 def test_job_attributes():
@@ -317,6 +318,19 @@ def test_problem_data_default_values():
     assert_equal(data.objective, Objective(weight_makespan=1))
 
 
+def test_problem_data_job_must_reference_at_least_one_task():
+    """
+    Tests that an error is raised when a job does not reference any tasks.
+    """
+    with assert_raises(ValueError):
+        ProblemData(
+            [Job(tasks=[])],
+            [Renewable(0)],
+            [Task()],
+            [Mode(0, [0], 1)],
+        )
+
+
 def test_problem_data_job_references_unknown_task():
     """
     Tests that an error is raised when a job references an unknown task.
@@ -336,7 +350,7 @@ def test_problem_data_task_references_unknown_job():
     """
     with assert_raises(ValueError):
         ProblemData(
-            [Job()],
+            [Job(tasks=[0])],
             [Renewable(0)],
             [Task(job=42)],
             [Mode(0, [0], 1)],
@@ -356,7 +370,7 @@ def test_problem_data_mode_references_unknown_data(mode):
     """
     with assert_raises(ValueError):
         ProblemData(
-            [Job()],
+            [Job(tasks=[0])],
             [Renewable(0)],
             [Task()],
             [mode],
@@ -368,7 +382,7 @@ def test_problem_data_task_without_modes():
     Tests that an error is raised when a task has no processing modes.
     """
     with assert_raises(ValueError):
-        ProblemData([Job()], [Renewable(0)], [Task()], [])
+        ProblemData([Job(tasks=[0])], [Renewable(0)], [Task()], [])
 
 
 def test_problem_data_all_modes_demand_infeasible():
@@ -379,7 +393,7 @@ def test_problem_data_all_modes_demand_infeasible():
 
     # This is OK: at least one mode is feasible.
     ProblemData(
-        [Job()],
+        [Job(tasks=[0])],
         [Renewable(capacity=1)],
         [Task()],
         [
@@ -391,7 +405,7 @@ def test_problem_data_all_modes_demand_infeasible():
     with assert_raises(ValueError):
         # This is not OK: no mode is feasible.
         ProblemData(
-            [Job()],
+            [Job(tasks=[0])],
             [Renewable(capacity=1)],
             [Task()],
             [
@@ -408,7 +422,7 @@ def test_problem_data_raises_negative_setup_times():
     """
     with assert_raises(ValueError):
         ProblemData(
-            [Job()],
+            [Job(tasks=[0])],
             [Machine()],
             [Task(), Task()],
             [Mode(0, [0], 0), Mode(1, [0], 0)],
@@ -426,7 +440,7 @@ def test_problem_data_raises_capacitated_resources_and_setup_times(resource):
     """
     with assert_raises(ValueError):
         ProblemData(
-            [Job()],
+            [Job(tasks=[0])],
             [resource],
             [Task(), Task()],
             [Mode(0, [0], 0), Mode(1, [0], 0)],
@@ -453,7 +467,7 @@ def test_problem_data_tardy_objective_without_job_due_dates(
     """
     with assert_raises(ValueError):
         ProblemData(
-            [Job()],
+            [Job(tasks=[0])],
             [Renewable(0)],
             [Task()],
             [Mode(0, [0], 0)],
@@ -468,7 +482,7 @@ def test_problem_data_setup_times_objective_without_setup_times_constraints():
     """
     with assert_raises(ValueError):
         ProblemData(
-            [Job()],
+            [Job(tasks=[0])],
             [Renewable(0)],
             [Task()],
             [Mode(0, [0], 0)],
@@ -477,7 +491,10 @@ def test_problem_data_setup_times_objective_without_setup_times_constraints():
 
 
 def make_replace_data():
-    jobs = [Job(due_date=1, deadline=1), Job(due_date=2, deadline=2)]
+    jobs = [
+        Job(tasks=[0], due_date=1, deadline=1),
+        Job(tasks=[1], due_date=2, deadline=2),
+    ]
     resources = [
         Renewable(capacity=0, name="resource"),
         NonRenewable(capacity=0, name="resource"),
@@ -543,7 +560,10 @@ def test_problem_data_replace_with_changes():
     """
     data = make_replace_data()
     new = data.replace(
-        jobs=[Job(due_date=2, deadline=2), Job(due_date=1, deadline=1)],
+        jobs=[
+            Job(tasks=[1], due_date=2, deadline=2),
+            Job(tasks=[0], due_date=1, deadline=1),
+        ],
         resources=[Renewable(capacity=0, name="new"), Machine(name="new")],
         tasks=[Task(earliest_start=2), Task(earliest_start=2)],
         modes=[
@@ -582,6 +602,16 @@ def test_problem_data_replace_with_changes():
 
 
 # --- Tests that involve checking solver correctness of problem data. ---
+
+
+def test_empty_problem_instance(solver: str):
+    """
+    Tests that an empty problem data instance can be solved.
+    """
+    data = ProblemData([], [], [], [])
+    result = solve(data, solver=solver)
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.objective, 0)
 
 
 def test_job_release_date(solver: str):
@@ -1178,6 +1208,17 @@ def test_setup_time_bug(solver: str):
     result = model.solve(solver=solver)
     assert_equal(result.objective, 3)
     assert_equal(result.status.value, "Optimal")
+
+
+def test_empty_objective(solver: str):
+    """
+    Tests that the empty objective is correctly optimized.
+    """
+    data = ProblemData([], [], [], [], objective=Objective())
+    result = solve(data, solver=solver)
+
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.objective, 0)
 
 
 def test_makespan_objective(solver: str):
