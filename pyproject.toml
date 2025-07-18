@@ -3,7 +3,7 @@ name = "pyjobshop"
 version = "0.1.0a"
 description = "Solving scheduling problems with constraint programming."
 authors = [
-    { name = "Leon Lan", email = "l.lan@vu.nl"},
+    { name = "Leon Lan", email = "leon.lanyidong@gmail.com" },
     { name = "Joost Berkhout", email = "joost.berkhout@vu.nl" }
 ]
 license = { text = "MIT License" }
@@ -11,9 +11,9 @@ readme = "README.md"
 keywords = [
     "scheduling",
     "job shop",
-    "flow shop",
     "project scheduling",
     "constraint programming",
+    "operations research",
 ]
 classifiers = [
     "Intended Audience :: Developers",
