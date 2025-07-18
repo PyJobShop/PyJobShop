@@ -1210,6 +1210,17 @@ def test_setup_time_bug(solver: str):
     assert_equal(result.status.value, "Optimal")
 
 
+def test_empty_objective(solver: str):
+    """
+    Tests that the empty objective is correctly optimized.
+    """
+    data = ProblemData([], [], [], [], objective=Objective())
+    result = solve(data, solver=solver)
+
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.objective, 0)
+
+
 def test_makespan_objective(solver: str):
     """
     Tests that the makespan objective is correctly optimized.
