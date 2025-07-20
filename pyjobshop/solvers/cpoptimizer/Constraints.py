@@ -172,11 +172,16 @@ class Constraints:
                 )
                 model.add(expr1 <= expr2)
 
-    def _select_at_least_one_constraints(self):
+    def _task_selection_constraints(self):
         """
         Creates constraints for the if-then constraints.
         """
         model, data = self._model, self._data
+
+        for idx1, idx2 in data.constraints.same_presence:
+            var1 = self._task_vars[idx1]
+            var2 = self._task_vars[idx2]
+            model.add(presence_of(var1) == presence_of(var2))
 
         for idx1, idcs2 in data.constraints.select_at_least_one:
             present1 = presence_of(self._task_vars[idx1])
@@ -213,5 +218,5 @@ class Constraints:
         self._non_renewable_capacity()
         self._timing_constraints()
         self._identical_and_different_resource_constraints()
-        self._select_at_least_one_constraints()
+        self._task_selection_constraints()
         self._consecutive_constraints()

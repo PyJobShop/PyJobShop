@@ -4,9 +4,12 @@ from numpy.testing import assert_, assert_equal, assert_raises
 from pyjobshop.constants import MAX_VALUE
 from pyjobshop.Model import Model
 from pyjobshop.ProblemData import (
+    Consecutive,
     Constraints,
+    DifferentResources,
     EndBeforeEnd,
     EndBeforeStart,
+    IdenticalResources,
     Job,
     Machine,
     Mode,
@@ -14,6 +17,8 @@ from pyjobshop.ProblemData import (
     Objective,
     ProblemData,
     Renewable,
+    SamePresence,
+    SelectAtLeastOne,
     SetupTime,
     StartBeforeEnd,
     StartBeforeStart,
@@ -271,6 +276,30 @@ def test_mode_raises_invalid_parameters(resources, duration, demands):
     """
     with assert_raises(ValueError):
         Mode(task=0, resources=resources, duration=duration, demands=demands)
+
+
+def test_constraints_len():
+    """
+    Tests that the length of the constraints is set correctly.
+    """
+    constraints = Constraints(
+        start_before_start=[StartBeforeStart(0, 1)],
+        start_before_end=[StartBeforeEnd(0, 1)],
+        end_before_start=[EndBeforeStart(0, 1)],
+        end_before_end=[EndBeforeEnd(0, 1)],
+        identical_resources=[IdenticalResources(0, 1)],
+        different_resources=[DifferentResources(0, 1)],
+        same_presence=[SamePresence(1, 2)],
+        select_at_least_one=[SelectAtLeastOne(1, [0])],
+        consecutive=[Consecutive(1, 2)],
+        setup_times=[
+            SetupTime(0, 0, 1, 1),  # machine
+            SetupTime(1, 0, 1, 0),  # renewable
+            SetupTime(2, 0, 1, 0),  # non-renewable
+        ],
+    )
+
+    assert_equal(len(constraints), 12)
 
 
 def test_problem_data_non_input_parameter_attributes():
@@ -1035,6 +1064,31 @@ def test_identical_resources_with_modes_and_multiple_resources(solver: str):
     assert_equal(result.status.value, "Optimal")
     assert_equal(result.best.tasks[0].mode, 2)
     assert_equal(result.best.tasks[1].mode, 3)
+
+
+def test_same_presence_constraint(solver: str):
+    """
+    Tests that the same presence constraint works correctly.
+    """
+    model = Model()
+    machine = model.add_machine()
+
+    task1 = model.add_task()
+    model.add_mode(task1, machine, duration=1)
+
+    task2 = model.add_task(optional=True)
+    model.add_mode(task2, machine, duration=1)
+
+    model.add_same_presence(task1, task2)
+
+    # Task 1 is required and task 2 is optional, but the same presence
+    # constraint between both tasks forces task 2 to be scheduled.
+    result = model.solve(solver=solver)
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.objective, 2)
+
+    for task in result.best.tasks:
+        assert_(task.present)
 
 
 def test_select_at_least_one_constraint(solver: str):

@@ -16,6 +16,7 @@ from pyjobshop.ProblemData import (
     ProblemData,
     Renewable,
     Resource,
+    SamePresence,
     SelectAtLeastOne,
     SetupTime,
     StartBeforeEnd,
@@ -157,6 +158,9 @@ class Model:
 
         for idx1, idx2 in data.constraints.different_resources:
             model.add_different_resources(tasks[idx1], tasks[idx2])
+
+        for idx1, idx2 in data.constraints.same_presence:
+            model.add_same_presence(tasks[idx1], tasks[idx2])
 
         for idx1, idcs2 in data.constraints.select_at_least_one:
             model.add_select_at_least_one(
@@ -384,6 +388,18 @@ class Model:
         idx1, idx2 = self._id2task[id(task1)], self._id2task[id(task2)]
         constraint = DifferentResources(idx1, idx2)
         self._constraints.different_resources.append(constraint)
+
+        return constraint
+
+    def add_same_presence(self, task1: Task, task2: Task) -> SamePresence:
+        """
+        Adds a constraint that two tasks must have the same presence.
+        If task1 is selected, then task2 must be selected as well,
+        and vice versa.
+        """
+        idx1, idx2 = self._id2task[id(task1)], self._id2task[id(task2)]
+        constraint = SamePresence(idx1, idx2)
+        self._constraints.same_presence.append(constraint)
 
         return constraint
 

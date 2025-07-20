@@ -214,6 +214,11 @@ class Constraints:
         """
         model, data, variables = self._model, self._data, self._variables
 
+        for idx1, idx2 in data.constraints.same_presence:
+            var1 = variables.task_vars[idx1]
+            var2 = variables.task_vars[idx2]
+            model.add(var1.present == var2.present)
+
         for idx1, idcs2 in data.constraints.select_at_least_one:
             pred = variables.task_vars[idx1].present
             succs = sum(variables.task_vars[idx2].present for idx2 in idcs2)

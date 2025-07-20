@@ -503,6 +503,17 @@ class DifferentResources(IterableMixin):
 
 
 @dataclass
+class SamePresence(IterableMixin):
+    """
+    Select same presence of two tasks. If task1 is selected, then task2
+    must be selected as well, and vice versa.
+    """
+
+    task1: int
+    task2: int
+
+
+@dataclass
 class SelectAtLeastOne(IterableMixin):
     """
     Enforces that at least one task from the list must be selected.
@@ -573,6 +584,7 @@ class Constraints:
         end_before_end: list[EndBeforeEnd] | None = None,
         identical_resources: list[IdenticalResources] | None = None,
         different_resources: list[DifferentResources] | None = None,
+        same_presence: list[SamePresence] | None = None,
         select_at_least_one: list[SelectAtLeastOne] | None = None,
         consecutive: list[Consecutive] | None = None,
         setup_times: list[SetupTime] | None = None,
@@ -583,6 +595,7 @@ class Constraints:
         self._end_before_end = end_before_end or []
         self._identical_resources = identical_resources or []
         self._different_resources = different_resources or []
+        self._same_presence = same_presence or []
         self._select_at_least_one = select_at_least_one or []
         self._consecutive = consecutive or []
         self._setup_times = setup_times or []
@@ -595,6 +608,7 @@ class Constraints:
             and self.end_before_end == other.end_before_end
             and self.identical_resources == other.identical_resources
             and self.different_resources == other.different_resources
+            and self.same_presence == other.same_presence
             and self.select_at_least_one == other.select_at_least_one
             and self.consecutive == other.consecutive
             and self.setup_times == other.setup_times
@@ -608,6 +622,7 @@ class Constraints:
             + len(self.end_before_end)
             + len(self.identical_resources)
             + len(self.different_resources)
+            + len(self.same_presence)
             + len(self.select_at_least_one)
             + len(self.consecutive)
             + len(self._setup_times)
@@ -654,6 +669,13 @@ class Constraints:
         Returns the list of different resources constraints.
         """
         return self._different_resources
+
+    @property
+    def same_presence(self) -> list[SamePresence]:
+        """
+        Returns the list of same presence constraints.
+        """
+        return self._same_presence
 
     @property
     def select_at_least_one(self) -> list[SelectAtLeastOne]:
