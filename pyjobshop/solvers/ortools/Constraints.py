@@ -208,13 +208,13 @@ class Constraints:
 
                 model.add(presence2 == 0).only_enforce_if(presence1)
 
-    def _if_then_constraints(self):
+    def _task_selection_constraints(self):
         """
-        Creates the if-then constraints.
+        Creates the selection constraints.
         """
         model, data, variables = self._model, self._data, self._variables
 
-        for idx1, idcs2 in data.constraints.if_then_at_least_one:
+        for idx1, idcs2 in data.constraints.select_at_least_one:
             pred = variables.task_vars[idx1].present
             succs = sum(variables.task_vars[idx2].present for idx2 in idcs2)
             model.add(succs >= 1).only_enforce_if(pred)
@@ -330,7 +330,7 @@ class Constraints:
         self._non_renewable_capacity()
         self._timing_constraints()
         self._identical_and_different_resource_constraints()
-        self._if_then_constraints()
+        self._task_selection_constraints()
         self._activate_setup_times()
         self._consecutive_constraints()
 

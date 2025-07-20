@@ -8,7 +8,6 @@ from pyjobshop.ProblemData import (
     EndBeforeEnd,
     EndBeforeStart,
     IdenticalResources,
-    IfThenAtLeastOne,
     Job,
     Machine,
     Mode,
@@ -17,6 +16,7 @@ from pyjobshop.ProblemData import (
     ProblemData,
     Renewable,
     Resource,
+    SelectAtLeastOne,
     SetupTime,
     StartBeforeEnd,
     StartBeforeStart,
@@ -158,8 +158,8 @@ class Model:
         for idx1, idx2 in data.constraints.different_resources:
             model.add_different_resources(tasks[idx1], tasks[idx2])
 
-        for idx1, idcs2 in data.constraints.if_then_at_least_one:
-            model.add_if_then_at_least_one(
+        for idx1, idcs2 in data.constraints.select_at_least_one:
+            model.add_select_at_least_one(
                 tasks[idx1], [tasks[idx2] for idx2 in idcs2]
             )
 
@@ -399,18 +399,17 @@ class Model:
 
         return constraint
 
-    def add_if_then_at_least_one(
-        self, pred: Task, succs: Task | list[Task]
-    ) -> IfThenAtLeastOne:
+    def add_select_at_least_one(
+        self, if_selected: Task, tasks: list[Task]
+    ) -> SelectAtLeastOne:
         """
         Adds a constraint that if the predecessor task is present, then at
         least one of the successor tasks must be present.
         """
-        idx1 = self._id2task[id(pred)]
-        succs = [succs] if isinstance(succs, Task) else succs
-        idcs2 = [self._id2task[id(succ)] for succ in succs]
-        constraint = IfThenAtLeastOne(idx1, idcs2)
-        self._constraints.if_then_at_least_one.append(constraint)
+        idx1 = self._id2task[id(if_selected)]
+        idcs2 = [self._id2task[id(succ)] for succ in tasks]
+        constraint = SelectAtLeastOne(idx1, idcs2)
+        self._constraints.select_at_least_one.append(constraint)
 
         return constraint
 
