@@ -271,13 +271,19 @@ class Constraints:
 
     def _mode_dependencies(self):
         """
-        Creates constraints for identical and different resources constraints.
+        Implements the mode dependency constraints.
         """
         model, data, variables = self._model, self._data, self._variables
-
-        for mode_idx1, mode_indices2 in data.constraints.mode_dependencies:
-            # TODO: implement for Google OR Tools
-            raise NotImplementedError
+        # Flatten mode vars.
+        mode_vars = {
+            mode_idx: mode_var
+            for _vars in variables.mode_vars
+            for mode_idx, mode_var in _vars.items()
+        }
+        for idx1, idcs2 in data.constraints.mode_dependencies:
+            expr1 = mode_vars[idx1]
+            expr2 = sum(mode_vars[idx] for idx in idcs2)
+            model.add(expr1 <= expr2)
 
     def add_constraints(self):
         """

@@ -571,7 +571,7 @@ class Constraints:
         different_resources: list[DifferentResources] | None = None,
         consecutive: list[Consecutive] | None = None,
         setup_times: list[SetupTime] | None = None,
-        mode_dependencies: list[ModeDependency] | None = None
+        mode_dependencies: list[ModeDependency] | None = None,
     ):
         self._start_before_start = start_before_start or []
         self._start_before_end = start_before_end or []

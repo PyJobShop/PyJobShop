@@ -61,7 +61,7 @@ PyJobShop
         :exclude-members: count, index
 
     .. autoclass:: ModeDependency
-            :exclude-members: count, index
+        :exclude-members: count, index
 
     .. autoclass:: Objective
        :members:

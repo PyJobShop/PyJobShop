@@ -11,6 +11,7 @@ from pyjobshop.ProblemData import (
     Job,
     Machine,
     Mode,
+    ModeDependency,
     NonRenewable,
     Objective,
     ProblemData,
@@ -20,7 +21,6 @@ from pyjobshop.ProblemData import (
     StartBeforeEnd,
     StartBeforeStart,
     Task,
-    ModeDependency,
 )
 from pyjobshop.Result import Result
 from pyjobshop.Solution import Solution
@@ -409,13 +409,19 @@ class Model:
 
         return constraint
 
-    def add_mode_dependency(self, mode1: Mode, modes2: list[Mode]) -> ModeDependency:
+    def add_mode_dependency(
+        self, mode1: Mode, modes2: list[Mode]
+    ) -> ModeDependency:
         """
-        Adds a mode dependency between one mode and a list of modes.
+        Adds a mode dependency between one mode and a list of modes, meaning
+        that if the first mode has been selected, one out of the list of modes
+        must be selected.
         """
-        mode_idx1 = self._id2mode[id(mode1)]
-        mode_indices2 = [self._id2mode[id(mode2)] for mode2 in modes2]
-        constraint = ModeDependency(mode_idx1, mode_indices2)
+        idx1 = self._id2mode[id(mode1)]
+        print(f"idx1 {idx1}")
+        idcs2 = [self._id2mode[id(mode2)] for mode2 in modes2]
+        print(f"idcs2: {idcs2}")
+        constraint = ModeDependency(idx1, idcs2)
         self.constraints.mode_dependencies.append(constraint)
 
         return constraint
