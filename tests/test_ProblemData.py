@@ -20,6 +20,7 @@ from pyjobshop.ProblemData import (
     Task,
 )
 from pyjobshop.Solution import TaskData as TaskData
+from pyjobshop.solve import solve
 
 
 def test_job_attributes():
@@ -1205,6 +1206,17 @@ def test_mode_dependencies():
     model.add_mode_dependency(mode1, [mode3, mode4])
     result = model.solve()
     assert_equal(result.objective, 15)
+
+
+def test_empty_objective(solver: str):
+    """
+    Tests that the empty objective is correctly optimized.
+    """
+    data = ProblemData([], [], [], [], objective=Objective())
+    result = solve(data, solver=solver)
+
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.objective, 0)
 
 
 def test_makespan_objective(solver: str):
