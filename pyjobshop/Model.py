@@ -413,9 +413,9 @@ class Model:
         """
         Adds a mode dependency between one mode and a list of modes.
         """
-        mode_idx1 = self._id2mode[id(mode1)]
-        mode_indices2 = [self._id2mode[id(mode2)] for mode2 in modes2]
-        constraint = ModeDependency(mode_idx1, mode_indices2)
+        idx1 = self._id2mode[id(mode1)]
+        idcs2 = [self._id2mode[id(mode2)] for mode2 in modes2]
+        constraint = ModeDependency(idx1, idcs2)
         self.constraints.mode_dependencies.append(constraint)
 
         return constraint
