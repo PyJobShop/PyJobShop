@@ -1181,7 +1181,7 @@ def test_setup_time_bug(solver: str):
     assert_equal(result.status.value, "Optimal")
 
 
-def test_mode_dependencies():
+def test_mode_dependencies(solver: str):
     model = Model()
 
     machines = [model.add_machine() for _ in range(4)]
@@ -1196,7 +1196,7 @@ def test_mode_dependencies():
 
     # First we solve the model without the mode dependency constraint, we
     # expect to get an optimal solution with a makespan of 7.
-    result = model.solve()
+    result = model.solve(solver=solver)
     assert_equal(result.objective, 7)
 
     # Now we add the mode dependency, and we see that enforce that if mode1
