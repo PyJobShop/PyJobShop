@@ -418,9 +418,7 @@ class Model:
         must be selected.
         """
         idx1 = self._id2mode[id(mode1)]
-        print(f"idx1 {idx1}")
         idcs2 = [self._id2mode[id(mode2)] for mode2 in modes2]
-        print(f"idcs2: {idcs2}")
         constraint = ModeDependency(idx1, idcs2)
         self.constraints.mode_dependencies.append(constraint)
 
