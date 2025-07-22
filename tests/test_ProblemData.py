@@ -1211,6 +1211,12 @@ def test_setup_time_bug(solver: str):
 
 
 def test_mode_dependencies(solver: str):
+    """
+    Test that the mode dependency constraint works correctly. We test with
+    a simple model that is solved with and without the mode dependency
+    constraint and check the objectives of the two different variants of
+    the model.
+    """
     model = Model()
 
     machines = [model.add_machine() for _ in range(4)]
