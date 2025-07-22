@@ -571,6 +571,26 @@ class SetupTime(IterableMixin):
     duration: int
 
 
+@dataclass
+class ModeDependency(IterableMixin):
+    """
+    Represents a dependency between task modes: if `mode1` is selected,
+    then at least one of the modes in `modes2` must also be selected.
+
+    Let :math:`m_1` be the Boolean variable indicating whether `mode1` is
+    selected. Let :math:`M_2` be the set of Boolean variables corresponding
+    to the modes in `modes2`.
+
+    The constraint is then expressed as:
+
+    .. math::
+        m_1 \\leq \\sum_{m \\in M_2} m
+    """
+
+    mode1: int
+    modes2: list[int]
+
+
 class Constraints:
     """
     Container class for storing all constraints.
@@ -588,6 +608,7 @@ class Constraints:
         select_at_least_one: list[SelectAtLeastOne] | None = None,
         consecutive: list[Consecutive] | None = None,
         setup_times: list[SetupTime] | None = None,
+        mode_dependencies: list[ModeDependency] | None = None,
     ):
         self._start_before_start = start_before_start or []
         self._start_before_end = start_before_end or []
@@ -599,6 +620,7 @@ class Constraints:
         self._select_at_least_one = select_at_least_one or []
         self._consecutive = consecutive or []
         self._setup_times = setup_times or []
+        self._mode_dependencies = mode_dependencies or []
 
     def __eq__(self, other) -> bool:
         return (
@@ -612,6 +634,7 @@ class Constraints:
             and self.select_at_least_one == other.select_at_least_one
             and self.consecutive == other.consecutive
             and self.setup_times == other.setup_times
+            and self.mode_dependencies == other.mode_dependencies
         )
 
     def __len__(self) -> int:
@@ -626,6 +649,7 @@ class Constraints:
             + len(self.select_at_least_one)
             + len(self.consecutive)
             + len(self._setup_times)
+            + len(self._mode_dependencies)
         )
 
     @property
@@ -697,6 +721,13 @@ class Constraints:
         Returns the list of setup times constraints.
         """
         return self._setup_times
+
+    @property
+    def mode_dependencies(self) -> list[ModeDependency]:
+        """
+        Returns the list of mode dependency constraints.
+        """
+        return self._mode_dependencies
 
 
 @dataclass
@@ -811,6 +842,10 @@ class ProblemData:
         num_tasks = self.num_tasks
 
         for idx, job in enumerate(self.jobs):
+            if len(job.tasks) == 0:
+                msg = f"Job {idx} does not reference any task."
+                raise ValueError(msg)
+
             if any(task < 0 or task >= num_tasks for task in job.tasks):
                 msg = f"Job {idx} references to unknown task index."
                 raise ValueError(msg)
@@ -830,9 +865,9 @@ class ProblemData:
                     msg = f"Mode {idx} references unknown resource index."
                     raise ValueError(msg)
 
-        missing = set(range(num_tasks)) - {mode.task for mode in self.modes}
-        if missing := sorted(missing):
-            raise ValueError(f"Processing modes missing for tasks {missing}.")
+        missing_tasks = set(range(num_tasks)) - {m.task for m in self.modes}
+        for idx in sorted(missing_tasks):
+            raise ValueError(f"Processing modes missing for task {idx}.")
 
         infeasible_modes = Counter()
         num_modes = Counter()

@@ -25,6 +25,7 @@ from pyjobshop.ProblemData import (
     Task,
 )
 from pyjobshop.Solution import TaskData as TaskData
+from pyjobshop.solve import solve
 
 
 def test_job_attributes():
@@ -346,6 +347,19 @@ def test_problem_data_default_values():
     assert_equal(data.objective, Objective(weight_makespan=1))
 
 
+def test_problem_data_job_must_reference_at_least_one_task():
+    """
+    Tests that an error is raised when a job does not reference any tasks.
+    """
+    with assert_raises(ValueError):
+        ProblemData(
+            [Job(tasks=[])],
+            [Renewable(0)],
+            [Task()],
+            [Mode(0, [0], 1)],
+        )
+
+
 def test_problem_data_job_references_unknown_task():
     """
     Tests that an error is raised when a job references an unknown task.
@@ -365,7 +379,7 @@ def test_problem_data_task_references_unknown_job():
     """
     with assert_raises(ValueError):
         ProblemData(
-            [Job()],
+            [Job(tasks=[0])],
             [Renewable(0)],
             [Task(job=42)],
             [Mode(0, [0], 1)],
@@ -385,7 +399,7 @@ def test_problem_data_mode_references_unknown_data(mode):
     """
     with assert_raises(ValueError):
         ProblemData(
-            [Job()],
+            [Job(tasks=[0])],
             [Renewable(0)],
             [Task()],
             [mode],
@@ -397,7 +411,7 @@ def test_problem_data_task_without_modes():
     Tests that an error is raised when a task has no processing modes.
     """
     with assert_raises(ValueError):
-        ProblemData([Job()], [Renewable(0)], [Task()], [])
+        ProblemData([Job(tasks=[0])], [Renewable(0)], [Task()], [])
 
 
 def test_problem_data_all_modes_demand_infeasible():
@@ -408,7 +422,7 @@ def test_problem_data_all_modes_demand_infeasible():
 
     # This is OK: at least one mode is feasible.
     ProblemData(
-        [Job()],
+        [Job(tasks=[0])],
         [Renewable(capacity=1)],
         [Task()],
         [
@@ -420,7 +434,7 @@ def test_problem_data_all_modes_demand_infeasible():
     with assert_raises(ValueError):
         # This is not OK: no mode is feasible.
         ProblemData(
-            [Job()],
+            [Job(tasks=[0])],
             [Renewable(capacity=1)],
             [Task()],
             [
@@ -437,7 +451,7 @@ def test_problem_data_raises_negative_setup_times():
     """
     with assert_raises(ValueError):
         ProblemData(
-            [Job()],
+            [Job(tasks=[0])],
             [Machine()],
             [Task(), Task()],
             [Mode(0, [0], 0), Mode(1, [0], 0)],
@@ -455,7 +469,7 @@ def test_problem_data_raises_capacitated_resources_and_setup_times(resource):
     """
     with assert_raises(ValueError):
         ProblemData(
-            [Job()],
+            [Job(tasks=[0])],
             [resource],
             [Task(), Task()],
             [Mode(0, [0], 0), Mode(1, [0], 0)],
@@ -482,7 +496,7 @@ def test_problem_data_tardy_objective_without_job_due_dates(
     """
     with assert_raises(ValueError):
         ProblemData(
-            [Job()],
+            [Job(tasks=[0])],
             [Renewable(0)],
             [Task()],
             [Mode(0, [0], 0)],
@@ -497,7 +511,7 @@ def test_problem_data_setup_times_objective_without_setup_times_constraints():
     """
     with assert_raises(ValueError):
         ProblemData(
-            [Job()],
+            [Job(tasks=[0])],
             [Renewable(0)],
             [Task()],
             [Mode(0, [0], 0)],
@@ -506,7 +520,10 @@ def test_problem_data_setup_times_objective_without_setup_times_constraints():
 
 
 def make_replace_data():
-    jobs = [Job(due_date=1, deadline=1), Job(due_date=2, deadline=2)]
+    jobs = [
+        Job(tasks=[0], due_date=1, deadline=1),
+        Job(tasks=[1], due_date=2, deadline=2),
+    ]
     resources = [
         Renewable(capacity=0, name="resource"),
         NonRenewable(capacity=0, name="resource"),
@@ -572,7 +589,10 @@ def test_problem_data_replace_with_changes():
     """
     data = make_replace_data()
     new = data.replace(
-        jobs=[Job(due_date=2, deadline=2), Job(due_date=1, deadline=1)],
+        jobs=[
+            Job(tasks=[1], due_date=2, deadline=2),
+            Job(tasks=[0], due_date=1, deadline=1),
+        ],
         resources=[Renewable(capacity=0, name="new"), Machine(name="new")],
         tasks=[Task(earliest_start=2), Task(earliest_start=2)],
         modes=[
@@ -611,6 +631,16 @@ def test_problem_data_replace_with_changes():
 
 
 # --- Tests that involve checking solver correctness of problem data. ---
+
+
+def test_empty_problem_instance(solver: str):
+    """
+    Tests that an empty problem data instance can be solved.
+    """
+    data = ProblemData([], [], [], [])
+    result = solve(data, solver=solver)
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.objective, 0)
 
 
 def test_job_release_date(solver: str):
@@ -1329,6 +1359,50 @@ def test_setup_time_bug(solver: str):
     result = model.solve(solver=solver)
     assert_equal(result.objective, 3)
     assert_equal(result.status.value, "Optimal")
+
+
+def test_mode_dependencies(solver: str):
+    """
+    Test that the mode dependency constraint works correctly. We test with
+    a simple model that is solved with and without the mode dependency
+    constraint and check the objectives of the two different variants of
+    the model.
+    """
+    model = Model()
+
+    machines = [model.add_machine() for _ in range(4)]
+    task1 = model.add_task()
+    task2 = model.add_task()
+
+    mode1 = model.add_mode(task=task1, resources=machines[0], duration=5)
+    model.add_mode(task=task2, resources=machines[1], duration=2)
+    mode3 = model.add_mode(task=task2, resources=machines[2], duration=10)
+    mode4 = model.add_mode(task=task2, resources=machines[3], duration=10)
+    model.add_end_before_start(task1, task2)
+
+    # First we solve the model without the mode dependency constraint, we
+    # expect to get an optimal solution with a makespan of 7.
+    result = model.solve(solver=solver)
+    assert_equal(result.objective, 7)
+
+    # Now we add the mode dependency, and we see that enforce that if mode1
+    # gets selected for task 1 (only option in this test case) then we need
+    # to enforce that mode3 or mode 4 gets selected for task 2. Since these
+    # modes have both duration 10 instead of 2, the makespan now equals 15.
+    model.add_mode_dependency(mode1, [mode3, mode4])
+    result = model.solve()
+    assert_equal(result.objective, 15)
+
+
+def test_empty_objective(solver: str):
+    """
+    Tests that the empty objective is correctly optimized.
+    """
+    data = ProblemData([], [], [], [], objective=Objective())
+    result = solve(data, solver=solver)
+
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.objective, 0)
 
 
 def test_makespan_objective(solver: str):
