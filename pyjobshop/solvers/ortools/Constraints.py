@@ -269,6 +269,22 @@ class Constraints:
                     expr = var1.end + setup <= var2.start
                     model.add(expr).only_enforce_if(arc_selected)
 
+    def _mode_dependencies(self):
+        """
+        Implements the mode dependency constraints.
+        """
+        model, data, variables = self._model, self._data, self._variables
+        # Flatten mode vars.
+        mode_vars = {
+            mode_idx: mode_var
+            for _vars in variables.mode_vars
+            for mode_idx, mode_var in _vars.items()
+        }
+        for idx1, idcs2 in data.constraints.mode_dependencies:
+            expr1 = mode_vars[idx1]
+            expr2 = sum(mode_vars[idx] for idx in idcs2)
+            model.add(expr1 <= expr2)
+
     def add_constraints(self):
         """
         Adds all the constraints to the CP model.
@@ -282,6 +298,7 @@ class Constraints:
         self._identical_and_different_resource_constraints()
         self._activate_setup_times()
         self._consecutive_constraints()
+        self._mode_dependencies()
 
         # From here onwards we know which sequence constraints are active.
         self._circuit_constraints()

@@ -11,6 +11,7 @@ from pyjobshop.ProblemData import (
     Job,
     Machine,
     Mode,
+    ModeDependency,
     NonRenewable,
     Objective,
     ProblemData,
@@ -42,6 +43,7 @@ class Model:
         self._id2job: dict[int, int] = {}
         self._id2resource: dict[int, int] = {}
         self._id2task: dict[int, int] = {}
+        self._id2mode: dict[int, int] = {}
 
     @property
     def jobs(self) -> list[Job]:
@@ -296,6 +298,8 @@ class Model:
         task_idx = self._id2task[id(task)]
         resource_idcs = [self._id2resource[id(res)] for res in resources]
         mode = Mode(task_idx, resource_idcs, duration, demands)
+
+        self._id2mode[id(mode)] = len(self.modes)
         self._modes.append(mode)
 
         return mode
@@ -402,6 +406,21 @@ class Model:
 
         constraint = SetupTime(machine_idx, task_idx1, task_idx2, duration)
         self._constraints._setup_times.append(constraint)
+
+        return constraint
+
+    def add_mode_dependency(
+        self, mode1: Mode, modes2: list[Mode]
+    ) -> ModeDependency:
+        """
+        Adds a mode dependency between one mode and a list of modes, meaning
+        that if the first mode has been selected, one out of the list of modes
+        must be selected.
+        """
+        idx1 = self._id2mode[id(mode1)]
+        idcs2 = [self._id2mode[id(mode2)] for mode2 in modes2]
+        constraint = ModeDependency(idx1, idcs2)
+        self.constraints.mode_dependencies.append(constraint)
 
         return constraint
 
