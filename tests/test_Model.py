@@ -85,7 +85,7 @@ def test_from_data():
     representation of that instance.
     """
     data = ProblemData(
-        [Job(due_date=1)],
+        [Job(tasks=[1], due_date=1)],
         [Machine(), Renewable(1), NonRenewable(0)],
         [Task(), Task(job=0), Task()],
         modes=[Mode(0, [0], 1), Mode(1, [1], 2), Mode(2, [1], 2)],
@@ -142,6 +142,22 @@ def test_model_to_data_default_values():
     assert_equal(data.resources, [machine])
     assert_equal(data.tasks, [task])
     assert_equal(data.modes, [Mode(task=0, resources=[0], duration=1)])
+    assert_equal(data.constraints, Constraints())
+    assert_equal(data.objective, Objective(weight_makespan=1))
+
+
+def test_empty_model_returns_empty_data():
+    """
+    Tests that calling ``Model.data()`` on an empty model returns an empty
+    ProblemData instance.
+    """
+    model = Model()
+    data = model.data()
+
+    assert_equal(data.jobs, [])
+    assert_equal(data.resources, [])
+    assert_equal(data.tasks, [])
+    assert_equal(data.modes, [])
     assert_equal(data.constraints, Constraints())
     assert_equal(data.objective, Objective(weight_makespan=1))
 
