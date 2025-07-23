@@ -17,7 +17,7 @@ from pyjobshop.ProblemData import (
     Objective,
     ProblemData,
     Renewable,
-    SamePresence,
+    SelectAllOrNone,
     SelectAtLeastOne,
     SetupTime,
     StartBeforeEnd,
@@ -290,7 +290,7 @@ def test_constraints_len():
         end_before_end=[EndBeforeEnd(0, 1)],
         identical_resources=[IdenticalResources(0, 1)],
         different_resources=[DifferentResources(0, 1)],
-        same_presence=[SamePresence(1, 2)],
+        select_all_or_none=[SelectAllOrNone([1, 2], [3])],
         select_at_least_one=[SelectAtLeastOne(1, [0])],
         consecutive=[Consecutive(1, 2)],
         setup_times=[
@@ -1096,9 +1096,9 @@ def test_identical_resources_with_modes_and_multiple_resources(solver: str):
     assert_equal(result.best.tasks[1].mode, 3)
 
 
-def test_same_presence_constraint(solver: str):
+def test_select_all_or_none_constraint(solver: str):
     """
-    Tests that the same presence constraint works correctly.
+    Tests that the select all or none constraint works correctly.
     """
     model = Model()
     machine = model.add_machine()
@@ -1109,9 +1109,9 @@ def test_same_presence_constraint(solver: str):
     task2 = model.add_task(optional=True)
     model.add_mode(task2, machine, duration=1)
 
-    model.add_same_presence(task1, task2)
+    model.add_select_all_or_none([task1, task2])
 
-    # Task 1 is required and task 2 is optional, but the same presence
+    # Task 1 is required and task 2 is optional, but the selection
     # constraint between both tasks forces task 2 to be scheduled.
     result = model.solve(solver=solver)
     assert_equal(result.status.value, "Optimal")
@@ -1119,6 +1119,49 @@ def test_same_presence_constraint(solver: str):
 
     for task in result.best.tasks:
         assert_(task.present)
+
+
+def test_select_all_or_none_if_triggered(solver: str):
+    """
+    Tests that the "select all or none" constraint correctly follows
+    the trigger task's activation state.
+
+    The test verifies:
+    1. When the trigger task is optional and not selected, the constraint
+       doesn't force selection of the other tasks
+    2. When the trigger task is required (or selected), the constraint
+       forces all related tasks to be selected
+    """
+    model = Model()
+    machine = model.add_machine()
+
+    task1 = model.add_task()
+    model.add_mode(task1, machine, duration=1)
+
+    task2 = model.add_task(optional=True)
+    model.add_mode(task2, machine, duration=1)
+
+    task3 = model.add_task(optional=True)
+    model.add_mode(task3, machine, duration=0)
+
+    model.add_select_all_or_none([task1, task2], task3)
+
+    # First scenario: Trigger task (task3) is optional and not selected,
+    # so the constraint shouldn't force task2 to be selected
+    result = model.solve(solver=solver)
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.objective, 1)
+
+    # Second scenario: Add a required trigger task (task4),
+    # which should force both task1 and task2 to be selected
+    task4 = model.add_task()  # required
+    model.add_mode(task4, machine, duration=0)
+
+    model.add_select_all_or_none([task1, task2], task4)
+
+    result = model.solve(solver=solver)
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.objective, 2)
 
 
 def test_select_at_least_one_constraint(solver: str):

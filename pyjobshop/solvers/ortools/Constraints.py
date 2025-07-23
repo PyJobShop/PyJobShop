@@ -1,3 +1,5 @@
+from itertools import pairwise
+
 import numpy as np
 from ortools.sat.python.cp_model import CpModel, LinearExpr
 
@@ -210,14 +212,26 @@ class Constraints:
 
     def _task_selection_constraints(self):
         """
-        Creates the selection constraints.
+        Creates the task selection constraints.
         """
         model, data, variables = self._model, self._data, self._variables
 
-        for idx1, idx2 in data.constraints.same_presence:
-            var1 = variables.task_vars[idx1]
-            var2 = variables.task_vars[idx2]
-            model.add(var1.present == var2.present)
+        for idcs, trigger_idx in data.constraints.select_all_or_none:
+            trigger = (
+                variables.task_vars[trigger_idx].present
+                if trigger_idx is not None
+                else None
+            )
+
+            for idx1, idx2 in pairwise(idcs):
+                var1 = variables.task_vars[idx1]
+                var2 = variables.task_vars[idx2]
+                expr = var1.present == var2.present
+
+                if trigger is not None:
+                    model.add(expr).only_enforce_if(trigger)
+                else:
+                    model.add(expr)
 
         for idx1, idcs2 in data.constraints.select_at_least_one:
             pred = variables.task_vars[idx1].present

@@ -17,7 +17,7 @@ from pyjobshop.ProblemData import (
     ProblemData,
     Renewable,
     Resource,
-    SamePresence,
+    SelectAllOrNone,
     SelectAtLeastOne,
     SetupTime,
     StartBeforeEnd,
@@ -161,12 +161,16 @@ class Model:
         for idx1, idx2 in data.constraints.different_resources:
             model.add_different_resources(tasks[idx1], tasks[idx2])
 
-        for idx1, idx2 in data.constraints.same_presence:
-            model.add_same_presence(tasks[idx1], tasks[idx2])
+        for idcs1, idx2 in data.constraints.select_all_or_none:
+            model.add_select_all_or_none(
+                tasks=[tasks[idx] for idx in idcs1],
+                trigger_task=tasks[idx2] if idx2 is not None else None,
+            )
 
         for idx1, idcs2 in data.constraints.select_at_least_one:
             model.add_select_at_least_one(
-                tasks[idx1], [tasks[idx2] for idx2 in idcs2]
+                if_selected=tasks[idx1],
+                tasks=[tasks[idx2] for idx2 in idcs2],
             )
 
         for idx1, idx2 in data.constraints.consecutive:
@@ -395,27 +399,17 @@ class Model:
 
         return constraint
 
-    def add_same_presence(self, task1: Task, task2: Task) -> SamePresence:
+    def add_select_all_or_none(
+        self, tasks: list[Task], trigger_task: Task | None = None
+    ) -> SelectAllOrNone:
         """
-        Adds a constraint that two tasks must have the same presence.
-        If task1 is selected, then task2 must be selected as well,
-        and vice versa.
+        Adds a constraint that all the passed-in tasks must be selected
+        or not.
         """
-        idx1, idx2 = self._id2task[id(task1)], self._id2task[id(task2)]
-        constraint = SamePresence(idx1, idx2)
-        self._constraints.same_presence.append(constraint)
-
-        return constraint
-
-    def add_consecutive(self, task1: Task, task2: Task) -> Consecutive:
-        """
-        Adds a constraint that the first task must be scheduled right before
-        the second task, meaning that no task is allowed to schedule between,
-        on machines that they are both scheduled on.
-        """
-        idx1, idx2 = self._id2task[id(task1)], self._id2task[id(task2)]
-        constraint = Consecutive(idx1, idx2)
-        self._constraints.consecutive.append(constraint)
+        idcs = [self._id2task[id(task)] for task in tasks]
+        trigger_idx = self._id2task[id(trigger_task)] if trigger_task else None
+        constraint = SelectAllOrNone(idcs, trigger_idx)
+        self._constraints.select_all_or_none.append(constraint)
 
         return constraint
 
@@ -430,6 +424,18 @@ class Model:
         idcs2 = [self._id2task[id(succ)] for succ in tasks]
         constraint = SelectAtLeastOne(idx1, idcs2)
         self._constraints.select_at_least_one.append(constraint)
+
+        return constraint
+
+    def add_consecutive(self, task1: Task, task2: Task) -> Consecutive:
+        """
+        Adds a constraint that the first task must be scheduled right before
+        the second task, meaning that no task is allowed to schedule between,
+        on machines that they are both scheduled on.
+        """
+        idx1, idx2 = self._id2task[id(task1)], self._id2task[id(task2)]
+        constraint = Consecutive(idx1, idx2)
+        self._constraints.consecutive.append(constraint)
 
         return constraint
 

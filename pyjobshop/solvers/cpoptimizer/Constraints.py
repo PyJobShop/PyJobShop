@@ -1,3 +1,5 @@
+from itertools import pairwise
+
 import docplex.cp.modeler as cpo
 import numpy as np
 from docplex.cp.expression import interval_var
@@ -178,14 +180,27 @@ class Constraints:
         """
         model, data = self._model, self._data
 
-        for idx1, idx2 in data.constraints.same_presence:
-            var1 = self._task_vars[idx1]
-            var2 = self._task_vars[idx2]
-            model.add(presence_of(var1) == presence_of(var2))
+        for idcs, trigger_idx in data.constraints.select_all_or_none:
+            if trigger_idx is None:
+                # This works better with presolve.
+                for idx1, idx2 in pairwise(idcs):
+                    var1 = self._task_vars[idx1]
+                    var2 = self._task_vars[idx2]
+                    expr = presence_of(var1) == presence_of(var2)
+                    model.add(expr)
+            else:
+                triggered = presence_of(self._task_vars[trigger_idx]) == 1
+                bools = [presence_of(self._task_vars[idx]) for idx in idcs]
+                select_all = model.logical_and(var == 1 for var in bools)
+                select_none = model.logical_and(var == 0 for var in bools)
+                all_or_none = model.logical_or(select_all, select_none)
+
+                model.add(model.if_then(triggered, all_or_none))
 
         for idx1, idcs2 in data.constraints.select_at_least_one:
             present1 = presence_of(self._task_vars[idx1])
             present2 = sum(presence_of(self._task_vars[idx]) for idx in idcs2)
+
             model.add(present1 <= present2)
 
     def _consecutive_constraints(self):
