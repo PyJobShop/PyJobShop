@@ -410,8 +410,9 @@ class Model:
         self, tasks: list[Task], trigger_task: Task | None = None
     ) -> SelectAllOrNone:
         """
-        Adds a constraint that all the passed-in tasks must be selected
-        or not.
+        Adds a constraint that all tasks from the given list are selected,
+        or none are. If ``trigger_task`` is provided, this rule only applies
+        when that task is selected.
         """
         idcs = [self._id2task[id(task)] for task in tasks]
         trigger_idx = self._id2task[id(trigger_task)] if trigger_task else None
@@ -424,8 +425,8 @@ class Model:
         self, tasks: list[Task], trigger_task: Task | None = None
     ) -> SelectAtLeastOne:
         """
-        Adds a constraint that at least one of the given tasks must be
-        selected. If trigger_task is provided, this rule only applies when
+        Adds a constraint that at least one task from the given list is
+        selected. If ``trigger_task`` is provided, this rule only applies when
         that task is selected.
         """
         idcs = [self._id2task[id(task)] for task in tasks]
@@ -439,8 +440,8 @@ class Model:
         self, tasks: list[Task], trigger_task: Task | None = None
     ) -> SelectExactlyOne:
         """
-        Adds a constraint that exactly one of the given tasks must be
-        selected. If trigger_task is provided, this rule only applies when
+        Adds a constraint that exactly one task from the given list is
+        selected. If ``trigger_task`` is provided, this rule only applies when
         that task is selected.
         """
         idcs = [self._id2task[id(task)] for task in tasks]

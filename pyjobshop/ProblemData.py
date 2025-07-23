@@ -505,7 +505,7 @@ class DifferentResources(IterableMixin):
 @dataclass
 class SelectAllOrNone(IterableMixin):
     """
-    Select all or none of the given tasks.
+    Enforces that all tasks from the given list are selected, or none are.
 
     If `if_selected` is provided, this rule only applies when that task
     is selected; otherwise, it has no effect.
@@ -518,7 +518,7 @@ class SelectAllOrNone(IterableMixin):
 @dataclass
 class SelectAtLeastOne(IterableMixin):
     """
-    Enforces that at least one task from the list must be selected.
+    Enforces that at least one task from the given list is selected.
 
     If `if_selected` is provided, this rule only applies when that task
     is selected; otherwise, it has no effect.
@@ -531,7 +531,7 @@ class SelectAtLeastOne(IterableMixin):
 @dataclass
 class SelectExactlyOne(IterableMixin):
     """
-    Enforces that exactly one task from the list must be selected.
+    Enforces that exactly one task from the given list is selected.
 
     If `if_selected` is provided, this rule only applies when that task
     is selected; otherwise, it has no effect.

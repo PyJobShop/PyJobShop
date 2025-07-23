@@ -1098,7 +1098,7 @@ def test_identical_resources_with_modes_and_multiple_resources(solver: str):
 
 def test_select_all_or_none_constraint(solver: str):
     """
-    Tests that the select all or none constraint works correctly.
+    Tests that the select-all-or-none constraint works correctly.
     """
     model = Model()
     machine = model.add_machine()
@@ -1166,7 +1166,7 @@ def test_select_all_or_none_if_triggered(solver: str):
 
 def test_select_at_least_one_constraint(solver: str):
     """
-    Tests that the select at least one constraint works correctly for a pair
+    Tests that the select-at-least-one constraint works correctly for a pair
     of tasks.
     """
     model = Model()
@@ -1207,7 +1207,7 @@ def test_select_at_least_one_constraint(solver: str):
 
 def test_select_at_least_one_schedules_at_least_one_successor(solver: str):
     """
-    Tests that the select at least one constraint works correctly when the
+    Tests that the select-at-least-one constraint works correctly when the
     successor tasks consist of multiple tasks.
     """
     model = Model()
@@ -1238,7 +1238,7 @@ def test_select_at_least_one_schedules_at_least_one_successor(solver: str):
 
 def test_select_at_least_one_schedules_multiple_successors(solver: str):
     """
-    Tests that select at least one constraint is allowed to schedule multiple
+    Tests that select-at-least-one constraint is allowed to schedule multiple
     successors.
     """
     model = Model()
@@ -1263,7 +1263,7 @@ def test_select_at_least_one_schedules_multiple_successors(solver: str):
 
 def test_select_exactly_one_constraint(solver: str):
     """
-    Tests that the select exactly one constraint works correctly for a pair
+    Tests that the select-exactly-one constraint works correctly for a pair
     of tasks.
     """
     model = Model()
@@ -1288,7 +1288,7 @@ def test_select_exactly_one_constraint(solver: str):
 
 def test_select_exactly_one_with_trigger(solver: str):
     """
-    Tests that the select exactly one constraint works correctly with a
+    Tests that the select-exactly-one constraint works correctly with a
     trigger task.
     """
     model = Model()
@@ -1335,7 +1335,7 @@ def test_select_exactly_one_with_trigger(solver: str):
 
 def test_select_exactly_one_multiple_options(solver: str):
     """
-    Tests that select exactly one constraint chooses the optimal task when
+    Tests that select-exactly-one constraint chooses the optimal task when
     multiple options exist.
     """
     model = Model()
