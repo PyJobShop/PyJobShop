@@ -233,10 +233,14 @@ class Constraints:
                 else:
                     model.add(expr)
 
-        for idx1, idcs2 in data.constraints.select_at_least_one:
-            pred = variables.task_vars[idx1].present
-            succs = sum(variables.task_vars[idx2].present for idx2 in idcs2)
-            model.add(succs >= 1).only_enforce_if(pred)
+        for idcs, trigger_idx in data.constraints.select_at_least_one:
+            trigger = (
+                variables.task_vars[trigger_idx].present
+                if trigger_idx is not None
+                else 1
+            )
+            presences = [variables.task_vars[idx].present for idx in idcs]
+            model.add(trigger <= sum(presences))
 
     def _activate_setup_times(self):
         """

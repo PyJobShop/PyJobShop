@@ -1178,7 +1178,7 @@ def test_select_at_least_one_constraint(solver: str):
     task2 = model.add_task(optional=True)
     model.add_mode(task2, machine, duration=1)
 
-    model.add_select_at_least_one(task1, [task2])
+    model.add_select_at_least_one([task2], task1)
 
     # Task 1 is optional, so task 2 does not need to be scheduled.
     result = model.solve(solver=solver)
@@ -1192,7 +1192,7 @@ def test_select_at_least_one_constraint(solver: str):
     task3 = model.add_task()
     model.add_mode(task3, machine, duration=1)
 
-    model.add_select_at_least_one(task3, [task1])
+    model.add_select_at_least_one([task1], task3)
 
     # Combined with the new if-then constraint, task 1 must be scheduled,
     # so task 2 must also be scheduled.
@@ -1222,7 +1222,7 @@ def test_select_at_least_one_schedules_at_least_one_successor(solver: str):
     task3 = model.add_task(optional=True)
     model.add_mode(task3, machine, duration=2)
 
-    model.add_select_at_least_one(task1, [task2, task3])
+    model.add_select_at_least_one([task2, task3], task1)
 
     # At least one of the successor tasks must be scheduled. The successor task
     # with lowest duration should be scheduled, which is the first one.
@@ -1253,7 +1253,7 @@ def test_select_at_least_one_schedules_multiple_successors(solver: str):
     task3 = model.add_task()
     model.add_mode(task3, machine, duration=1)
 
-    model.add_select_at_least_one(task1, [task2, task3])
+    model.add_select_at_least_one([task2, task3], task1)
 
     # All tasks are required, but this should still work.
     result = model.solve(solver=solver)

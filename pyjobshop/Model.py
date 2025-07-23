@@ -163,14 +163,14 @@ class Model:
 
         for idcs1, idx2 in data.constraints.select_all_or_none:
             model.add_select_all_or_none(
-                tasks=[tasks[idx] for idx in idcs1],
-                trigger_task=tasks[idx2] if idx2 is not None else None,
+                [tasks[idx] for idx in idcs1],
+                tasks[idx2] if idx2 is not None else None,
             )
 
-        for idx1, idcs2 in data.constraints.select_at_least_one:
+        for idcs1, idx2 in data.constraints.select_at_least_one:
             model.add_select_at_least_one(
-                if_selected=tasks[idx1],
-                tasks=[tasks[idx2] for idx2 in idcs2],
+                [tasks[idx] for idx in idcs1],
+                tasks[idx2] if idx2 is not None else None,
             )
 
         for idx1, idx2 in data.constraints.consecutive:
@@ -414,15 +414,16 @@ class Model:
         return constraint
 
     def add_select_at_least_one(
-        self, if_selected: Task, tasks: list[Task]
+        self, tasks: list[Task], trigger_task: Task | None = None
     ) -> SelectAtLeastOne:
         """
-        Adds a constraint that if the predecessor task is present, then at
-        least one of the successor tasks must be present.
+        Adds a constraint that at least one of the given tasks must be
+        selected. If trigger_task is provided, this rule only applies when
+        that task is selected.
         """
-        idx1 = self._id2task[id(if_selected)]
-        idcs2 = [self._id2task[id(succ)] for succ in tasks]
-        constraint = SelectAtLeastOne(idx1, idcs2)
+        idcs = [self._id2task[id(task)] for task in tasks]
+        trigger_idx = self._id2task[id(trigger_task)] if trigger_task else None
+        constraint = SelectAtLeastOne(idcs, trigger_idx)
         self._constraints.select_at_least_one.append(constraint)
 
         return constraint

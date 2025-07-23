@@ -197,11 +197,14 @@ class Constraints:
 
                 model.add(model.if_then(triggered, all_or_none))
 
-        for idx1, idcs2 in data.constraints.select_at_least_one:
-            present1 = presence_of(self._task_vars[idx1])
-            present2 = sum(presence_of(self._task_vars[idx]) for idx in idcs2)
-
-            model.add(present1 <= present2)
+        for idcs, trigger_idx in data.constraints.select_at_least_one:
+            trigger = (
+                cpo.presence_of(self._task_vars[trigger_idx])
+                if trigger_idx is not None
+                else 1
+            )
+            presences = sum(presence_of(self._task_vars[idx]) for idx in idcs)
+            model.add(trigger <= presences)
 
     def _consecutive_constraints(self):
         """

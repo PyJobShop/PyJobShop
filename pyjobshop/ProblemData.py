@@ -524,8 +524,8 @@ class SelectAtLeastOne(IterableMixin):
     is selected; otherwise, it has no effect.
     """
 
-    if_selected: int
     tasks: list[int]
+    if_selected: int | None = None
 
 
 @dataclass
