@@ -70,26 +70,21 @@ def test_model_to_data():
         ],
     )
 
-    constraints = data.constraints
-    assert_equal(constraints.start_before_start, [StartBeforeStart(0, 1)])
-    assert_equal(constraints.start_before_end, [StartBeforeEnd(0, 1)])
-    assert_equal(constraints.end_before_end, [EndBeforeEnd(0, 1)])
-    assert_equal(constraints.end_before_start, [EndBeforeStart(0, 1)])
-    assert_equal(constraints.identical_resources, [IdenticalResources(1, 0)])
-    assert_equal(constraints.different_resources, [DifferentResources(1, 0)])
+    cons = data.constraints
+    assert_equal(cons.start_before_start, [StartBeforeStart(0, 1)])
+    assert_equal(cons.start_before_end, [StartBeforeEnd(0, 1)])
+    assert_equal(cons.end_before_end, [EndBeforeEnd(0, 1)])
+    assert_equal(cons.end_before_start, [EndBeforeStart(0, 1)])
+    assert_equal(cons.identical_resources, [IdenticalResources(1, 0)])
+    assert_equal(cons.different_resources, [DifferentResources(1, 0)])
+    assert_equal(cons.select_all_or_none, [SelectAllOrNone([0, 1], None)])
+    assert_equal(cons.select_at_least_one, [SelectAtLeastOne([0, 1], None)])
+    assert_equal(cons.select_exactly_one, [SelectExactlyOne([0, 1], None)])
+    assert_equal(cons.consecutive, [Consecutive(1, 0)])
+    assert_equal(cons.mode_dependencies, [ModeDependency(0, [1])])
     assert_equal(
-        constraints.select_all_or_none, [SelectAllOrNone([0, 1], None)]
-    )
-    assert_equal(
-        constraints.select_at_least_one, [SelectAtLeastOne([0, 1], None)]
-    )
-    assert_equal(
-        constraints.select_exactly_one, [SelectExactlyOne([0, 1], None)]
-    )
-    assert_equal(constraints.consecutive, [Consecutive(1, 0)])
-    assert_equal(constraints.mode_dependencies, [ModeDependency(0, [1])])
-    assert_equal(
-        constraints.setup_times, [SetupTime(0, 0, 1, 3), SetupTime(1, 0, 1, 4)]
+        cons.setup_times,
+        [SetupTime(0, 0, 1, 3), SetupTime(1, 0, 1, 4)],
     )
     assert_equal(data.objective, Objective(weight_total_flow_time=1))
 

@@ -168,7 +168,7 @@ class Constraints:
 
     def _task_selection_constraints(self):
         """
-        Creates constraints for the if-then constraints.
+        Creates constraints for task selection constraints.
         """
         model, data = self._model, self._data
 
