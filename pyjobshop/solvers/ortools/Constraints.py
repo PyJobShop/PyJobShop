@@ -242,6 +242,15 @@ class Constraints:
             presences = [variables.task_vars[idx].present for idx in idcs]
             model.add(trigger <= sum(presences))
 
+        for idcs, trigger_idx in data.constraints.select_exactly_one:
+            trigger = (
+                variables.task_vars[trigger_idx].present
+                if trigger_idx is not None
+                else 1
+            )
+            presences = [variables.task_vars[idx].present for idx in idcs]
+            model.add(sum(presences) == 1).only_enforce_if(trigger)
+
     def _activate_setup_times(self):
         """
         Activates the sequence variables for resources that have setup times.

@@ -191,11 +191,11 @@ class Constraints:
             else:
                 triggered = presence_of(self._task_vars[trigger_idx]) == 1
                 bools = [presence_of(self._task_vars[idx]) for idx in idcs]
-                select_all = model.logical_and(var == 1 for var in bools)
-                select_none = model.logical_and(var == 0 for var in bools)
-                all_or_none = model.logical_or(select_all, select_none)
+                select_all = cpo.logical_and(var == 1 for var in bools)
+                select_none = cpo.logical_and(var == 0 for var in bools)
+                all_or_none = cpo.logical_or(select_all, select_none)
 
-                model.add(model.if_then(triggered, all_or_none))
+                model.add(cpo.if_then(triggered, all_or_none))
 
         for idcs, trigger_idx in data.constraints.select_at_least_one:
             trigger = (
@@ -205,6 +205,15 @@ class Constraints:
             )
             presences = sum(presence_of(self._task_vars[idx]) for idx in idcs)
             model.add(trigger <= presences)
+
+        for idcs, trigger_idx in data.constraints.select_exactly_one:
+            bools = [presence_of(self._task_vars[idx]) for idx in idcs]
+            exactly_one = sum(bools) == 1
+            if trigger_idx is None:
+                model.add(exactly_one)
+            else:
+                triggered = presence_of(self._task_vars[trigger_idx]) == 1
+                model.add(cpo.if_then(triggered, exactly_one))
 
     def _consecutive_constraints(self):
         """

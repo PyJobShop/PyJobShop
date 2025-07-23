@@ -19,6 +19,7 @@ from pyjobshop.ProblemData import (
     Resource,
     SelectAllOrNone,
     SelectAtLeastOne,
+    SelectExactlyOne,
     SetupTime,
     StartBeforeEnd,
     StartBeforeStart,
@@ -169,6 +170,12 @@ class Model:
 
         for idcs1, idx2 in data.constraints.select_at_least_one:
             model.add_select_at_least_one(
+                [tasks[idx] for idx in idcs1],
+                tasks[idx2] if idx2 is not None else None,
+            )
+
+        for idcs1, idx2 in data.constraints.select_exactly_one:
+            model.add_select_exactly_one(
                 [tasks[idx] for idx in idcs1],
                 tasks[idx2] if idx2 is not None else None,
             )
@@ -425,6 +432,21 @@ class Model:
         trigger_idx = self._id2task[id(trigger_task)] if trigger_task else None
         constraint = SelectAtLeastOne(idcs, trigger_idx)
         self._constraints.select_at_least_one.append(constraint)
+
+        return constraint
+
+    def add_select_exactly_one(
+        self, tasks: list[Task], trigger_task: Task | None = None
+    ) -> SelectExactlyOne:
+        """
+        Adds a constraint that exactly one of the given tasks must be
+        selected. If trigger_task is provided, this rule only applies when
+        that task is selected.
+        """
+        idcs = [self._id2task[id(task)] for task in tasks]
+        trigger_idx = self._id2task[id(trigger_task)] if trigger_task else None
+        constraint = SelectExactlyOne(idcs, trigger_idx)
+        self._constraints.select_exactly_one.append(constraint)
 
         return constraint
 

@@ -529,6 +529,19 @@ class SelectAtLeastOne(IterableMixin):
 
 
 @dataclass
+class SelectExactlyOne(IterableMixin):
+    """
+    Enforces that exactly one task from the list must be selected.
+
+    If `if_selected` is provided, this rule only applies when that task
+    is selected; otherwise, it has no effect.
+    """
+
+    tasks: list[int]
+    if_selected: int | None = None
+
+
+@dataclass
 class Consecutive(IterableMixin):
     """
     Sequence task 1 and task 2 consecutively on the machines they are both
@@ -608,6 +621,7 @@ class Constraints:
         different_resources: list[DifferentResources] | None = None,
         select_all_or_none: list[SelectAllOrNone] | None = None,
         select_at_least_one: list[SelectAtLeastOne] | None = None,
+        select_exactly_one: list[SelectExactlyOne] | None = None,
         consecutive: list[Consecutive] | None = None,
         setup_times: list[SetupTime] | None = None,
         mode_dependencies: list[ModeDependency] | None = None,
@@ -620,6 +634,7 @@ class Constraints:
         self._different_resources = different_resources or []
         self._select_all_or_none = select_all_or_none or []
         self._select_at_least_one = select_at_least_one or []
+        self._select_exactly_one = select_exactly_one or []
         self._consecutive = consecutive or []
         self._setup_times = setup_times or []
         self._mode_dependencies = mode_dependencies or []
@@ -634,6 +649,7 @@ class Constraints:
             and self.different_resources == other.different_resources
             and self.select_all_or_none == other.select_all_or_none
             and self.select_at_least_one == other.select_at_least_one
+            and self.select_exactly_one == other.select_exactly_one
             and self.consecutive == other.consecutive
             and self.setup_times == other.setup_times
             and self.mode_dependencies == other.mode_dependencies
@@ -649,6 +665,7 @@ class Constraints:
             + len(self.different_resources)
             + len(self.select_all_or_none)
             + len(self.select_at_least_one)
+            + len(self.select_exactly_one)
             + len(self.consecutive)
             + len(self._setup_times)
             + len(self._mode_dependencies)
@@ -709,6 +726,13 @@ class Constraints:
         Returns the list of select-at-least-one constraints.
         """
         return self._select_at_least_one
+
+    @property
+    def select_exactly_one(self) -> list[SelectExactlyOne]:
+        """
+        Returns the list of select-exactly-one constraints.
+        """
+        return self._select_exactly_one
 
     @property
     def consecutive(self) -> list[Consecutive]:

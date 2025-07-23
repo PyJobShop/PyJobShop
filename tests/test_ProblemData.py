@@ -1261,6 +1261,114 @@ def test_select_at_least_one_schedules_multiple_successors(solver: str):
     assert_equal(result.objective, 3)
 
 
+def test_select_exactly_one_constraint(solver: str):
+    """
+    Tests that the select exactly one constraint works correctly for a pair
+    of tasks.
+    """
+    model = Model()
+    machine = model.add_machine()
+
+    task1 = model.add_task(optional=True)
+    model.add_mode(task1, machine, duration=2)
+
+    task2 = model.add_task(optional=True)
+    model.add_mode(task2, machine, duration=1)
+
+    model.add_select_exactly_one([task1, task2])
+
+    # Task 2 is shorter than task 1, so it should be selected.
+    result = model.solve(solver=solver)
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.objective, 1)
+
+    assert_(not result.best.tasks[0].present)
+    assert_(result.best.tasks[1].present)
+
+
+def test_select_exactly_one_with_trigger(solver: str):
+    """
+    Tests that the select exactly one constraint works correctly with a
+    trigger task.
+    """
+    model = Model()
+    machine = model.add_machine()
+
+    task1 = model.add_task(optional=True)
+    model.add_mode(task1, machine, duration=2)
+
+    task2 = model.add_task(optional=True)
+    model.add_mode(task2, machine, duration=2)
+
+    task3 = model.add_task(optional=True)
+    model.add_mode(task3, machine, duration=1)
+
+    trigger_task = model.add_task(optional=True)
+    model.add_mode(trigger_task, machine, duration=1)
+
+    model.add_select_exactly_one([task1, task2, task3], trigger_task)
+
+    # If trigger task is not selected, no constraint applies
+    result = model.solve(solver=solver)
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.objective, 0)
+
+    for task in result.best.tasks:
+        assert_(not task.present)
+
+    # Now force the trigger task to be selected
+    required_task = model.add_task()
+    model.add_mode(required_task, machine, duration=1)
+    model.add_select_exactly_one([trigger_task], required_task)
+
+    result = model.solve(solver=solver)
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.objective, 3)
+
+    sol_tasks = result.best.tasks
+    assert_(not sol_tasks[0].present)
+    assert_(not sol_tasks[1].present)
+    assert_(sol_tasks[2].present)
+    assert_(sol_tasks[3].present)
+    assert_(sol_tasks[4].present)
+
+
+def test_select_exactly_one_multiple_options(solver: str):
+    """
+    Tests that select exactly one constraint chooses the optimal task when
+    multiple options exist.
+    """
+    model = Model()
+    machine = model.add_machine()
+
+    task1 = model.add_task()
+    model.add_mode(task1, machine, duration=1)
+
+    task2 = model.add_task(optional=True)
+    model.add_mode(task2, machine, duration=2)
+
+    task3 = model.add_task(optional=True)
+    model.add_mode(task3, machine, duration=3)
+
+    task4 = model.add_task(optional=True)
+    model.add_mode(task4, machine, duration=4)
+
+    model.add_select_exactly_one([task2, task3, task4], task1)
+
+    # Since task1 is required, exactly one of task2, task3, task4 must be
+    # selected.
+    # The solver should choose task2 (shortest duration).
+    result = model.solve(solver=solver)
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.objective, 3)  # task1 (1) + task2 (2)
+
+    sol_tasks = result.best.tasks
+    assert_(sol_tasks[0].present)  # task1
+    assert_(sol_tasks[1].present)  # task2
+    assert_(not sol_tasks[2].present)  # task3
+    assert_(not sol_tasks[3].present)  # task4
+
+
 def test_different_resources(solver: str):
     """
     Tests that the different resources constraint is respected.

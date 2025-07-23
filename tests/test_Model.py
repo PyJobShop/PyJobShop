@@ -18,6 +18,7 @@ from pyjobshop.ProblemData import (
     Renewable,
     SelectAllOrNone,
     SelectAtLeastOne,
+    SelectExactlyOne,
     SetupTime,
     StartBeforeEnd,
     StartBeforeStart,
@@ -47,6 +48,7 @@ def test_model_to_data():
     model.add_different_resources(task2, task1)
     model.add_select_all_or_none([task1, task2])
     model.add_select_at_least_one([task1, task2])
+    model.add_select_exactly_one([task1, task2])
     model.add_consecutive(task2, task1)
     model.add_mode_dependency(mode1, [mode2])
 
@@ -81,6 +83,9 @@ def test_model_to_data():
     assert_equal(
         constraints.select_at_least_one, [SelectAtLeastOne([0, 1], None)]
     )
+    assert_equal(
+        constraints.select_exactly_one, [SelectExactlyOne([0, 1], None)]
+    )
     assert_equal(constraints.consecutive, [Consecutive(1, 0)])
     assert_equal(constraints.mode_dependencies, [ModeDependency(0, [1])])
     assert_equal(
@@ -108,6 +113,7 @@ def test_from_data():
             different_resources=[DifferentResources(0, 1)],
             select_all_or_none=[SelectAllOrNone([0, 1], 2)],
             select_at_least_one=[SelectAtLeastOne([0, 1])],
+            select_exactly_one=[SelectExactlyOne([0, 1])],
             consecutive=[Consecutive(1, 2)],
             setup_times=[
                 SetupTime(0, 0, 1, 1),  # machine
