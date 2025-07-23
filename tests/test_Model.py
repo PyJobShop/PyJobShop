@@ -16,6 +16,9 @@ from pyjobshop.ProblemData import (
     Objective,
     ProblemData,
     Renewable,
+    SelectAllOrNone,
+    SelectAtLeastOne,
+    SelectExactlyOne,
     SetupTime,
     StartBeforeEnd,
     StartBeforeStart,
@@ -43,6 +46,9 @@ def test_model_to_data():
     model.add_end_before_start(task1, task2)
     model.add_identical_resources(task2, task1)
     model.add_different_resources(task2, task1)
+    model.add_select_all_or_none([task1, task2])
+    model.add_select_at_least_one([task1, task2])
+    model.add_select_exactly_one([task1, task2])
     model.add_consecutive(task2, task1)
     model.add_mode_dependency(mode1, [mode2])
 
@@ -64,17 +70,21 @@ def test_model_to_data():
         ],
     )
 
-    constraints = data.constraints
-    assert_equal(constraints.start_before_start, [StartBeforeStart(0, 1)])
-    assert_equal(constraints.start_before_end, [StartBeforeEnd(0, 1)])
-    assert_equal(constraints.end_before_end, [EndBeforeEnd(0, 1)])
-    assert_equal(constraints.end_before_start, [EndBeforeStart(0, 1)])
-    assert_equal(constraints.identical_resources, [IdenticalResources(1, 0)])
-    assert_equal(constraints.different_resources, [DifferentResources(1, 0)])
-    assert_equal(constraints.consecutive, [Consecutive(1, 0)])
-    assert_equal(constraints.mode_dependencies, [ModeDependency(0, [1])])
+    cons = data.constraints
+    assert_equal(cons.start_before_start, [StartBeforeStart(0, 1)])
+    assert_equal(cons.start_before_end, [StartBeforeEnd(0, 1)])
+    assert_equal(cons.end_before_end, [EndBeforeEnd(0, 1)])
+    assert_equal(cons.end_before_start, [EndBeforeStart(0, 1)])
+    assert_equal(cons.identical_resources, [IdenticalResources(1, 0)])
+    assert_equal(cons.different_resources, [DifferentResources(1, 0)])
+    assert_equal(cons.select_all_or_none, [SelectAllOrNone([0, 1], None)])
+    assert_equal(cons.select_at_least_one, [SelectAtLeastOne([0, 1], None)])
+    assert_equal(cons.select_exactly_one, [SelectExactlyOne([0, 1], None)])
+    assert_equal(cons.consecutive, [Consecutive(1, 0)])
+    assert_equal(cons.mode_dependencies, [ModeDependency(0, [1])])
     assert_equal(
-        constraints.setup_times, [SetupTime(0, 0, 1, 3), SetupTime(1, 0, 1, 4)]
+        cons.setup_times,
+        [SetupTime(0, 0, 1, 3), SetupTime(1, 0, 1, 4)],
     )
     assert_equal(data.objective, Objective(weight_total_flow_time=1))
 
@@ -96,6 +106,9 @@ def test_from_data():
             end_before_end=[EndBeforeEnd(0, 1)],
             identical_resources=[IdenticalResources(0, 1)],
             different_resources=[DifferentResources(0, 1)],
+            select_all_or_none=[SelectAllOrNone([0, 1], 2)],
+            select_at_least_one=[SelectAtLeastOne([0, 1])],
+            select_exactly_one=[SelectExactlyOne([0, 1])],
             consecutive=[Consecutive(1, 2)],
             setup_times=[
                 SetupTime(0, 0, 1, 1),  # machine

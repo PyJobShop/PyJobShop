@@ -1,3 +1,5 @@
+from itertools import pairwise
+
 import docplex.cp.modeler as cpo
 import numpy as np
 from docplex.cp.model import CpoModel
@@ -10,6 +12,7 @@ from pyjobshop.ProblemData import (
     Renewable,
 )
 
+from .utils import presence_of
 from .Variables import Variables
 
 
@@ -96,7 +99,7 @@ class Constraints:
                 for (mode, demand) in zip(res2modes[idx], res2demands[idx])
                 if demand > 0  # avoids cpo warnings
             ]
-            model.add(model.sum(pulses) <= resource.capacity)
+            model.add(sum(pulses) <= resource.capacity)
 
     def _non_renewable_capacity(self):
         """
@@ -110,10 +113,10 @@ class Constraints:
                 continue
 
             usage = [
-                cpo.presence_of(self._mode_vars[mode]) * demand
+                presence_of(self._mode_vars[mode]) * demand
                 for (mode, demand) in zip(res2modes[idx], res2demands[idx])
             ]
-            model.add(model.sum(usage) <= resource.capacity)
+            model.add(sum(usage) <= resource.capacity)
 
     def _timing_constraints(self):
         """
@@ -149,19 +152,60 @@ class Constraints:
 
         for idx1, idx2 in data.constraints.identical_resources:
             for mode1, modes2 in utils.identical_modes(data, idx1, idx2):
-                expr1 = cpo.presence_of(self._mode_vars[mode1])
+                expr1 = presence_of(self._mode_vars[mode1])
                 expr2 = sum(
-                    cpo.presence_of(self._mode_vars[mode2]) for mode2 in modes2
+                    presence_of(self._mode_vars[mode2]) for mode2 in modes2
                 )
                 model.add(expr1 <= expr2)
 
         for idx1, idx2 in data.constraints.different_resources:
             for mode1, modes2 in utils.different_modes(data, idx1, idx2):
-                expr1 = cpo.presence_of(self._mode_vars[mode1])
+                expr1 = presence_of(self._mode_vars[mode1])
                 expr2 = sum(
-                    cpo.presence_of(self._mode_vars[mode2]) for mode2 in modes2
+                    presence_of(self._mode_vars[mode2]) for mode2 in modes2
                 )
                 model.add(expr1 <= expr2)
+
+    def _task_selection_constraints(self):
+        """
+        Creates constraints for task selection constraints.
+        """
+        model, data = self._model, self._data
+
+        for idcs, trigger_idx in data.constraints.select_all_or_none:
+            if trigger_idx is None:
+                # This works better with presolve.
+                for idx1, idx2 in pairwise(idcs):
+                    var1 = self._task_vars[idx1]
+                    var2 = self._task_vars[idx2]
+                    expr = presence_of(var1) == presence_of(var2)
+                    model.add(expr)
+            else:
+                triggered = presence_of(self._task_vars[trigger_idx]) == 1
+                bools = [presence_of(self._task_vars[idx]) for idx in idcs]
+                select_all = cpo.logical_and(var == 1 for var in bools)
+                select_none = cpo.logical_and(var == 0 for var in bools)
+                all_or_none = cpo.logical_or(select_all, select_none)
+
+                model.add(cpo.if_then(triggered, all_or_none))
+
+        for idcs, trigger_idx in data.constraints.select_at_least_one:
+            trigger = (
+                presence_of(self._task_vars[trigger_idx])
+                if trigger_idx is not None
+                else 1
+            )
+            presences = sum(presence_of(self._task_vars[idx]) for idx in idcs)
+            model.add(trigger <= presences)
+
+        for idcs, trigger_idx in data.constraints.select_exactly_one:
+            bools = [presence_of(self._task_vars[idx]) for idx in idcs]
+            exactly_one = sum(bools) == 1
+            if trigger_idx is None:
+                model.add(exactly_one)
+            else:
+                triggered = presence_of(self._task_vars[trigger_idx]) == 1
+                model.add(cpo.if_then(triggered, exactly_one))
 
     def _consecutive_constraints(self):
         """
@@ -191,8 +235,8 @@ class Constraints:
         for idx1, idcs2 in data.constraints.mode_dependencies:
             mode_var1 = self._mode_vars[idx1]
             modes_vars2 = [self._mode_vars[idx] for idx in idcs2]
-            expr1 = cpo.presence_of(mode_var1)
-            expr2 = sum(cpo.presence_of(mode2) for mode2 in modes_vars2)
+            expr1 = presence_of(mode_var1)
+            expr2 = sum(presence_of(mode2) for mode2 in modes_vars2)
 
             model.add(expr1 <= expr2)
 
@@ -207,5 +251,6 @@ class Constraints:
         self._non_renewable_capacity()
         self._timing_constraints()
         self._identical_and_different_resource_constraints()
+        self._task_selection_constraints()
         self._consecutive_constraints()
         self._mode_dependencies()

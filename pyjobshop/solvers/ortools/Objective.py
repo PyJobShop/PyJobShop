@@ -32,7 +32,16 @@ class Objective:
             return LinearExpr.constant(0)
 
         makespan = self._model.new_int_var(0, MAX_VALUE, "makespan")
-        completion_times = [var.end for var in self._variables.task_vars]
+        completion_times = []
+
+        for var in self._variables.task_vars:
+            # When the task is absent, it should not restrict the makespan.
+            task_end = self._model.new_int_var(0, MAX_VALUE, "")
+            expr = task_end == var.end
+            self._model.add(expr).only_enforce_if(var.present)
+
+            completion_times.append(task_end)
+
         self._model.add_max_equality(makespan, completion_times)
         return makespan
 

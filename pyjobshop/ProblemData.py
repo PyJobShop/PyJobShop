@@ -240,6 +240,8 @@ class Task:
         resource). If the duration is not fixed, then the task duration
         can take longer than the processing time, e.g., due to blocking.
         Default ``True``.
+    optional
+        Whether the task is optional. Default ``False``.
     name
         Name of the task.
     """
@@ -252,6 +254,7 @@ class Task:
         earliest_end: int = 0,
         latest_end: int = MAX_VALUE,
         fixed_duration: bool = True,
+        optional: bool = False,
         name: str = "",
     ):
         if earliest_start > latest_start:
@@ -266,6 +269,7 @@ class Task:
         self._earliest_end = earliest_end
         self._latest_end = latest_end
         self._fixed_duration = fixed_duration
+        self._optional = optional
         self._name = name
 
     @property
@@ -310,6 +314,13 @@ class Task:
         Whether the task has a fixed duration.
         """
         return self._fixed_duration
+
+    @property
+    def optional(self) -> bool:
+        """
+        Whether the task is optional.
+        """
+        return self._optional
 
     @property
     def name(self) -> str:
@@ -492,6 +503,45 @@ class DifferentResources(IterableMixin):
 
 
 @dataclass
+class SelectAllOrNone(IterableMixin):
+    """
+    Enforces that all tasks from the given list are selected, or none are.
+
+    If `if_selected` is provided, this rule only applies when that task
+    is selected; otherwise, it has no effect.
+    """
+
+    tasks: list[int]
+    if_selected: int | None = None
+
+
+@dataclass
+class SelectAtLeastOne(IterableMixin):
+    """
+    Enforces that at least one task from the given list is selected.
+
+    If `if_selected` is provided, this rule only applies when that task
+    is selected; otherwise, it has no effect.
+    """
+
+    tasks: list[int]
+    if_selected: int | None = None
+
+
+@dataclass
+class SelectExactlyOne(IterableMixin):
+    """
+    Enforces that exactly one task from the given list is selected.
+
+    If `if_selected` is provided, this rule only applies when that task
+    is selected; otherwise, it has no effect.
+    """
+
+    tasks: list[int]
+    if_selected: int | None = None
+
+
+@dataclass
 class Consecutive(IterableMixin):
     """
     Sequence task 1 and task 2 consecutively on the machines they are both
@@ -569,6 +619,9 @@ class Constraints:
         end_before_end: list[EndBeforeEnd] | None = None,
         identical_resources: list[IdenticalResources] | None = None,
         different_resources: list[DifferentResources] | None = None,
+        select_all_or_none: list[SelectAllOrNone] | None = None,
+        select_at_least_one: list[SelectAtLeastOne] | None = None,
+        select_exactly_one: list[SelectExactlyOne] | None = None,
         consecutive: list[Consecutive] | None = None,
         setup_times: list[SetupTime] | None = None,
         mode_dependencies: list[ModeDependency] | None = None,
@@ -579,6 +632,9 @@ class Constraints:
         self._end_before_end = end_before_end or []
         self._identical_resources = identical_resources or []
         self._different_resources = different_resources or []
+        self._select_all_or_none = select_all_or_none or []
+        self._select_at_least_one = select_at_least_one or []
+        self._select_exactly_one = select_exactly_one or []
         self._consecutive = consecutive or []
         self._setup_times = setup_times or []
         self._mode_dependencies = mode_dependencies or []
@@ -591,6 +647,9 @@ class Constraints:
             and self.end_before_end == other.end_before_end
             and self.identical_resources == other.identical_resources
             and self.different_resources == other.different_resources
+            and self.select_all_or_none == other.select_all_or_none
+            and self.select_at_least_one == other.select_at_least_one
+            and self.select_exactly_one == other.select_exactly_one
             and self.consecutive == other.consecutive
             and self.setup_times == other.setup_times
             and self.mode_dependencies == other.mode_dependencies
@@ -604,6 +663,9 @@ class Constraints:
             + len(self.end_before_end)
             + len(self.identical_resources)
             + len(self.different_resources)
+            + len(self.select_all_or_none)
+            + len(self.select_at_least_one)
+            + len(self.select_exactly_one)
             + len(self.consecutive)
             + len(self._setup_times)
             + len(self._mode_dependencies)
@@ -650,6 +712,27 @@ class Constraints:
         Returns the list of different resources constraints.
         """
         return self._different_resources
+
+    @property
+    def select_all_or_none(self) -> list[SelectAllOrNone]:
+        """
+        Returns the list of select all or none constraints.
+        """
+        return self._select_all_or_none
+
+    @property
+    def select_at_least_one(self) -> list[SelectAtLeastOne]:
+        """
+        Returns the list of select-at-least-one constraints.
+        """
+        return self._select_at_least_one
+
+    @property
+    def select_exactly_one(self) -> list[SelectExactlyOne]:
+        """
+        Returns the list of select-exactly-one constraints.
+        """
+        return self._select_exactly_one
 
     @property
     def consecutive(self) -> list[Consecutive]:

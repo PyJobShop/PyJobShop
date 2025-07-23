@@ -4,9 +4,12 @@ from numpy.testing import assert_, assert_equal, assert_raises
 from pyjobshop.constants import MAX_VALUE
 from pyjobshop.Model import Model
 from pyjobshop.ProblemData import (
+    Consecutive,
     Constraints,
+    DifferentResources,
     EndBeforeEnd,
     EndBeforeStart,
+    IdenticalResources,
     Job,
     Machine,
     Mode,
@@ -14,6 +17,8 @@ from pyjobshop.ProblemData import (
     Objective,
     ProblemData,
     Renewable,
+    SelectAllOrNone,
+    SelectAtLeastOne,
     SetupTime,
     StartBeforeEnd,
     StartBeforeStart,
@@ -272,6 +277,30 @@ def test_mode_raises_invalid_parameters(resources, duration, demands):
     """
     with assert_raises(ValueError):
         Mode(task=0, resources=resources, duration=duration, demands=demands)
+
+
+def test_constraints_len():
+    """
+    Tests that the length of the constraints is set correctly.
+    """
+    constraints = Constraints(
+        start_before_start=[StartBeforeStart(0, 1)],
+        start_before_end=[StartBeforeEnd(0, 1)],
+        end_before_start=[EndBeforeStart(0, 1)],
+        end_before_end=[EndBeforeEnd(0, 1)],
+        identical_resources=[IdenticalResources(0, 1)],
+        different_resources=[DifferentResources(0, 1)],
+        select_all_or_none=[SelectAllOrNone([1, 2], [3])],
+        select_at_least_one=[SelectAtLeastOne(1, [0])],
+        consecutive=[Consecutive(1, 2)],
+        setup_times=[
+            SetupTime(0, 0, 1, 1),  # machine
+            SetupTime(1, 0, 1, 0),  # renewable
+            SetupTime(2, 0, 1, 0),  # non-renewable
+        ],
+    )
+
+    assert_equal(len(constraints), 12)
 
 
 def test_problem_data_non_input_parameter_attributes():
@@ -1065,6 +1094,218 @@ def test_identical_resources_with_modes_and_multiple_resources(solver: str):
     assert_equal(result.status.value, "Optimal")
     assert_equal(result.best.tasks[0].mode, 2)
     assert_equal(result.best.tasks[1].mode, 3)
+
+
+def test_select_all_or_none_constraint(solver: str):
+    """
+    Tests that the select-all-or-none constraint works correctly.
+    """
+    model = Model()
+    machine = model.add_machine()
+
+    task1 = model.add_task(optional=True)
+    model.add_mode(task1, machine, duration=1)
+
+    task2 = model.add_task(optional=True)
+    model.add_mode(task2, machine, duration=1)
+
+    model.add_select_all_or_none([task1, task2])
+
+    # Both tasks are optional and have positive duration, so it's optimal
+    # not to schedule them.
+    result = model.solve(solver=solver)
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.objective, 0)
+
+    for task in result.best.tasks:
+        assert_(not task.present)
+
+    # Now let's add a third task that is required, and add a constraint
+    # so that all three tasks must be selected.
+    task3 = model.add_task()
+    model.add_mode(task3, machine, duration=1)
+
+    model.add_select_all_or_none([task1, task2, task3])
+
+    result = model.solve(solver=solver)
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.objective, 3)
+
+    for task in result.best.tasks:
+        assert_(task.present)
+
+
+def test_select_all_or_none_if_triggered(solver: str):
+    """
+    Tests that the select-all-or-none constraint correctly follows
+    the trigger task's activation state.
+    """
+    model = Model()
+    machine = model.add_machine()
+
+    task1 = model.add_task()
+    model.add_mode(task1, machine, duration=1)
+
+    task2 = model.add_task(optional=True)
+    model.add_mode(task2, machine, duration=1)
+
+    task3 = model.add_task(optional=True)
+    model.add_mode(task3, machine, duration=1)
+
+    model.add_select_all_or_none([task1, task2], task3)
+
+    # First scenario: Trigger task (task3) is optional and not selected,
+    # so the constraint shouldn't force task2 to be selected
+    result = model.solve(solver=solver)
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.objective, 1)
+
+    # Second scenario: Add a required trigger task (task4), which should
+    # trigger the select all or none constraint for task1 and task2.
+    task4 = model.add_task()  # required
+    model.add_mode(task4, machine, duration=1)
+
+    model.add_select_all_or_none([task1, task2], task4)
+
+    result = model.solve(solver=solver)
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.objective, 3)
+
+
+def test_select_at_least_one_constraint(solver: str):
+    """
+    Tests that the select-at-least-one constraint works correctly.
+    """
+    model = Model()
+    machine = model.add_machine()
+
+    task1 = model.add_task(optional=True)
+    model.add_mode(task1, machine, duration=1)
+
+    task2 = model.add_task(optional=True)
+    model.add_mode(task2, machine, duration=2)
+
+    model.add_select_at_least_one([task1, task2])
+
+    # Task 1 has shorter duration, so that task is selected.
+    result = model.solve(solver=solver)
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.objective, 1)
+
+    sol_tasks = result.best.tasks
+    assert_(sol_tasks[0].present)
+    assert_(not sol_tasks[1].present)
+
+
+def test_select_at_least_one_if_triggered(solver: str):
+    """
+    Tests that the select at least one constraint works correctly
+    when triggered by a task.
+    """
+    model = Model()
+    machine = model.add_machine()
+
+    task1 = model.add_task(optional=True)
+    model.add_mode(task1, machine, duration=1)
+
+    task2 = model.add_task(optional=True)
+    model.add_mode(task2, machine, duration=2)
+
+    task3 = model.add_task(optional=True)
+    model.add_mode(task3, machine, duration=1)
+
+    model.add_select_at_least_one([task1, task2], task3)
+
+    # First scenario: Trigger task (task3) is optional and not selected,
+    # so the constraint shouldn't force either task to be selected
+    result = model.solve(solver=solver)
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.objective, 0)
+
+    # Second scenario: Add a required trigger task (task4), which should
+    # trigger the select-at-least-one constraint for task1 and task2.
+    task4 = model.add_task()  # required
+    model.add_mode(task4, machine, duration=1)
+
+    model.add_select_at_least_one([task1, task2], task4)
+
+    result = model.solve(solver=solver)
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.objective, 2)
+
+    sol_tasks = result.best.tasks
+    assert_(sol_tasks[0].present)
+    assert_(not sol_tasks[1].present)
+    assert_(not sol_tasks[2].present)
+    assert_(sol_tasks[3].present)
+
+
+def test_select_exactly_one_constraint(solver: str):
+    """
+    Tests that the select-exactly-one constraint works correctly.
+    """
+    model = Model()
+    machine = model.add_machine()
+
+    task1 = model.add_task(optional=True)
+    model.add_mode(task1, machine, duration=1)
+
+    task2 = model.add_task(optional=True)
+    model.add_mode(task2, machine, duration=2)
+
+    model.add_select_exactly_one([task1, task2])
+
+    # Task 1 is shorter than task 2, so it should be selected.
+    result = model.solve(solver=solver)
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.objective, 1)
+
+    sol_tasks = result.best.tasks
+    assert_(sol_tasks[0].present)
+    assert_(not sol_tasks[1].present)
+
+
+def test_select_exactly_one_if_triggered(solver: str):
+    """
+    Tests that the select-exactly-one constraint works correctly with a
+    trigger task.
+    """
+    model = Model()
+    machine = model.add_machine()
+
+    task1 = model.add_task(optional=True)
+    model.add_mode(task1, machine, duration=1)
+
+    task2 = model.add_task(optional=True)
+    model.add_mode(task2, machine, duration=2)
+
+    task3 = model.add_task(optional=True)
+    model.add_mode(task3, machine, duration=1)
+
+    model.add_select_exactly_one([task1, task2], task3)
+
+    # First scenario: Trigger task (task3) is optional and not selected,
+    # so the constraint shouldn't force either task to be selected
+    result = model.solve(solver=solver)
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.objective, 0)
+
+    # Second scenario: Add a required trigger task (task4), which should
+    # trigger the select-at-least-one constraint for task1 and task2.
+    task4 = model.add_task()  # required
+    model.add_mode(task4, machine, duration=1)
+
+    model.add_select_exactly_one([task1, task2], task4)
+
+    result = model.solve(solver=solver)
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.objective, 2)
+
+    sol_tasks = result.best.tasks
+    assert_(sol_tasks[0].present)
+    assert_(not sol_tasks[1].present)
+    assert_(not sol_tasks[2].present)
+    assert_(sol_tasks[3].present)
 
 
 def test_different_resources(solver: str):
