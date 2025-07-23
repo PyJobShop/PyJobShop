@@ -2,7 +2,6 @@ from itertools import pairwise
 
 import docplex.cp.modeler as cpo
 import numpy as np
-from docplex.cp.expression import interval_var
 from docplex.cp.model import CpoModel
 
 import pyjobshop.solvers.utils as utils
@@ -41,13 +40,6 @@ class Constraints:
         for idx, job in enumerate(data.jobs):
             job_var = self._job_vars[idx]
             task_vars = [self._task_vars[task] for task in job.tasks]
-
-            if all(data.tasks[task].optional for task in job.tasks):
-                # ``span()`` requires at least one present interval variable
-                # because the job interval is always present, so we add a
-                # present dummy interval to be sure this is true.
-                task_vars += [interval_var(name="dummy")]
-
             model.add(cpo.span(job_var, task_vars))
 
     def _select_one_mode(self):
@@ -107,7 +99,7 @@ class Constraints:
                 for (mode, demand) in zip(res2modes[idx], res2demands[idx])
                 if demand > 0  # avoids cpo warnings
             ]
-            model.add(model.sum(pulses) <= resource.capacity)
+            model.add(sum(pulses) <= resource.capacity)
 
     def _non_renewable_capacity(self):
         """
@@ -124,7 +116,7 @@ class Constraints:
                 presence_of(self._mode_vars[mode]) * demand
                 for (mode, demand) in zip(res2modes[idx], res2demands[idx])
             ]
-            model.add(model.sum(usage) <= resource.capacity)
+            model.add(sum(usage) <= resource.capacity)
 
     def _timing_constraints(self):
         """
@@ -199,7 +191,7 @@ class Constraints:
 
         for idcs, trigger_idx in data.constraints.select_at_least_one:
             trigger = (
-                cpo.presence_of(self._task_vars[trigger_idx])
+                presence_of(self._task_vars[trigger_idx])
                 if trigger_idx is not None
                 else 1
             )
@@ -243,8 +235,8 @@ class Constraints:
         for idx1, idcs2 in data.constraints.mode_dependencies:
             mode_var1 = self._mode_vars[idx1]
             modes_vars2 = [self._mode_vars[idx] for idx in idcs2]
-            expr1 = cpo.presence_of(mode_var1)
-            expr2 = sum(cpo.presence_of(mode2) for mode2 in modes_vars2)
+            expr1 = presence_of(mode_var1)
+            expr2 = sum(presence_of(mode2) for mode2 in modes_vars2)
 
             model.add(expr1 <= expr2)
 

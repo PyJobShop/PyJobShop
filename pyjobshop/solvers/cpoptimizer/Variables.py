@@ -61,7 +61,9 @@ class Variables:
         variables = []
 
         for job in self._data.jobs:
-            var = interval_var(name=f"J{job}")
+            # Job variable has to be optional if at least one task is optional.
+            optional = any(self._data.tasks[idx].optional for idx in job.tasks)
+            var = interval_var(optional=optional, name=f"J{job}")
 
             var.set_start_min(job.release_date)
             var.set_end_max(min(job.deadline, MAX_VALUE))
