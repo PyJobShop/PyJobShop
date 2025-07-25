@@ -37,7 +37,9 @@ autodoc_typehints = "signature"
 autodoc_preserve_defaults = True
 
 
-def process_signature(app, what, name, obj, options, signature, return_annot):
+def autodoc_process_signature(
+    app, what, name, obj, options, signature, return_annot
+):
     """
     Process signature of dataclasses with default factories using lists.
     """
@@ -50,7 +52,7 @@ def process_signature(app, what, name, obj, options, signature, return_annot):
 
 
 def setup(app):
-    app.connect("autodoc-process-signature", process_signature)
+    app.connect("autodoc-process-signature", autodoc_process_signature)
     return {
         "version": "0.1",
         "parallel_read_safe": True,
