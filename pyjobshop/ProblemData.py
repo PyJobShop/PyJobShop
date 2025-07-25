@@ -644,11 +644,10 @@ class Objective:
     weight_total_setup_time: int = 0
 
     def __post_init__(self):
-        for _field in fields(self):
-            value = getattr(self, _field.name)
+        for f in fields(self):
+            value = getattr(self, f.name)
             if value < 0:
-                msg = f"Weight for {_field.name} must be non-negative."
-                raise ValueError(msg)
+                raise ValueError(f"{f.name} < 0 not understood.")
 
 
 class ProblemData:
