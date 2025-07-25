@@ -82,7 +82,7 @@ class AssignVar:
     interval
         The interval variable representing the task-resource assignment.
     present
-        The boolean variable indicating whether the interval is present.
+        The Boolean variable indicating whether the interval is present.
     demand
         The demand consumed by the task-resource pair.
     """
@@ -117,7 +117,7 @@ class SequenceVar:
         intervals are scheduled directly behind each other. Includes arcs
         to and from a dummy node for each interval.
     is_active
-        A boolean that indicates whether the sequence is active, meaning that a
+        A Boolean that indicates whether the sequence is active, meaning that a
         circuit constraint must be added for this machine. Default ``False``.
 
     Notes

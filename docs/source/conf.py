@@ -1,6 +1,7 @@
 import datetime
 import os
 import shutil
+from dataclasses import is_dataclass
 
 # Project information
 now = datetime.date.today()
@@ -34,6 +35,30 @@ autoclass_content = "class"
 autodoc_member_order = "bysource"
 autodoc_typehints = "signature"
 autodoc_preserve_defaults = True
+
+
+def autodoc_process_signature(
+    app, what, name, obj, options, signature, return_annot
+):
+    """
+    Process signature of dataclasses with default factories using lists.
+    """
+    if what == "class" and is_dataclass(obj):
+        if signature:
+            signature = signature.replace("<factory>", "[]")
+
+        return signature, return_annot
+    return None
+
+
+def setup(app):
+    app.connect("autodoc-process-signature", autodoc_process_signature)
+    return {
+        "version": "0.1",
+        "parallel_read_safe": True,
+        "parallel_write_safe": True,
+    }
+
 
 # -- numpydoc
 numpydoc_xref_param_type = True
