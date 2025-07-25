@@ -39,7 +39,7 @@ autodoc_preserve_defaults = True
 
 def process_signature(app, what, name, obj, options, signature, return_annot):
     """
-    Process signature of dataclasses with default factories.
+    Process signature of dataclasses with default factories using lists.
     """
     if what == "class" and is_dataclass(obj):
         if signature:
