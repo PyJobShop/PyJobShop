@@ -535,6 +535,10 @@ class SetupTime(IterableMixin):
     task2: int
     duration: int
 
+    def __post_init__(self):
+        if self.duration < 0:
+            raise ValueError("Setup time must be non-negative.")
+
 
 @dataclass
 class ModeDependency(IterableMixin):
@@ -707,9 +711,9 @@ class ProblemData:
             else Objective(weight_makespan=1)
         )
 
-        self._validate_parameters()
+        self._validate()
 
-    def _validate_parameters(self):
+    def _validate(self):
         """
         Validates the problem data parameters.
         """
@@ -761,13 +765,8 @@ class ProblemData:
                 raise ValueError(msg)
 
         for res_idx, *_, duration in self.constraints.setup_times:
-            if duration < 0:
-                raise ValueError("Setup time must be non-negative.")
-
             is_machine = isinstance(self.resources[res_idx], Machine)
-            has_setup_times = duration > 0
-
-            if not is_machine and has_setup_times:
+            if not is_machine and duration > 0:
                 raise ValueError("Setup times only allowed for machines.")
 
         if (
