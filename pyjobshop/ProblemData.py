@@ -700,8 +700,17 @@ class ProblemData:
         Validates the problem data parameters.
         """
 
-        def is_valid_idx(idx: int, max_size: int):
-            return 0 <= idx < max_size
+        def _is_valid_job(idx: int) -> bool:
+            return 0 <= idx < self.num_jobs
+
+        def _is_valid_res(idx: int) -> bool:
+            return 0 <= idx < self.num_resources
+
+        def _is_valid_task(idx: int) -> bool:
+            return 0 <= idx < self.num_tasks
+
+        def _is_valid_mode(idx: int) -> bool:
+            return 0 <= idx < self.num_modes
 
         for idx, job in enumerate(self.jobs):
             if len(job.tasks) == 0:
@@ -709,22 +718,22 @@ class ProblemData:
                 raise ValueError(msg)
 
             for task_idx in job.tasks:
-                if not is_valid_idx(task_idx, self.num_tasks):
+                if not _is_valid_task(task_idx):
                     msg = f"Job {idx} references to unknown task index."
                     raise ValueError(msg)
 
         for idx, task in enumerate(self.tasks):
             if task.job is not None:
-                if not is_valid_idx(task.job, self.num_jobs):
+                if not _is_valid_job(task.job):
                     msg = f"Task {idx} references to unknown job index."
                     raise ValueError(msg)
 
         for idx, mode in enumerate(self.modes):
-            if not is_valid_idx(mode.task, self.num_modes):
+            if not _is_valid_task(mode.task):
                 raise ValueError(f"Mode {idx} references unknown task index.")
 
             for res_idx in mode.resources:
-                if not is_valid_idx(res_idx, self.num_resources):
+                if not _is_valid_res(res_idx):
                     msg = f"Mode {idx} references unknown resource index."
                     raise ValueError(msg)
 
@@ -749,10 +758,56 @@ class ProblemData:
                 msg = f"All modes for task {task} have infeasible demands."
                 raise ValueError(msg)
 
-        for res_idx, *_, duration in self.constraints.setup_times:
+        task_pair_constraints = [
+            (self.constraints.start_before_start, "start_before_start"),
+            (self.constraints.start_before_end, "start_before_end"),
+            (self.constraints.end_before_start, "end_before_start"),
+            (self.constraints.end_before_end, "end_before_end"),
+            (self.constraints.identical_resources, "identical_resources"),
+            (self.constraints.different_resources, "different_resources"),
+            (self.constraints.consecutive, "consecutive"),
+        ]
+
+        for constraints, name in task_pair_constraints:
+            for idx1, idx2, *_ in constraints:
+                if not _is_valid_task(idx1):
+                    raise ValueError(f"Invalid task index {idx1} in {name}.")
+
+                if not _is_valid_task(idx2):
+                    raise ValueError(f"Invalid task index {idx2} in {name}.")
+
+        for res_idx, task_idx1, task_idx2, dur in self.constraints.setup_times:
+            if not _is_valid_res(res_idx):
+                msg = f"Invalid resource index {res_idx} in setup_times."
+                raise ValueError(msg)
+
+            if not _is_valid_task(task_idx1):
+                msg = f"Invalid task index in setup_times: {task_idx1}."
+
+            if not _is_valid_task(task_idx2):
+                msg = f"Invalid task index in setup_times: {task_idx2}."
+
             is_machine = isinstance(self.resources[res_idx], Machine)
-            if not is_machine and duration > 0:
+            if not is_machine and dur > 0:
                 raise ValueError("Setup times only allowed for machines.")
+
+        for idx1, idcs2 in self.constraints.mode_dependencies:
+            if not _is_valid_mode(idx1):
+                msg = f"Invalid mode index {idx1} in mode dependencies."
+                raise ValueError(msg)
+
+            for idx in idcs2:
+                if not _is_valid_mode(idx):
+                    msg = f"Invalid mode index {idx} in mode dependencies."
+                    raise ValueError(msg)
+
+            modes = [idx1, *idcs2]
+            if len({self.modes[idx].task for idx in modes}) == 1:
+                msg = (
+                    f"All modes {modes} in mode dependency constraint"
+                    " refer to the same task."
+                )
+                raise ValueError(msg)
 
         if (
             self.objective.weight_tardy_jobs > 0
