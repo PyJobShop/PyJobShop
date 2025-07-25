@@ -1,6 +1,6 @@
 from collections import Counter
 from copy import deepcopy
-from dataclasses import dataclass, fields
+from dataclasses import dataclass, field, fields
 from typing import Sequence, TypeVar
 
 from pyjobshop.constants import MAX_VALUE
@@ -394,7 +394,7 @@ class IterableMixin:
     """
 
     def __iter__(self):
-        return iter(getattr(self, field.name) for field in fields(self))
+        return iter(getattr(self, f.name) for f in fields(self))
 
 
 @dataclass
@@ -535,16 +535,20 @@ class SetupTime(IterableMixin):
     task2: int
     duration: int
 
+    def __post_init__(self):
+        if self.duration < 0:
+            raise ValueError("Setup time must be non-negative.")
+
 
 @dataclass
 class ModeDependency(IterableMixin):
     """
-    Represents a dependency between task modes: if `mode1` is selected,
-    then at least one of the modes in `modes2` must also be selected.
+    Represents a dependency between task modes: if mode 1 is selected,
+    then at least one of the modes in modes 2 must also be selected.
 
-    Let :math:`m_1` be the Boolean variable indicating whether `mode1` is
+    Let :math:`m_1` be the Boolean variable indicating whether mode 1 is
     selected. Let :math:`M_2` be the set of Boolean variables corresponding
-    to the modes in `modes2`.
+    to the modes in modes 2.
 
     The constraint is then expressed as:
 
@@ -555,59 +559,32 @@ class ModeDependency(IterableMixin):
     mode1: int
     modes2: list[int]
 
+    def __post_init__(self):
+        if len(self.modes2) == 0:
+            raise ValueError("At least one mode in modes2 must be specified.")
 
+
+@dataclass
 class Constraints:
     """
-    Container class for storing all constraints.
+    Simple container class for storing all constraints.
     """
 
-    def __init__(
-        self,
-        start_before_start: list[StartBeforeStart] | None = None,
-        start_before_end: list[StartBeforeEnd] | None = None,
-        end_before_start: list[EndBeforeStart] | None = None,
-        end_before_end: list[EndBeforeEnd] | None = None,
-        identical_resources: list[IdenticalResources] | None = None,
-        different_resources: list[DifferentResources] | None = None,
-        consecutive: list[Consecutive] | None = None,
-        setup_times: list[SetupTime] | None = None,
-        mode_dependencies: list[ModeDependency] | None = None,
-    ):
-        self._start_before_start = start_before_start or []
-        self._start_before_end = start_before_end or []
-        self._end_before_start = end_before_start or []
-        self._end_before_end = end_before_end or []
-        self._identical_resources = identical_resources or []
-        self._different_resources = different_resources or []
-        self._consecutive = consecutive or []
-        self._setup_times = setup_times or []
-        self._mode_dependencies = mode_dependencies or []
-
-    def __eq__(self, other) -> bool:
-        return (
-            self.start_before_start == other.start_before_start
-            and self.start_before_end == other.start_before_end
-            and self.end_before_start == other.end_before_start
-            and self.end_before_end == other.end_before_end
-            and self.identical_resources == other.identical_resources
-            and self.different_resources == other.different_resources
-            and self.consecutive == other.consecutive
-            and self.setup_times == other.setup_times
-            and self.mode_dependencies == other.mode_dependencies
-        )
+    start_before_start: list[StartBeforeStart] = field(default_factory=list)
+    start_before_end: list[StartBeforeEnd] = field(default_factory=list)
+    end_before_start: list[EndBeforeStart] = field(default_factory=list)
+    end_before_end: list[EndBeforeEnd] = field(default_factory=list)
+    identical_resources: list[IdenticalResources] = field(default_factory=list)
+    different_resources: list[DifferentResources] = field(default_factory=list)
+    consecutive: list[Consecutive] = field(default_factory=list)
+    setup_times: list[SetupTime] = field(default_factory=list)
+    mode_dependencies: list[ModeDependency] = field(default_factory=list)
 
     def __len__(self) -> int:
-        return (
-            len(self.start_before_start)
-            + len(self.start_before_end)
-            + len(self.end_before_start)
-            + len(self.end_before_end)
-            + len(self.identical_resources)
-            + len(self.different_resources)
-            + len(self.consecutive)
-            + len(self.setup_times)
-            + len(self.mode_dependencies)
-        )
+        """
+        Returns the total number of constraints across all types.
+        """
+        return sum(len(getattr(self, f.name)) for f in fields(self))
 
     def __str__(self) -> str:
         text = f"# constraints: {len(self)}\n"
@@ -630,113 +607,51 @@ class Constraints:
 
         return text
 
-    @property
-    def start_before_start(self) -> list[StartBeforeStart]:
-        """
-        Returns the list of start-before-start constraints.
-        """
-        return self._start_before_start
-
-    @property
-    def start_before_end(self) -> list[StartBeforeEnd]:
-        """
-        Returns the list of start-before-end constraints.
-        """
-        return self._start_before_end
-
-    @property
-    def end_before_start(self) -> list[EndBeforeStart]:
-        """
-        Returns the list of end-before-start constraints.
-        """
-        return self._end_before_start
-
-    @property
-    def end_before_end(self) -> list[EndBeforeEnd]:
-        """
-        Returns the list of end-before-end constraints.
-        """
-        return self._end_before_end
-
-    @property
-    def identical_resources(self) -> list[IdenticalResources]:
-        """
-        Returns the list of identical resources constraints.
-        """
-        return self._identical_resources
-
-    @property
-    def different_resources(self) -> list[DifferentResources]:
-        """
-        Returns the list of different resources constraints.
-        """
-        return self._different_resources
-
-    @property
-    def consecutive(self) -> list[Consecutive]:
-        """
-        Returns the list of consecutive task constraints.
-        """
-        return self._consecutive
-
-    @property
-    def setup_times(self) -> list[SetupTime]:
-        """
-        Returns the list of setup times constraints.
-        """
-        return self._setup_times
-
-    @property
-    def mode_dependencies(self) -> list[ModeDependency]:
-        """
-        Returns the list of mode dependency constraints.
-        """
-        return self._mode_dependencies
-
 
 @dataclass
 class Objective:
-    """
+    r"""
     The objective class represents a weighted sum of objective functions :math:`f`, calculated as:
-    :math:`\\sum_f \\text{weight}_f \\cdot \\text{value}_f`. The objective functions :math:`f` are defined below.
+    :math:`\sum_f \text{weight}_f \cdot \text{value}_f` with :math:`\text{weight}_f \ge 0`.
+    The objective functions :math:`f` are defined below.
 
     In the following, let :math:`J` denote the set of jobs, :math:`T` denote the set of tasks,
     :math:`C_j` denote the completion time of job :math:`j`, and :math:`C_t` denote the completion time of
     task :math:`t`.
 
-    **Makespan** (:math:`C_{\\max}`): The finish time of the latest task.
+    **Makespan** (:math:`C_{\max}`): The finish time of the latest task.
         .. math::
-            C_{\\max} = \\max_{t \\in T} C_t
+            C_{\max} = \max_{t \in T} C_t
 
     **Number of tardy jobs** (:math:`NTJ`): The weighted sum of all tardy jobs, where a job is tardy when it does not meet its due date :math:`d_j`.
         .. math::
-            NTJ = \\sum_{j \\in J} w_j \\mathbb{1}_{\\{C_j - d_j > 0\\}}
+            NTJ = \sum_{j \in J} w_j \mathbb{1}_{\{C_j - d_j > 0\}}
 
-    where :math:`\\mathbb{1}_{\\{x\\}}` is the indicator function.
+    where :math:`\mathbb{1}_{\{x\}}` is the indicator function.
 
     **Total flow time** (:math:`TFT`): The weighted sum of the length of stay in the system of each job, from their release date to their completion.
         .. math::
-            TFT = \\sum_{j \\in J} w_j ( C_j - r_j )
+            TFT = \sum_{j \in J} w_j ( C_j - r_j )
 
     **Total tardiness** (:math:`TT`): The weighted sum of the tardiness of each job, where the tardiness is the difference between completion time and due date :math:`d_j` (0 if completed before due date).
         .. math::
-            TT = \\sum_{j \\in J} w_j U_j
+            TT = \sum_{j \in J} w_j U_j
 
     **Total earliness** (:math:`TE`): The weighted sum of the earliness of each job, where earliness is the difference between due date :math:`d_j` and completion time (0 if completed after due date).
         .. math::
-            TE = \\sum_{j \\in J} w_j (\\max(d_j - C_j, 0))
+            TE = \sum_{j \in J} w_j (\max(d_j - C_j, 0))
 
-    **Maximum tardiness** (:math:`U_{\\max}`): The weighted maximum tardiness of all jobs.
+    **Maximum tardiness** (:math:`U_{\max}`): The weighted maximum tardiness of all jobs.
         .. math::
-            U_{\\max} = \\max_{j \\in J} w_j (\\max(C_j - d_j, 0))
+            U_{\max} = \max_{j \in J} w_j (\max(C_j - d_j, 0))
 
-    **Maximum lateness** (:math:`L_{\\max}`): The weighted maximum lateness of all jobs. Lateness can be negative, unlike tardiness.
+    **Maximum lateness** (:math:`L_{\max}`): The weighted maximum lateness of all jobs. Lateness can be negative, unlike tardiness.
         .. math::
-            L_{\\max} = \\max_{j \\in J} w_j (C_j - d_j)
+            L_{\max} = \max_{j \in J} w_j (C_j - d_j)
 
-    **Total setup time** (:math:`TST`): The sum of all sequence-dependent setup times between consecutive tasks on each machine, where :math:`R` denotes the set of machines, :math:`M^R_r` denotes the set of modes requiring :math:`r \\in R`, :math:`s_{t_u, t_v, r}` denotes the setup time between tasks :math:`t_u` and :math:`t_v` on machine :math:`r` and :math:`b_{ruv}` is the binary variable indicating whether task :math:`t_u` is followed by task :math:`t_v` on machine :math:`r`.
+    **Total setup time** (:math:`TST`): The sum of all sequence-dependent setup times between consecutive tasks on each machine, where :math:`R` denotes the set of machines, :math:`M^R_r` denotes the set of modes requiring :math:`r \in R`, :math:`s_{t_u, t_v, r}` denotes the setup time between tasks :math:`t_u` and :math:`t_v` on machine :math:`r` and :math:`b_{ruv}` is the binary variable indicating whether task :math:`t_u` is followed by task :math:`t_v` on machine :math:`r`.
         .. math::
-            TST = \\sum_{r \\in R} \\sum_{u, v \\in M^R_r} s_{t_u, t_v, r} b_{ruv}
+            TST = \sum_{r \in R} \sum_{u, v \in M^R_r} s_{t_u, t_v, r} b_{ruv}
 
     .. note::
         Use :attr:`Job.weight` to set a specific job's weight (:math:`w_j`) in the
@@ -752,15 +667,20 @@ class Objective:
     weight_max_lateness: int = 0
     weight_total_setup_time: int = 0
 
+    def __post_init__(self):
+        for f in fields(self):
+            value = getattr(self, f.name)
+            if value < 0:
+                raise ValueError(f"{f.name} < 0 not understood.")
+
     def __str__(self) -> str:
         text = "objective:\n"
         has_weights = False
 
-        for field in fields(self):
-            name = field.name
-            value = getattr(self, field.name)
+        for f in fields(self):
+            value = getattr(self, f.name)
             if value > 0:
-                text += f"- {name}: {value}\n"
+                text += f"- {f.name}: {value}\n"
                 has_weights = True
 
         if not has_weights:
@@ -812,7 +732,7 @@ class ProblemData:
             else Objective(weight_makespan=1)
         )
 
-        self._validate_parameters()
+        self._validate()
 
     def __str__(self):
         resources = f"# resources: {len(self.resources)}\n"
@@ -836,38 +756,50 @@ class ProblemData:
             ]
         )
 
-    def _validate_parameters(self):
+    def _validate(self):
         """
         Validates the problem data parameters.
         """
-        num_res = self.num_resources
-        num_tasks = self.num_tasks
+
+        def _is_valid_job(idx: int) -> bool:
+            return 0 <= idx < self.num_jobs
+
+        def _is_valid_res(idx: int) -> bool:
+            return 0 <= idx < self.num_resources
+
+        def _is_valid_task(idx: int) -> bool:
+            return 0 <= idx < self.num_tasks
+
+        def _is_valid_mode(idx: int) -> bool:
+            return 0 <= idx < self.num_modes
 
         for idx, job in enumerate(self.jobs):
             if len(job.tasks) == 0:
                 msg = f"Job {idx} does not reference any task."
                 raise ValueError(msg)
 
-            if any(task < 0 or task >= num_tasks for task in job.tasks):
-                msg = f"Job {idx} references to unknown task index."
-                raise ValueError(msg)
+            for task_idx in job.tasks:
+                if not _is_valid_task(task_idx):
+                    msg = f"Job {idx} references to unknown task index."
+                    raise ValueError(msg)
 
         for idx, task in enumerate(self.tasks):
             if task.job is not None:
-                if task.job < 0 or task.job >= len(self.jobs):
+                if not _is_valid_job(task.job):
                     msg = f"Task {idx} references to unknown job index."
                     raise ValueError(msg)
 
         for idx, mode in enumerate(self.modes):
-            if mode.task < 0 or mode.task >= num_tasks:
+            if not _is_valid_task(mode.task):
                 raise ValueError(f"Mode {idx} references unknown task index.")
 
-            for resource in mode.resources:
-                if resource < 0 or resource >= num_res:
+            for res_idx in mode.resources:
+                if not _is_valid_res(res_idx):
                     msg = f"Mode {idx} references unknown resource index."
                     raise ValueError(msg)
 
-        missing_tasks = set(range(num_tasks)) - {m.task for m in self.modes}
+        task_set = set(range(self.num_tasks))
+        missing_tasks = task_set - {m.task for m in self.modes}
         for idx in sorted(missing_tasks):
             raise ValueError(f"Processing modes missing for task {idx}.")
 
@@ -887,15 +819,58 @@ class ProblemData:
                 msg = f"All modes for task {task} have infeasible demands."
                 raise ValueError(msg)
 
-        for res_idx, *_, duration in self.constraints.setup_times:
-            if duration < 0:
-                raise ValueError("Setup time must be non-negative.")
+        task_pair_constraints = [
+            (self.constraints.start_before_start, "start_before_start"),
+            (self.constraints.start_before_end, "start_before_end"),
+            (self.constraints.end_before_start, "end_before_start"),
+            (self.constraints.end_before_end, "end_before_end"),
+            (self.constraints.identical_resources, "identical_resources"),
+            (self.constraints.different_resources, "different_resources"),
+            (self.constraints.consecutive, "consecutive"),
+        ]
+
+        for constraints, name in task_pair_constraints:
+            for idx1, idx2, *_ in constraints:
+                if not _is_valid_task(idx1):
+                    raise ValueError(f"Invalid task index {idx1} in {name}.")
+
+                if not _is_valid_task(idx2):
+                    raise ValueError(f"Invalid task index {idx2} in {name}.")
+
+        for res_idx, task_idx1, task_idx2, dur in self.constraints.setup_times:
+            if not _is_valid_res(res_idx):
+                msg = f"Invalid resource index {res_idx} in setup_times."
+                raise ValueError(msg)
+
+            if not _is_valid_task(task_idx1):
+                msg = f"Invalid task index in setup_times: {task_idx1}."
+                raise ValueError(msg)
+
+            if not _is_valid_task(task_idx2):
+                msg = f"Invalid task index in setup_times: {task_idx2}."
+                raise ValueError(msg)
 
             is_machine = isinstance(self.resources[res_idx], Machine)
-            has_setup_times = duration > 0
-
-            if not is_machine and has_setup_times:
+            if not is_machine and dur > 0:
                 raise ValueError("Setup times only allowed for machines.")
+
+        for idx1, idcs2 in self.constraints.mode_dependencies:
+            if not _is_valid_mode(idx1):
+                msg = f"Invalid mode index {idx1} in mode dependencies."
+                raise ValueError(msg)
+
+            for idx in idcs2:
+                if not _is_valid_mode(idx):
+                    msg = f"Invalid mode index {idx} in mode dependencies."
+                    raise ValueError(msg)
+
+            modes = [idx1, *idcs2]
+            if len({self.modes[idx].task for idx in modes}) == 1:
+                msg = (
+                    f"All modes {modes} in mode dependency constraint"
+                    " refer to the same task."
+                )
+                raise ValueError(msg)
 
         if (
             self.objective.weight_tardy_jobs > 0
