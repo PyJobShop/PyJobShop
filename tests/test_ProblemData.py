@@ -206,28 +206,6 @@ def test_task_attributes_raises_invalid_parameters(
         )
 
 
-@pytest.mark.parametrize(
-    "weights",
-    [
-        [-1, 0, 0, 0, 0, 0, 0, 0],  # weight_makespan < 0,
-        [0, -1, 0, 0, 0, 0, 0, 0],  # weight_tardy_jobs < 0
-        [0, 0, -1, 0, 0, 0, 0, 0],  # weight_total_flow_time < 0
-        [0, 0, 0, -1, 0, 0, 0, 0],  # weight_total_tardiness < 0
-        [0, 0, 0, 0, -1, 0, 0, 0],  # weight_total_earliness < 0
-        [0, 0, 0, 0, 0, -1, 0, 0],  # weight_max_tardiness < 0
-        [0, 0, 0, 0, 0, 0, -1, 0],  # weight_max_lateness < 0
-        [0, 0, 0, 0, 0, 0, 0, -1],  # weight_total_setup_time < 0
-    ],
-)
-def test_objective_valid_values(weights: list[int]):
-    """
-    Tests that an error is raised when invalid weights are passed to the
-    Objective class.
-    """
-    with assert_raises(ValueError):
-        Objective(*weights)
-
-
 def test_mode_attributes():
     """
     Tests that the attributes of the Mode class are set correctly.
@@ -274,6 +252,28 @@ def test_negative_setup_times_not_allowed():
 
     with assert_raises(ValueError):
         SetupTime(0, 0, 1, -1)  # not OK
+
+
+@pytest.mark.parametrize(
+    "weights",
+    [
+        [-1, 0, 0, 0, 0, 0, 0, 0],  # weight_makespan < 0,
+        [0, -1, 0, 0, 0, 0, 0, 0],  # weight_tardy_jobs < 0
+        [0, 0, -1, 0, 0, 0, 0, 0],  # weight_total_flow_time < 0
+        [0, 0, 0, -1, 0, 0, 0, 0],  # weight_total_tardiness < 0
+        [0, 0, 0, 0, -1, 0, 0, 0],  # weight_total_earliness < 0
+        [0, 0, 0, 0, 0, -1, 0, 0],  # weight_max_tardiness < 0
+        [0, 0, 0, 0, 0, 0, -1, 0],  # weight_max_lateness < 0
+        [0, 0, 0, 0, 0, 0, 0, -1],  # weight_total_setup_time < 0
+    ],
+)
+def test_objective_valid_values(weights: list[int]):
+    """
+    Tests that an error is raised when invalid weights are passed to the
+    Objective class.
+    """
+    with assert_raises(ValueError):
+        Objective(*weights)
 
 
 def test_problem_data_input_parameter_attributes():
