@@ -563,28 +563,7 @@ class ModeDependency(IterableMixin):
 @dataclass
 class Constraints:
     """
-    Container class for storing all constraints.
-
-    Attributes
-    ----------
-    start_before_start
-        List of start-before-start constraints.
-    start_before_end
-        List of start-before-end constraints.
-    end_before_start
-        List of end-before-start constraints.
-    end_before_end
-        List of end-before-end constraints.
-    identical_resources
-        List of identical resources constraints.
-    different_resources
-        List of different resources constraints.
-    consecutive
-        List of consecutive constraints.
-    setup_times
-        List of setup time constraints.
-    mode_dependencies
-        List of mode dependency constraints.
+    Simple container class for storing all constraints.
     """
 
     start_before_start: list[StartBeforeStart] = field(default_factory=list)
