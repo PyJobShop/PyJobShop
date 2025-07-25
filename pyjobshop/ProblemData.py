@@ -605,9 +605,30 @@ class Constraints:
             + len(self.identical_resources)
             + len(self.different_resources)
             + len(self.consecutive)
-            + len(self._setup_times)
-            + len(self._mode_dependencies)
+            + len(self.setup_times)
+            + len(self.mode_dependencies)
         )
+
+    def __str__(self) -> str:
+        text = f"# constraints: {len(self)}\n"
+
+        constraints: dict[str, list] = {
+            "start_before_start": self.start_before_start,
+            "start_before_end": self.start_before_end,
+            "end_before_start": self.end_before_start,
+            "end_before_end": self.end_before_end,
+            "identical_resources": self.identical_resources,
+            "different_resources": self.different_resources,
+            "consecutive_tasks": self.consecutive,
+            "setup_times": self.setup_times,
+            "mode_dependencies": self.mode_dependencies,
+        }
+
+        for name, cons in constraints.items():
+            if len(cons) > 0:
+                text += f"- # {name}: {len(cons)}\n"
+
+        return text
 
     @property
     def start_before_start(self) -> list[StartBeforeStart]:
@@ -731,6 +752,22 @@ class Objective:
     weight_max_lateness: int = 0
     weight_total_setup_time: int = 0
 
+    def __str__(self) -> str:
+        text = "objective:\n"
+        has_weights = False
+
+        for field in fields(self):
+            name = field.name
+            value = getattr(self, field.name)
+            if value > 0:
+                text += f"- {name}: {value}\n"
+                has_weights = True
+
+        if not has_weights:
+            text += "- no weights\n"
+
+        return text
+
 
 class ProblemData:
     """
@@ -776,6 +813,28 @@ class ProblemData:
         )
 
         self._validate_parameters()
+
+    def __str__(self):
+        resources = f"# resources: {len(self.resources)}\n"
+
+        for name, count in [
+            ("machines", self.num_machines),
+            ("renewables", self.num_renewables),
+            ("non-renewables", self.num_non_renewables),
+        ]:
+            if count > 0:
+                resources += f"- # {name}: {count}\n"
+
+        return "".join(
+            [
+                f"# jobs: {len(self.jobs)}\n",
+                resources,
+                f"# tasks: {len(self.tasks)}\n",
+                f"# modes: {len(self.modes)}\n",
+                str(self.constraints),
+                str(self.objective),
+            ]
+        )
 
     def _validate_parameters(self):
         """
@@ -964,6 +1023,27 @@ class ProblemData:
         Returns the number of resources in this instance.
         """
         return len(self._resources)
+
+    @property
+    def num_machines(self) -> int:
+        """
+        Returns the number of machines in this instance.
+        """
+        return sum(isinstance(res, Machine) for res in self._resources)
+
+    @property
+    def num_renewables(self) -> int:
+        """
+        Returns the number of renewable resources in this instance.
+        """
+        return sum(isinstance(res, Renewable) for res in self._resources)
+
+    @property
+    def num_non_renewables(self) -> int:
+        """
+        Returns the number of non-renewable resources in this instance.
+        """
+        return sum(isinstance(res, NonRenewable) for res in self._resources)
 
     @property
     def num_tasks(self) -> int:

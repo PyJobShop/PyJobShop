@@ -10,6 +10,7 @@ from pyjobshop.ProblemData import (
     Job,
     Machine,
     Mode,
+    ModeDependency,
     NonRenewable,
     Objective,
     ProblemData,
@@ -205,6 +206,108 @@ def test_task_attributes_raises_invalid_parameters(
         )
 
 
+def test_mode_attributes():
+    """
+    Tests that the attributes of the Mode class are set correctly.
+    """
+    mode = Mode(task=0, resources=[0], duration=1, demands=[1])
+
+    assert_equal(mode.task, 0)
+    assert_equal(mode.duration, 1)
+    assert_equal(mode.resources, [0])
+    assert_equal(mode.demands, [1])
+
+
+@pytest.mark.parametrize(
+    "resources, duration, demands",
+    [
+        ([0, 0], -1, [0, 0]),  # resources not unique
+        ([0], -1, [0]),  # duration < 0
+        ([0], 0, [-1]),  # demand < 0
+        ([0], 0, [0, 0]),  # len(resources) != len(demands)
+    ],
+)
+def test_mode_raises_invalid_parameters(resources, duration, demands):
+    """
+    Tests that a ValueError is raised when invalid parameters are passed to
+    the Mode class.
+    """
+    with assert_raises(ValueError):
+        Mode(task=0, resources=resources, duration=duration, demands=demands)
+
+
+def test_constraints_str():
+    """
+    Tests the string representation of the Constraints class.
+    """
+    constraints = Constraints()
+    assert_equal(str(constraints), "# constraints: 0\n")
+
+    constraints.start_before_start.append(StartBeforeStart(0, 1))
+    expected = "# constraints: 1\n- # start_before_start: 1\n"
+    assert_equal(str(constraints), expected)
+
+    constraints.mode_dependencies.append(ModeDependency(0, [1, 2, 3]))
+    expected = (
+        "# constraints: 2\n- # start_before_start: 1\n"
+        "- # mode_dependencies: 1\n"
+    )
+    assert_equal(str(constraints), expected)
+
+
+def test_objective_str():
+    """
+    Tests the string representation of the Objective class.
+    """
+    objective = Objective()
+    assert_equal(str(objective), "objective:\n- no weights\n")
+
+    objective = Objective(weight_makespan=1)
+    assert_equal(str(objective), "objective:\n- weight_makespan: 1\n")
+
+    objective = Objective(weight_makespan=1, weight_max_tardiness=10)
+
+    expected = "objective:\n- weight_makespan: 1\n- weight_max_tardiness: 10\n"
+    assert_equal(str(objective), expected)
+
+
+def test_problem_data_str():
+    """
+    Tests the string representation of the ProblemData class.
+    """
+    jobs = [Job(tasks=[idx]) for idx in range(5)]
+    resources = [Machine() for _ in range(5)] + [Renewable(1)]
+    tasks = [Task() for _ in range(5)]
+    modes = [
+        Mode(task=task, resources=[resource], duration=1)
+        for task in range(5)
+        for resource in range(5)
+    ]
+    constraints = Constraints(
+        end_before_start=[
+            EndBeforeStart(0, 1),
+            EndBeforeStart(2, 3),
+            EndBeforeStart(4, 5),
+        ]
+    )
+    objective = Objective(weight_total_flow_time=1)
+    data = ProblemData(jobs, resources, tasks, modes, constraints, objective)
+
+    expected = (
+        "jobs: 5\n"
+        "resources: 6\n"
+        "  machines: 5\n"
+        "  renewables: 1\n"
+        "tasks: 5\n"
+        "modes: 25\n"
+        "constraints: 3\n"
+        "  end_before_start: 3\n"
+        "objective:\n"
+        "  weight_total_flow_time: 1\n"
+    )
+    assert_equal(str(data), expected)
+
+
 def test_problem_data_input_parameter_attributes():
     """
     Tests that the input parameters of the ProblemData class are set correctly
@@ -244,43 +347,13 @@ def test_problem_data_input_parameter_attributes():
     assert_equal(data.objective, objective)
 
 
-def test_mode_attributes():
-    """
-    Tests that the attributes of the Mode class are set correctly.
-    """
-    mode = Mode(task=0, resources=[0], duration=1, demands=[1])
-
-    assert_equal(mode.task, 0)
-    assert_equal(mode.duration, 1)
-    assert_equal(mode.resources, [0])
-    assert_equal(mode.demands, [1])
-
-
-@pytest.mark.parametrize(
-    "resources, duration, demands",
-    [
-        ([0, 0], -1, [0, 0]),  # resources not unique
-        ([0], -1, [0]),  # duration < 0
-        ([0], 0, [-1]),  # demand < 0
-        ([0], 0, [0, 0]),  # len(resources) != len(demands)
-    ],
-)
-def test_mode_raises_invalid_parameters(resources, duration, demands):
-    """
-    Tests that a ValueError is raised when invalid parameters are passed to
-    the Mode class.
-    """
-    with assert_raises(ValueError):
-        Mode(task=0, resources=resources, duration=duration, demands=demands)
-
-
 def test_problem_data_non_input_parameter_attributes():
     """
     Tests that attributes that are not input parameters of the ProblemData
     class are set correctly.
     """
     jobs = [Job(tasks=[0, 1, 2])]
-    resources = [Renewable(0) for _ in range(3)]
+    resources = [Machine(), Renewable(0), NonRenewable(0)]
     tasks = [Task() for _ in range(3)]
     modes = [
         Mode(task=2, resources=[1], duration=1),
@@ -299,6 +372,9 @@ def test_problem_data_non_input_parameter_attributes():
 
     assert_equal(data.num_jobs, 1)
     assert_equal(data.num_resources, 3)
+    assert_equal(data.num_machines, 1)
+    assert_equal(data.num_renewables, 1)
+    assert_equal(data.num_non_renewables, 1)
     assert_equal(data.num_tasks, 3)
     assert_equal(data.num_modes, 4)
     assert_equal(data.num_constraints, 4)
