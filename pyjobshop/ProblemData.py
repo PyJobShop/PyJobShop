@@ -589,21 +589,10 @@ class Constraints:
     def __str__(self) -> str:
         text = f"# constraints: {len(self)}\n"
 
-        constraints: dict[str, list] = {
-            "start_before_start": self.start_before_start,
-            "start_before_end": self.start_before_end,
-            "end_before_start": self.end_before_start,
-            "end_before_end": self.end_before_end,
-            "identical_resources": self.identical_resources,
-            "different_resources": self.different_resources,
-            "consecutive_tasks": self.consecutive,
-            "setup_times": self.setup_times,
-            "mode_dependencies": self.mode_dependencies,
-        }
-
-        for name, cons in constraints.items():
-            if len(cons) > 0:
-                text += f"- # {name}: {len(cons)}\n"
+        for f in fields(self):
+            count = len(getattr(self, f.name))
+            if count > 0:
+                text += f"- # {f.name}: {count}\n"
 
         return text
 
