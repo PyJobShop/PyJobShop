@@ -1,6 +1,6 @@
 from collections import Counter
 from copy import deepcopy
-from dataclasses import dataclass, fields
+from dataclasses import dataclass, field, fields
 from typing import Sequence, TypeVar
 
 from pyjobshop.constants import MAX_VALUE
@@ -556,166 +556,112 @@ class ModeDependency(IterableMixin):
     modes2: list[int]
 
 
+@dataclass
 class Constraints:
     """
     Container class for storing all constraints.
+
+    Parameters
+    ----------
+    start_before_start
+        List of start-before-start constraints.
+    start_before_end
+        List of start-before-end constraints.
+    end_before_start
+        List of end-before-start constraints.
+    end_before_end
+        List of end-before-end constraints.
+    identical_resources
+        List of identical resources constraints.
+    different_resources
+        List of different resources constraints.
+    consecutive
+        List of consecutive constraints.
+    setup_times
+        List of setup time constraints.
+    mode_dependencies
+        List of mode dependency constraints.
+
+    Attributes
+    ----------
+    start_before_start
+        List of start-before-start constraints.
+    start_before_end
+        List of start-before-end constraints.
+    end_before_start
+        List of end-before-start constraints.
+    end_before_end
+        List of end-before-end constraints.
+    identical_resources
+        List of identical resources constraints.
+    different_resources
+        List of different resources constraints.
+    consecutive
+        List of consecutive constraints.
+    setup_times
+        List of setup time constraints.
+    mode_dependencies
+        List of mode dependency constraints.
     """
 
-    def __init__(
-        self,
-        start_before_start: list[StartBeforeStart] | None = None,
-        start_before_end: list[StartBeforeEnd] | None = None,
-        end_before_start: list[EndBeforeStart] | None = None,
-        end_before_end: list[EndBeforeEnd] | None = None,
-        identical_resources: list[IdenticalResources] | None = None,
-        different_resources: list[DifferentResources] | None = None,
-        consecutive: list[Consecutive] | None = None,
-        setup_times: list[SetupTime] | None = None,
-        mode_dependencies: list[ModeDependency] | None = None,
-    ):
-        self._start_before_start = start_before_start or []
-        self._start_before_end = start_before_end or []
-        self._end_before_start = end_before_start or []
-        self._end_before_end = end_before_end or []
-        self._identical_resources = identical_resources or []
-        self._different_resources = different_resources or []
-        self._consecutive = consecutive or []
-        self._setup_times = setup_times or []
-        self._mode_dependencies = mode_dependencies or []
-
-    def __eq__(self, other) -> bool:
-        return (
-            self.start_before_start == other.start_before_start
-            and self.start_before_end == other.start_before_end
-            and self.end_before_start == other.end_before_start
-            and self.end_before_end == other.end_before_end
-            and self.identical_resources == other.identical_resources
-            and self.different_resources == other.different_resources
-            and self.consecutive == other.consecutive
-            and self.setup_times == other.setup_times
-            and self.mode_dependencies == other.mode_dependencies
-        )
+    start_before_start: list[StartBeforeStart] = field(default_factory=list)
+    start_before_end: list[StartBeforeEnd] = field(default_factory=list)
+    end_before_start: list[EndBeforeStart] = field(default_factory=list)
+    end_before_end: list[EndBeforeEnd] = field(default_factory=list)
+    identical_resources: list[IdenticalResources] = field(default_factory=list)
+    different_resources: list[DifferentResources] = field(default_factory=list)
+    consecutive: list[Consecutive] = field(default_factory=list)
+    setup_times: list[SetupTime] = field(default_factory=list)
+    mode_dependencies: list[ModeDependency] = field(default_factory=list)
 
     def __len__(self) -> int:
-        return (
-            len(self.start_before_start)
-            + len(self.start_before_end)
-            + len(self.end_before_start)
-            + len(self.end_before_end)
-            + len(self.identical_resources)
-            + len(self.different_resources)
-            + len(self.consecutive)
-            + len(self._setup_times)
-            + len(self._mode_dependencies)
-        )
-
-    @property
-    def start_before_start(self) -> list[StartBeforeStart]:
-        """
-        Returns the list of start-before-start constraints.
-        """
-        return self._start_before_start
-
-    @property
-    def start_before_end(self) -> list[StartBeforeEnd]:
-        """
-        Returns the list of start-before-end constraints.
-        """
-        return self._start_before_end
-
-    @property
-    def end_before_start(self) -> list[EndBeforeStart]:
-        """
-        Returns the list of end-before-start constraints.
-        """
-        return self._end_before_start
-
-    @property
-    def end_before_end(self) -> list[EndBeforeEnd]:
-        """
-        Returns the list of end-before-end constraints.
-        """
-        return self._end_before_end
-
-    @property
-    def identical_resources(self) -> list[IdenticalResources]:
-        """
-        Returns the list of identical resources constraints.
-        """
-        return self._identical_resources
-
-    @property
-    def different_resources(self) -> list[DifferentResources]:
-        """
-        Returns the list of different resources constraints.
-        """
-        return self._different_resources
-
-    @property
-    def consecutive(self) -> list[Consecutive]:
-        """
-        Returns the list of consecutive task constraints.
-        """
-        return self._consecutive
-
-    @property
-    def setup_times(self) -> list[SetupTime]:
-        """
-        Returns the list of setup times constraints.
-        """
-        return self._setup_times
-
-    @property
-    def mode_dependencies(self) -> list[ModeDependency]:
-        """
-        Returns the list of mode dependency constraints.
-        """
-        return self._mode_dependencies
+        return sum(len(getattr(self, f.name)) for f in fields(self))
 
 
 @dataclass
 class Objective:
-    """
+    r"""
     The objective class represents a weighted sum of objective functions :math:`f`, calculated as:
-    :math:`\\sum_f \\text{weight}_f \\cdot \\text{value}_f`. The objective functions :math:`f` are defined below.
+    :math:`\sum_f \text{weight}_f \cdot \text{value}_f`, where :math:`\text{weight}_f \ge 0``.
+    The objective functions :math:`f` are defined below.
 
     In the following, let :math:`J` denote the set of jobs, :math:`T` denote the set of tasks,
     :math:`C_j` denote the completion time of job :math:`j`, and :math:`C_t` denote the completion time of
     task :math:`t`.
 
-    **Makespan** (:math:`C_{\\max}`): The finish time of the latest task.
+    **Makespan** (:math:`C_{\max}`): The finish time of the latest task.
         .. math::
-            C_{\\max} = \\max_{t \\in T} C_t
+            C_{\max} = \max_{t \in T} C_t
 
     **Number of tardy jobs** (:math:`NTJ`): The weighted sum of all tardy jobs, where a job is tardy when it does not meet its due date :math:`d_j`.
         .. math::
-            NTJ = \\sum_{j \\in J} w_j \\mathbb{1}_{\\{C_j - d_j > 0\\}}
+            NTJ = \sum_{j \in J} w_j \mathbb{1}_{\{C_j - d_j > 0\}}
 
-    where :math:`\\mathbb{1}_{\\{x\\}}` is the indicator function.
+    where :math:`\mathbb{1}_{\{x\}}` is the indicator function.
 
     **Total flow time** (:math:`TFT`): The weighted sum of the length of stay in the system of each job, from their release date to their completion.
         .. math::
-            TFT = \\sum_{j \\in J} w_j ( C_j - r_j )
+            TFT = \sum_{j \in J} w_j ( C_j - r_j )
 
     **Total tardiness** (:math:`TT`): The weighted sum of the tardiness of each job, where the tardiness is the difference between completion time and due date :math:`d_j` (0 if completed before due date).
         .. math::
-            TT = \\sum_{j \\in J} w_j U_j
+            TT = \sum_{j \in J} w_j U_j
 
     **Total earliness** (:math:`TE`): The weighted sum of the earliness of each job, where earliness is the difference between due date :math:`d_j` and completion time (0 if completed after due date).
         .. math::
-            TE = \\sum_{j \\in J} w_j (\\max(d_j - C_j, 0))
+            TE = \sum_{j \in J} w_j (\max(d_j - C_j, 0))
 
-    **Maximum tardiness** (:math:`U_{\\max}`): The weighted maximum tardiness of all jobs.
+    **Maximum tardiness** (:math:`U_{\max}`): The weighted maximum tardiness of all jobs.
         .. math::
-            U_{\\max} = \\max_{j \\in J} w_j (\\max(C_j - d_j, 0))
+            U_{\max} = \max_{j \in J} w_j (\max(C_j - d_j, 0))
 
-    **Maximum lateness** (:math:`L_{\\max}`): The weighted maximum lateness of all jobs. Lateness can be negative, unlike tardiness.
+    **Maximum lateness** (:math:`L_{\max}`): The weighted maximum lateness of all jobs. Lateness can be negative, unlike tardiness.
         .. math::
-            L_{\\max} = \\max_{j \\in J} w_j (C_j - d_j)
+            L_{\max} = \max_{j \in J} w_j (C_j - d_j)
 
-    **Total setup time** (:math:`TST`): The sum of all sequence-dependent setup times between consecutive tasks on each machine, where :math:`R` denotes the set of machines, :math:`M^R_r` denotes the set of modes requiring :math:`r \\in R`, :math:`s_{t_u, t_v, r}` denotes the setup time between tasks :math:`t_u` and :math:`t_v` on machine :math:`r` and :math:`b_{ruv}` is the binary variable indicating whether task :math:`t_u` is followed by task :math:`t_v` on machine :math:`r`.
+    **Total setup time** (:math:`TST`): The sum of all sequence-dependent setup times between consecutive tasks on each machine, where :math:`R` denotes the set of machines, :math:`M^R_r` denotes the set of modes requiring :math:`r \in R`, :math:`s_{t_u, t_v, r}` denotes the setup time between tasks :math:`t_u` and :math:`t_v` on machine :math:`r` and :math:`b_{ruv}` is the binary variable indicating whether task :math:`t_u` is followed by task :math:`t_v` on machine :math:`r`.
         .. math::
-            TST = \\sum_{r \\in R} \\sum_{u, v \\in M^R_r} s_{t_u, t_v, r} b_{ruv}
+            TST = \sum_{r \in R} \sum_{u, v \in M^R_r} s_{t_u, t_v, r} b_{ruv}
 
     .. note::
         Use :attr:`Job.weight` to set a specific job's weight (:math:`w_j`) in the
@@ -730,6 +676,13 @@ class Objective:
     weight_max_tardiness: int = 0
     weight_max_lateness: int = 0
     weight_total_setup_time: int = 0
+
+    def __post_init__(self):
+        for _field in fields(self):
+            value = getattr(self, _field.name)
+            if value < 0:
+                msg = f"Weight for {_field.name} must be non-negative."
+                raise ValueError(msg)
 
 
 class ProblemData:

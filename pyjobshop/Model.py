@@ -405,7 +405,7 @@ class Model:
         task_idx2 = self._id2task[id(task2)]
 
         constraint = SetupTime(machine_idx, task_idx1, task_idx2, duration)
-        self._constraints._setup_times.append(constraint)
+        self._constraints.setup_times.append(constraint)
 
         return constraint
 
