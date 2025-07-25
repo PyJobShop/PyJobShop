@@ -23,16 +23,16 @@ class Result:
 
     Parameters
     ----------
-    objective: float
+    objective
         The objective value of the solution. If no solution was found, this
         should be set to ``float('inf')``.
-    lower_bound: float
+    lower_bound
         The lower bound of the objective function.
-    status: SolveStatus
+    status
         The termination status of the solver run.
-    runtime: float
+    runtime
         The runtime of the solver.
-    best: Solution
+    best
         The best found solution. If no solution was found, this should be a
         dummy solution.
     """
