@@ -559,6 +559,10 @@ class ModeDependency(IterableMixin):
     mode1: int
     modes2: list[int]
 
+    def __post_init__(self):
+        if len(self.modes2) == 0:
+            raise ValueError("At least one mode in modes2 must be specified.")
+
 
 @dataclass
 class Constraints:

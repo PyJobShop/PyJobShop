@@ -10,6 +10,7 @@ from pyjobshop.ProblemData import (
     Job,
     Machine,
     Mode,
+    ModeDependency,
     NonRenewable,
     Objective,
     ProblemData,
@@ -227,45 +228,6 @@ def test_objective_valid_values(weights: list[int]):
         Objective(*weights)
 
 
-def test_problem_data_input_parameter_attributes():
-    """
-    Tests that the input parameters of the ProblemData class are set correctly
-    as attributes.
-    """
-    jobs = [Job(tasks=[idx]) for idx in range(5)]
-    resources = [Machine() for _ in range(5)]
-    tasks = [Task() for _ in range(5)]
-    modes = [
-        Mode(task=task, resources=[resource], duration=1)
-        for task in range(5)
-        for resource in range(5)
-    ]
-    constraints = Constraints(
-        end_before_start=[
-            EndBeforeStart(0, 1),
-            EndBeforeStart(2, 3),
-            EndBeforeStart(4, 5),
-        ]
-    )
-    objective = Objective(weight_total_flow_time=1)
-
-    data = ProblemData(
-        jobs,
-        resources,
-        tasks,
-        modes,
-        constraints,
-        objective,
-    )
-
-    assert_equal(data.jobs, jobs)
-    assert_equal(data.resources, resources)
-    assert_equal(data.tasks, tasks)
-    assert_equal(data.modes, modes)
-    assert_equal(data.constraints, constraints)
-    assert_equal(data.objective, objective)
-
-
 def test_mode_attributes():
     """
     Tests that the attributes of the Mode class are set correctly.
@@ -294,6 +256,63 @@ def test_mode_raises_invalid_parameters(resources, duration, demands):
     """
     with assert_raises(ValueError):
         Mode(task=0, resources=resources, duration=duration, demands=demands)
+
+
+def test_mode_dependency_must_have_at_least_one_succesor_mode():
+    """
+    Tests that ModeDependency requires at least one successor mode.
+    """
+    with assert_raises(ValueError):
+        ModeDependency(0, [])
+
+
+def test_negative_setup_times_not_allowed():
+    """
+    Tests that SetupTime duration must be non-negative.
+    """
+    SetupTime(0, 0, 1, 0)  # OK
+
+    with assert_raises(ValueError):
+        SetupTime(0, 0, 1, -1)  # not OK
+
+
+def test_problem_data_input_parameter_attributes():
+    """
+    Tests that the input parameters of the ProblemData class are set correctly
+    as attributes.
+    """
+    jobs = [Job(tasks=[idx]) for idx in range(5)]
+    resources = [Machine() for _ in range(5)]
+    tasks = [Task() for _ in range(5)]
+    modes = [
+        Mode(task=task, resources=[resource], duration=1)
+        for task in range(5)
+        for resource in range(5)
+    ]
+    constraints = Constraints(
+        end_before_start=[
+            EndBeforeStart(0, 1),
+            EndBeforeStart(2, 3),
+            EndBeforeStart(3, 4),
+        ]
+    )
+    objective = Objective(weight_total_flow_time=1)
+
+    data = ProblemData(
+        jobs,
+        resources,
+        tasks,
+        modes,
+        constraints,
+        objective,
+    )
+
+    assert_equal(data.jobs, jobs)
+    assert_equal(data.resources, resources)
+    assert_equal(data.tasks, tasks)
+    assert_equal(data.modes, modes)
+    assert_equal(data.constraints, constraints)
+    assert_equal(data.objective, objective)
 
 
 def test_problem_data_non_input_parameter_attributes():
@@ -434,21 +453,6 @@ def test_problem_data_all_modes_demand_infeasible():
                 Mode(0, [0], 2, demands=[2]),  # infeasible
                 Mode(0, [0], 2, demands=[2]),  # infeasible
             ],
-        )
-
-
-def test_problem_data_raises_negative_setup_times():
-    """
-    Tests that the ProblemData class raises an error when negative setup times
-    are passed.
-    """
-    with assert_raises(ValueError):
-        ProblemData(
-            [Job(tasks=[0])],
-            [Machine()],
-            [Task(), Task()],
-            [Mode(0, [0], 0), Mode(1, [0], 0)],
-            Constraints(setup_times=[SetupTime(0, 0, 1, -1)]),
         )
 
 
