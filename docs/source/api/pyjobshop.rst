@@ -33,9 +33,6 @@ PyJobShop
     .. autoclass:: Mode
        :members:
 
-    .. autoclass:: Constraints
-        :members:
-
     .. autoclass:: StartBeforeStart
         :exclude-members: count, index
 
@@ -62,6 +59,9 @@ PyJobShop
 
     .. autoclass:: ModeDependency
         :exclude-members: count, index
+
+    .. autoclass:: Constraints
+        :members:
 
     .. autoclass:: Objective
        :members:
