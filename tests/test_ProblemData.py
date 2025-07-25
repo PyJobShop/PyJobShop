@@ -469,7 +469,8 @@ def test_problem_data_all_modes_demand_infeasible():
         ("identical_resources", IdenticalResources(0, 2)),
         ("different_resources", DifferentResources(0, 2)),
         ("consecutive", Consecutive(0, 2)),
-        ("setup_times", SetupTime(1, 0, 2, 1)),
+        ("setup_times", SetupTime(1, 0, 0, 1)),  # invalid resource idx
+        ("setup_times", SetupTime(0, 0, 2, 1)),  # invalid task idx
         ("mode_dependencies", ModeDependency(0, [2])),
     ],
 )
@@ -484,7 +485,7 @@ def test_problem_data_raises_invalid_indices(name, constraint):
     with assert_raises(ValueError):
         ProblemData(
             [Job(tasks=[0])],
-            [Renewable(0)],
+            [Machine()],
             [Task(), Task()],
             [Mode(0, [0], 1), Mode(1, [0], 2)],
             constraints,
@@ -519,11 +520,7 @@ def test_problem_data_raises_mode_dependency_same_task():
             [Job(tasks=[0])],
             [Renewable(0)],
             [Task()],
-            [
-                Mode(0, [0], 1),
-                Mode(0, [0], 2),
-                Mode(0, [0], 3),
-            ],
+            [Mode(0, [0], 1), Mode(0, [0], 2), Mode(0, [0], 3)],
             Constraints(mode_dependencies=[ModeDependency(0, [1])]),
         )
 
