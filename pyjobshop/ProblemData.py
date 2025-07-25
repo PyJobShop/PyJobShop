@@ -783,9 +783,11 @@ class ProblemData:
 
             if not _is_valid_task(task_idx1):
                 msg = f"Invalid task index in setup_times: {task_idx1}."
+                raise ValueError(msg)
 
             if not _is_valid_task(task_idx2):
                 msg = f"Invalid task index in setup_times: {task_idx2}."
+                raise ValueError(msg)
 
             is_machine = isinstance(self.resources[res_idx], Machine)
             if not is_machine and dur > 0:

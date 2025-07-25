@@ -4,9 +4,12 @@ from numpy.testing import assert_, assert_equal, assert_raises
 from pyjobshop.constants import MAX_VALUE
 from pyjobshop.Model import Model
 from pyjobshop.ProblemData import (
+    Consecutive,
     Constraints,
+    DifferentResources,
     EndBeforeEnd,
     EndBeforeStart,
+    IdenticalResources,
     Job,
     Machine,
     Mode,
@@ -457,6 +460,38 @@ def test_problem_data_all_modes_demand_infeasible():
 
 
 @pytest.mark.parametrize(
+    "name, constraint",
+    [
+        ("start_before_start", StartBeforeStart(0, 2)),
+        ("start_before_end", StartBeforeEnd(0, 2)),
+        ("end_before_start", EndBeforeStart(0, 2)),
+        ("end_before_end", EndBeforeEnd(0, 2)),
+        ("identical_resources", IdenticalResources(0, 2)),
+        ("different_resources", DifferentResources(0, 2)),
+        ("consecutive", Consecutive(0, 2)),
+        ("setup_times", SetupTime(1, 0, 2, 1)),
+        ("mode_dependencies", ModeDependency(0, [2])),
+    ],
+)
+def test_problem_data_raises_invalid_indices(name, constraint):
+    """
+    Tests that the ProblemData class raises an error when the indices of
+    constraints are invalid.
+    """
+    constraints = Constraints()
+    getattr(constraints, name).append(constraint)
+
+    with assert_raises(ValueError):
+        ProblemData(
+            [Job(tasks=[0])],
+            [Renewable(0)],
+            [Task(), Task()],
+            [Mode(0, [0], 1), Mode(1, [0], 2)],
+            constraints,
+        )
+
+
+@pytest.mark.parametrize(
     "resource", [Renewable(capacity=1), NonRenewable(capacity=1)]
 )
 def test_problem_data_raises_capacitated_resources_and_setup_times(resource):
@@ -471,6 +506,25 @@ def test_problem_data_raises_capacitated_resources_and_setup_times(resource):
             [Task(), Task()],
             [Mode(0, [0], 0), Mode(1, [0], 0)],
             Constraints(setup_times=[SetupTime(0, 0, 1, 1)]),
+        )
+
+
+def test_problem_data_raises_mode_dependency_same_task():
+    """
+    Tests that the ProblemData class raises an error when a mode dependency
+    constraint refers to modes of all the same task.
+    """
+    with assert_raises(ValueError):
+        ProblemData(
+            [Job(tasks=[0])],
+            [Renewable(0)],
+            [Task()],
+            [
+                Mode(0, [0], 1),
+                Mode(0, [0], 2),
+                Mode(0, [0], 3),
+            ],
+            Constraints(mode_dependencies=[ModeDependency(0, [1])]),
         )
 
 
