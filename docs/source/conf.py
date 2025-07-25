@@ -63,6 +63,7 @@ numpydoc_xref_param_type = True
 numpydoc_class_members_toctree = False
 numpydoc_attributes_as_param_list = False
 napoleon_include_special_with_doc = True
+napoleon_use_ivar = True
 
 
 # -- intersphinx

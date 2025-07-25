@@ -4,12 +4,16 @@ from enum import Enum
 from .Solution import Solution
 
 
-class SolveStatus(str, Enum):
-    OPTIMAL = "Optimal"
-    FEASIBLE = "Feasible"
-    INFEASIBLE = "Infeasible"
-    TIME_LIMIT = "Time-limit"
-    UNKNOWN = "Unknown"
+class SolveStatus(Enum):
+    """
+    Enum representing the termination status of the solver run.
+    """
+
+    OPTIMAL = "Optimal"  #: Solution is proven optimal.
+    FEASIBLE = "Feasible"  #: A feasible solution was found.
+    INFEASIBLE = "Infeasible"  #: Problem is proven infeasible.
+    TIME_LIMIT = "Time-limit"  #: Solver terminated due to time limit.
+    UNKNOWN = "Unknown"  #: Solver terminated with unknown status.
 
 
 @dataclass
@@ -19,16 +23,16 @@ class Result:
 
     Parameters
     ----------
-    objective
+    objective: float
         The objective value of the solution. If no solution was found, this
         should be set to ``float('inf')``.
-    lower_bound
+    lower_bound: float
         The lower bound of the objective function.
-    status
+    status: SolveStatus
         The termination status of the solver run.
-    runtime
+    runtime: float
         The runtime of the solver.
-    best
+    best: Solution
         The best found solution. If no solution was found, this should be a
         dummy solution.
     """

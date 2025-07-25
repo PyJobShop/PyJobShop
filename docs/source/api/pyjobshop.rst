@@ -62,6 +62,7 @@ PyJobShop
 
     .. autoclass:: Constraints
        :members:
+       :undoc-members:
 
     .. autoclass:: Objective
        :members:
@@ -77,7 +78,7 @@ PyJobShop
    .. autoclass:: Result
 
    .. autoclass:: SolveStatus
-
+      :members:
 
 .. automodule:: pyjobshop.solve
    :members:

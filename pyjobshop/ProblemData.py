@@ -584,7 +584,7 @@ class Constraints:
 class Objective:
     r"""
     The objective class represents a weighted sum of objective functions :math:`f`, calculated as:
-    :math:`\sum_f \text{weight}_f \cdot \text{value}_f`, where :math:`\text{weight}_f \ge 0``.
+    :math:`\sum_f \text{weight}_f \cdot \text{value}_f` with :math:`\text{weight}_f \ge 0`.
     The objective functions :math:`f` are defined below.
 
     In the following, let :math:`J` denote the set of jobs, :math:`T` denote the set of tasks,
