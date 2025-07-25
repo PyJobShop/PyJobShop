@@ -546,9 +546,9 @@ class ModeDependency(IterableMixin):
     Represents a dependency between task modes: if mode 1 is selected,
     then at least one of the modes in modes 2 must also be selected.
 
-    Let :math:`m_1` be the Boolean variable indicating whether `mode1` is
+    Let :math:`m_1` be the Boolean variable indicating whether mode 1 is
     selected. Let :math:`M_2` be the set of Boolean variables corresponding
-    to the modes in `modes2`.
+    to the modes in modes 2.
 
     The constraint is then expressed as:
 
