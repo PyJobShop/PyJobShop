@@ -460,36 +460,44 @@ def test_problem_data_all_modes_demand_infeasible():
 
 
 @pytest.mark.parametrize(
-    "name, constraint",
+    "name, cls, idcs_list",
     [
-        ("start_before_start", StartBeforeStart(0, 2)),
-        ("start_before_end", StartBeforeEnd(0, 2)),
-        ("end_before_start", EndBeforeStart(0, 2)),
-        ("end_before_end", EndBeforeEnd(0, 2)),
-        ("identical_resources", IdenticalResources(0, 2)),
-        ("different_resources", DifferentResources(0, 2)),
-        ("consecutive", Consecutive(0, 2)),
-        ("setup_times", SetupTime(1, 0, 0, 1)),  # invalid resource idx
-        ("setup_times", SetupTime(0, 0, 2, 1)),  # invalid task idx
-        ("mode_dependencies", ModeDependency(0, [2])),
+        ("start_before_start", StartBeforeStart, [(2, 0), (0, 2)]),
+        ("start_before_end", StartBeforeEnd, [(2, 0), (0, 2)]),
+        ("end_before_start", EndBeforeStart, [(2, 0), (0, 2)]),
+        ("end_before_end", EndBeforeEnd, [(2, 0), (0, 2)]),
+        ("identical_resources", IdenticalResources, [(2, 0), (0, 2)]),
+        ("different_resources", DifferentResources, [(2, 0), (0, 2)]),
+        ("consecutive", Consecutive, [(2, 0), (0, 2)]),
+        (
+            "setup_times",
+            SetupTime,
+            [
+                (1, 0, 0, 1),  # invalid resource idx
+                (0, 2, 0, 1),  # invalid task idx1
+                (0, 0, 2, 1),  # invalid task idx2
+            ],
+        ),
+        ("mode_dependencies", ModeDependency, [(2, [0]), (0, [2])]),
     ],
 )
-def test_problem_data_raises_invalid_indices(name, constraint):
+def test_problem_data_raises_invalid_indices(name, cls, idcs_list):
     """
     Tests that the ProblemData class raises an error when the indices of
     constraints are invalid.
     """
-    constraints = Constraints()
-    getattr(constraints, name).append(constraint)
+    for idcs in idcs_list:
+        constraints = Constraints()
+        getattr(constraints, name).append(cls(*idcs))
 
-    with assert_raises(ValueError):
-        ProblemData(
-            [Job(tasks=[0])],
-            [Machine()],
-            [Task(), Task()],
-            [Mode(0, [0], 1), Mode(1, [0], 2)],
-            constraints,
-        )
+        with assert_raises(ValueError):
+            ProblemData(
+                [Job(tasks=[0])],
+                [Machine()],
+                [Task(), Task()],
+                [Mode(0, [0], 1), Mode(1, [0], 2)],
+                constraints,
+            )
 
 
 @pytest.mark.parametrize(
