@@ -696,34 +696,37 @@ class ProblemData:
         """
         Validates the problem data parameters.
         """
-        num_res = self.num_resources
-        num_tasks = self.num_tasks
+
+        def is_valid_idx(idx: int, max_size: int):
+            return 0 <= idx < max_size
 
         for idx, job in enumerate(self.jobs):
             if len(job.tasks) == 0:
                 msg = f"Job {idx} does not reference any task."
                 raise ValueError(msg)
 
-            if any(task < 0 or task >= num_tasks for task in job.tasks):
-                msg = f"Job {idx} references to unknown task index."
-                raise ValueError(msg)
+            for task_idx in job.tasks:
+                if not is_valid_idx(task_idx, self.num_tasks):
+                    msg = f"Job {idx} references to unknown task index."
+                    raise ValueError(msg)
 
         for idx, task in enumerate(self.tasks):
             if task.job is not None:
-                if task.job < 0 or task.job >= len(self.jobs):
+                if not is_valid_idx(task.job, self.num_jobs):
                     msg = f"Task {idx} references to unknown job index."
                     raise ValueError(msg)
 
         for idx, mode in enumerate(self.modes):
-            if mode.task < 0 or mode.task >= num_tasks:
+            if not is_valid_idx(mode.task, self.num_modes):
                 raise ValueError(f"Mode {idx} references unknown task index.")
 
-            for resource in mode.resources:
-                if resource < 0 or resource >= num_res:
+            for res_idx in mode.resources:
+                if not is_valid_idx(res_idx, self.num_resources):
                     msg = f"Mode {idx} references unknown resource index."
                     raise ValueError(msg)
 
-        missing_tasks = set(range(num_tasks)) - {m.task for m in self.modes}
+        task_set = set(range(self.num_tasks))
+        missing_tasks = task_set - {m.task for m in self.modes}
         for idx in sorted(missing_tasks):
             raise ValueError(f"Processing modes missing for task {idx}.")
 
