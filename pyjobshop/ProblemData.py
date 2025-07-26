@@ -694,6 +694,7 @@ class ProblemData:
         )
 
         self._validate()
+        self._compute_helpers()
 
     def _validate(self):
         """
@@ -829,6 +830,33 @@ class ProblemData:
             msg = "Setup times required for total setup times objective."
             raise ValueError(msg)
 
+    def _compute_helpers(self):
+        """
+        Computes and caches the task-to-modes and resource-to-modes mappings,
+        as well as resource type indices.
+        """
+        self._task2modes: list[list[int]] = [[] for _ in range(self.num_tasks)]
+        self._resource2modes: list[list[int]] = [
+            [] for _ in range(self.num_resources)
+        ]
+
+        for idx, mode in enumerate(self.modes):
+            self._task2modes[mode.task].append(idx)
+            for resource in mode.resources:
+                self._resource2modes[resource].append(idx)
+
+        self._machine_idcs: list[int] = []
+        self._renewable_idcs: list[int] = []
+        self._non_renewable_idcs: list[int] = []
+
+        for idx, resource in enumerate(self.resources):
+            if isinstance(resource, Machine):
+                self._machine_idcs.append(idx)
+            elif isinstance(resource, Renewable):
+                self._renewable_idcs.append(idx)
+            elif isinstance(resource, NonRenewable):
+                self._non_renewable_idcs.append(idx)
+
     def replace(
         self,
         jobs: list[Job] | None = None,
@@ -958,3 +986,77 @@ class ProblemData:
         Returns the number of constraints in this instance.
         """
         return len(self._constraints)
+
+    @property
+    def machine_idcs(self) -> list[int]:
+        """
+        Returns the list of resource indices corresponding to machines.
+
+        Returns
+        -------
+        list[int]
+            The list of machine resource indices.
+        """
+        return self._machine_idcs
+
+    @property
+    def renewable_idcs(self) -> list[int]:
+        """
+        Returns the list of resource indices corresponding to renewable
+        resources.
+
+        Returns
+        -------
+        list[int]
+            The list of renewable resource indices.
+        """
+        return self._renewable_idcs
+
+    @property
+    def non_renewable_idcs(self) -> list[int]:
+        """
+        Returns the list of resource indices corresponding to non-renewable
+        resources.
+
+        Returns
+        -------
+        list[int]
+            The list of non-renewable resource indices.
+        """
+        return self._non_renewable_idcs
+
+    def task2modes(self, task: int) -> list[int]:
+        """
+        Returns the list of mode indices corresponding to the given task.
+
+        Parameters
+        ----------
+        task
+            The task index.
+
+        Returns
+        -------
+        list[int]
+            The list of mode indices for the given task.
+        """
+        if task < 0 or task >= self.num_tasks:
+            raise ValueError(f"Task index {task} is out of bounds.")
+        return self._task2modes[task]
+
+    def resource2modes(self, resource: int) -> list[int]:
+        """
+        Returns the list of mode indices corresponding to the given resource.
+
+        Parameters
+        ----------
+        resource
+            The resource index.
+
+        Returns
+        -------
+        list[int]
+            The list of mode indices for the given resource.
+        """
+        if resource < 0 or resource >= self.num_resources:
+            raise ValueError(f"Resource index {resource} is out of bounds.")
+        return self._resource2modes[resource]

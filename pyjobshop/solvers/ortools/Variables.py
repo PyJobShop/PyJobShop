@@ -12,7 +12,7 @@ from ortools.sat.python.cp_model import (
 
 import pyjobshop.solvers.utils as utils
 from pyjobshop.constants import MAX_VALUE
-from pyjobshop.ProblemData import Machine, ProblemData
+from pyjobshop.ProblemData import ProblemData
 from pyjobshop.Solution import Solution
 
 TaskIdx = int
@@ -160,8 +160,11 @@ class Variables:
         self._job_vars = self._make_job_variables()
         self._task_vars = self._make_task_variables()
         self._mode_vars = [
-            {mode: model.new_bool_var(name="") for mode in modes}
-            for modes in utils.task2modes(data)
+            {
+                mode: model.new_bool_var(name="")
+                for mode in data.task2modes(task)
+            }
+            for task in range(data.num_tasks)
         ]
         self._assign_vars = self._make_assign_variables(self._task_vars)
         self._sequence_vars = self._make_sequence_variables()
@@ -283,7 +286,6 @@ class Variables:
         Creates an optional interval variable for each task-resource pair.
         """
         model, data = self._model, self._data
-        task2modes = utils.task2modes(data)
         variables = {}
 
         for task_idx in range(data.num_tasks):
@@ -291,7 +293,7 @@ class Variables:
             # that are actually used in the problem.
             resources = {
                 res
-                for mode in task2modes[task_idx]
+                for mode in data.task2modes(task_idx)
                 for res in data.modes[mode].resources
             }
 
@@ -319,9 +321,8 @@ class Variables:
         data = self._data
         variables: dict[ResourceIdx, SequenceVar] = {}
 
-        for idx, resource in enumerate(data.resources):
-            if isinstance(resource, Machine):
-                variables[idx] = SequenceVar()
+        for idx in data.machine_idcs:
+            variables[idx] = SequenceVar()
 
         return variables
 

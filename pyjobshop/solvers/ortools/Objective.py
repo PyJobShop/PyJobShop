@@ -6,8 +6,8 @@ from ortools.sat.python.cp_model import (
 
 import pyjobshop.solvers.utils as utils
 from pyjobshop.constants import MAX_VALUE
-from pyjobshop.ProblemData import Machine, ProblemData
 from pyjobshop.ProblemData import Objective as DataObjective
+from pyjobshop.ProblemData import ProblemData
 
 from .Variables import Variables
 
@@ -144,10 +144,7 @@ class Objective:
         setup_times = utils.setup_times_matrix(data)
 
         setup_time_vars = []
-        for res_idx, resource in enumerate(data.resources):
-            if not isinstance(resource, Machine):
-                continue
-
+        for res_idx in data.machine_idcs:
             seq_var = variables.sequence_vars[res_idx]
             if not seq_var.is_active:
                 continue

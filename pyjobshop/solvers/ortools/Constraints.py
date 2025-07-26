@@ -2,12 +2,7 @@ import numpy as np
 from ortools.sat.python.cp_model import CpModel, LinearExpr
 
 import pyjobshop.solvers.utils as utils
-from pyjobshop.ProblemData import (
-    Machine,
-    NonRenewable,
-    ProblemData,
-    Renewable,
-)
+from pyjobshop.ProblemData import ProblemData
 from pyjobshop.solvers.ortools.Variables import Variables
 
 
@@ -84,10 +79,7 @@ class Constraints:
         """
         model, data, variables = self._model, self._data, self._variables
 
-        for idx, resource in enumerate(data.resources):
-            if not isinstance(resource, Machine):
-                continue
-
+        for idx in data.machine_idcs:
             intervals = [var.interval for var in variables.res2assign(idx)]
             model.add_no_overlap(intervals)
 
@@ -97,13 +89,11 @@ class Constraints:
         """
         model, data, variables = self._model, self._data, self._variables
 
-        for idx, resource in enumerate(data.resources):
-            if not isinstance(resource, Renewable):
-                continue
-
+        for idx in data.renewable_idcs:
             intervals = [var.interval for var in variables.res2assign(idx)]
             demands = [var.demand for var in variables.res2assign(idx)]
-            model.add_cumulative(intervals, demands, resource.capacity)
+            capacity = data.resources[idx].capacity
+            model.add_cumulative(intervals, demands, capacity)
 
     def _non_renewable_capacity(self):
         """
@@ -111,13 +101,11 @@ class Constraints:
         """
         model, data, variables = self._model, self._data, self._variables
 
-        for idx, resource in enumerate(data.resources):
-            if not isinstance(resource, NonRenewable):
-                continue
-
+        for idx in data.non_renewable_idcs:
             demands = [var.demand for var in variables.res2assign(idx)]
             total = LinearExpr.sum(demands)
-            model.add(total <= resource.capacity)
+            capacity = data.resources[idx].capacity
+            model.add(total <= capacity)
 
     def _timing_constraints(self):
         """
@@ -178,10 +166,7 @@ class Constraints:
         model, data, variables = self._model, self._data, self._variables
         setup_times = utils.setup_times_matrix(data)
 
-        for idx, resource in enumerate(data.resources):
-            if not isinstance(resource, Machine):
-                continue
-
+        for idx in data.machine_idcs:
             if setup_times is not None and np.any(setup_times[idx]):
                 variables.sequence_vars[idx].activate(model, data)
 
@@ -192,10 +177,7 @@ class Constraints:
         model, data, variables = self._model, self._data, self._variables
 
         for task_idx1, task_idx2 in data.constraints.consecutive:
-            for res_idx in range(data.num_resources):
-                if not isinstance(data.resources[res_idx], Machine):
-                    continue
-
+            for res_idx in data.machine_idcs:
                 seq_var = variables.sequence_vars[res_idx]
                 seq_var.activate(model, data)
                 var1 = variables.assign_vars.get((task_idx1, res_idx))
@@ -217,10 +199,7 @@ class Constraints:
         model, data, variables = self._model, self._data, self._variables
         setup_times = utils.setup_times_matrix(data)
 
-        for res_idx, resource in enumerate(data.resources):
-            if not isinstance(resource, Machine):
-                continue
-
+        for res_idx in data.machine_idcs:
             seq_var = variables.sequence_vars[res_idx]
             if not seq_var.is_active:
                 # No sequencing constraints active. Skip the creation of
