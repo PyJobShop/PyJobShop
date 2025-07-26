@@ -2,8 +2,8 @@ import docplex.cp.modeler as cpo
 from docplex.cp.model import CpoExpr, CpoModel
 
 import pyjobshop.solvers.utils as utils
-from pyjobshop.ProblemData import Machine, ProblemData
 from pyjobshop.ProblemData import Objective as DataObjective
+from pyjobshop.ProblemData import ProblemData
 
 from .Variables import Variables
 
@@ -100,19 +100,16 @@ class Objective:
         Returns an expression representing the total setup times.
         """
         data = self._data
-        resource2modes = utils.resource2modes(data)
         total = []
 
-        for res_idx, resource in enumerate(data.resources):
-            if not isinstance(resource, Machine):
-                continue
-
+        for res_idx in data.machine_idcs:
             if (setup_times := utils.setup_times_matrix(data)) is None:
                 continue
 
             seq_var = self._sequence_vars[res_idx]
             intervals = seq_var.get_interval_variables()
-            task_idcs = [data.modes[m].task for m in resource2modes[res_idx]]
+            resource_modes = data.resource2modes(res_idx)
+            task_idcs = [data.modes[m].task for m in resource_modes]
 
             for idx, interval in enumerate(intervals):
                 # The setup time for the current interval is a variable that

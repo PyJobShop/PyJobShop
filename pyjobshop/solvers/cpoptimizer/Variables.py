@@ -8,7 +8,7 @@ from docplex.cp.model import CpoModel
 
 import pyjobshop.solvers.utils as utils
 from pyjobshop.constants import MAX_VALUE
-from pyjobshop.ProblemData import Machine, ProblemData
+from pyjobshop.ProblemData import ProblemData
 from pyjobshop.Solution import Solution
 
 
@@ -131,21 +131,19 @@ class Variables:
         Creates a sequence variable for each machine.
         """
         data = self._data
-        resource2modes = utils.resource2modes(data)
         variables: dict[int, CpoSequenceVar] = {}
 
-        for idx, resource in enumerate(data.resources):
-            if isinstance(resource, Machine):
-                modes = resource2modes[idx]
-                intervals = [self.mode_vars[mode] for mode in modes]
-                tasks = [data.modes[mode].task for mode in modes]
-                seq_var = sequence_var(
-                    name=f"S{resource}",
-                    types=tasks,  # needed for total_setup_times objective
-                    vars=intervals,
-                )
-                self._model.add(seq_var)
-                variables[idx] = seq_var
+        for idx in data.machine_idcs:
+            modes = data.resource2modes(idx)
+            intervals = [self.mode_vars[mode] for mode in modes]
+            tasks = [data.modes[mode].task for mode in modes]
+            seq_var = sequence_var(
+                name=f"S{idx}",
+                types=tasks,  # needed for total_setup_times objective
+                vars=intervals,
+            )
+            self._model.add(seq_var)
+            variables[idx] = seq_var
 
         return variables
 
