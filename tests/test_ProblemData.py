@@ -103,18 +103,29 @@ def test_machine_attributes():
     assert_equal(machine.name, "Machine")
 
 
+def test_machine_default_attributes():
+    """
+    Tests that the default attributes of the Machine class are set correctly.
+    """
+    machine = Machine()
+    assert_equal(machine.name, "")
+
+
 def test_renewable_attributes():
     """
     Tests that the attributes of the Renewable class are set correctly.
     """
-    # Let's first test the default values.
-    renewable = Renewable(capacity=1)
-    assert_equal(renewable.name, "")
-
-    # Now test with some values.
     renewable = Renewable(capacity=1, name="TestRenewable")
     assert_equal(renewable.capacity, 1)
     assert_equal(renewable.name, "TestRenewable")
+
+
+def test_renewable_default_attributes():
+    """
+    Tests that the default attributes of the Renewable class are set correctly.
+    """
+    renewable = Renewable(capacity=0)
+    assert_equal(renewable.name, "")
 
 
 def test_renewable_raises_invalid_capacity():
@@ -138,6 +149,15 @@ def test_non_renewable_attributes():
     non_renewable = NonRenewable(capacity=1, name="TestNonRenewable")
     assert_equal(non_renewable.capacity, 1)
     assert_equal(non_renewable.name, "TestNonRenewable")
+
+
+def test_non_renewable_default_attributes():
+    """
+    Tests that the default attributes of the NonRenewable class are set
+    correctly.
+    """
+    non_renewable = NonRenewable(capacity=0)
+    assert_equal(non_renewable.name, "")
 
 
 def test_non_renewable_raises_invalid_capacity():
@@ -171,7 +191,11 @@ def test_task_attributes():
     assert_equal(task.fixed_duration, False)
     assert_equal(task.name, "TestTask")
 
-    # Also test that default values are set correctly.
+
+def test_task_default_attributes():
+    """
+    Tests that the default attributes of the Task class are set correctly.
+    """
     task = Task()
 
     assert_equal(task.job, None)
@@ -213,12 +237,22 @@ def test_mode_attributes():
     """
     Tests that the attributes of the Mode class are set correctly.
     """
-    mode = Mode(task=0, resources=[0], duration=1, demands=[1])
+    mode = Mode(task=0, resources=[0], duration=1, demands=[1], name="mode")
 
     assert_equal(mode.task, 0)
     assert_equal(mode.duration, 1)
     assert_equal(mode.resources, [0])
     assert_equal(mode.demands, [1])
+    assert_equal(mode.name, "mode")
+
+
+def test_mode_default_attributes():
+    """
+    Tests that the default attributes of the Mode class are set correctly.
+    """
+    mode = Mode(task=0, resources=[0], duration=1, demands=[1])
+
+    assert_equal(mode.name, "")
 
 
 @pytest.mark.parametrize(
