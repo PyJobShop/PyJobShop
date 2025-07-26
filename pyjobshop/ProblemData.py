@@ -991,11 +991,6 @@ class ProblemData:
     def machine_idcs(self) -> list[int]:
         """
         Returns the list of resource indices corresponding to machines.
-
-        Returns
-        -------
-        list[int]
-            The list of machine resource indices.
         """
         return self._machine_idcs
 
@@ -1004,11 +999,6 @@ class ProblemData:
         """
         Returns the list of resource indices corresponding to renewable
         resources.
-
-        Returns
-        -------
-        list[int]
-            The list of renewable resource indices.
         """
         return self._renewable_idcs
 
@@ -1017,11 +1007,6 @@ class ProblemData:
         """
         Returns the list of resource indices corresponding to non-renewable
         resources.
-
-        Returns
-        -------
-        list[int]
-            The list of non-renewable resource indices.
         """
         return self._non_renewable_idcs
 
