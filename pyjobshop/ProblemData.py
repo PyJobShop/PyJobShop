@@ -403,7 +403,7 @@ class IterableMixin:
     """
 
     def __iter__(self):
-        return iter(getattr(self, field.name) for field in fields(self))
+        return iter(getattr(self, f.name) for f in fields(self))
 
 
 @dataclass
@@ -590,7 +590,20 @@ class Constraints:
     mode_dependencies: list[ModeDependency] = field(default_factory=list)
 
     def __len__(self) -> int:
+        """
+        Returns the total number of constraints across all types.
+        """
         return sum(len(getattr(self, f.name)) for f in fields(self))
+
+    def __str__(self) -> str:
+        text = f"# constraints: {len(self)}\n"
+
+        for f in fields(self):
+            count = len(getattr(self, f.name))
+            if count > 0:
+                text += f"- # {f.name}: {count}\n"
+
+        return text
 
 
 @dataclass
@@ -658,6 +671,21 @@ class Objective:
             if value < 0:
                 raise ValueError(f"{f.name} < 0 not understood.")
 
+    def __str__(self) -> str:
+        text = "objective:\n"
+        has_weights = False
+
+        for f in fields(self):
+            value = getattr(self, f.name)
+            if value > 0:
+                text += f"- {f.name}: {value}\n"
+                has_weights = True
+
+        if not has_weights:
+            text += "- no weights\n"
+
+        return text
+
 
 class ProblemData:
     """
@@ -703,6 +731,28 @@ class ProblemData:
         )
 
         self._validate()
+
+    def __str__(self):
+        resources = f"# resources: {len(self.resources)}\n"
+
+        for name, count in [
+            ("machines", self.num_machines),
+            ("renewables", self.num_renewables),
+            ("non-renewables", self.num_non_renewables),
+        ]:
+            if count > 0:
+                resources += f"- # {name}: {count}\n"
+
+        return "".join(
+            [
+                f"# jobs: {len(self.jobs)}\n",
+                resources,
+                f"# tasks: {len(self.tasks)}\n",
+                f"# modes: {len(self.modes)}\n",
+                str(self.constraints),
+                str(self.objective),
+            ]
+        )
 
     def _validate(self):
         """
@@ -946,6 +996,27 @@ class ProblemData:
         Returns the number of resources in this instance.
         """
         return len(self._resources)
+
+    @property
+    def num_machines(self) -> int:
+        """
+        Returns the number of machines in this instance.
+        """
+        return sum(isinstance(res, Machine) for res in self._resources)
+
+    @property
+    def num_renewables(self) -> int:
+        """
+        Returns the number of renewable resources in this instance.
+        """
+        return sum(isinstance(res, Renewable) for res in self._resources)
+
+    @property
+    def num_non_renewables(self) -> int:
+        """
+        Returns the number of non-renewable resources in this instance.
+        """
+        return sum(isinstance(res, NonRenewable) for res in self._resources)
 
     @property
     def num_tasks(self) -> int:
