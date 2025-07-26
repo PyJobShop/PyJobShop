@@ -414,6 +414,8 @@ class Mode:
         Optional list of demands for each resource for this mode. If ``None``
         is given, then the demands are initialized as list of zeros with the
         same length as the resources.
+    name
+        Name of the mode.
     """
 
     def __init__(
@@ -422,6 +424,7 @@ class Mode:
         resources: list[int],
         duration: int,
         demands: list[int] | None = None,
+        name: str = "",
     ):
         if len(set(resources)) != len(resources):
             raise ValueError("Mode resources must be unique.")
@@ -440,6 +443,7 @@ class Mode:
         self._resources = resources
         self._duration = duration
         self._demands = demands
+        self._name = name
 
     @property
     def task(self) -> int:
@@ -457,12 +461,17 @@ class Mode:
     def demands(self) -> list[int]:
         return self._demands
 
+    @property
+    def name(self) -> str:
+        return self._name
+
     def __eq__(self, other) -> bool:
         return (
             self.task == other.task
             and self.resources == other.resources
             and self.duration == other.duration
             and self.demands == other.demands
+            and self.name == other.name
         )
 
 
