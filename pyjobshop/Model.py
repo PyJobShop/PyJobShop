@@ -289,7 +289,7 @@ class Model:
         """
         Adds a processing mode to the model.
         """
-        if isinstance(resources, (Machine, Renewable, NonRenewable)):
+        if isinstance(resources, Resource):
             resources = [resources]
 
         if isinstance(demands, int):

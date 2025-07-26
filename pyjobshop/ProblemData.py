@@ -121,29 +121,106 @@ class Job:
         self._tasks.append(idx)
 
 
-class Machine:
+class Resource:
+    """
+    Base class for all resource types.
+
+    Parameters
+    ----------
+    capacity
+        Capacity of the resource. For machines, this should be 0.
+    no_idle
+        Whether the resource cannot be idle between tasks.
+    breaks
+        List of break periods as (start, end) tuples.
+    name
+        Name of the resource.
+
+    .. warning:: This class is not intended to be instantiated directly.
+    """
+
+    def __init__(
+        self,
+        capacity: int,
+        no_idle: bool = False,
+        breaks: list[tuple[int, int]] | None = None,
+        name: str = "",
+    ):
+        if type(self) is Resource:
+            raise TypeError("Resource class cannot be instantiated directly.")
+
+        if capacity < 0:
+            raise ValueError("Capacity must be non-negative.")
+
+        if breaks is not None:
+            for start, end in breaks:
+                if end < start:
+                    raise ValueError("Break end < break start not understood.")
+
+        self._capacity = capacity
+        self._no_idle = no_idle
+        self._breaks = breaks or []
+        self._name = name
+
+    @property
+    def capacity(self) -> int:
+        """
+        Capacity of the resource.
+        """
+        return self._capacity
+
+    @property
+    def no_idle(self) -> bool:
+        """
+        Whether the resource cannot be idle between tasks.
+        """
+        return self._no_idle
+
+    @property
+    def breaks(self) -> list[tuple[int, int]]:
+        """
+        List of break periods as (start, end) tuples.
+        """
+        return self._breaks
+
+    @property
+    def name(self) -> str:
+        """
+        Name of the resource.
+        """
+        return self._name
+
+
+class Machine(Resource):
     """
     A machine resource is a specialized resource that only processes one task
     at a time and can handle sequencing constraints.
 
     Parameters
     ----------
+    no_idle
+        Whether the machine cannot be idle between tasks.
+    breaks
+        List of break periods as (start, end) tuples.
     name
         Name of the machine.
     """
 
-    def __init__(self, name: str = ""):
-        self._name = name
+    def __init__(
+        self,
+        no_idle: bool = False,
+        breaks: list[tuple[int, int]] | None = None,
+        name: str = "",
+    ):
+        super().__init__(
+            capacity=0,
+            no_idle=no_idle,
+            breaks=breaks,
+            name=name,
+        )
 
-    @property
-    def name(self) -> str:
-        """
-        Name of the machine.
-        """
-        return self._name
 
-
-class Renewable:
+class Renewable(Resource):
     """
     A renewable resource that replenishes its capacity after each task
     completion.
@@ -152,33 +229,30 @@ class Renewable:
     ----------
     capacity
         Capacity of the resource.
+    no_idle
+        Whether the resource cannot be idle between tasks.
+    breaks
+        List of break periods as (start, end) tuples.
     name
         Name of the resource.
     """
 
-    def __init__(self, capacity: int, name: str = ""):
-        if capacity < 0:
-            raise ValueError("Capacity must be non-negative.")
-
-        self._capacity = capacity
-        self._name = name
-
-    @property
-    def capacity(self) -> int:
-        """
-        Capacity of the resource.
-        """
-        return self._capacity
-
-    @property
-    def name(self) -> str:
-        """
-        Name of the resource.
-        """
-        return self._name
+    def __init__(
+        self,
+        capacity: int,
+        no_idle: bool = False,
+        breaks: list[tuple[int, int]] | None = None,
+        name: str = "",
+    ):
+        super().__init__(
+            capacity=capacity,
+            no_idle=no_idle,
+            breaks=breaks,
+            name=name,
+        )
 
 
-class NonRenewable:
+class NonRenewable(Resource):
     """
     A non-renewable resource that does not replenish its capacity.
 
@@ -186,33 +260,27 @@ class NonRenewable:
     ----------
     capacity
         Capacity of the resource.
+    no_idle
+        Whether the resource cannot be idle between tasks.
+    breaks
+        List of break periods as (start, end) tuples.
     name
         Name of the resource.
     """
 
-    def __init__(self, capacity: int, name: str = ""):
-        if capacity < 0:
-            raise ValueError("Capacity must be non-negative.")
-
-        self._capacity = capacity
-        self._name = name
-
-    @property
-    def capacity(self) -> int:
-        """
-        Capacity of the resource.
-        """
-        return self._capacity
-
-    @property
-    def name(self) -> str:
-        """
-        Name of the resource.
-        """
-        return self._name
-
-
-Resource = Machine | Renewable | NonRenewable
+    def __init__(
+        self,
+        capacity: int,
+        no_idle: bool = False,
+        breaks: list[tuple[int, int]] | None = None,
+        name: str = "",
+    ):
+        super().__init__(
+            capacity=capacity,
+            no_idle=no_idle,
+            breaks=breaks,
+            name=name,
+        )
 
 
 class Task:
@@ -748,8 +816,7 @@ class ProblemData:
         for mode in self.modes:
             num_modes[mode.task] += 1
             infeasible_modes[mode.task] += any(
-                # Assumes that machines have zero capacity.
-                demand > getattr(self.resources[res], "capacity", 0)
+                demand > self.resources[res].capacity
                 for demand, res in zip(mode.demands, mode.resources)
             )
 
