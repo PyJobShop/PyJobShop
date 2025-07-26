@@ -123,7 +123,11 @@ class Job:
 
 class Resource:
     """
-    Base class for all resource types.
+    Abstract base class for all resource types.
+
+    This class defines the common interface and properties shared by all
+    resource types. Resources represent constraints on task execution,
+    such as machines, workers, or consumable materials.
 
     Parameters
     ----------
@@ -136,7 +140,14 @@ class Resource:
     name
         Name of the resource.
 
-    .. warning:: This class is not intended to be instantiated directly.
+    Note
+    ----
+    This is an abstract class and cannot be instantiated directly.
+    Use the following concrete subclasses instead:
+
+    - :class:`Machine` for single-task processing with sequencing.
+    - :class:`Renewable` for resources that replenish after task completion.
+    - :class:`NonRenewable` for consumable resources.
     """
 
     def __init__(
