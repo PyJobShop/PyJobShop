@@ -18,14 +18,24 @@ PyJobShop
     .. autoclass:: Job
        :members:
 
+    .. autoclass:: Resource
+       :members:
+
     .. autoclass:: Machine
        :members:
+       :inherited-members:
+       :show-inheritance:
+       :exclude-members: capacity
 
     .. autoclass:: Renewable
        :members:
+       :inherited-members:
+       :show-inheritance:
 
     .. autoclass:: NonRenewable
        :members:
+       :inherited-members:
+       :show-inheritance:
 
     .. autoclass:: Task
        :members:
