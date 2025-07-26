@@ -159,13 +159,7 @@ class Variables:
 
         self._job_vars = self._make_job_variables()
         self._task_vars = self._make_task_variables()
-        self._mode_vars = [
-            {
-                mode: model.new_bool_var(name="")
-                for mode in data.task2modes(task)
-            }
-            for task in range(data.num_tasks)
-        ]
+        self._mode_vars = [model.new_bool_var("") for _ in self._data.modes]
         self._assign_vars = self._make_assign_variables(self._task_vars)
         self._sequence_vars = self._make_sequence_variables()
 
@@ -191,7 +185,7 @@ class Variables:
         return self._assign_vars
 
     @property
-    def mode_vars(self) -> list[dict[int, ModeVar]]:
+    def mode_vars(self) -> list[ModeVar]:
         """
         Returns the mode variables.
         """
