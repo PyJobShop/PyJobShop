@@ -101,6 +101,7 @@ def test_machine_attributes():
     """
     machine = Machine(name="Machine")
     assert_equal(machine.name, "Machine")
+    assert_equal(machine.capacity, 0)
 
 
 def test_renewable_attributes():
