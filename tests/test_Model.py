@@ -245,12 +245,15 @@ def test_add_mode_attributes():
     task = model.add_task()
     resources = [model.add_machine() for _ in range(3)]
 
-    mode = model.add_mode(task, resources, duration=1, demands=[1, 2, 3])
+    mode = model.add_mode(
+        task, resources, duration=1, demands=[1, 2, 3], name="mode"
+    )
 
     assert_equal(mode.task, 0)
     assert_equal(mode.resources, [0, 1, 2])
     assert_equal(mode.duration, 1)
     assert_equal(mode.demands, [1, 2, 3])
+    assert_equal(mode.name, "mode")
 
 
 def test_add_mode_single_resource():
@@ -268,6 +271,7 @@ def test_add_mode_single_resource():
     assert_equal(mode.resources, [0])
     assert_equal(mode.duration, 1)
     assert_equal(mode.demands, [1])
+    assert_equal(mode.name, "")
 
 
 def test_model_attributes():
