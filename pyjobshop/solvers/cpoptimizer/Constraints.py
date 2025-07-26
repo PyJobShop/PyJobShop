@@ -40,11 +40,11 @@ class Constraints:
         exactly one mode.
         """
         model, data = self._model, self._data
-        for task in range(data.num_tasks):
-            mode_vars = [
-                self._mode_vars[mode] for mode in data.task2modes(task)
-            ]
-            model.add(cpo.alternative(self._task_vars[task], mode_vars))
+
+        for task_idx in range(data.num_tasks):
+            mode_idcs = data.task2modes(task_idx)
+            mode_vars = [self._mode_vars[idx] for idx in mode_idcs]
+            model.add(cpo.alternative(self._task_vars[task_idx], mode_vars))
 
     def _machines_no_overlap_and_setup_times(self):
         """
