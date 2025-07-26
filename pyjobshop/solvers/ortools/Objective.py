@@ -6,7 +6,7 @@ from ortools.sat.python.cp_model import (
 
 import pyjobshop.solvers.utils as utils
 from pyjobshop.constants import MAX_VALUE
-from pyjobshop.ProblemData import Objective as DataObjective
+from pyjobshop.ProblemData import Objective as ObjectiveData
 from pyjobshop.ProblemData import ProblemData
 
 from .Variables import Variables
@@ -166,7 +166,7 @@ class Objective:
 
         return LinearExpr.sum(setup_time_vars)
 
-    def _objective_expr(self, objective: DataObjective) -> LinearExprT:
+    def _objective_expr(self, objective: ObjectiveData) -> LinearExprT:
         """
         Returns the expression corresponding to the given objective.
         """
