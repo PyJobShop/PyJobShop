@@ -71,28 +71,28 @@ class Constraints:
 
             model.add(cpo.no_overlap(seq_var, matrix))
 
+    def _get_demand(self, mode_idx: int, res_idx: int) -> int:
+        """
+        Returns the demand for a resource in a specific mode.
+        """
+        mode = self._data.modes[mode_idx]
+        return mode.demands[mode.resources.index(res_idx)]
+
     def _renewable_capacity(self):
         """
         Creates capacity constraints for the renewable resources.
         """
         model, data = self._model, self._data
 
-        for idx in data.renewable_idcs:
-            modes = data.resource2modes(idx)
-
-            # TODO clean this up
-            demands = []  # demand for this resource
-            for mode_idx in modes:
-                mode = data.modes[mode_idx]
-                demand = mode.demands[mode.resources.index(idx)]
-                demands.append(demand)
-
+        for res_idx in data.renewable_idcs:
+            modes = data.resource2modes(res_idx)
             pulses = [
-                cpo.pulse(self._mode_vars[mode], demand)
-                for (mode, demand) in zip(modes, demands)
-                if demand > 0  # avoids cpo warnings
+                cpo.pulse(self._mode_vars[mode_idx], demand)
+                for mode_idx in modes
+                # non-positive demand triggers cpo warnings
+                if (demand := self._get_demand(mode_idx, res_idx)) > 0
             ]
-            capacity = data.resources[idx].capacity
+            capacity = data.resources[res_idx].capacity
             model.add(model.sum(pulses) <= capacity)
 
     def _non_renewable_capacity(self):
@@ -101,21 +101,14 @@ class Constraints:
         """
         model, data = self._model, self._data
 
-        for idx in data.non_renewable_idcs:
-            modes = data.resource2modes(idx)
-
-            # TODO clean this up
-            demands = []  # demand for this resource
-            for mode_idx in modes:
-                mode = data.modes[mode_idx]
-                demand = mode.demands[mode.resources.index(idx)]
-                demands.append(demand)
-
+        for res_idx in data.non_renewable_idcs:
+            modes = data.resource2modes(res_idx)
             usage = [
-                cpo.presence_of(self._mode_vars[mode]) * demand
-                for (mode, demand) in zip(modes, demands)
+                cpo.presence_of(self._mode_vars[mode_idx])
+                * self._get_demand(mode_idx, res_idx)
+                for mode_idx in modes
             ]
-            capacity = data.resources[idx].capacity
+            capacity = data.resources[res_idx].capacity
             model.add(model.sum(usage) <= capacity)
 
     def _timing_constraints(self):
