@@ -133,10 +133,6 @@ class Resource:
     ----------
     capacity
         Capacity of the resource. For machines, this should be 0.
-    no_idle
-        Whether the resource cannot be idle between tasks.
-    breaks
-        List of break periods as (start, end) tuples.
     name
         Name of the resource.
 
@@ -150,27 +146,14 @@ class Resource:
     - :class:`NonRenewable` for consumable resources.
     """
 
-    def __init__(
-        self,
-        capacity: int,
-        no_idle: bool = False,
-        breaks: list[tuple[int, int]] | None = None,
-        name: str = "",
-    ):
+    def __init__(self, capacity: int, name: str = ""):
         if type(self) is Resource:
             raise TypeError("Resource class cannot be instantiated directly.")
 
         if capacity < 0:
             raise ValueError("Capacity must be non-negative.")
 
-        if breaks is not None:
-            for start, end in breaks:
-                if end < start:
-                    raise ValueError("Break end < break start not understood.")
-
         self._capacity = capacity
-        self._no_idle = no_idle
-        self._breaks = breaks or []
         self._name = name
 
     @property
@@ -179,20 +162,6 @@ class Resource:
         Capacity of the resource.
         """
         return self._capacity
-
-    @property
-    def no_idle(self) -> bool:
-        """
-        Whether the resource cannot be idle between tasks.
-        """
-        return self._no_idle
-
-    @property
-    def breaks(self) -> list[tuple[int, int]]:
-        """
-        List of break periods as (start, end) tuples.
-        """
-        return self._breaks
 
     @property
     def name(self) -> str:
@@ -209,26 +178,12 @@ class Machine(Resource):
 
     Parameters
     ----------
-    no_idle
-        Whether the machine cannot be idle between tasks.
-    breaks
-        List of break periods as (start, end) tuples.
     name
         Name of the machine.
     """
 
-    def __init__(
-        self,
-        no_idle: bool = False,
-        breaks: list[tuple[int, int]] | None = None,
-        name: str = "",
-    ):
-        super().__init__(
-            capacity=0,
-            no_idle=no_idle,
-            breaks=breaks,
-            name=name,
-        )
+    def __init__(self, name: str = ""):
+        super().__init__(capacity=0, name=name)
 
 
 class Renewable(Resource):
@@ -240,27 +195,12 @@ class Renewable(Resource):
     ----------
     capacity
         Capacity of the resource.
-    no_idle
-        Whether the resource cannot be idle between tasks.
-    breaks
-        List of break periods as (start, end) tuples.
     name
         Name of the resource.
     """
 
-    def __init__(
-        self,
-        capacity: int,
-        no_idle: bool = False,
-        breaks: list[tuple[int, int]] | None = None,
-        name: str = "",
-    ):
-        super().__init__(
-            capacity=capacity,
-            no_idle=no_idle,
-            breaks=breaks,
-            name=name,
-        )
+    def __init__(self, capacity: int, name: str = ""):
+        super().__init__(capacity=capacity, name=name)
 
 
 class NonRenewable(Resource):
@@ -271,27 +211,12 @@ class NonRenewable(Resource):
     ----------
     capacity
         Capacity of the resource.
-    no_idle
-        Whether the resource cannot be idle between tasks.
-    breaks
-        List of break periods as (start, end) tuples.
     name
         Name of the resource.
     """
 
-    def __init__(
-        self,
-        capacity: int,
-        no_idle: bool = False,
-        breaks: list[tuple[int, int]] | None = None,
-        name: str = "",
-    ):
-        super().__init__(
-            capacity=capacity,
-            no_idle=no_idle,
-            breaks=breaks,
-            name=name,
-        )
+    def __init__(self, capacity: int, name: str = ""):
+        super().__init__(capacity=capacity, name=name)
 
 
 class Task:
