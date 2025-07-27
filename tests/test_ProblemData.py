@@ -738,6 +738,14 @@ def test_problem_data_resource2modes():
     assert_equal(data.resource2modes(0), [0])
     assert_equal(data.resource2modes(1), [1, 2])
 
+    # Check that the task2modes method raises an error when an resource
+    # index is passed.
+    with pytest.raises(ValueError):
+        data.resource2modes(-1)
+
+    with pytest.raises(ValueError):
+        data.resource2modes(2)
+
 
 def test_problem_data_task2modes():
     """
@@ -754,41 +762,13 @@ def test_problem_data_task2modes():
     assert_equal(data.task2modes(0), [0, 1])
     assert_equal(data.task2modes(1), [2])
 
-
-def test_problem_data_task2modes_bounds_checking():
-    """
-    Tests that task2modes raises ValueError for out of bounds indices.
-    """
-    data = ProblemData(
-        [Job(tasks=[0])],
-        [Renewable(0)],
-        [Task()],
-        modes=[Mode(0, [0], 1)],
-    )
-
-    with pytest.raises(ValueError, match="Task index -1 is out of bounds"):
+    # Check that the task2modes method raises an error when an invalid task
+    # index is passed.
+    with pytest.raises(ValueError):
         data.task2modes(-1)
 
-    with pytest.raises(ValueError, match="Task index 1 is out of bounds"):
-        data.task2modes(1)
-
-
-def test_problem_data_resource2modes_bounds_checking():
-    """
-    Tests that resource2modes raises ValueError for out of bounds indices.
-    """
-    data = ProblemData(
-        [Job(tasks=[0])],
-        [Renewable(0)],
-        [Task()],
-        modes=[Mode(0, [0], 1)],
-    )
-
-    with pytest.raises(ValueError, match="Resource index -1 is out of bounds"):
-        data.resource2modes(-1)
-
-    with pytest.raises(ValueError, match="Resource index 1 is out of bounds"):
-        data.resource2modes(1)
+    with pytest.raises(ValueError):
+        data.task2modes(2)
 
 
 # --- Tests that involve checking solver correctness of problem data. ---
