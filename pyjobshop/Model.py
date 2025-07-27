@@ -309,6 +309,7 @@ class Model:
         resources: Resource | Sequence[Resource],
         duration: int,
         demands: int | list[int] | None = None,
+        name: str = "",
     ) -> Mode:
         """
         Adds a processing mode to the model.
@@ -321,7 +322,7 @@ class Model:
 
         task_idx = self._id2task[id(task)]
         resource_idcs = [self._id2resource[id(res)] for res in resources]
-        mode = Mode(task_idx, resource_idcs, duration, demands)
+        mode = Mode(task_idx, resource_idcs, duration, demands, name)
 
         self._id2mode[id(mode)] = len(self.modes)
         self._modes.append(mode)
@@ -474,7 +475,7 @@ class Model:
         task_idx2 = self._id2task[id(task2)]
 
         constraint = SetupTime(machine_idx, task_idx1, task_idx2, duration)
-        self._constraints._setup_times.append(constraint)
+        self._constraints.setup_times.append(constraint)
 
         return constraint
 

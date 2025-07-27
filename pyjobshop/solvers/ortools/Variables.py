@@ -12,7 +12,7 @@ from ortools.sat.python.cp_model import (
 
 import pyjobshop.solvers.utils as utils
 from pyjobshop.constants import MAX_VALUE
-from pyjobshop.ProblemData import Machine, ProblemData
+from pyjobshop.ProblemData import ProblemData
 from pyjobshop.Solution import Solution
 
 TaskIdx = int
@@ -85,7 +85,7 @@ class AssignVar:
     interval
         The interval variable representing the task-resource assignment.
     present
-        The boolean variable indicating whether the interval is present.
+        The Boolean variable indicating whether the interval is present.
     demand
         The demand consumed by the task-resource pair.
     """
@@ -120,7 +120,7 @@ class SequenceVar:
         intervals are scheduled directly behind each other. Includes arcs
         to and from a dummy node for each interval.
     is_active
-        A boolean that indicates whether the sequence is active, meaning that a
+        A Boolean that indicates whether the sequence is active, meaning that a
         circuit constraint must be added for this machine. Default ``False``.
 
     Notes
@@ -162,10 +162,7 @@ class Variables:
 
         self._job_vars = self._make_job_variables()
         self._task_vars = self._make_task_variables()
-        self._mode_vars = [
-            {mode: model.new_bool_var(name="") for mode in modes}
-            for modes in utils.task2modes(data)
-        ]
+        self._mode_vars = [model.new_bool_var("") for _ in self._data.modes]
         self._assign_vars = self._make_assign_variables(self._task_vars)
         self._sequence_vars = self._make_sequence_variables()
 
@@ -191,7 +188,7 @@ class Variables:
         return self._assign_vars
 
     @property
-    def mode_vars(self) -> list[dict[int, ModeVar]]:
+    def mode_vars(self) -> list[ModeVar]:
         """
         Returns the mode variables.
         """
@@ -291,7 +288,6 @@ class Variables:
         Creates an optional interval variable for each task-resource pair.
         """
         model, data = self._model, self._data
-        task2modes = utils.task2modes(data)
         variables = {}
 
         for task_idx in range(data.num_tasks):
@@ -299,7 +295,7 @@ class Variables:
             # that are actually used in the problem.
             resources = {
                 res
-                for mode in task2modes[task_idx]
+                for mode in data.task2modes(task_idx)
                 for res in data.modes[mode].resources
             }
 
@@ -327,9 +323,8 @@ class Variables:
         data = self._data
         variables: dict[ResourceIdx, SequenceVar] = {}
 
-        for idx, resource in enumerate(data.resources):
-            if isinstance(resource, Machine):
-                variables[idx] = SequenceVar()
+        for idx in data.machine_idcs:
+            variables[idx] = SequenceVar()
 
         return variables
 

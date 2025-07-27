@@ -5,12 +5,7 @@ import numpy as np
 from docplex.cp.model import CpoModel
 
 import pyjobshop.solvers.utils as utils
-from pyjobshop.ProblemData import (
-    Machine,
-    NonRenewable,
-    ProblemData,
-    Renewable,
-)
+from pyjobshop.ProblemData import ProblemData
 
 from .utils import presence_of
 from .Variables import Variables
@@ -48,11 +43,11 @@ class Constraints:
         exactly one mode.
         """
         model, data = self._model, self._data
-        task2modes = utils.task2modes(data)
 
-        for task in range(data.num_tasks):
-            mode_vars = [self._mode_vars[mode] for mode in task2modes[task]]
-            model.add(cpo.alternative(self._task_vars[task], mode_vars))
+        for task_idx in range(data.num_tasks):
+            mode_idcs = data.task2modes(task_idx)
+            mode_vars = [self._mode_vars[idx] for idx in mode_idcs]
+            model.add(cpo.alternative(self._task_vars[task_idx], mode_vars))
 
     def _machines_no_overlap_and_setup_times(self):
         """
@@ -61,13 +56,9 @@ class Constraints:
         available, the setup times are enforced as well.
         """
         model, data = self._model, self._data
-        resource2modes = utils.resource2modes(data)
 
-        for idx, resource in enumerate(data.resources):
-            if not isinstance(resource, Machine):
-                continue
-
-            if not resource2modes[idx]:
+        for idx in data.machine_idcs:
+            if not data.resource2modes(idx):
                 continue  # skip because cpo warns if there are no modes
 
             seq_var = self._sequence_vars[idx]
@@ -83,40 +74,45 @@ class Constraints:
 
             model.add(cpo.no_overlap(seq_var, matrix))
 
+    def _get_demand(self, mode_idx: int, res_idx: int) -> int:
+        """
+        Returns the demand of the mode for a specific resource.
+        """
+        mode = self._data.modes[mode_idx]
+        return mode.demands[mode.resources.index(res_idx)]
+
     def _renewable_capacity(self):
         """
         Creates capacity constraints for the renewable resources.
         """
         model, data = self._model, self._data
-        res2modes, res2demands = utils.resource2modes_demands(data)
 
-        for idx, resource in enumerate(data.resources):
-            if not isinstance(resource, Renewable):
-                continue
-
+        for res_idx in data.renewable_idcs:
+            modes = data.resource2modes(res_idx)
             pulses = [
-                cpo.pulse(self._mode_vars[mode], demand)
-                for (mode, demand) in zip(res2modes[idx], res2demands[idx])
-                if demand > 0  # avoids cpo warnings
+                cpo.pulse(self._mode_vars[mode_idx], demand)
+                for mode_idx in modes
+                # non-positive demand triggers cpo warnings
+                if (demand := self._get_demand(mode_idx, res_idx)) > 0
             ]
-            model.add(sum(pulses) <= resource.capacity)
+            capacity = data.resources[res_idx].capacity
+            model.add(sum(pulses) <= capacity)
 
     def _non_renewable_capacity(self):
         """
         Creates capacity constraints for the non-renewable resources.
         """
         model, data = self._model, self._data
-        res2modes, res2demands = utils.resource2modes_demands(data)
 
-        for idx, resource in enumerate(data.resources):
-            if not isinstance(resource, NonRenewable):
-                continue
-
+        for res_idx in data.non_renewable_idcs:
+            modes = data.resource2modes(res_idx)
             usage = [
-                presence_of(self._mode_vars[mode]) * demand
-                for (mode, demand) in zip(res2modes[idx], res2demands[idx])
+                presence_of(self._mode_vars[mode_idx])
+                * self._get_demand(mode_idx, res_idx)
+                for mode_idx in modes
             ]
-            model.add(sum(usage) <= resource.capacity)
+            capacity = data.resources[res_idx].capacity
+            model.add(sum(usage) <= capacity)
 
     def _timing_constraints(self):
         """
@@ -215,12 +211,12 @@ class Constraints:
 
         for idx1, idx2 in data.constraints.consecutive:
             intersecting = utils.intersecting_modes(data, idx1, idx2)
-            for mode1, mode2, resources in intersecting:
-                for resource in resources:
-                    if not isinstance(data.resources[resource], Machine):
-                        continue
 
-                    seq_var = self._sequence_vars[resource]
+            for mode1, mode2, resources in intersecting:
+                res_idcs = set(resources) & set(data.machine_idcs)
+
+                for res_idx in res_idcs:
+                    seq_var = self._sequence_vars[res_idx]
                     var1 = self._mode_vars[mode1]
                     var2 = self._mode_vars[mode2]
 

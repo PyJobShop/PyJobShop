@@ -13,6 +13,7 @@ from pyjobshop.ProblemData import (
     Job,
     Machine,
     Mode,
+    ModeDependency,
     NonRenewable,
     Objective,
     ProblemData,
@@ -104,18 +105,29 @@ def test_machine_attributes():
     assert_equal(machine.name, "Machine")
 
 
+def test_machine_default_attributes():
+    """
+    Tests that the default attributes of the Machine class are set correctly.
+    """
+    machine = Machine()
+    assert_equal(machine.name, "")
+
+
 def test_renewable_attributes():
     """
     Tests that the attributes of the Renewable class are set correctly.
     """
-    # Let's first test the default values.
-    renewable = Renewable(capacity=1)
-    assert_equal(renewable.name, "")
-
-    # Now test with some values.
     renewable = Renewable(capacity=1, name="TestRenewable")
     assert_equal(renewable.capacity, 1)
     assert_equal(renewable.name, "TestRenewable")
+
+
+def test_renewable_default_attributes():
+    """
+    Tests that the default attributes of the Renewable class are set correctly.
+    """
+    renewable = Renewable(capacity=0)
+    assert_equal(renewable.name, "")
 
 
 def test_renewable_raises_invalid_capacity():
@@ -139,6 +151,15 @@ def test_non_renewable_attributes():
     non_renewable = NonRenewable(capacity=1, name="TestNonRenewable")
     assert_equal(non_renewable.capacity, 1)
     assert_equal(non_renewable.name, "TestNonRenewable")
+
+
+def test_non_renewable_default_attributes():
+    """
+    Tests that the default attributes of the NonRenewable class are set
+    correctly.
+    """
+    non_renewable = NonRenewable(capacity=0)
+    assert_equal(non_renewable.name, "")
 
 
 def test_non_renewable_raises_invalid_capacity():
@@ -172,7 +193,11 @@ def test_task_attributes():
     assert_equal(task.fixed_duration, False)
     assert_equal(task.name, "TestTask")
 
-    # Also test that default values are set correctly.
+
+def test_task_default_attributes():
+    """
+    Tests that the default attributes of the Task class are set correctly.
+    """
     task = Task()
 
     assert_equal(task.job, None)
@@ -210,55 +235,26 @@ def test_task_attributes_raises_invalid_parameters(
         )
 
 
-def test_problem_data_input_parameter_attributes():
-    """
-    Tests that the input parameters of the ProblemData class are set correctly
-    as attributes.
-    """
-    jobs = [Job(tasks=[idx]) for idx in range(5)]
-    resources = [Machine() for _ in range(5)]
-    tasks = [Task() for _ in range(5)]
-    modes = [
-        Mode(task=task, resources=[resource], duration=1)
-        for task in range(5)
-        for resource in range(5)
-    ]
-    constraints = Constraints(
-        end_before_start=[
-            EndBeforeStart(0, 1),
-            EndBeforeStart(2, 3),
-            EndBeforeStart(4, 5),
-        ]
-    )
-    objective = Objective(weight_total_flow_time=1)
-
-    data = ProblemData(
-        jobs,
-        resources,
-        tasks,
-        modes,
-        constraints,
-        objective,
-    )
-
-    assert_equal(data.jobs, jobs)
-    assert_equal(data.resources, resources)
-    assert_equal(data.tasks, tasks)
-    assert_equal(data.modes, modes)
-    assert_equal(data.constraints, constraints)
-    assert_equal(data.objective, objective)
-
-
 def test_mode_attributes():
     """
     Tests that the attributes of the Mode class are set correctly.
     """
-    mode = Mode(task=0, resources=[0], duration=1, demands=[1])
+    mode = Mode(task=0, resources=[0], duration=1, demands=[1], name="mode")
 
     assert_equal(mode.task, 0)
     assert_equal(mode.duration, 1)
     assert_equal(mode.resources, [0])
     assert_equal(mode.demands, [1])
+    assert_equal(mode.name, "mode")
+
+
+def test_mode_default_attributes():
+    """
+    Tests that the default attributes of the Mode class are set correctly.
+    """
+    mode = Mode(task=0, resources=[0], duration=1, demands=[1])
+
+    assert_equal(mode.name, "")
 
 
 @pytest.mark.parametrize(
@@ -277,6 +273,24 @@ def test_mode_raises_invalid_parameters(resources, duration, demands):
     """
     with assert_raises(ValueError):
         Mode(task=0, resources=resources, duration=duration, demands=demands)
+
+
+def test_mode_dependency_must_have_at_least_one_succesor_mode():
+    """
+    Tests that ModeDependency requires at least one successor mode.
+    """
+    with assert_raises(ValueError):
+        ModeDependency(0, [])
+
+
+def test_negative_setup_times_not_allowed():
+    """
+    Tests that SetupTime duration must be non-negative.
+    """
+    SetupTime(0, 0, 1, 0)  # OK
+
+    with assert_raises(ValueError):
+        SetupTime(0, 0, 1, -1)  # not OK
 
 
 def test_constraints_len():
@@ -303,13 +317,74 @@ def test_constraints_len():
     assert_equal(len(constraints), 12)
 
 
+@pytest.mark.parametrize(
+    "weights",
+    [
+        [-1, 0, 0, 0, 0, 0, 0, 0],  # weight_makespan < 0,
+        [0, -1, 0, 0, 0, 0, 0, 0],  # weight_tardy_jobs < 0
+        [0, 0, -1, 0, 0, 0, 0, 0],  # weight_total_flow_time < 0
+        [0, 0, 0, -1, 0, 0, 0, 0],  # weight_total_tardiness < 0
+        [0, 0, 0, 0, -1, 0, 0, 0],  # weight_total_earliness < 0
+        [0, 0, 0, 0, 0, -1, 0, 0],  # weight_max_tardiness < 0
+        [0, 0, 0, 0, 0, 0, -1, 0],  # weight_max_lateness < 0
+        [0, 0, 0, 0, 0, 0, 0, -1],  # weight_total_setup_time < 0
+    ],
+)
+def test_objective_valid_values(weights: list[int]):
+    """
+    Tests that an error is raised when invalid weights are passed to the
+    Objective class.
+    """
+    with assert_raises(ValueError):
+        Objective(*weights)
+
+
+def test_problem_data_input_parameter_attributes():
+    """
+    Tests that the input parameters of the ProblemData class are set correctly
+    as attributes.
+    """
+    jobs = [Job(tasks=[idx]) for idx in range(5)]
+    resources = [Machine() for _ in range(5)]
+    tasks = [Task() for _ in range(5)]
+    modes = [
+        Mode(task=task, resources=[resource], duration=1)
+        for task in range(5)
+        for resource in range(5)
+    ]
+    constraints = Constraints(
+        end_before_start=[
+            EndBeforeStart(0, 1),
+            EndBeforeStart(2, 3),
+            EndBeforeStart(3, 4),
+        ]
+    )
+    objective = Objective(weight_total_flow_time=1)
+
+    data = ProblemData(
+        jobs,
+        resources,
+        tasks,
+        modes,
+        constraints,
+        objective,
+    )
+
+    assert_equal(data.jobs, jobs)
+    assert_equal(data.resources, resources)
+    assert_equal(data.tasks, tasks)
+    assert_equal(data.modes, modes)
+    assert_equal(data.constraints, constraints)
+    assert_equal(data.objective, objective)
+
+
 def test_problem_data_non_input_parameter_attributes():
     """
     Tests that attributes that are not input parameters of the ProblemData
     class are set correctly.
     """
     jobs = [Job(tasks=[0, 1, 2])]
-    resources = [Renewable(0) for _ in range(3)]
+    resources = [Machine(), Renewable(1), NonRenewable(2)]
     tasks = [Task() for _ in range(3)]
     modes = [
         Mode(task=2, resources=[1], duration=1),
@@ -331,6 +406,9 @@ def test_problem_data_non_input_parameter_attributes():
     assert_equal(data.num_tasks, 3)
     assert_equal(data.num_modes, 4)
     assert_equal(data.num_constraints, 4)
+    assert_equal(data.machine_idcs, [0])
+    assert_equal(data.renewable_idcs, [1])
+    assert_equal(data.non_renewable_idcs, [2])
 
 
 def test_problem_data_default_values():
@@ -444,19 +522,45 @@ def test_problem_data_all_modes_demand_infeasible():
         )
 
 
-def test_problem_data_raises_negative_setup_times():
+@pytest.mark.parametrize(
+    "name, cls, idcs_list",
+    [
+        ("start_before_start", StartBeforeStart, [(2, 0), (0, 2)]),
+        ("start_before_end", StartBeforeEnd, [(2, 0), (0, 2)]),
+        ("end_before_start", EndBeforeStart, [(2, 0), (0, 2)]),
+        ("end_before_end", EndBeforeEnd, [(2, 0), (0, 2)]),
+        ("identical_resources", IdenticalResources, [(2, 0), (0, 2)]),
+        ("different_resources", DifferentResources, [(2, 0), (0, 2)]),
+        ("consecutive", Consecutive, [(2, 0), (0, 2)]),
+        (
+            "setup_times",
+            SetupTime,
+            [
+                (1, 0, 0, 1),  # invalid resource idx
+                (0, 2, 0, 1),  # invalid task idx1
+                (0, 0, 2, 1),  # invalid task idx2
+            ],
+        ),
+        ("mode_dependencies", ModeDependency, [(2, [0]), (0, [2])]),
+    ],
+)
+def test_problem_data_raises_invalid_indices(name, cls, idcs_list):
     """
-    Tests that the ProblemData class raises an error when negative setup times
-    are passed.
+    Tests that the ProblemData class raises an error when the indices of
+    constraints are invalid.
     """
-    with assert_raises(ValueError):
-        ProblemData(
-            [Job(tasks=[0])],
-            [Machine()],
-            [Task(), Task()],
-            [Mode(0, [0], 0), Mode(1, [0], 0)],
-            Constraints(setup_times=[SetupTime(0, 0, 1, -1)]),
-        )
+    for idcs in idcs_list:
+        constraints = Constraints()
+        getattr(constraints, name).append(cls(*idcs))
+
+        with assert_raises(ValueError):
+            ProblemData(
+                [Job(tasks=[0])],
+                [Machine()],
+                [Task(), Task()],
+                [Mode(0, [0], 1), Mode(1, [0], 2)],
+                constraints,
+            )
 
 
 @pytest.mark.parametrize(
@@ -474,6 +578,21 @@ def test_problem_data_raises_capacitated_resources_and_setup_times(resource):
             [Task(), Task()],
             [Mode(0, [0], 0), Mode(1, [0], 0)],
             Constraints(setup_times=[SetupTime(0, 0, 1, 1)]),
+        )
+
+
+def test_problem_data_raises_mode_dependency_same_task():
+    """
+    Tests that the ProblemData class raises an error when a mode dependency
+    constraint refers to modes of all the same task.
+    """
+    with assert_raises(ValueError):
+        ProblemData(
+            [Job(tasks=[0])],
+            [Renewable(0)],
+            [Task()],
+            [Mode(0, [0], 1), Mode(0, [0], 2), Mode(0, [0], 3)],
+            Constraints(mode_dependencies=[ModeDependency(0, [1])]),
         )
 
 
@@ -628,6 +747,54 @@ def test_problem_data_replace_with_changes():
 
     assert_(new.constraints != data.constraints)
     assert_(new.objective != data.objective)
+
+
+def test_problem_data_resource2modes():
+    """
+    Tests that the mode indices corresponding to each resource are correctly
+    computed.
+    """
+    data = ProblemData(
+        [Job(tasks=[0])],
+        [Renewable(0), Renewable(0)],
+        [Task(), Task()],
+        modes=[Mode(0, [0], 1), Mode(0, [1], 10), Mode(1, [1], 0)],
+    )
+
+    assert_equal(data.resource2modes(0), [0])
+    assert_equal(data.resource2modes(1), [1, 2])
+
+    # Check that the task2modes method raises an error when an resource
+    # index is passed.
+    with pytest.raises(ValueError):
+        data.resource2modes(-1)
+
+    with pytest.raises(ValueError):
+        data.resource2modes(2)
+
+
+def test_problem_data_task2modes():
+    """
+    Tests that the mode indices corresponding to each task are correctly
+    computed.
+    """
+    data = ProblemData(
+        [Job(tasks=[0])],
+        [Renewable(0), Renewable(0)],
+        [Task(), Task()],
+        modes=[Mode(0, [0], 1), Mode(0, [1], 10), Mode(1, [1], 0)],
+    )
+
+    assert_equal(data.task2modes(0), [0, 1])
+    assert_equal(data.task2modes(1), [2])
+
+    # Check that the task2modes method raises an error when an invalid task
+    # index is passed.
+    with pytest.raises(ValueError):
+        data.task2modes(-1)
+
+    with pytest.raises(ValueError):
+        data.task2modes(2)
 
 
 # --- Tests that involve checking solver correctness of problem data. ---

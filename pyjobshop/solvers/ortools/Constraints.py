@@ -5,12 +5,7 @@ from ortools.sat.python.cp_model import CpModel, LinearExpr
 
 import pyjobshop.solvers.utils as utils
 from pyjobshop.constants import MAX_VALUE
-from pyjobshop.ProblemData import (
-    Machine,
-    NonRenewable,
-    ProblemData,
-    Renewable,
-)
+from pyjobshop.ProblemData import ProblemData
 from pyjobshop.solvers.ortools.Variables import Variables
 
 
@@ -69,10 +64,11 @@ class Constraints:
         for task_idx in range(data.num_tasks):
             # Select exactly one mode iff the task is present.
             task_var = variables.task_vars[task_idx]
-            task_mode_vars = variables.mode_vars[task_idx]
-            model.add(sum(task_mode_vars.values()) == task_var.present)
+            mode_idcs = data.task2modes(task_idx)
+            mode_vars = [variables.mode_vars[idx] for idx in mode_idcs]
+            model.add(sum(mode_vars) == task_var.present)
 
-            for mode_idx, mode_var in task_mode_vars.items():
+            for mode_idx, mode_var in zip(mode_idcs, mode_vars):
                 mode = data.modes[mode_idx]
 
                 # Set task duration to the selected mode's duration.
@@ -117,10 +113,7 @@ class Constraints:
         """
         model, data, variables = self._model, self._data, self._variables
 
-        for idx, resource in enumerate(data.resources):
-            if not isinstance(resource, Machine):
-                continue
-
+        for idx in data.machine_idcs:
             intervals = [var.interval for var in variables.res2assign(idx)]
             model.add_no_overlap(intervals)
 
@@ -130,13 +123,11 @@ class Constraints:
         """
         model, data, variables = self._model, self._data, self._variables
 
-        for idx, resource in enumerate(data.resources):
-            if not isinstance(resource, Renewable):
-                continue
-
+        for idx in data.renewable_idcs:
             intervals = [var.interval for var in variables.res2assign(idx)]
             demands = [var.demand for var in variables.res2assign(idx)]
-            model.add_cumulative(intervals, demands, resource.capacity)
+            capacity = data.resources[idx].capacity
+            model.add_cumulative(intervals, demands, capacity)
 
     def _non_renewable_capacity(self):
         """
@@ -144,13 +135,11 @@ class Constraints:
         """
         model, data, variables = self._model, self._data, self._variables
 
-        for idx, resource in enumerate(data.resources):
-            if not isinstance(resource, NonRenewable):
-                continue
-
+        for idx in data.non_renewable_idcs:
             demands = [var.demand for var in variables.res2assign(idx)]
             total = LinearExpr.sum(demands)
-            model.add(total <= resource.capacity)
+            capacity = data.resources[idx].capacity
+            model.add(total <= capacity)
 
     def _timing_constraints(self):
         """
@@ -260,10 +249,7 @@ class Constraints:
         model, data, variables = self._model, self._data, self._variables
         setup_times = utils.setup_times_matrix(data)
 
-        for idx, resource in enumerate(data.resources):
-            if not isinstance(resource, Machine):
-                continue
-
+        for idx in data.machine_idcs:
             if setup_times is not None and np.any(setup_times[idx]):
                 variables.sequence_vars[idx].activate(model, data)
 
@@ -274,10 +260,7 @@ class Constraints:
         model, data, variables = self._model, self._data, self._variables
 
         for task_idx1, task_idx2 in data.constraints.consecutive:
-            for res_idx in range(data.num_resources):
-                if not isinstance(data.resources[res_idx], Machine):
-                    continue
-
+            for res_idx in data.machine_idcs:
                 seq_var = variables.sequence_vars[res_idx]
                 seq_var.activate(model, data)
 
@@ -300,10 +283,7 @@ class Constraints:
         model, data, variables = self._model, self._data, self._variables
         setup_times = utils.setup_times_matrix(data)
 
-        for res_idx, resource in enumerate(data.resources):
-            if not isinstance(resource, Machine):
-                continue
-
+        for res_idx in data.machine_idcs:
             seq_var = variables.sequence_vars[res_idx]
             if not seq_var.is_active:
                 # No sequencing constraints active. Skip the creation of
@@ -357,16 +337,9 @@ class Constraints:
         """
         model, data, variables = self._model, self._data, self._variables
 
-        # Flatten mode vars.
-        mode_vars = {
-            mode_idx: mode_var
-            for _vars in variables.mode_vars
-            for mode_idx, mode_var in _vars.items()
-        }
-
         for idx1, idcs2 in data.constraints.mode_dependencies:
-            expr1 = mode_vars[idx1]
-            expr2 = sum(mode_vars[idx] for idx in idcs2)
+            expr1 = variables.mode_vars[idx1]
+            expr2 = sum(variables.mode_vars[idx] for idx in idcs2)
             model.add(expr1 <= expr2)
 
     def add_constraints(self):
