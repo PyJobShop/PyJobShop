@@ -516,12 +516,12 @@ class SelectAllOrNone(IterableMixin):
     """
     Enforces that all tasks from the given list are selected, or none are.
 
-    If `if_selected` is provided, this rule only applies when that task
+    If ``trigger_task`` is provided, this rule only applies when that task
     is selected; otherwise, it has no effect.
     """
 
     tasks: list[int]
-    if_selected: int | None = None
+    trigger_task: int | None = None
 
 
 @dataclass
@@ -529,12 +529,12 @@ class SelectAtLeastOne(IterableMixin):
     """
     Enforces that at least one task from the given list is selected.
 
-    If `if_selected` is provided, this rule only applies when that task
+    If ``trigger_task`` is provided, this rule only applies when that task
     is selected; otherwise, it has no effect.
     """
 
     tasks: list[int]
-    if_selected: int | None = None
+    trigger_task: int | None = None
 
 
 @dataclass
@@ -542,12 +542,12 @@ class SelectExactlyOne(IterableMixin):
     """
     Enforces that exactly one task from the given list is selected.
 
-    If `if_selected` is provided, this rule only applies when that task
+    If ``trigger_task`` is provided, this rule only applies when that task
     is selected; otherwise, it has no effect.
     """
 
     tasks: list[int]
-    if_selected: int | None = None
+    trigger_task: int | None = None
 
 
 @dataclass
