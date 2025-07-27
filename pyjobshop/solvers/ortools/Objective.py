@@ -1,5 +1,3 @@
-from itertools import product
-
 from ortools.sat.python.cp_model import (
     CpModel,
     LinearExpr,
@@ -8,8 +6,8 @@ from ortools.sat.python.cp_model import (
 
 import pyjobshop.solvers.utils as utils
 from pyjobshop.constants import MAX_VALUE
-from pyjobshop.ProblemData import Machine, ProblemData
-from pyjobshop.ProblemData import Objective as DataObjective
+from pyjobshop.ProblemData import Objective as ObjectiveData
+from pyjobshop.ProblemData import ProblemData
 
 from .Variables import Variables
 
@@ -30,6 +28,9 @@ class Objective:
         """
         Returns an expression representing the makespan of the model.
         """
+        if not self._variables.task_vars:
+            return LinearExpr.constant(0)
+
         makespan = self._model.new_int_var(0, MAX_VALUE, "makespan")
         completion_times = [var.end for var in self._variables.task_vars]
         self._model.add_max_equality(makespan, completion_times)
@@ -143,31 +144,29 @@ class Objective:
         setup_times = utils.setup_times_matrix(data)
 
         setup_time_vars = []
-        for res_idx, resource in enumerate(data.resources):
-            if not isinstance(resource, Machine):
-                continue
-
+        for res_idx in data.machine_idcs:
             seq_var = variables.sequence_vars[res_idx]
             if not seq_var.is_active:
                 continue
 
-            for idx1, idx2 in product(range(data.num_tasks), repeat=2):
-                var1 = variables.assign_vars.get((idx1, res_idx))
-                var2 = variables.assign_vars.get((idx2, res_idx))
-                if not (var1 and var2):
-                    continue
+            for task_idx1 in range(data.num_tasks):
+                for task_idx2 in range(data.num_tasks):
+                    var1 = variables.assign_vars.get((task_idx1, res_idx))
+                    var2 = variables.assign_vars.get((task_idx2, res_idx))
+                    if not (var1 and var2):
+                        continue
 
-                setup = (
-                    setup_times[res_idx, idx1, idx2]
-                    if setup_times is not None
-                    else 0
-                )
-                arc_selected = seq_var.arcs[idx1, idx2]
-                setup_time_vars.append(arc_selected * setup)
+                    setup = (
+                        setup_times[res_idx, task_idx1, task_idx2]
+                        if setup_times is not None
+                        else 0
+                    )
+                    arc_selected = seq_var.arcs[task_idx1, task_idx2]
+                    setup_time_vars.append(arc_selected * setup)
 
         return LinearExpr.sum(setup_time_vars)
 
-    def _objective_expr(self, objective: DataObjective) -> LinearExprT:
+    def _objective_expr(self, objective: ObjectiveData) -> LinearExprT:
         """
         Returns the expression corresponding to the given objective.
         """

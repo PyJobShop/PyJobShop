@@ -1,4 +1,4 @@
-from typing import Optional, Sequence, Union
+from typing import Sequence
 
 from pyjobshop.constants import MAX_VALUE
 from pyjobshop.ProblemData import (
@@ -11,6 +11,7 @@ from pyjobshop.ProblemData import (
     Job,
     Machine,
     Mode,
+    ModeDependency,
     NonRenewable,
     Objective,
     Permutation,
@@ -43,6 +44,7 @@ class Model:
         self._id2job: dict[int, int] = {}
         self._id2resource: dict[int, int] = {}
         self._id2task: dict[int, int] = {}
+        self._id2mode: dict[int, int] = {}
 
     @property
     def jobs(self) -> list[Job]:
@@ -203,7 +205,7 @@ class Model:
         weight: int = 1,
         release_date: int = 0,
         deadline: int = MAX_VALUE,
-        due_date: Optional[int] = None,
+        due_date: int | None = None,
         name: str = "",
     ) -> Job:
         """
@@ -251,7 +253,7 @@ class Model:
 
     def add_task(
         self,
-        job: Optional[Job] = None,
+        job: Job | None = None,
         earliest_start: int = 0,
         latest_start: int = MAX_VALUE,
         earliest_end: int = 0,
@@ -285,9 +287,10 @@ class Model:
     def add_mode(
         self,
         task: Task,
-        resources: Union[Resource, Sequence[Resource]],
+        resources: Resource | Sequence[Resource],
         duration: int,
-        demands: Optional[Union[int, list[int]]] = None,
+        demands: int | list[int] | None = None,
+        name: str = "",
     ) -> Mode:
         """
         Adds a processing mode to the model.
@@ -300,7 +303,9 @@ class Model:
 
         task_idx = self._id2task[id(task)]
         resource_idcs = [self._id2resource[id(res)] for res in resources]
-        mode = Mode(task_idx, resource_idcs, duration, demands)
+        mode = Mode(task_idx, resource_idcs, duration, demands, name)
+
+        self._id2mode[id(mode)] = len(self.modes)
         self._modes.append(mode)
 
         return mode
@@ -421,7 +426,22 @@ class Model:
         task_idx2 = self._id2task[id(task2)]
 
         constraint = SetupTime(machine_idx, task_idx1, task_idx2, duration)
-        self._constraints._setup_times.append(constraint)
+        self._constraints.setup_times.append(constraint)
+
+        return constraint
+
+    def add_mode_dependency(
+        self, mode1: Mode, modes2: list[Mode]
+    ) -> ModeDependency:
+        """
+        Adds a mode dependency between one mode and a list of modes, meaning
+        that if the first mode has been selected, one out of the list of modes
+        must be selected.
+        """
+        idx1 = self._id2mode[id(mode1)]
+        idcs2 = [self._id2mode[id(mode2)] for mode2 in modes2]
+        constraint = ModeDependency(idx1, idcs2)
+        self.constraints.mode_dependencies.append(constraint)
 
         return constraint
 
@@ -456,8 +476,8 @@ class Model:
         solver: str = "ortools",
         time_limit: float = float("inf"),
         display: bool = True,
-        num_workers: Optional[int] = None,
-        initial_solution: Optional[Solution] = None,
+        num_workers: int | None = None,
+        initial_solution: Solution | None = None,
         **kwargs,
     ) -> Result:
         """

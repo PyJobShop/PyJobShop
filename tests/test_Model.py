@@ -11,6 +11,7 @@ from pyjobshop.ProblemData import (
     Job,
     Machine,
     Mode,
+    ModeDependency,
     NonRenewable,
     Objective,
     Permutation,
@@ -34,9 +35,8 @@ def test_model_to_data():
     machine1, machine2, machine3 = [model.add_machine() for _ in range(3)]
     task1, task2 = [model.add_task(job=job) for _ in range(2)]
 
-    model.add_mode(task1, machine1, 1)
-    model.add_mode(task2, machine2, 2)
-    model.add_mode(task2, machine3, 1)
+    mode1 = model.add_mode(task1, machine1, 1)
+    mode2 = model.add_mode(task2, machine2, 2)
 
     model.add_start_before_start(task1, task2)
     model.add_start_before_end(task1, task2)
@@ -46,7 +46,7 @@ def test_model_to_data():
     model.add_different_resources(task2, task1)
     model.add_consecutive(task2, task1)
     model.add_permutation(machine2, machine3)
-
+    model.add_mode_dependency(mode1, [mode2])
     model.add_setup_time(machine1, task1, task2, 3)
     model.add_setup_time(machine2, task1, task2, 4)
 
@@ -75,6 +75,7 @@ def test_model_to_data():
     assert_equal(constraints.different_resources, [DifferentResources(1, 0)])
     assert_equal(constraints.consecutive, [Consecutive(1, 0)])
     assert_equal(constraints.permutation, [Permutation(1, 2)])
+    assert_equal(constraints.mode_dependencies, [ModeDependency(0, [1])])
     assert_equal(
         constraints.setup_times, [SetupTime(0, 0, 1, 3), SetupTime(1, 0, 1, 4)]
     )
@@ -87,7 +88,7 @@ def test_from_data():
     representation of that instance.
     """
     data = ProblemData(
-        [Job(due_date=1)],
+        [Job(tasks=[1], due_date=1)],
         [Machine(), Renewable(1), NonRenewable(0), Machine()],
         [Task(), Task(job=0), Task()],
         modes=[
@@ -150,6 +151,22 @@ def test_model_to_data_default_values():
     assert_equal(data.resources, [machine])
     assert_equal(data.tasks, [task])
     assert_equal(data.modes, [Mode(task=0, resources=[0], duration=1)])
+    assert_equal(data.constraints, Constraints())
+    assert_equal(data.objective, Objective(weight_makespan=1))
+
+
+def test_empty_model_returns_empty_data():
+    """
+    Tests that calling ``Model.data()`` on an empty model returns an empty
+    ProblemData instance.
+    """
+    model = Model()
+    data = model.data()
+
+    assert_equal(data.jobs, [])
+    assert_equal(data.resources, [])
+    assert_equal(data.tasks, [])
+    assert_equal(data.modes, [])
     assert_equal(data.constraints, Constraints())
     assert_equal(data.objective, Objective(weight_makespan=1))
 
@@ -237,12 +254,15 @@ def test_add_mode_attributes():
     task = model.add_task()
     resources = [model.add_machine() for _ in range(3)]
 
-    mode = model.add_mode(task, resources, duration=1, demands=[1, 2, 3])
+    mode = model.add_mode(
+        task, resources, duration=1, demands=[1, 2, 3], name="mode"
+    )
 
     assert_equal(mode.task, 0)
     assert_equal(mode.resources, [0, 1, 2])
     assert_equal(mode.duration, 1)
     assert_equal(mode.demands, [1, 2, 3])
+    assert_equal(mode.name, "mode")
 
 
 def test_add_mode_single_resource():
@@ -260,6 +280,7 @@ def test_add_mode_single_resource():
     assert_equal(mode.resources, [0])
     assert_equal(mode.duration, 1)
     assert_equal(mode.demands, [1])
+    assert_equal(mode.name, "")
 
 
 def test_model_attributes():

@@ -1,5 +1,4 @@
 from itertools import product
-from typing import Optional
 
 import numpy as np
 
@@ -26,79 +25,6 @@ def compute_task_durations(data: ProblemData) -> list[list[int]]:
         durations[mode.task].append(mode.duration)
 
     return durations
-
-
-def resource2modes(data: ProblemData) -> list[list[int]]:
-    """
-    Returns the list of mode indices corresponding to each resource.
-
-    Parameters
-    ----------
-    data
-        The problem data instance.
-
-    Returns
-    -------
-    list[list[int]]
-        The list of mode indices for each resource.
-    """
-    result: list[list[int]] = [[] for _ in range(data.num_resources)]
-
-    for idx, mode in enumerate(data.modes):
-        for resource in mode.resources:
-            result[resource].append(idx)
-
-    return result
-
-
-def resource2modes_demands(
-    data: ProblemData,
-) -> tuple[list[list[int]], list[list[int]]]:
-    """
-    Returns the list of mode indices and the list of corresponding demands
-    for each resource.
-
-    Parameters
-    ----------
-    data
-        The problem data instance.
-
-    Returns
-    -------
-    tuple[list[list[int]], list[list[int]]]
-        The list of mode indices and corresponding demands for each resource.
-    """
-    modes: list[list[int]] = [[] for _ in range(data.num_resources)]
-    demands: list[list[int]] = [[] for _ in range(data.num_resources)]
-
-    for idx, mode in enumerate(data.modes):
-        for resource, demand in zip(mode.resources, mode.demands):
-            modes[resource].append(idx)
-            demands[resource].append(demand)
-
-    return modes, demands
-
-
-def task2modes(data: ProblemData) -> list[list[int]]:
-    """
-    Returns the list of mode indices corresponding to each task.
-
-    Parameters
-    ----------
-    data
-        The problem data instance.
-
-    Returns
-    -------
-    list[list[int]]
-        The list of mode indices for each task.
-    """
-    result: list[list[int]] = [[] for _ in range(data.num_tasks)]
-
-    for idx, mode in enumerate(data.modes):
-        result[mode.task].append(idx)
-
-    return result
 
 
 # --- Constraints utilities ---
@@ -215,7 +141,7 @@ def intersecting_modes(
     return result
 
 
-def setup_times_matrix(data: ProblemData) -> Optional[np.ndarray]:
+def setup_times_matrix(data: ProblemData) -> np.ndarray | None:
     """
     Transforms the setup times constraints to a setup times matrix if there
     are setup times, otherwise return None.
