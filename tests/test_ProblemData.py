@@ -359,7 +359,7 @@ def test_problem_data_non_input_parameter_attributes():
     class are set correctly.
     """
     jobs = [Job(tasks=[0, 1, 2])]
-    resources = [Renewable(0) for _ in range(3)]
+    resources = [Machine(), Renewable(1), NonRenewable(2)]
     tasks = [Task() for _ in range(3)]
     modes = [
         Mode(task=2, resources=[1], duration=1),
@@ -381,6 +381,9 @@ def test_problem_data_non_input_parameter_attributes():
     assert_equal(data.num_tasks, 3)
     assert_equal(data.num_modes, 4)
     assert_equal(data.num_constraints, 4)
+    assert_equal(data.machine_idcs, [0])
+    assert_equal(data.renewable_idcs, [1])
+    assert_equal(data.non_renewable_idcs, [2])
 
 
 def test_problem_data_default_values():
@@ -719,6 +722,54 @@ def test_problem_data_replace_with_changes():
 
     assert_(new.constraints != data.constraints)
     assert_(new.objective != data.objective)
+
+
+def test_problem_data_resource2modes():
+    """
+    Tests that the mode indices corresponding to each resource are correctly
+    computed.
+    """
+    data = ProblemData(
+        [Job(tasks=[0])],
+        [Renewable(0), Renewable(0)],
+        [Task(), Task()],
+        modes=[Mode(0, [0], 1), Mode(0, [1], 10), Mode(1, [1], 0)],
+    )
+
+    assert_equal(data.resource2modes(0), [0])
+    assert_equal(data.resource2modes(1), [1, 2])
+
+    # Check that the task2modes method raises an error when an resource
+    # index is passed.
+    with pytest.raises(ValueError):
+        data.resource2modes(-1)
+
+    with pytest.raises(ValueError):
+        data.resource2modes(2)
+
+
+def test_problem_data_task2modes():
+    """
+    Tests that the mode indices corresponding to each task are correctly
+    computed.
+    """
+    data = ProblemData(
+        [Job(tasks=[0])],
+        [Renewable(0), Renewable(0)],
+        [Task(), Task()],
+        modes=[Mode(0, [0], 1), Mode(0, [1], 10), Mode(1, [1], 0)],
+    )
+
+    assert_equal(data.task2modes(0), [0, 1])
+    assert_equal(data.task2modes(1), [2])
+
+    # Check that the task2modes method raises an error when an invalid task
+    # index is passed.
+    with pytest.raises(ValueError):
+        data.task2modes(-1)
+
+    with pytest.raises(ValueError):
+        data.task2modes(2)
 
 
 # --- Tests that involve checking solver correctness of problem data. ---
