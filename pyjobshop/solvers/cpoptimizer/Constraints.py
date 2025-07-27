@@ -73,7 +73,7 @@ class Constraints:
 
     def _get_demand(self, mode_idx: int, res_idx: int) -> int:
         """
-        Returns the demand for a resource in a specific mode.
+        Returns the demand of the mode for a specific resource.
         """
         mode = self._data.modes[mode_idx]
         return mode.demands[mode.resources.index(res_idx)]
