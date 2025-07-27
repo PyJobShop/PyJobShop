@@ -132,7 +132,7 @@ class Resource:
     Parameters
     ----------
     capacity
-        Capacity of the resource. For machines, this should be 0.
+        Capacity of the resource.
     name
         Name of the resource.
 
@@ -141,7 +141,7 @@ class Resource:
     This is an abstract class and cannot be instantiated directly.
     Use the following concrete subclasses instead:
 
-    - :class:`Machine` for single-task processing with sequencing.
+    - :class:`Machine` for single-task processing with sequencing constraints.
     - :class:`Renewable` for resources that replenish after task completion.
     - :class:`NonRenewable` for consumable resources.
     """
@@ -173,8 +173,8 @@ class Resource:
 
 class Machine(Resource):
     """
-    A machine resource is a specialized resource that only processes one task
-    at a time and can handle sequencing constraints.
+    A machine resource that processes at most one task at a time and can
+    handle sequencing constraints.
 
     Parameters
     ----------
@@ -188,8 +188,8 @@ class Machine(Resource):
 
 class Renewable(Resource):
     """
-    A renewable resource that replenishes its capacity after each task
-    completion.
+    A renewable resource that can process multiple tasks simultaneously up to
+    its capacity limit.
 
     Parameters
     ----------
@@ -205,7 +205,8 @@ class Renewable(Resource):
 
 class NonRenewable(Resource):
     """
-    A non-renewable resource that does not replenish its capacity.
+    A consumable resource where total usage across all tasks cannot exceed
+    initial capacity.
 
     Parameters
     ----------
