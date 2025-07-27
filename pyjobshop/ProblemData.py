@@ -704,45 +704,52 @@ class ProblemData:
 
         self._validate()
 
+        # After validation, we can safely set the helper attributes.
+        self._task2modes: list[list[int]] = [[] for _ in tasks]
+        self._resource2modes: list[list[int]] = [[] for _ in resources]
+
+        for mode_idx, mode in enumerate(self.modes):
+            self._task2modes[mode.task].append(mode_idx)
+            for res_idx in mode.resources:
+                self._resource2modes[res_idx].append(mode_idx)
+
+        self._machine_idcs: list[int] = []
+        self._renewable_idcs: list[int] = []
+        self._non_renewable_idcs: list[int] = []
+
+        for idx, resource in enumerate(self.resources):
+            if isinstance(resource, Machine):
+                self._machine_idcs.append(idx)
+            elif isinstance(resource, Renewable):
+                self._renewable_idcs.append(idx)
+            elif isinstance(resource, NonRenewable):
+                self._non_renewable_idcs.append(idx)
+
     def _validate(self):
         """
         Validates the problem data parameters.
         """
-
-        def _is_valid_job(idx: int) -> bool:
-            return 0 <= idx < self.num_jobs
-
-        def _is_valid_res(idx: int) -> bool:
-            return 0 <= idx < self.num_resources
-
-        def _is_valid_task(idx: int) -> bool:
-            return 0 <= idx < self.num_tasks
-
-        def _is_valid_mode(idx: int) -> bool:
-            return 0 <= idx < self.num_modes
-
         for idx, job in enumerate(self.jobs):
             if len(job.tasks) == 0:
                 msg = f"Job {idx} does not reference any task."
                 raise ValueError(msg)
 
             for task_idx in job.tasks:
-                if not _is_valid_task(task_idx):
+                if not (0 <= task_idx < self.num_tasks):
                     msg = f"Job {idx} references to unknown task index."
                     raise ValueError(msg)
 
         for idx, task in enumerate(self.tasks):
-            if task.job is not None:
-                if not _is_valid_job(task.job):
-                    msg = f"Task {idx} references to unknown job index."
-                    raise ValueError(msg)
+            if task.job is not None and not (0 <= task.job < self.num_jobs):
+                msg = f"Task {idx} references to unknown job index."
+                raise ValueError(msg)
 
         for idx, mode in enumerate(self.modes):
-            if not _is_valid_task(mode.task):
+            if not (0 <= mode.task < self.num_tasks):
                 raise ValueError(f"Mode {idx} references unknown task index.")
 
             for res_idx in mode.resources:
-                if not _is_valid_res(res_idx):
+                if not (0 <= res_idx < self.num_resources):
                     msg = f"Mode {idx} references unknown resource index."
                     raise ValueError(msg)
 
@@ -779,22 +786,22 @@ class ProblemData:
 
         for constraints, name in task_pair_constraints:
             for idx1, idx2, *_ in constraints:
-                if not _is_valid_task(idx1):
+                if not (0 <= idx1 < self.num_tasks):
                     raise ValueError(f"Invalid task index {idx1} in {name}.")
 
-                if not _is_valid_task(idx2):
+                if not (0 <= idx2 < self.num_tasks):
                     raise ValueError(f"Invalid task index {idx2} in {name}.")
 
         for res_idx, task_idx1, task_idx2, dur in self.constraints.setup_times:
-            if not _is_valid_res(res_idx):
+            if not (0 <= res_idx < self.num_resources):
                 msg = f"Invalid resource index {res_idx} in setup_times."
                 raise ValueError(msg)
 
-            if not _is_valid_task(task_idx1):
+            if not (0 <= task_idx1 < self.num_tasks):
                 msg = f"Invalid task index in setup_times: {task_idx1}."
                 raise ValueError(msg)
 
-            if not _is_valid_task(task_idx2):
+            if not (0 <= task_idx2 < self.num_tasks):
                 msg = f"Invalid task index in setup_times: {task_idx2}."
                 raise ValueError(msg)
 
@@ -803,12 +810,12 @@ class ProblemData:
                 raise ValueError("Setup times only allowed for machines.")
 
         for idx1, idcs2 in self.constraints.mode_dependencies:
-            if not _is_valid_mode(idx1):
+            if not (0 <= idx1 < self.num_modes):
                 msg = f"Invalid mode index {idx1} in mode dependencies."
                 raise ValueError(msg)
 
             for idx in idcs2:
-                if not _is_valid_mode(idx):
+                if not (0 <= idx < self.num_modes):
                     msg = f"Invalid mode index {idx} in mode dependencies."
                     raise ValueError(msg)
 
@@ -967,3 +974,62 @@ class ProblemData:
         Returns the number of constraints in this instance.
         """
         return len(self._constraints)
+
+    @property
+    def machine_idcs(self) -> list[int]:
+        """
+        Returns the list of resource indices corresponding to machines.
+        """
+        return self._machine_idcs
+
+    @property
+    def renewable_idcs(self) -> list[int]:
+        """
+        Returns the list of resource indices corresponding to renewable
+        resources.
+        """
+        return self._renewable_idcs
+
+    @property
+    def non_renewable_idcs(self) -> list[int]:
+        """
+        Returns the list of resource indices corresponding to non-renewable
+        resources.
+        """
+        return self._non_renewable_idcs
+
+    def task2modes(self, task: int) -> list[int]:
+        """
+        Returns the list of mode indices corresponding to the given task.
+
+        Parameters
+        ----------
+        task
+            The task index.
+
+        Returns
+        -------
+        list[int]
+            The list of mode indices for the given task.
+        """
+        if not (0 <= task < self.num_tasks):
+            raise ValueError(f"Invalid task index {task}.")
+        return self._task2modes[task]
+
+    def resource2modes(self, resource: int) -> list[int]:
+        """
+        Returns the list of mode indices corresponding to the given resource.
+
+        Parameters
+        ----------
+        resource
+            The resource index.
+
+        Returns
+        -------
+        list[int]
+            The list of mode indices for the given resource.
+        """
+        if not (0 <= resource < self.num_resources):
+            raise ValueError(f"Invalid resource index {resource}.")
+        return self._resource2modes[resource]
