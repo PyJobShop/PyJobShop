@@ -1009,21 +1009,21 @@ class ProblemData:
         """
         Returns the number of machines in this instance.
         """
-        return sum(isinstance(res, Machine) for res in self._resources)
+        return len(self._machine_idcs)
 
     @property
     def num_renewables(self) -> int:
         """
         Returns the number of renewable resources in this instance.
         """
-        return sum(isinstance(res, Renewable) for res in self._resources)
+        return len(self._renewable_idcs)
 
     @property
     def num_non_renewables(self) -> int:
         """
         Returns the number of non-renewable resources in this instance.
         """
-        return sum(isinstance(res, NonRenewable) for res in self._resources)
+        return len(self._non_renewable_idcs)
 
     @property
     def num_tasks(self) -> int:
