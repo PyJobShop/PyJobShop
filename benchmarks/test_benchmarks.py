@@ -2,11 +2,10 @@ import pytest
 from numpy.testing import assert_, assert_equal
 
 from pyjobshop import Model
+from tests.utils import read
 
-from .utils import read
 
-
-def test_jsp_lawrence(solver: str):
+def test_jsp_lawrence(benchmark, solver: str):
     """
     Job shop problem instance from https://github.com/tamy0612/JSPLIB
 
@@ -44,7 +43,7 @@ def test_jsp_lawrence(solver: str):
             task1, task2 = tasks[task_idx - 1], tasks[task_idx]
             model.add_end_before_start(task1, task2)
 
-    result = model.solve(solver=solver)
+    result = benchmark(model.solve, solver)
 
     assert_equal(result.status.value, "Optimal")
     assert_equal(result.objective, 666)
@@ -58,14 +57,14 @@ def test_jsp_lawrence(solver: str):
         ["data/edata-car1.fjs", 6176],
     ],
 )
-def test_fjsp_classic(solver: str, loc: str, objective: int):
+def test_fjsp_classic(benchmark, solver: str, loc: str, objective: int):
     """
     Classic flexible job shop problem instances that are quickly solved to
     optimality.
     """
     data = read(loc)
     model = Model.from_data(data)
-    result = model.solve(solver=solver)
+    result = benchmark(model.solve, solver)
 
     assert_equal(result.objective, objective)
     assert_equal(result.status.value, "Optimal")
