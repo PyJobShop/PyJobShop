@@ -194,7 +194,13 @@ class Constraints:
 
                 model.add(arc == 1).only_enforce_if(both_present)
 
+    def _same_sequence_constraints(self):
+        """
+        Creates the same sequence constraints.
+        """
+        model, data, variables = self._model, self._data, self._variables
         same_sequence = data.constraints.same_sequence
+
         for res_idx1, res_idx2, task_idcs1, task_idcs2 in same_sequence:
             seq_var1 = variables.sequence_vars[res_idx1]
             seq_var2 = variables.sequence_vars[res_idx2]
@@ -290,6 +296,7 @@ class Constraints:
         self._identical_and_different_resource_constraints()
         self._activate_setup_times()
         self._consecutive_constraints()
+        self._same_sequence_constraints()
         self._mode_dependencies()
 
         # From here onwards we know which sequence constraints are active.

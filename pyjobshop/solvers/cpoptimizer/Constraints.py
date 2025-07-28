@@ -178,6 +178,39 @@ class Constraints:
 
                     model.add(cpo.previous(seq_var, var1, var2))
 
+    def _same_sequence_constraints(self):
+        """
+        Creates the same sequence constraints.
+        """
+        model, data = self._model, self._data
+        same_sequence = data.constraints.same_sequence
+
+        for res_idx1, res_idx2, task_idcs1, task_idcs2 in same_sequence:
+            msg = (
+                "Cannot enforce same sequence constraint for tasks with"
+                "multiple modes in CP Optimizer."
+            )
+            for idx in task_idcs1:
+                if len(data.task2modes(idx)) > 1:
+                    raise ValueError(msg)
+
+            for idx in task_idcs2:
+                if len(data.task2modes(idx)) > 1:
+                    raise ValueError(msg)
+
+            seq_var1 = self._sequence_vars[res_idx1]
+            seq_var2 = self._sequence_vars[res_idx2]
+            mode_vars1 = [
+                self._mode_vars[data.task2modes(idx)[0]] for idx in task_idcs1
+            ]
+            mode_vars2 = [
+                self._mode_vars[data.task2modes(idx)[0]] for idx in task_idcs2
+            ]
+
+            model.add(
+                cpo.same_sequence(seq_var1, seq_var2, mode_vars1, mode_vars2)
+            )
+
     def _mode_dependencies(self):
         """
         Implements the mode dependency constraints.
@@ -204,4 +237,5 @@ class Constraints:
         self._timing_constraints()
         self._identical_and_different_resource_constraints()
         self._consecutive_constraints()
+        self._same_sequence_constraints()
         self._mode_dependencies()
