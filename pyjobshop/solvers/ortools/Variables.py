@@ -133,14 +133,16 @@ class SequenceVar:
     arcs: dict[tuple[TaskIdx, TaskIdx], BoolVarT] = field(default_factory=dict)
     is_active: bool = False
 
-    def activate(self, m: CpModel, data: ProblemData):
+    def activate(self, m: CpModel, data: ProblemData, res_idx: int):
         """
-        Activates the sequence variable by creating all relevant literals.
+        Activates the sequence variable by creating all relevant literals for
+        this particular resource.
         """
         if self.is_active:
             return
 
-        nodes = list(range(data.num_tasks)) + [self.DUMMY]
+        tasks = {data.modes[m].task for m in data.resource2modes(res_idx)}
+        nodes = sorted(tasks) + [self.DUMMY]
 
         self.is_active = True
         self.arcs = {

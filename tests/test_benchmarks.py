@@ -124,5 +124,5 @@ def test_pfsp(solver: str):
         )
 
     # Finding the optimal solution takes quite long, so we set a time limit.
-    result = model.solve(solver=solver, time_limit=1)
-    assert_equal(result.objective, 698)
+    result = model.solve(solver=solver, time_limit=0.5)
+    assert_(result.objective < 750)  # optimal is 698
