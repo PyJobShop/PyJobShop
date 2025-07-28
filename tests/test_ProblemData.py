@@ -1419,7 +1419,6 @@ def test_empty_objective(solver: str):
     """
     data = ProblemData([], [], [], [], objective=Objective())
     result = solve(data, solver=solver)
-
     assert_equal(result.status.value, "Optimal")
     assert_equal(result.objective, 0)
 
