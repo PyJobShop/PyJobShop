@@ -1375,7 +1375,8 @@ def test_consecutive_multiple_machines(solver: str):
 
 def test_same_sequence(solver: str):
     """
-    Tests that the same sequence constraint is respected.
+    Tests that the same sequence constraint is respected for a simple
+    permutation flow shop problem.
     """
     model = Model()
 
@@ -1391,6 +1392,9 @@ def test_same_sequence(solver: str):
     for task in tasks2:
         model.add_mode(task, machine2, duration=1)
 
+    for task1, task2 in zip(tasks1, tasks2):
+        model.add_end_before_start(task1, task2)
+
     model.add_consecutive(tasks1[0], tasks1[1])
     model.add_setup_time(machine2, tasks2[0], tasks2[1], 10)
 
@@ -1402,7 +1406,7 @@ def test_same_sequence(solver: str):
 
     result = model.solve(solver=solver)
     assert_equal(result.status.value, "Optimal")
-    assert_equal(result.status.value, 13)
+    assert_equal(result.objective, 13)
 
 
 def test_setup_time_bug(solver: str):

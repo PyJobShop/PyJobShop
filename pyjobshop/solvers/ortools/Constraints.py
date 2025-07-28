@@ -1,3 +1,5 @@
+from itertools import pairwise
+
 import numpy as np
 from ortools.sat.python.cp_model import CpModel, LinearExpr
 
@@ -191,6 +193,21 @@ class Constraints:
                 both_present = [var1.present, var2.present]
 
                 model.add(arc == 1).only_enforce_if(both_present)
+
+        same_sequence = data.constraints.same_sequence
+        for res_idx1, res_idx2, task_idcs1, task_idcs2 in same_sequence:
+            seq_var1 = variables.sequence_vars[res_idx1]
+            seq_var2 = variables.sequence_vars[res_idx2]
+            seq_var1.activate(model, data)
+            seq_var2.activate(model, data)
+
+            pairs1 = pairwise(task_idcs1)
+            pairs2 = pairwise(task_idcs2)
+
+            for (idx1, idx2), (idx3, idx4) in zip(pairs1, pairs2):
+                arc1 = seq_var1.arcs[idx1, idx2]
+                arc2 = seq_var2.arcs[idx3, idx4]
+                model.add(arc1 == arc2)
 
     def _circuit_constraints(self):
         """
