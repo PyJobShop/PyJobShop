@@ -1,3 +1,6 @@
+from itertools import pairwise
+
+import numpy as np
 import pytest
 from numpy.testing import assert_, assert_equal
 
@@ -70,3 +73,56 @@ def test_fjsp_classic(solver: str, loc: str, objective: int):
     assert_equal(result.objective, objective)
     assert_equal(result.status.value, "Optimal")
     assert_(result.runtime < 1)
+
+
+def test_pfsp(solver: str):
+    """
+    Benchmark a small permutation flow shop problem instance (VRF_10_5_2) from
+    http://soa.iti.es/problem-instances.
+    """
+    DURATIONS = np.array(
+        [
+            [79, 67, 10, 48, 52],
+            [40, 40, 57, 21, 54],
+            [48, 93, 49, 11, 79],
+            [16, 23, 19, 2, 38],
+            [38, 90, 57, 73, 3],
+            [76, 13, 99, 98, 55],
+            [73, 85, 40, 20, 85],
+            [34, 6, 27, 53, 21],
+            [38, 6, 35, 28, 44],
+            [32, 11, 11, 34, 27],
+        ]
+    )
+    num_jobs, num_machines = DURATIONS.shape
+
+    model = Model()
+    machines = [model.add_machine() for _ in range(num_machines)]
+
+    # Create tasks for each job and machine, and add modes with durations.
+    tasks = np.empty((num_jobs, num_machines), dtype=object)
+    for job_idx in range(num_jobs):
+        for machine_idx, machine in enumerate(machines):
+            task = model.add_task()
+            tasks[job_idx, machine_idx] = task
+
+            duration = DURATIONS[job_idx, machine_idx]
+            model.add_mode(task, machine, duration=duration)
+
+    # Precedence constraints between tasks of the same job.
+    for job_tasks in tasks:
+        for task1, task2 in pairwise(job_tasks):
+            model.add_end_before_start(task1, task2)
+
+    # Permutation constraints between tasks of different machines.
+    for idx1, idx2 in pairwise(range(num_machines)):
+        model.add_same_sequence(
+            machines[idx1],
+            machines[idx2],
+            tasks[:, idx1].tolist(),
+            tasks[:, idx2].tolist(),
+        )
+
+    # Finding the optimal solution takes quite long, so we set a time limit.
+    result = model.solve(solver=solver, time_limit=1)
+    assert_equal(result.objective, 698)
