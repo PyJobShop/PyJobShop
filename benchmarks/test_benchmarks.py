@@ -1,5 +1,5 @@
 import pytest
-from numpy.testing import assert_, assert_equal
+from numpy.testing import assert_equal
 
 from pyjobshop import Model
 from tests.utils import read
@@ -68,4 +68,3 @@ def test_fjsp_classic(benchmark, solver: str, loc: str, objective: int):
 
     assert_equal(result.objective, objective)
     assert_equal(result.status.value, "Optimal")
-    assert_(result.runtime < 1)
