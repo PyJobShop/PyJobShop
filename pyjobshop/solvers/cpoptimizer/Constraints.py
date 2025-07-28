@@ -186,26 +186,22 @@ class Constraints:
         same_sequence = data.constraints.same_sequence
 
         for res_idx1, res_idx2, task_idcs1, task_idcs2 in same_sequence:
-            msg = (
-                "Cannot enforce same sequence constraint for tasks with"
-                "multiple modes in CP Optimizer."
-            )
-            for idx in task_idcs1:
-                if len(data.task2modes(idx)) > 1:
-                    raise ValueError(msg)
-
-            for idx in task_idcs2:
-                if len(data.task2modes(idx)) > 1:
-                    raise ValueError(msg)
+            task2mode = {}
+            for idx in task_idcs1 + task_idcs2:
+                if len(modes := data.task2modes(idx)) > 1:
+                    raise ValueError(
+                        "Cannot enforce same sequence constraint for tasks"
+                        " with multiple modes in CP Optimizer."
+                    )
+                task2mode[idx] = modes[0]
 
             seq_var1 = self._sequence_vars[res_idx1]
             seq_var2 = self._sequence_vars[res_idx2]
-            mode_vars1 = [
-                self._mode_vars[data.task2modes(idx)[0]] for idx in task_idcs1
-            ]
-            mode_vars2 = [
-                self._mode_vars[data.task2modes(idx)[0]] for idx in task_idcs2
-            ]
+
+            # Find the right mode variable belonging to each task.
+            mode_vars = self._mode_vars
+            mode_vars1 = [mode_vars[task2mode[idx]] for idx in task_idcs1]
+            mode_vars2 = [mode_vars[task2mode[idx]] for idx in task_idcs2]
 
             model.add(
                 cpo.same_sequence(seq_var1, seq_var2, mode_vars1, mode_vars2)
