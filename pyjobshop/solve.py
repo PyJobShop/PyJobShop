@@ -1,3 +1,4 @@
+import textwrap
 from importlib.metadata import version
 
 from pyjobshop.ProblemData import ProblemData
@@ -54,7 +55,7 @@ def solve(
     if display:
         print(f"PyJobShop v{version('pyjobshop')}\n")
         print("Solving an instance with:")
-        print(data)
+        print(textwrap.indent(str(data), "    ") + "\n")
 
     if solver == "ortools":
         ortools = ORToolsSolver(data)

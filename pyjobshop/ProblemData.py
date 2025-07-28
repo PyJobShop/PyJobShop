@@ -680,7 +680,7 @@ class Objective:
         for f in fields(self):
             value = getattr(self, f.name)
             if value > 0:
-                parts.append(f"{f.name}: {value}")
+                parts.append(f"{f.name}={value}")
 
         lines = ["objective"]
         if not parts:

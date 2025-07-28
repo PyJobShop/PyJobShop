@@ -337,11 +337,11 @@ def test_objective_str():
     assert_equal(str(objective), "objective\n└─ no weights")
 
     objective = Objective(weight_makespan=1)
-    assert_equal(str(objective), "objective\n└─ weight_makespan: 1")
+    assert_equal(str(objective), "objective\n└─ weight_makespan=1")
 
     objective = Objective(weight_makespan=1, weight_max_tardiness=10)
 
-    expected = "objective\n├─ weight_makespan: 1\n└─ weight_max_tardiness: 10"
+    expected = "objective\n├─ weight_makespan=1\n└─ weight_max_tardiness=10"
     assert_equal(str(objective), expected)
 
 
@@ -450,7 +450,7 @@ def test_problem_data_str():
             EndBeforeStart(3, 4),
         ]
     )
-    objective = Objective(weight_total_flow_time=1)
+    objective = Objective(weight_makespan=10, weight_total_flow_time=1)
     data = ProblemData(jobs, resources, tasks, modes, constraints, objective)
 
     expected = (
@@ -464,7 +464,8 @@ def test_problem_data_str():
         "3 constraints\n"
         "└─ 3 end_before_start\n"
         "objective\n"
-        "└─ weight_total_flow_time: 1"
+        "├─ weight_makespan=10\n"
+        "└─ weight_total_flow_time=1"
     )
     assert_equal(str(data), expected)
 
