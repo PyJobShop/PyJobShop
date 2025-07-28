@@ -103,18 +103,29 @@ def test_machine_attributes():
     assert_equal(machine.name, "Machine")
 
 
+def test_machine_default_attributes():
+    """
+    Tests that the default attributes of the Machine class are set correctly.
+    """
+    machine = Machine()
+    assert_equal(machine.name, "")
+
+
 def test_renewable_attributes():
     """
     Tests that the attributes of the Renewable class are set correctly.
     """
-    # Let's first test the default values.
-    renewable = Renewable(capacity=1)
-    assert_equal(renewable.name, "")
-
-    # Now test with some values.
     renewable = Renewable(capacity=1, name="TestRenewable")
     assert_equal(renewable.capacity, 1)
     assert_equal(renewable.name, "TestRenewable")
+
+
+def test_renewable_default_attributes():
+    """
+    Tests that the default attributes of the Renewable class are set correctly.
+    """
+    renewable = Renewable(capacity=0)
+    assert_equal(renewable.name, "")
 
 
 def test_renewable_raises_invalid_capacity():
@@ -138,6 +149,15 @@ def test_non_renewable_attributes():
     non_renewable = NonRenewable(capacity=1, name="TestNonRenewable")
     assert_equal(non_renewable.capacity, 1)
     assert_equal(non_renewable.name, "TestNonRenewable")
+
+
+def test_non_renewable_default_attributes():
+    """
+    Tests that the default attributes of the NonRenewable class are set
+    correctly.
+    """
+    non_renewable = NonRenewable(capacity=0)
+    assert_equal(non_renewable.name, "")
 
 
 def test_non_renewable_raises_invalid_capacity():
@@ -171,7 +191,11 @@ def test_task_attributes():
     assert_equal(task.fixed_duration, False)
     assert_equal(task.name, "TestTask")
 
-    # Also test that default values are set correctly.
+
+def test_task_default_attributes():
+    """
+    Tests that the default attributes of the Task class are set correctly.
+    """
     task = Task()
 
     assert_equal(task.job, None)
@@ -213,12 +237,22 @@ def test_mode_attributes():
     """
     Tests that the attributes of the Mode class are set correctly.
     """
-    mode = Mode(task=0, resources=[0], duration=1, demands=[1])
+    mode = Mode(task=0, resources=[0], duration=1, demands=[1], name="mode")
 
     assert_equal(mode.task, 0)
     assert_equal(mode.duration, 1)
     assert_equal(mode.resources, [0])
     assert_equal(mode.demands, [1])
+    assert_equal(mode.name, "mode")
+
+
+def test_mode_default_attributes():
+    """
+    Tests that the default attributes of the Mode class are set correctly.
+    """
+    mode = Mode(task=0, resources=[0], duration=1, demands=[1])
+
+    assert_equal(mode.name, "")
 
 
 @pytest.mark.parametrize(
@@ -237,25 +271,6 @@ def test_mode_raises_invalid_parameters(resources, duration, demands):
     """
     with assert_raises(ValueError):
         Mode(task=0, resources=resources, duration=duration, demands=demands)
-
-
-def test_constraints_str():
-    """
-    Tests the string representation of the Constraints class.
-    """
-    constraints = Constraints()
-    assert_equal(str(constraints), "# constraints: 0\n")
-
-    constraints.start_before_start.append(StartBeforeStart(0, 1))
-    expected = "# constraints: 1\n- # start_before_start: 1\n"
-    assert_equal(str(constraints), expected)
-
-    constraints.mode_dependencies.append(ModeDependency(0, [1, 2, 3]))
-    expected = (
-        "# constraints: 2\n- # start_before_start: 1\n"
-        "- # mode_dependencies: 1\n"
-    )
-    assert_equal(str(constraints), expected)
 
 
 def test_mode_dependency_must_have_at_least_one_succesor_mode():
@@ -296,22 +311,6 @@ def test_objective_valid_values(weights: list[int]):
     """
     with assert_raises(ValueError):
         Objective(*weights)
-
-
-def test_objective_str():
-    """
-    Tests the string representation of the Objective class.
-    """
-    objective = Objective()
-    assert_equal(str(objective), "objective:\n- no weights\n")
-
-    objective = Objective(weight_makespan=1)
-    assert_equal(str(objective), "objective:\n- weight_makespan: 1\n")
-
-    objective = Objective(weight_makespan=1, weight_max_tardiness=10)
-
-    expected = "objective:\n- weight_makespan: 1\n- weight_max_tardiness: 10\n"
-    assert_equal(str(objective), expected)
 
 
 def test_problem_data_input_parameter_attributes():
@@ -359,7 +358,7 @@ def test_problem_data_non_input_parameter_attributes():
     class are set correctly.
     """
     jobs = [Job(tasks=[0, 1, 2])]
-    resources = [Machine(), Renewable(0), NonRenewable(0)]
+    resources = [Machine(), Renewable(1), NonRenewable(2)]
     tasks = [Task() for _ in range(3)]
     modes = [
         Mode(task=2, resources=[1], duration=1),
@@ -378,12 +377,12 @@ def test_problem_data_non_input_parameter_attributes():
 
     assert_equal(data.num_jobs, 1)
     assert_equal(data.num_resources, 3)
-    assert_equal(data.num_machines, 1)
-    assert_equal(data.num_renewables, 1)
-    assert_equal(data.num_non_renewables, 1)
     assert_equal(data.num_tasks, 3)
     assert_equal(data.num_modes, 4)
     assert_equal(data.num_constraints, 4)
+    assert_equal(data.machine_idcs, [0])
+    assert_equal(data.renewable_idcs, [1])
+    assert_equal(data.non_renewable_idcs, [2])
 
 
 def test_problem_data_default_values():
@@ -398,43 +397,6 @@ def test_problem_data_default_values():
 
     assert_equal(data.constraints, Constraints())
     assert_equal(data.objective, Objective(weight_makespan=1))
-
-
-def test_problem_data_str():
-    """
-    Tests the string representation of the ProblemData class.
-    """
-    jobs = [Job(tasks=[idx]) for idx in range(5)]
-    resources = [Machine() for _ in range(5)] + [Renewable(1)]
-    tasks = [Task() for _ in range(5)]
-    modes = [
-        Mode(task=task, resources=[resource], duration=1)
-        for task in range(5)
-        for resource in range(5)
-    ]
-    constraints = Constraints(
-        end_before_start=[
-            EndBeforeStart(0, 1),
-            EndBeforeStart(2, 3),
-            EndBeforeStart(3, 4),
-        ]
-    )
-    objective = Objective(weight_total_flow_time=1)
-    data = ProblemData(jobs, resources, tasks, modes, constraints, objective)
-
-    expected = (
-        "jobs: 5\n"
-        "resources: 6\n"
-        "  machines: 5\n"
-        "  renewables: 1\n"
-        "tasks: 5\n"
-        "modes: 25\n"
-        "constraints: 3\n"
-        "  end_before_start: 3\n"
-        "objective:\n"
-        "  weight_total_flow_time: 1\n"
-    )
-    assert_equal(str(data), expected)
 
 
 def test_problem_data_job_must_reference_at_least_one_task():
@@ -759,6 +721,54 @@ def test_problem_data_replace_with_changes():
 
     assert_(new.constraints != data.constraints)
     assert_(new.objective != data.objective)
+
+
+def test_problem_data_resource2modes():
+    """
+    Tests that the mode indices corresponding to each resource are correctly
+    computed.
+    """
+    data = ProblemData(
+        [Job(tasks=[0])],
+        [Renewable(0), Renewable(0)],
+        [Task(), Task()],
+        modes=[Mode(0, [0], 1), Mode(0, [1], 10), Mode(1, [1], 0)],
+    )
+
+    assert_equal(data.resource2modes(0), [0])
+    assert_equal(data.resource2modes(1), [1, 2])
+
+    # Check that the task2modes method raises an error when an resource
+    # index is passed.
+    with pytest.raises(ValueError):
+        data.resource2modes(-1)
+
+    with pytest.raises(ValueError):
+        data.resource2modes(2)
+
+
+def test_problem_data_task2modes():
+    """
+    Tests that the mode indices corresponding to each task are correctly
+    computed.
+    """
+    data = ProblemData(
+        [Job(tasks=[0])],
+        [Renewable(0), Renewable(0)],
+        [Task(), Task()],
+        modes=[Mode(0, [0], 1), Mode(0, [1], 10), Mode(1, [1], 0)],
+    )
+
+    assert_equal(data.task2modes(0), [0, 1])
+    assert_equal(data.task2modes(1), [2])
+
+    # Check that the task2modes method raises an error when an invalid task
+    # index is passed.
+    with pytest.raises(ValueError):
+        data.task2modes(-1)
+
+    with pytest.raises(ValueError):
+        data.task2modes(2)
 
 
 # --- Tests that involve checking solver correctness of problem data. ---
