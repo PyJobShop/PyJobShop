@@ -683,13 +683,12 @@ class Objective:
                 parts.append(f"{f.name}={value}")
 
         lines = ["objective"]
-        if not parts:
-            lines.append("└─ no weights")
-            return "\n".join(lines)
-
         for idx, part in enumerate(parts):
             symbol = "└─" if idx == len(parts) - 1 else "├─"
             lines.append(f"{symbol} {part}")
+
+        if not parts:
+            lines.append("└─ no weights")
 
         return "\n".join(lines)
 
