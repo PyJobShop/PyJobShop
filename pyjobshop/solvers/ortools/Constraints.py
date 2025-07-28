@@ -1,4 +1,4 @@
-from itertools import pairwise
+from itertools import product
 
 import numpy as np
 from ortools.sat.python.cp_model import CpModel, LinearExpr
@@ -207,8 +207,8 @@ class Constraints:
             seq_var1.activate(model, data, res_idx1)
             seq_var2.activate(model, data, res_idx2)
 
-            pairs1 = pairwise(task_idcs1)
-            pairs2 = pairwise(task_idcs2)
+            pairs1 = product(task_idcs1, repeat=2)
+            pairs2 = product(task_idcs2, repeat=2)
 
             for (idx1, idx2), (idx3, idx4) in zip(pairs1, pairs2):
                 arc1 = seq_var1.arcs[idx1, idx2]
