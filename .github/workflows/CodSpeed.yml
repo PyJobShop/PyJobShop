@@ -12,7 +12,7 @@ concurrency:
 jobs:
   bench:
     name: Run benchmarks
-    runs-on: ubuntu-24.04
+    runs-on: codspeed-macro
     steps:
       - uses: actions/checkout@v4
         with:
