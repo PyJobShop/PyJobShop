@@ -530,6 +530,13 @@ class SameSequence(IterableMixin):
 
     machine1: int
     machine2: int
+    tasks1: list[int]
+    tasks2: list[int]
+
+    def __post_init__(self):
+        if len(self.tasks1) != len(self.tasks2):
+            msg = "tasks1 and tasks2 must be same length for same_sequence."
+            raise ValueError(msg)
 
 
 @dataclass
@@ -803,7 +810,8 @@ class ProblemData:
                 if not (0 <= idx2 < self.num_tasks):
                     raise ValueError(f"Invalid task index {idx2} in {name}.")
 
-        for res_idx1, res_idx2 in self.constraints.same_sequence:
+        same_sequence = self.constraints.same_sequence
+        for res_idx1, res_idx2, task_idcs1, task_idcs2 in same_sequence:
             if not (0 <= res_idx1 < self.num_resources):
                 msg = f"Invalid resource index {res_idx1} in same_sequence."
                 raise ValueError(msg)
@@ -819,6 +827,18 @@ class ProblemData:
             if not (isinstance(self.resources[res_idx2], Machine)):
                 msg = f"Resource {res_idx2} is not a machine in same_sequence."
                 raise ValueError(msg)
+
+            for task_idx in task_idcs1:
+                if not (0 <= task_idx < self.num_tasks):
+                    msg = f"Invalid task index {task_idx} in same_sequence."
+                    raise ValueError(msg)
+
+            for task_idx in task_idcs2:
+                if not (0 <= task_idx < self.num_tasks):
+                    msg = f"Invalid task index {task_idx} in same_sequence."
+                    raise ValueError(msg)
+
+            # TODO check that tasks1 and tasks2 belong to the machine?
 
         for res_idx, task_idx1, task_idx2, dur in self.constraints.setup_times:
             if not (0 <= res_idx < self.num_resources):

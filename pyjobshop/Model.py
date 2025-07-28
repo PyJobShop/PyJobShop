@@ -163,8 +163,14 @@ class Model:
         for idx1, idx2 in data.constraints.consecutive:
             model.add_consecutive(tasks[idx1], tasks[idx2])
 
-        for idx1, idx2 in data.constraints.same_sequence:
-            model.add_same_sequence(resources[idx1], resources[idx2])
+        same_sequence = data.constraints.same_sequence
+        for res_idx1, res_idx2, task_idcs1, task_idcs2 in same_sequence:
+            model.add_same_sequence(
+                resources[res_idx1],
+                resources[res_idx2],
+                [tasks[idx] for idx in task_idcs1],
+                [tasks[idx] for idx in task_idcs2],
+            )
 
         for res_idx, idx1, idx2, duration in data.constraints.setup_times:
             model.add_setup_time(
@@ -401,16 +407,22 @@ class Model:
         return constraint
 
     def add_same_sequence(
-        self, machine1: Machine, machine2: Machine
+        self,
+        machine1: Machine,
+        machine2: Machine,
+        tasks1: list[Task],
+        tasks2: list[Task],
     ) -> SameSequence:
         """
         Adds a constraint that requires the two machines to schedule its tasks
         in the same sequence.
         """
-        machine_idx1 = self._id2resource[id(machine1)]
-        machine_idx2 = self._id2resource[id(machine2)]
+        res_idx1 = self._id2resource[id(machine1)]
+        res_idx2 = self._id2resource[id(machine2)]
+        task_idcs1 = [self._id2task[id(task)] for task in tasks1]
+        task_idcs2 = [self._id2task[id(task)] for task in tasks2]
 
-        constraint = SameSequence(machine_idx1, machine_idx2)
+        constraint = SameSequence(res_idx1, res_idx2, task_idcs1, task_idcs2)
         self._constraints.same_sequence.append(constraint)
 
         return constraint

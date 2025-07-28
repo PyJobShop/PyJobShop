@@ -45,7 +45,7 @@ def test_model_to_data():
     model.add_identical_resources(task2, task1)
     model.add_different_resources(task2, task1)
     model.add_consecutive(task2, task1)
-    model.add_same_sequence(machine1, machine2)
+    model.add_same_sequence(machine1, machine2, [task1], [task2])
     model.add_mode_dependency(mode1, [mode2])
     model.add_setup_time(machine1, task1, task2, 3)
     model.add_setup_time(machine2, task1, task2, 4)
@@ -73,7 +73,7 @@ def test_model_to_data():
     assert_equal(constraints.identical_resources, [IdenticalResources(1, 0)])
     assert_equal(constraints.different_resources, [DifferentResources(1, 0)])
     assert_equal(constraints.consecutive, [Consecutive(1, 0)])
-    assert_equal(constraints.same_sequence, [SameSequence(0, 1)])
+    assert_equal(constraints.same_sequence, [SameSequence(0, 1, [0], [1])])
     assert_equal(constraints.mode_dependencies, [ModeDependency(0, [1])])
     assert_equal(
         constraints.setup_times, [SetupTime(0, 0, 1, 3), SetupTime(1, 0, 1, 4)]
@@ -104,7 +104,7 @@ def test_from_data():
             identical_resources=[IdenticalResources(0, 1)],
             different_resources=[DifferentResources(0, 1)],
             consecutive=[Consecutive(1, 2)],
-            same_sequence=[SameSequence(0, 3)],
+            same_sequence=[SameSequence(0, 3, [0], [2])],
             setup_times=[
                 SetupTime(0, 0, 1, 1),  # machine
                 SetupTime(1, 0, 1, 0),  # renewable
@@ -119,6 +119,7 @@ def test_from_data():
             weight_total_earliness=6,
             weight_max_tardiness=7,
             weight_max_lateness=8,
+            weight_total_setup_time=9,
         ),
     )
     model = Model.from_data(data)
