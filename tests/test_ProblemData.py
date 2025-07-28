@@ -506,13 +506,23 @@ def test_problem_data_all_modes_demand_infeasible():
         ("end_before_end", EndBeforeEnd, [(2, 0), (0, 2)]),
         ("identical_resources", IdenticalResources, [(2, 0), (0, 2)]),
         ("different_resources", DifferentResources, [(2, 0), (0, 2)]),
-        ("same_sequence", SameSequence, [(0, 1), (1, 0)]),
+        (
+            "same_sequence",
+            SameSequence,
+            [
+                (0, 2),  # invalid resource idx
+                (2, 0),  # invalid resource idx
+                (0, 1),  # not a machine idx
+                (1, 0),  # not a machine idx
+            ],
+        ),
         ("consecutive", Consecutive, [(2, 0), (0, 2)]),
         (
             "setup_times",
             SetupTime,
             [
                 (1, 0, 0, 1),  # invalid resource idx
+                (2, 0, 0, 1),  # not a machine idx
                 (0, 2, 0, 1),  # invalid task idx1
                 (0, 0, 2, 1),  # invalid task idx2
             ],
@@ -532,7 +542,7 @@ def test_problem_data_raises_invalid_indices(name, cls, idcs_list):
         with assert_raises(ValueError):
             ProblemData(
                 [Job(tasks=[0])],
-                [Machine()],
+                [Machine(), Renewable(0)],
                 [Task(), Task()],
                 [Mode(0, [0], 1), Mode(1, [0], 2)],
                 constraints,

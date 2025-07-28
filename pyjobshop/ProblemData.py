@@ -805,11 +805,19 @@ class ProblemData:
 
         for res_idx1, res_idx2 in self.constraints.same_sequence:
             if not (0 <= res_idx1 < self.num_resources):
-                msg = f"Invalid resource index {res_idx} in same_sequence."
+                msg = f"Invalid resource index {res_idx1} in same_sequence."
                 raise ValueError(msg)
 
             if not (0 <= res_idx2 < self.num_resources):
                 msg = f"Invalid resource index {res_idx2} in same_sequence."
+                raise ValueError(msg)
+
+            if not (isinstance(self.resources[res_idx1], Machine)):
+                msg = f"Resource {res_idx1} is not a machine in same_sequence."
+                raise ValueError(msg)
+
+            if not (isinstance(self.resources[res_idx2], Machine)):
+                msg = f"Resource {res_idx2} is not a machine in same_sequence."
                 raise ValueError(msg)
 
         for res_idx, task_idx1, task_idx2, dur in self.constraints.setup_times:
