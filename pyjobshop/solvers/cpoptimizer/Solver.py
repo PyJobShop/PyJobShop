@@ -101,8 +101,14 @@ class Solver:
         }
         params.update(kwargs)  # this will override existing parameters!
 
+        if display:
+            print(" START IBM ILOG CP OPTIMIZER LOG ".center(79, "="))
+
         cp_result: CpoSolveResult = self._model.solve(**params)  # type: ignore
         status = cp_result.get_solve_status()
+
+        if display:
+            print(" END IBM ILOG CP OPTIMIZER LOG ".center(79, "="))
 
         if status in ["Optimal", "Feasible"]:
             solution = self._convert_to_solution(cp_result)

@@ -1,3 +1,5 @@
+from importlib.metadata import version
+
 from pyjobshop.ProblemData import ProblemData
 from pyjobshop.Result import Result
 from pyjobshop.Solution import Solution
@@ -48,6 +50,11 @@ def solve(
     """
     if solver not in ["ortools", "cpoptimizer"]:
         raise ValueError(f"Unknown solver choice: {solver}.")
+
+    if display:
+        print(f"PyJobShop v{version('pyjobshop')}\n")
+        print("Solving an instance with:")
+        print(data)
 
     if solver == "ortools":
         ortools = ORToolsSolver(data)

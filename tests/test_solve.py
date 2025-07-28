@@ -31,7 +31,17 @@ def test_solve_display(small, solver, capfd):
     solve(small, solver, display=True)
     printed = capfd.readouterr().out
     assert_(printed != "")
+    assert_("PyJobShop v" in printed)
+    assert_("Solving an instance with:" in printed)
 
+    if solver == "ortools":
+        assert_("START OR-TOOLS CP-SAT" in printed)
+        assert_("END OR-TOOLS CP-SAT" in printed)
+    elif solver == "cpoptimizer":
+        assert_("START IBM ILOG CP OPTIMIZER" in printed)
+        assert_("END IBM ILOG CP OPTIMIZER" in printed)
+
+    # Disabling display should not print anything.
     solve(small, solver, display=False)
     printed = capfd.readouterr().out
     assert_equal(printed, "")

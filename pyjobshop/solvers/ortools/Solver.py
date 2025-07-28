@@ -111,9 +111,15 @@ class Solver:
         for key, value in params.items():
             setattr(cp_solver.parameters, key, value)
 
+        if display:
+            print(" START OR-TOOLS CP-SAT LOG ".center(79, "="))
+
         status_code = cp_solver.solve(self._model)
         status = cp_solver.status_name(status_code)
         objective_value = cp_solver.objective_value
+
+        if display:
+            print(" END OR-TOOLS CP-SAT LOG ".center(79, "="))
 
         if status in ["OPTIMAL", "FEASIBLE"]:
             solution = self._convert_to_solution(cp_solver)
