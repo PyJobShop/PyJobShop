@@ -62,7 +62,6 @@ def test_model_to_data():
         [
             Mode(task=0, resources=[0], duration=1),
             Mode(task=1, resources=[1], duration=2),
-            Mode(task=1, resources=[2], duration=1),
         ],
     )
 

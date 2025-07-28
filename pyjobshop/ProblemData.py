@@ -803,7 +803,14 @@ class ProblemData:
                 if not (0 <= idx2 < self.num_tasks):
                     raise ValueError(f"Invalid task index {idx2} in {name}.")
 
-        # TODO validate same sequence constraints
+        for res_idx1, res_idx2 in self.constraints.same_sequence:
+            if not (0 <= res_idx1 < self.num_resources):
+                msg = f"Invalid resource index {res_idx} in same_sequence."
+                raise ValueError(msg)
+
+            if not (0 <= res_idx2 < self.num_resources):
+                msg = f"Invalid resource index {res_idx2} in same_sequence."
+                raise ValueError(msg)
 
         for res_idx, task_idx1, task_idx2, dur in self.constraints.setup_times:
             if not (0 <= res_idx < self.num_resources):
