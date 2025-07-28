@@ -46,11 +46,11 @@ def test_jsp_lawrence(benchmark, solver: str):
 
 
 @pytest.mark.parametrize(
-    "loc, objective",
+    "loc",
     [
-        ["data/MFJS1.fjs", 468],
-        ["data/Mk01.fjs", 40],
-        ["data/edata-car1.fjs", 6176],
+        "data/MFJS1.fjs",
+        "data/Mk01.fjs",
+        "data/edata-car1.fjs",
     ],
 )
 def test_fjsp_classic(benchmark, solver: str, loc: str):
