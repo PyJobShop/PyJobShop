@@ -56,10 +56,11 @@ def solve(
         print(f"PyJobShop v{version('pyjobshop')}\n")
         print("Solving an instance with:")
         print(textwrap.indent(str(data), "    ") + "\n")
+        print(" START SOLVER LOG ".center(79, "="))
 
     if solver == "ortools":
         ortools = ORToolsSolver(data)
-        return ortools.solve(
+        result = ortools.solve(
             time_limit,
             display,
             num_workers,
@@ -72,10 +73,15 @@ def solve(
         )
 
         cpoptimizer = CPOptimizerSolver(data)
-        return cpoptimizer.solve(
+        result = cpoptimizer.solve(
             time_limit,
             display,
             num_workers,
             initial_solution,
             **kwargs,
         )
+
+    if display:
+        print(" END SOLVER LOG ".center(79, "="))
+
+    return result
