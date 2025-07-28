@@ -1408,6 +1408,33 @@ def test_same_sequence(solver: str):
     assert_equal(result.objective, 13)
 
 
+def test_same_sequence_invalid_multiple_modes_cpoptimizer():
+    """
+    Tests that a ValueError is raised when the same sequence constraint is
+    imposed on tasks that have multiple modes using the same resource, and
+    CP Optimizer is used as solver.
+    """
+    model = Model()
+
+    machine1 = model.add_machine()
+    machine2 = model.add_machine()
+
+    tasks1 = [model.add_task() for _ in range(2)]
+    tasks2 = [model.add_task() for _ in range(2)]
+
+    for task in tasks1:
+        model.add_mode(task, machine1, duration=1)
+        model.add_mode(task, machine1, duration=1)
+
+    for task in tasks2:
+        model.add_mode(task, machine2, duration=1)
+
+    model.add_same_sequence(machine1, machine2, tasks1, tasks2)
+
+    with assert_raises(ValueError):
+        model.solve(solver="cpoptimizer")
+
+
 def test_setup_time_bug(solver: str):
     """
     Tests that a bug identified in #307 is correctly fixed. This bug caused

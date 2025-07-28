@@ -185,24 +185,33 @@ class Constraints:
         model, data = self._model, self._data
         same_sequence = data.constraints.same_sequence
 
-        for res_idx1, res_idx2, task_idcs1, task_idcs2 in same_sequence:
-            task2mode = {}
-            for idx in task_idcs1 + task_idcs2:
-                if len(modes := data.task2modes(idx)) > 1:
-                    raise ValueError(
-                        "Cannot enforce same sequence constraint for tasks"
-                        " with multiple modes in CP Optimizer."
-                    )
-                task2mode[idx] = modes[0]
+        def _find_mode(task_idx: int, res_idx: int) -> int:
+            task_modes = data.task2modes(task_idx)
+            res_modes = data.resource2modes(res_idx)
+            incommon = set(task_modes) & set(res_modes)
 
+            if len(incommon) != 1:
+                msg = (
+                    "Multiple modes found that require task {task_idx} "
+                    "and resource {res_idx}. PyJobShop cannot solve such"
+                    "instances with CP Optimizer."
+                )
+                raise ValueError(msg)
+
+            return incommon.pop()
+
+        for res_idx1, res_idx2, task_idcs1, task_idcs2 in same_sequence:
             seq_var1 = self._sequence_vars[res_idx1]
             seq_var2 = self._sequence_vars[res_idx2]
 
-            # Find the right mode variable belonging to each task.
-            mode_vars = self._mode_vars
-            mode_vars1 = [mode_vars[task2mode[idx]] for idx in task_idcs1]
-            mode_vars2 = [mode_vars[task2mode[idx]] for idx in task_idcs2]
-
+            mode_vars1 = [
+                self._mode_vars[_find_mode(idx, res_idx1)]
+                for idx in task_idcs1
+            ]
+            mode_vars2 = [
+                self._mode_vars[_find_mode(idx, res_idx2)]
+                for idx in task_idcs2
+            ]
             model.add(
                 cpo.same_sequence(seq_var1, seq_var2, mode_vars1, mode_vars2)
             )

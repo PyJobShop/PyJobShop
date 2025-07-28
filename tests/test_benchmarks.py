@@ -125,4 +125,87 @@ def test_pfsp(solver: str):
 
     # Finding the optimal solution takes quite long, so we set a time limit.
     result = model.solve(solver=solver, time_limit=0.5)
-    assert_(result.objective < 750)  # optimal is 698
+    assert_(result.objective < 698 * 1.05)
+
+
+def test_dpfsp(solver: str):
+    """
+    Benchmark a small distributed permutation flow shop problem instance
+    (35.txt) from https://github.com/INFORMSJoC/2021.0326.
+    """
+    DURATIONS = np.array(
+        [
+            [15, 28, 77, 1, 45],
+            [64, 4, 36, 59, 73],
+            [64, 43, 57, 95, 59],
+            [48, 93, 15, 49, 63],
+            [9, 1, 81, 90, 54],
+            [91, 81, 82, 78, 98],
+            [27, 77, 98, 3, 39],
+            [34, 69, 97, 69, 75],
+            [42, 52, 12, 99, 33],
+            [3, 28, 35, 41, 8],
+            [11, 28, 84, 73, 86],
+            [54, 77, 70, 28, 41],
+            [27, 42, 27, 99, 41],
+            [30, 53, 37, 13, 22],
+            [9, 46, 59, 59, 43],
+            [15, 49, 42, 47, 34],
+            [88, 15, 57, 8, 80],
+            [55, 43, 16, 92, 16],
+            [50, 65, 11, 87, 37],
+            [57, 41, 34, 62, 94],
+        ]
+    )
+    num_jobs, num_machines = DURATIONS.shape
+    num_factories = 6  # from instance data
+
+    model = Model()
+    jobs = [model.add_job() for _ in range(num_jobs)]
+    machines = [
+        [model.add_machine() for _ in range(num_machines)]
+        for _ in range(num_factories)
+    ]
+
+    # Create tasks for each job and machine.
+    tasks = np.empty((num_jobs, num_machines), dtype=object)
+    for job_idx in range(num_jobs):
+        for machine_idx in range(num_machines):
+            task = model.add_task(job=jobs[job_idx])
+            tasks[job_idx, machine_idx] = task
+
+    # Create a mode for each (task, machine) pair in each factory.
+    modes = np.empty((num_factories, num_jobs, num_machines), dtype=object)
+    for factory_idx in range(num_factories):
+        for machine_idx in range(num_machines):
+            for job_idx in range(num_jobs):
+                task = tasks[job_idx, machine_idx]
+                machine = machines[factory_idx][machine_idx]
+                duration = DURATIONS[job_idx, machine_idx]
+                mode = model.add_mode(task, machine, duration=duration)
+                modes[factory_idx, job_idx, machine_idx] = mode
+
+    # Modes can only be select if the task is selected in that factory.
+    for factory_idx in range(num_factories):
+        for job_idx in range(num_jobs):
+            for mode1, mode2 in pairwise(modes[factory_idx, job_idx, :]):
+                model.add_mode_dependency(mode1, [mode2])
+
+    # Precedence constraints between tasks of the same job.
+    for job_tasks in tasks:
+        for task1, task2 in pairwise(job_tasks):
+            model.add_end_before_start(task1, task2)
+
+    # Permutation constraints between tasks of different machines.
+    for factory_idx in range(num_factories):
+        for idx1, idx2 in pairwise(range(num_machines)):
+            model.add_same_sequence(
+                machines[factory_idx][idx1],
+                machines[factory_idx][idx2],
+                tasks[:, idx1].tolist(),
+                tasks[:, idx2].tolist(),
+            )
+
+    # Finding the optimal solution takes quite long, so we set a time limit.
+    result = model.solve(solver=solver, time_limit=2)
+    assert_(result.objective < 430 * 1.05)
