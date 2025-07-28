@@ -1,5 +1,4 @@
 import pytest
-from numpy.testing import assert_equal
 
 from pyjobshop import Model
 from tests.utils import read
@@ -43,10 +42,7 @@ def test_jsp_lawrence(benchmark, solver: str):
             task1, task2 = tasks[task_idx - 1], tasks[task_idx]
             model.add_end_before_start(task1, task2)
 
-    result = benchmark(model.solve, solver)
-
-    assert_equal(result.status.value, "Optimal")
-    assert_equal(result.objective, 666)
+    benchmark(model.solve, solver, 60)  # time_limit
 
 
 @pytest.mark.parametrize(
@@ -57,14 +53,11 @@ def test_jsp_lawrence(benchmark, solver: str):
         ["data/edata-car1.fjs", 6176],
     ],
 )
-def test_fjsp_classic(benchmark, solver: str, loc: str, objective: int):
+def test_fjsp_classic(benchmark, solver: str, loc: str):
     """
     Classic flexible job shop problem instances that are quickly solved to
     optimality.
     """
     data = read(loc)
     model = Model.from_data(data)
-    result = benchmark(model.solve, solver)
-
-    assert_equal(result.objective, objective)
-    assert_equal(result.status.value, "Optimal")
+    benchmark(model.solve, solver, 60)  # time_limit

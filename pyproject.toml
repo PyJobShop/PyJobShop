@@ -129,6 +129,7 @@ testpaths = ["tests"]
 omit = [
     "docs/*",
     "tests/*",
+    "benchmarks/*",
     "setup.py",
     "cpo_config.py",
     "conftest.py",
