@@ -506,6 +506,7 @@ def test_problem_data_all_modes_demand_infeasible():
         ("end_before_end", EndBeforeEnd, [(2, 0), (0, 2)]),
         ("identical_resources", IdenticalResources, [(2, 0), (0, 2)]),
         ("different_resources", DifferentResources, [(2, 0), (0, 2)]),
+        ("consecutive", Consecutive, [(2, 0), (0, 2)]),
         (
             "same_sequence",
             SameSequence,
@@ -516,7 +517,6 @@ def test_problem_data_all_modes_demand_infeasible():
                 (1, 0),  # not a machine idx
             ],
         ),
-        ("consecutive", Consecutive, [(2, 0), (0, 2)]),
         (
             "setup_times",
             SetupTime,

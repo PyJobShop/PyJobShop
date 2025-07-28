@@ -595,8 +595,8 @@ class Constraints:
     end_before_end: list[EndBeforeEnd] = field(default_factory=list)
     identical_resources: list[IdenticalResources] = field(default_factory=list)
     different_resources: list[DifferentResources] = field(default_factory=list)
-    same_sequence: list[SameSequence] = field(default_factory=list)
     consecutive: list[Consecutive] = field(default_factory=list)
+    same_sequence: list[SameSequence] = field(default_factory=list)
     setup_times: list[SetupTime] = field(default_factory=list)
     mode_dependencies: list[ModeDependency] = field(default_factory=list)
 
