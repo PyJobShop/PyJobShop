@@ -596,14 +596,18 @@ class Constraints:
         return sum(len(getattr(self, f.name)) for f in fields(self))
 
     def __str__(self) -> str:
-        text = f"# constraints: {len(self)}\n"
-
+        parts = []
         for f in fields(self):
             count = len(getattr(self, f.name))
             if count > 0:
-                text += f"- # {f.name}: {count}\n"
+                parts.append(f"{count} {f.name}")
 
-        return text
+        lines = [f"{len(self)} constraints"]
+        for idx, part in enumerate(parts):
+            symbol = "└─" if idx == len(parts) - 1 else "├─"
+            lines.append(f"{symbol} {part}")
+
+        return "\n".join(lines)
 
 
 @dataclass
@@ -672,19 +676,22 @@ class Objective:
                 raise ValueError(f"{f.name} < 0 not understood.")
 
     def __str__(self) -> str:
-        text = "objective:\n"
-        has_weights = False
-
+        parts = []
         for f in fields(self):
             value = getattr(self, f.name)
             if value > 0:
-                text += f"- {f.name}: {value}\n"
-                has_weights = True
+                parts.append(f"{f.name}: {value}")
 
-        if not has_weights:
-            text += "- no weights\n"
+        lines = ["objective"]
+        if not parts:
+            lines.append("└─ no weights")
+            return "\n".join(lines)
 
-        return text
+        for idx, part in enumerate(parts):
+            symbol = "└─" if idx == len(parts) - 1 else "├─"
+            lines.append(f"{symbol} {part}")
+
+        return "\n".join(lines)
 
 
 class ProblemData:
@@ -754,26 +761,33 @@ class ProblemData:
                 self._non_renewable_idcs.append(idx)
 
     def __str__(self):
-        resources = f"# resources: {len(self.resources)}\n"
+        lines = [
+            f"{len(self.jobs)} jobs",
+            f"{len(self.resources)} resources",
+        ]
 
-        for name, count in [
-            ("machines", self.num_machines),
-            ("renewables", self.num_renewables),
-            ("non-renewables", self.num_non_renewables),
-        ]:
-            if count > 0:
-                resources += f"- # {name}: {count}\n"
+        parts = []
+        if self.num_machines > 0:
+            parts.append(f"{self.num_machines} machines")
+        if self.num_renewables > 0:
+            parts.append(f"{self.num_renewables} renewable")
+        if self.num_non_renewables > 0:
+            parts.append(f"{self.num_non_renewables} non_renewable")
 
-        return "".join(
+        for idx, part in enumerate(parts):
+            symbol = "└─" if idx == len(parts) - 1 else "├─"
+            lines.append(f"{symbol} {part}")
+
+        lines.extend(
             [
-                f"# jobs: {len(self.jobs)}\n",
-                resources,
-                f"# tasks: {len(self.tasks)}\n",
-                f"# modes: {len(self.modes)}\n",
-                str(self.constraints),
-                str(self.objective),
+                f"{len(self.tasks)} tasks",
+                f"{len(self.modes)} modes",
+                str(self.constraints).rstrip(),
+                str(self.objective).rstrip(),
             ]
         )
+
+        return "\n".join(lines)
 
     def _validate(self):
         """

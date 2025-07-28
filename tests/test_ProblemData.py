@@ -296,17 +296,14 @@ def test_constraints_str():
     Tests the string representation of the Constraints class.
     """
     constraints = Constraints()
-    assert_equal(str(constraints), "# constraints: 0\n")
+    assert_equal(str(constraints), "0 constraints")
 
     constraints.start_before_start.append(StartBeforeStart(0, 1))
-    expected = "# constraints: 1\n- # start_before_start: 1\n"
+    expected = "1 constraints\n└─ 1 start_before_start"
     assert_equal(str(constraints), expected)
 
     constraints.mode_dependencies.append(ModeDependency(0, [1, 2, 3]))
-    expected = (
-        "# constraints: 2\n- # start_before_start: 1\n"
-        "- # mode_dependencies: 1\n"
-    )
+    expected = "2 constraints\n├─ 1 start_before_start\n└─ 1 mode_dependencies"
     assert_equal(str(constraints), expected)
 
 
@@ -337,14 +334,14 @@ def test_objective_str():
     Tests the string representation of the Objective class.
     """
     objective = Objective()
-    assert_equal(str(objective), "objective:\n- no weights\n")
+    assert_equal(str(objective), "objective\n└─ no weights")
 
     objective = Objective(weight_makespan=1)
-    assert_equal(str(objective), "objective:\n- weight_makespan: 1\n")
+    assert_equal(str(objective), "objective\n└─ weight_makespan: 1")
 
     objective = Objective(weight_makespan=1, weight_max_tardiness=10)
 
-    expected = "objective:\n- weight_makespan: 1\n- weight_max_tardiness: 10\n"
+    expected = "objective\n├─ weight_makespan: 1\n└─ weight_max_tardiness: 10"
     assert_equal(str(objective), expected)
 
 
@@ -439,7 +436,7 @@ def test_problem_data_str():
     Tests the string representation of the ProblemData class.
     """
     jobs = [Job(tasks=[idx]) for idx in range(5)]
-    resources = [Machine() for _ in range(5)] + [Renewable(1)]
+    resources = [Machine() for _ in range(5)] + [Renewable(1), NonRenewable(1)]
     tasks = [Task() for _ in range(5)]
     modes = [
         Mode(task=task, resources=[resource], duration=1)
@@ -457,16 +454,17 @@ def test_problem_data_str():
     data = ProblemData(jobs, resources, tasks, modes, constraints, objective)
 
     expected = (
-        "# jobs: 5\n"
-        "# resources: 6\n"
-        "- # machines: 5\n"
-        "- # renewables: 1\n"
-        "# tasks: 5\n"
-        "# modes: 25\n"
-        "# constraints: 3\n"
-        "- # end_before_start: 3\n"
-        "objective:\n"
-        "- weight_total_flow_time: 1\n"
+        "5 jobs\n"
+        "7 resources\n"
+        "├─ 5 machines\n"
+        "├─ 1 renewable\n"
+        "└─ 1 non_renewable\n"
+        "5 tasks\n"
+        "25 modes\n"
+        "3 constraints\n"
+        "└─ 3 end_before_start\n"
+        "objective\n"
+        "└─ weight_total_flow_time: 1"
     )
     assert_equal(str(data), expected)
 
