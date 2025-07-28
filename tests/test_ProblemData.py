@@ -1397,13 +1397,12 @@ def test_same_sequence(solver: str):
 
     model.add_consecutive(tasks1[0], tasks1[1])
     model.add_setup_time(machine2, tasks2[0], tasks2[1], 10)
+    model.add_same_sequence(machine1, machine2, tasks1, tasks2)
 
     # Tasks1 and tasks2 must be scheduled in the same sequence on both
     # machines. Because of the consecutive constraint, the first task
     # must be scheduled before the second task on both machines. This
     # incurs a setup time of 10.
-    model.add_same_sequence(machine1, machine2, tasks1, tasks2)
-
     result = model.solve(solver=solver)
     assert_equal(result.status.value, "Optimal")
     assert_equal(result.objective, 13)

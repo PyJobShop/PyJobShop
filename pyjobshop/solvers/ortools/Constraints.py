@@ -234,23 +234,21 @@ class Constraints:
             graph = [(u, v, var) for (u, v), var in arcs.items()]
             model.add_circuit(graph)
 
-            res_tasks = {
-                data.modes[m].task for m in data.resource2modes(res_idx)
-            }
+            res_modes = data.resource2modes(res_idx)
+            res_tasks = {data.modes[m].task for m in res_modes}
 
-            for task_idx in res_tasks:
+            for task_idx1 in res_tasks:
                 # Absent intervals require selecting loops (self-arcs).
-                present = variables.assign_vars[task_idx, res_idx].present
-                loop = arcs[task_idx, task_idx]
+                present = variables.assign_vars[task_idx1, res_idx].present
+                loop = arcs[task_idx1, task_idx1]
                 model.add(loop == ~present)
 
-                # This handles the case where a machine does not process
-                # any task. Selecting the dummy loop makes all intervals
-                # absent, and satisfies the circuit constraint.
+                # This handles the case where a machine does not process any
+                # task. Selecting the dummy loop makes all intervals absent,
+                # and satisfies the circuit constraint.
                 dummy_loop = arcs[seq_var.DUMMY, seq_var.DUMMY]
                 model.add(dummy_loop <= ~present)
 
-            for task_idx1 in res_tasks:
                 for task_idx2 in res_tasks:
                     if task_idx1 == task_idx2:
                         continue

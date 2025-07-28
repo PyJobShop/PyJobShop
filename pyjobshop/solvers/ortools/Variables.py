@@ -141,6 +141,8 @@ class SequenceVar:
         if self.is_active:
             return
 
+        # We only need to create nodes for tasks that can be assigned to this
+        # resource - all others are not relevant for the sequence.
         tasks = {data.modes[m].task for m in data.resource2modes(res_idx)}
         nodes = sorted(tasks) + [self.DUMMY]
 
