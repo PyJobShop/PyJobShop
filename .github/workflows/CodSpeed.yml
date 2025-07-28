@@ -27,7 +27,7 @@ jobs:
           version: "0.7.5"
           enable-cache: true
       - name: Install Python dependencies
-        run: uv sync
+        run: uv sync --all-extras
       - name: Run benchmarks
         # We evaluate the microbenchmarks using the release build.
         uses: CodSpeedHQ/action@v3
