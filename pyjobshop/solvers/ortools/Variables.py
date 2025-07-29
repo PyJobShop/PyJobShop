@@ -148,7 +148,6 @@ class SequenceVar:
         }
 
 
-@dataclass
 class Variables:
     """
     Manages the core variables of the OR-Tools model.

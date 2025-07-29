@@ -121,9 +121,9 @@ def test_machine_default_attributes():
         [(1, 3), (2, 4)],  # overlapping breaks
     ],
 )
-def test_machine_raises_invalid_breaks(breaks):
+def test_machine_raises_invalid_parameters(breaks):
     """
-    Tests that a ValueError is raised when invalid breaks are passed
+    Tests that a ValueError is raised when invalid parameters are passed
     to the Machine class.
     """
     with assert_raises(ValueError):
@@ -149,30 +149,22 @@ def test_renewable_default_attributes():
     assert_equal(renewable.name, "")
 
 
-def test_renewable_raises_invalid_capacity():
-    """
-    Tests that a ValueError is raised when an invalid capacity is passed
-    to the Renewable class.
-    """
-    with assert_raises(ValueError):
-        Renewable(capacity=-1)  # negative
-
-
 @pytest.mark.parametrize(
-    "breaks",
+    "capacity, breaks",
     [
-        [(-1, 0)],  # time < 0
-        [(2, 1)],  # start < end
-        [(1, 3), (2, 4)],  # overlapping breaks
+        (-1, [(0, 1)]),  # capacity < 0
+        (1, [(-1, 0)]),  # start < 0
+        (1, [(2, 1)]),  # start < end
+        (1, [(1, 3), (2, 4)]),  # overlapping breaks
     ],
 )
-def test_renewable_raises_invalid_breaks(breaks):
+def test_renewable_raises_invalid_parameters(capacity, breaks):
     """
-    Tests that a ValueError is raised when invalid breaks are passed
+    Tests that a ValueError is raised when invalid parameters are passed
     to the Renewable class.
     """
     with assert_raises(ValueError):
-        Renewable(capacity=1, breaks=breaks)
+        Renewable(capacity=capacity, breaks=breaks)
 
 
 def test_non_renewable_attributes():
