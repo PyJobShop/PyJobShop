@@ -121,14 +121,12 @@ class Constraints:
             res2vars[res_idx].append(var)
 
         for res_idx in data.renewable_idcs + data.machine_idcs:
-            for start, end in data.resources[res_idx].breaks:
-                for var in res2vars[res_idx]:
-                    # No overlap between (start, end) break and interval var.
-                    before = model.new_bool_var("")
-                    after = model.new_bool_var("")
-                    model.add(var.end <= start).only_enforce_if(before)
-                    model.add(var.start >= end).only_enforce_if(after)
-                    model.add_bool_or([before, after])
+            intervals = [
+                model.new_fixed_size_interval_var(start, end - start, "")
+                for start, end in data.resources[res_idx].breaks
+            ]
+            for var in res2vars[res_idx]:
+                model.add_no_overlap([var.interval, *intervals])
 
     def _timing_constraints(self):
         """
