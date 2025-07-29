@@ -25,7 +25,6 @@ class Variables:
         self._task_vars = self._make_task_variables()
         self._mode_vars = self._make_mode_variables()
         self._sequence_vars = self._make_sequence_variables()
-        self._break_vars = self._make_break_variables()
 
     @property
     def job_vars(self) -> list[CpoIntervalVar]:
@@ -54,13 +53,6 @@ class Variables:
         Returns the sequence variables.
         """
         return self._sequence_vars
-
-    @property
-    def break_vars(self) -> list[list[CpoIntervalVar]]:
-        """
-        Returns the break variables.
-        """
-        return self._break_vars
 
     def _make_job_variables(self) -> list[CpoIntervalVar]:
         """
@@ -152,28 +144,6 @@ class Variables:
             )
             self._model.add(seq_var)
             variables[idx] = seq_var
-
-        return variables
-
-    def _make_break_variables(self) -> list[list[CpoIntervalVar]]:
-        """
-        Creates a break variable for each job.
-        """
-        data = self._data
-        variables: list[list[CpoIntervalVar]] = []
-
-        for res_idx, resource in enumerate(data.resources):
-            if res_idx in data.non_renewable_idcs:
-                variables.append([])
-                continue  # non-renewable resources have no breaks
-
-            break_vars = []
-            for break_idx, (start, end) in enumerate(resource.breaks):  # type: ignore
-                name = f"breaks_{res_idx}_{break_idx}"
-                var = interval_var(start=start, end=end, name=name)
-                break_vars.append(var)
-
-            variables.append(break_vars)
 
         return variables
 
