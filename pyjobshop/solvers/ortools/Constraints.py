@@ -210,9 +210,11 @@ class Constraints:
             pairs1 = product(task_idcs1, repeat=2)
             pairs2 = product(task_idcs2, repeat=2)
 
-            for (idx1, idx2), (idx3, idx4) in zip(pairs1, pairs2):
-                arc1 = seq_var1.arcs[idx1, idx2]
-                arc2 = seq_var2.arcs[idx3, idx4]
+            for (i, j), (u, v) in zip(pairs1, pairs2):
+                # This ensures that the positioning between two tasks (i, j) on
+                # machine 1 is the same as between (u, v) on machine 2.
+                arc1 = seq_var1.arcs[i, j]
+                arc2 = seq_var2.arcs[u, v]
                 model.add(arc1 == arc2)
 
     def _circuit_constraints(self):

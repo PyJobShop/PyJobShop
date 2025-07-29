@@ -69,7 +69,7 @@ def test_fjsp_classic(benchmark, solver: str, loc: str):
 def test_pfsp(benchmark, solver: str):
     """
     Benchmark a small permutation flow shop problem instance (1.txt) from
-    http://soa.iti.es/problem-instances. It's the first Taillard instance.
+    https://github.com/INFORMSJoC/2021.0326.
     """
     DURATIONS = np.array(
         [

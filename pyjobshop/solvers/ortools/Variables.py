@@ -135,14 +135,14 @@ class SequenceVar:
 
     def activate(self, m: CpModel, data: ProblemData, res_idx: int):
         """
-        Activates the sequence variable by creating all relevant literals for
-        this particular resource.
+        Activates the sequence variable by creating all relevant arc literals
+        for this particular resource.
         """
         if self.is_active:
             return
 
         # We only need to create nodes for tasks that can be assigned to this
-        # resource - all others are not relevant for the sequence.
+        # resource, because any other task is not going to be used.
         tasks = {data.modes[m].task for m in data.resource2modes(res_idx)}
         nodes = sorted(tasks) + [self.DUMMY]
 

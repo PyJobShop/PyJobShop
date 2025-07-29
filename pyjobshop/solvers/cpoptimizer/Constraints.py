@@ -192,8 +192,8 @@ class Constraints:
 
             if len(incommon) != 1:
                 msg = (
-                    "Multiple modes found that require task {task_idx} "
-                    "and resource {res_idx}. PyJobShop cannot solve such"
+                    f"Multiple modes found that require task {task_idx} "
+                    f"and resource {res_idx}. PyJobShop cannot solve such"
                     "instances with CP Optimizer."
                 )
                 raise ValueError(msg)
@@ -205,12 +205,12 @@ class Constraints:
             seq_var2 = self._sequence_vars[res_idx2]
 
             mode_vars1 = [
-                self._mode_vars[_find_mode(idx, res_idx1)]
-                for idx in task_idcs1
+                self._mode_vars[_find_mode(task_idx, res_idx1)]
+                for task_idx in task_idcs1
             ]
             mode_vars2 = [
-                self._mode_vars[_find_mode(idx, res_idx2)]
-                for idx in task_idcs2
+                self._mode_vars[_find_mode(task_idx, res_idx2)]
+                for task_idx in task_idcs2
             ]
             model.add(
                 cpo.same_sequence(seq_var1, seq_var2, mode_vars1, mode_vars2)
