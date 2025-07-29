@@ -117,7 +117,7 @@ def test_machine_default_attributes():
     "breaks",
     [
         [(-1, 0)],  # breaks start < 0
-        [(2, 1)],  # breaks start < end
+        [(2, 1)],  # breaks start > end
         [(1, 3), (2, 4)],  # breaks overlapping
     ],
 )
@@ -154,7 +154,7 @@ def test_renewable_default_attributes():
     [
         (-1, [(0, 1)]),  # capacity < 0
         (1, [(-1, 0)]),  # breaks start < 0
-        (1, [(2, 1)]),  # breaks start < end
+        (1, [(2, 1)]),  # breaks start > end
         (1, [(1, 3), (2, 4)]),  # breaks overlapping
     ],
 )
