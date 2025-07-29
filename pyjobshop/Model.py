@@ -218,15 +218,6 @@ class Model:
     ) -> Machine:
         """
         Adds a machine to the model.
-
-        Parameters
-        ----------
-        breaks
-            List of time intervals during which tasks cannot be processed.
-            Each interval is represented as a tuple (start_time, end_time).
-            Default is an empty list (no breaks).
-        name
-            Name of the machine.
         """
         machine = Machine(breaks=breaks, name=name)
 
@@ -243,17 +234,6 @@ class Model:
     ) -> Renewable:
         """
         Adds a renewable resource to the model.
-
-        Parameters
-        ----------
-        capacity
-            Capacity of the resource.
-        breaks
-            List of time intervals during which tasks cannot be processed.
-            Each interval is represented as a tuple (start_time, end_time).
-            Default is an empty list (no breaks).
-        name
-            Name of the resource.
         """
         resource = Renewable(capacity=capacity, breaks=breaks, name=name)
 

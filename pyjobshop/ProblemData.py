@@ -148,8 +148,8 @@ class Machine:
                     msg = "Break start time must be less than end time."
                     raise ValueError(msg)
 
-        self._name = name
         self._breaks = breaks or []
+        self._name = name
 
     @property
     def breaks(self) -> list[tuple[int, int]]:
@@ -202,8 +202,8 @@ class Renewable:
                     raise ValueError(msg)
 
         self._capacity = capacity
-        self._name = name
         self._breaks = breaks or []
+        self._name = name
 
     @property
     def capacity(self) -> int:
