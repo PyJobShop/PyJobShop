@@ -142,12 +142,8 @@ class Machine:
     ):
         if breaks is not None:
             for start, end in breaks:
-                if start < 0 or end < 0:
-                    raise ValueError("Break times must be non-negative.")
-
-                if start >= end:
-                    msg = "Break start time must be less than end time."
-                    raise ValueError(msg)
+                if start < 0 or start >= end:
+                    raise ValueError("Break start < 0 or start > end.")
 
             for interval1, interval2 in pairwise(sorted(breaks)):
                 if interval1[1] > interval2[0]:
@@ -199,12 +195,8 @@ class Renewable:
 
         if breaks is not None:
             for start, end in breaks:
-                if start < 0 or end < 0:
-                    raise ValueError("Break times must be non-negative.")
-
-                if start >= end:
-                    msg = "Break start time must be less than end time."
-                    raise ValueError(msg)
+                if start < 0 or start >= end:
+                    raise ValueError("Break start < 0 or start > end.")
 
             for interval1, interval2 in pairwise(sorted(breaks)):
                 if interval1[1] > interval2[0]:
