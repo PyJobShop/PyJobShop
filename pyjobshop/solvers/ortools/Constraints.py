@@ -82,6 +82,11 @@ class Constraints:
 
         for idx in data.machine_idcs:
             intervals = [var.interval for var in variables.res2assign(idx)]
+
+            if data.resources[idx].breaks:
+                break_vars = variables.break_vars[idx]
+                intervals += [var.interval for var in break_vars]
+
             model.add_no_overlap(intervals)
 
     def _renewable_capacity(self):
@@ -94,6 +99,14 @@ class Constraints:
             intervals = [var.interval for var in variables.res2assign(idx)]
             demands = [var.demand for var in variables.res2assign(idx)]
             capacity = data.resources[idx].capacity
+
+            if data.resources[idx].breaks:
+                # If the resource has breaks, we add intervals to represent
+                # the breaks which require full capacity.
+                break_vars = variables.break_vars[idx]
+                intervals += [var.interval for var in break_vars]
+                demands += [capacity for _ in break_vars]
+
             model.add_cumulative(intervals, demands, capacity)
 
     def _non_renewable_capacity(self):

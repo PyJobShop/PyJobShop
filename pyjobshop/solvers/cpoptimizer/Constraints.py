@@ -22,6 +22,7 @@ class Constraints:
         self._task_vars = variables.task_vars
         self._mode_vars = variables.mode_vars
         self._sequence_vars = variables.sequence_vars
+        self._break_vars = variables.break_vars
 
     def _job_spans_tasks(self):
         """
@@ -69,7 +70,12 @@ class Constraints:
             else:
                 matrix = None
 
-            model.add(cpo.no_overlap(seq_var, matrix))
+            if data.resources[idx].breaks:
+                intervals = seq_var.get_interval_variables()
+                intervals = [*intervals, *self._break_vars[idx]]
+                model.add(cpo.no_overlap(intervals, matrix))
+            else:
+                model.add(cpo.no_overlap(seq_var, matrix))
 
     def _get_demand(self, mode_idx: int, res_idx: int) -> int:
         """
@@ -86,13 +92,21 @@ class Constraints:
 
         for res_idx in data.renewable_idcs:
             modes = data.resource2modes(res_idx)
-            pulses = [
-                cpo.pulse(self._mode_vars[mode_idx], demand)
-                for mode_idx in modes
-                # non-positive demand triggers cpo warnings
-                if (demand := self._get_demand(mode_idx, res_idx)) > 0
+            intervals = [self._mode_vars[mode_idx] for mode_idx in modes]
+            demands = [
+                self._get_demand(mode_idx, res_idx) for mode_idx in modes
             ]
             capacity = data.resources[res_idx].capacity
+
+            if data.resources[res_idx].breaks:
+                intervals += self._break_vars[res_idx]
+                demands += [capacity for _ in self._break_vars[res_idx]]
+
+            pulses = [
+                cpo.pulse(interval, demand)
+                for interval, demand in zip(intervals, demands)
+                if demand > 0  # non-positive demand triggers cpo warnings
+            ]
             model.add(model.sum(pulses) <= capacity)
 
     def _non_renewable_capacity(self):

@@ -148,6 +148,23 @@ class SequenceVar:
         }
 
 
+@dataclass
+class BreakVar:
+    interval: IntervalVar
+
+    @property
+    def start(self) -> LinearExprT:
+        return self.interval.start_expr()
+
+    @property
+    def duration(self) -> LinearExprT:
+        return self.interval.size_expr()
+
+    @property
+    def end(self) -> LinearExprT:
+        return self.interval.end_expr()
+
+
 class Variables:
     """
     Manages the core variables of the OR-Tools model.
@@ -162,6 +179,7 @@ class Variables:
         self._mode_vars = [model.new_bool_var("") for _ in self._data.modes]
         self._assign_vars = self._make_assign_variables(self._task_vars)
         self._sequence_vars = self._make_sequence_variables()
+        self._break_vars = self._make_break_variables()
 
     @property
     def job_vars(self) -> list[JobVar]:
@@ -197,6 +215,13 @@ class Variables:
         Returns the sequence variables.
         """
         return self._sequence_vars
+
+    @property
+    def break_vars(self) -> list[list[BreakVar]]:
+        """
+        Returns the break variables for each resource.
+        """
+        return self._break_vars
 
     def res2assign(self, idx: int) -> list[AssignVar]:
         """
@@ -317,6 +342,30 @@ class Variables:
 
         for idx in data.machine_idcs:
             variables[idx] = SequenceVar()
+
+        return variables
+
+    def _make_break_variables(self) -> list[list[BreakVar]]:
+        """
+        Creates a list of break variables for each resource.
+        """
+        model, data = self._model, self._data
+
+        variables: list[list[BreakVar]] = []
+        for res_idx, resource in enumerate(data.resources):
+            if res_idx in data.non_renewable_idcs:
+                variables.append([])
+                continue  # non-renewable resources have no breaks
+
+            break_vars = []
+            for break_idx, (start, end) in enumerate(resource.breaks):  # type: ignore
+                name = f"breaks_{res_idx}_{break_idx}"
+                interval_var = model.new_interval_var(
+                    start=start, size=end - start, end=end, name=name
+                )
+                break_vars.append(BreakVar(interval_var))
+
+            variables.append(break_vars)
 
         return variables
 

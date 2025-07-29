@@ -1064,7 +1064,7 @@ def test_machine_breaks(solver: str):
     model = Model()
     resource = model.add_machine(breaks=[(1, 2), (3, 4)])
     task = model.add_task()
-    model.add_mode(task, resource, duration=2, demands=[1])
+    model.add_mode(task, resource, duration=2)
 
     # The earliest that the task can start is as time 4, so the makespan is 6.
     result = model.solve(solver=solver)
