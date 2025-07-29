@@ -1,6 +1,7 @@
 from collections import Counter
 from copy import deepcopy
 from dataclasses import dataclass, field, fields
+from itertools import pairwise
 from typing import Sequence, TypeVar
 
 from pyjobshop.constants import MAX_VALUE
@@ -148,6 +149,10 @@ class Machine:
                     msg = "Break start time must be less than end time."
                     raise ValueError(msg)
 
+            for interval1, interval2 in pairwise(sorted(breaks)):
+                if interval1[1] > interval2[0]:
+                    raise ValueError("Break intervals must not overlap.")
+
         self._breaks = breaks or []
         self._name = name
 
@@ -200,6 +205,10 @@ class Renewable:
                 if start >= end:
                     msg = "Break start time must be less than end time."
                     raise ValueError(msg)
+
+            for interval1, interval2 in pairwise(sorted(breaks)):
+                if interval1[1] > interval2[0]:
+                    raise ValueError("Break intervals must not overlap.")
 
         self._capacity = capacity
         self._breaks = breaks or []

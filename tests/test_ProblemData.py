@@ -118,6 +118,7 @@ def test_machine_default_attributes():
     [
         [(-1, 0)],  # time < 0
         [(2, 1)],  # start < end
+        [(1, 3), (2, 4)],  # overlapping breaks
     ],
 )
 def test_machine_raises_invalid_breaks(breaks):
@@ -162,6 +163,7 @@ def test_renewable_raises_invalid_capacity():
     [
         [(-1, 0)],  # time < 0
         [(2, 1)],  # start < end
+        [(1, 3), (2, 4)],  # overlapping breaks
     ],
 )
 def test_renewable_raises_invalid_breaks(breaks):
