@@ -1142,6 +1142,22 @@ def test_renewable_breaks(solver: str):
     assert_equal(result.objective, 6)
 
 
+def test_renewable_breaks_zero_demand(solver: str):
+    """
+    Tests that a renewable resource respects breaks, even if the mode
+    has zero demand.
+    """
+    model = Model()
+    resource = model.add_renewable(capacity=1, breaks=[(1, 2), (3, 4)])
+    task = model.add_task()
+    model.add_mode(task, resource, duration=2, demands=[0])
+
+    # The earliest that the task can start is as time 4, so the makespan is 6.
+    result = model.solve(solver=solver)
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.objective, 6)
+
+
 def test_resource_non_renewable_capacity(solver: str):
     """
     Tests that a resource with non-renewable capacity is respected.

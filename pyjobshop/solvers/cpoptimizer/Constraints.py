@@ -120,10 +120,8 @@ class Constraints:
         model, data = self._model, self._data
 
         for res_idx in data.renewable_idcs + data.machine_idcs:
-            breaks = data.resources[res_idx].breaks
-
-            for mode_idx in data.resource2modes(res_idx):
-                for start, end in breaks:
+            for start, end in data.resources[res_idx].breaks:
+                for mode_idx in data.resource2modes(res_idx):
                     step = CpoStepFunction()
                     step.set_value(0, MAX_VALUE, 1)
                     step.set_value(start, end, 0)
