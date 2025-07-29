@@ -2,14 +2,12 @@ from itertools import pairwise
 
 import numpy as np
 import pytest
-from numpy.testing import assert_, assert_equal
 
 from pyjobshop import Model
+from tests.utils import read
 
-from .utils import read
 
-
-def test_jsp_lawrence(solver: str):
+def test_jsp_lawrence(benchmark, solver: str):
     """
     Job shop problem instance from https://github.com/tamy0612/JSPLIB
 
@@ -47,51 +45,54 @@ def test_jsp_lawrence(solver: str):
             task1, task2 = tasks[task_idx - 1], tasks[task_idx]
             model.add_end_before_start(task1, task2)
 
-    result = model.solve(solver=solver)
-
-    assert_equal(result.status.value, "Optimal")
-    assert_equal(result.objective, 666)
+    benchmark(model.solve, solver)
 
 
 @pytest.mark.parametrize(
-    "loc, objective",
+    "loc",
     [
-        ["data/MFJS1.fjs", 468],
-        ["data/Mk01.fjs", 40],
-        ["data/edata-car1.fjs", 6176],
+        "data/MFJS1.fjs",
+        "data/Mk01.fjs",
+        "data/edata-car1.fjs",
     ],
 )
-def test_fjsp_classic(solver: str, loc: str, objective: int):
+def test_fjsp_classic(benchmark, solver: str, loc: str):
     """
     Classic flexible job shop problem instances that are quickly solved to
     optimality.
     """
     data = read(loc)
     model = Model.from_data(data)
-    result = model.solve(solver=solver)
-
-    assert_equal(result.objective, objective)
-    assert_equal(result.status.value, "Optimal")
-    assert_(result.runtime < 1)
+    benchmark(model.solve, solver)
 
 
-def test_pfsp(solver: str):
+def test_pfsp(benchmark, solver: str):
     """
-    Benchmark a small permutation flow shop problem instance (VRF_10_5_2) from
-    http://soa.iti.es/problem-instances.
+    Benchmark a small permutation flow shop problem instance (1.txt) from
+    http://soa.iti.es/problem-instances. It's the first Taillard instance.
     """
     DURATIONS = np.array(
         [
-            [79, 67, 10, 48, 52],
-            [40, 40, 57, 21, 54],
-            [48, 93, 49, 11, 79],
-            [16, 23, 19, 2, 38],
-            [38, 90, 57, 73, 3],
-            [76, 13, 99, 98, 55],
-            [73, 85, 40, 20, 85],
-            [34, 6, 27, 53, 21],
-            [38, 6, 35, 28, 44],
-            [32, 11, 11, 34, 27],
+            [54, 79, 16, 66, 58],
+            [83, 3, 89, 58, 56],
+            [15, 11, 49, 31, 20],
+            [71, 99, 15, 68, 85],
+            [77, 56, 89, 78, 53],
+            [36, 70, 45, 91, 35],
+            [53, 99, 60, 13, 53],
+            [38, 60, 23, 59, 41],
+            [27, 5, 57, 49, 69],
+            [87, 56, 64, 85, 13],
+            [76, 3, 7, 85, 86],
+            [91, 61, 1, 9, 72],
+            [14, 73, 63, 39, 8],
+            [29, 75, 41, 41, 49],
+            [12, 47, 63, 56, 47],
+            [77, 14, 47, 40, 87],
+            [32, 21, 26, 54, 58],
+            [87, 86, 75, 77, 18],
+            [68, 5, 77, 51, 68],
+            [94, 77, 40, 31, 28],
         ]
     )
     num_jobs, num_machines = DURATIONS.shape
@@ -123,12 +124,10 @@ def test_pfsp(solver: str):
             tasks[:, idx2].tolist(),
         )
 
-    # Finding the optimal solution takes quite long, so we set a time limit.
-    result = model.solve(solver=solver, time_limit=0.5)
-    assert_(result.objective < 698 * 1.05)
+    benchmark(model.solve, solver, time_limit=60)
 
 
-def test_dpfsp(solver: str):
+def test_dpfsp(benchmark, solver: str):
     """
     Benchmark a small distributed permutation flow shop problem instance
     (35.txt) from https://github.com/INFORMSJoC/2021.0326.
@@ -206,6 +205,4 @@ def test_dpfsp(solver: str):
                 tasks[:, idx2].tolist(),
             )
 
-    # Finding the optimal solution takes quite long, so we set a time limit.
-    result = model.solve(solver=solver, time_limit=2)
-    assert_(result.objective < 430 * 1.05)
+    benchmark(model.solve, solver)
