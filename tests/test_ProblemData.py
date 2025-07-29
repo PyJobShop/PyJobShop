@@ -116,9 +116,9 @@ def test_machine_default_attributes():
 @pytest.mark.parametrize(
     "breaks",
     [
-        [(-1, 0)],  # time < 0
-        [(2, 1)],  # start < end
-        [(1, 3), (2, 4)],  # overlapping breaks
+        [(-1, 0)],  # breaks start < 0
+        [(2, 1)],  # breaks start < end
+        [(1, 3), (2, 4)],  # breaks overlapping
     ],
 )
 def test_machine_raises_invalid_parameters(breaks):
@@ -153,9 +153,9 @@ def test_renewable_default_attributes():
     "capacity, breaks",
     [
         (-1, [(0, 1)]),  # capacity < 0
-        (1, [(-1, 0)]),  # start < 0
-        (1, [(2, 1)]),  # start < end
-        (1, [(1, 3), (2, 4)]),  # overlapping breaks
+        (1, [(-1, 0)]),  # breaks start < 0
+        (1, [(2, 1)]),  # breaks start < end
+        (1, [(1, 3), (2, 4)]),  # breaks overlapping
     ],
 )
 def test_renewable_raises_invalid_parameters(capacity, breaks):
