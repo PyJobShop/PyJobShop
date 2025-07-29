@@ -99,7 +99,8 @@ def test_machine_attributes():
     """
     Tests that the attributes of the Machine class are set correctly.
     """
-    machine = Machine(name="Machine")
+    machine = Machine(breaks=[(1, 2)], name="Machine")
+    assert_equal(machine.breaks, [(1, 2)])
     assert_equal(machine.name, "Machine")
 
 
@@ -108,15 +109,33 @@ def test_machine_default_attributes():
     Tests that the default attributes of the Machine class are set correctly.
     """
     machine = Machine()
+    assert_equal(machine.breaks, [])
     assert_equal(machine.name, "")
+
+
+@pytest.mark.parametrize(
+    "breaks",
+    [
+        [(-1, 0)],  # time < 0
+        [(2, 1)],  # start < end
+    ],
+)
+def test_machine_raises_invalid_breaks(breaks):
+    """
+    Tests that a ValueError is raised when invalid breaks are passed
+    to the Machine class.
+    """
+    with assert_raises(ValueError):
+        Machine(breaks=breaks)
 
 
 def test_renewable_attributes():
     """
     Tests that the attributes of the Renewable class are set correctly.
     """
-    renewable = Renewable(capacity=1, name="TestRenewable")
+    renewable = Renewable(capacity=1, breaks=[(1, 2)], name="TestRenewable")
     assert_equal(renewable.capacity, 1)
+    assert_equal(renewable.breaks, [(1, 2)])
     assert_equal(renewable.name, "TestRenewable")
 
 
@@ -125,6 +144,7 @@ def test_renewable_default_attributes():
     Tests that the default attributes of the Renewable class are set correctly.
     """
     renewable = Renewable(capacity=0)
+    assert_equal(renewable.breaks, [])
     assert_equal(renewable.name, "")
 
 
@@ -135,6 +155,22 @@ def test_renewable_raises_invalid_capacity():
     """
     with assert_raises(ValueError):
         Renewable(capacity=-1)  # negative
+
+
+@pytest.mark.parametrize(
+    "breaks",
+    [
+        [(-1, 0)],  # time < 0
+        [(2, 1)],  # start < end
+    ],
+)
+def test_renewable_raises_invalid_breaks(breaks):
+    """
+    Tests that a ValueError is raised when invalid breaks are passed
+    to the Renewable class.
+    """
+    with assert_raises(ValueError):
+        Renewable(capacity=1, breaks=breaks)
 
 
 def test_non_renewable_attributes():

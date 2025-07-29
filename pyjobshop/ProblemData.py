@@ -128,12 +128,35 @@ class Machine:
 
     Parameters
     ----------
+    breaks
+        List of time intervals during which tasks cannot be processed.
+        Each interval is represented as a tuple (start_time, end_time).
+        Default is an empty list (no breaks).
     name
         Name of the machine.
     """
 
-    def __init__(self, name: str = ""):
+    def __init__(
+        self, breaks: list[tuple[int, int]] | None = None, name: str = ""
+    ):
+        if breaks is not None:
+            for start, end in breaks:
+                if start < 0 or end < 0:
+                    raise ValueError("Break times must be non-negative.")
+
+                if start >= end:
+                    msg = "Break start time must be less than end time."
+                    raise ValueError(msg)
+
         self._name = name
+        self._breaks = breaks or []
+
+    @property
+    def breaks(self) -> list[tuple[int, int]]:
+        """
+        List of time intervals during which tasks cannot be processed.
+        """
+        return self._breaks
 
     @property
     def name(self) -> str:
@@ -152,16 +175,35 @@ class Renewable:
     ----------
     capacity
         Capacity of the resource.
+    breaks
+        List of time intervals during which tasks cannot be processed.
+        Each interval is represented as a tuple (start_time, end_time).
+        Default is an empty list (no breaks).
     name
         Name of the resource.
     """
 
-    def __init__(self, capacity: int, name: str = ""):
+    def __init__(
+        self,
+        capacity: int,
+        breaks: list[tuple[int, int]] | None = None,
+        name: str = "",
+    ):
         if capacity < 0:
             raise ValueError("Capacity must be non-negative.")
 
+        if breaks is not None:
+            for start, end in breaks:
+                if start < 0 or end < 0:
+                    raise ValueError("Break times must be non-negative.")
+
+                if start >= end:
+                    msg = "Break start time must be less than end time."
+                    raise ValueError(msg)
+
         self._capacity = capacity
         self._name = name
+        self._breaks = breaks or []
 
     @property
     def capacity(self) -> int:
@@ -169,6 +211,13 @@ class Renewable:
         Capacity of the resource.
         """
         return self._capacity
+
+    @property
+    def breaks(self) -> list[tuple[int, int]]:
+        """
+        List of time intervals during which tasks cannot be processed.
+        """
+        return self._breaks
 
     @property
     def name(self) -> str:
