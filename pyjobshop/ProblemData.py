@@ -1,6 +1,7 @@
 from collections import Counter
 from copy import deepcopy
 from dataclasses import dataclass, field, fields
+from itertools import pairwise
 from typing import Sequence, TypeVar
 
 from pyjobshop.constants import MAX_VALUE
@@ -128,12 +129,35 @@ class Machine:
 
     Parameters
     ----------
+    breaks
+        List of time intervals during which tasks cannot be processed.
+        Each interval is represented as a tuple (start_time, end_time).
+        Default is an empty list (no breaks).
     name
         Name of the machine.
     """
 
-    def __init__(self, name: str = ""):
+    def __init__(
+        self, breaks: list[tuple[int, int]] | None = None, name: str = ""
+    ):
+        if breaks is not None:
+            for start, end in breaks:
+                if start < 0 or start >= end:
+                    raise ValueError("Break start < 0 or start > end.")
+
+            for interval1, interval2 in pairwise(sorted(breaks)):
+                if interval1[1] > interval2[0]:
+                    raise ValueError("Break intervals must not overlap.")
+
+        self._breaks = breaks or []
         self._name = name
+
+    @property
+    def breaks(self) -> list[tuple[int, int]]:
+        """
+        List of time intervals during which tasks cannot be processed.
+        """
+        return self._breaks
 
     @property
     def name(self) -> str:
@@ -152,15 +176,34 @@ class Renewable:
     ----------
     capacity
         Capacity of the resource.
+    breaks
+        List of time intervals during which tasks cannot be processed.
+        Each interval is represented as a tuple (start_time, end_time).
+        Default is an empty list (no breaks).
     name
         Name of the resource.
     """
 
-    def __init__(self, capacity: int, name: str = ""):
+    def __init__(
+        self,
+        capacity: int,
+        breaks: list[tuple[int, int]] | None = None,
+        name: str = "",
+    ):
         if capacity < 0:
             raise ValueError("Capacity must be non-negative.")
 
+        if breaks is not None:
+            for start, end in breaks:
+                if start < 0 or start >= end:
+                    raise ValueError("Break start < 0 or start > end.")
+
+            for interval1, interval2 in pairwise(sorted(breaks)):
+                if interval1[1] > interval2[0]:
+                    raise ValueError("Break intervals must not overlap.")
+
         self._capacity = capacity
+        self._breaks = breaks or []
         self._name = name
 
     @property
@@ -169,6 +212,13 @@ class Renewable:
         Capacity of the resource.
         """
         return self._capacity
+
+    @property
+    def breaks(self) -> list[tuple[int, int]]:
+        """
+        List of time intervals during which tasks cannot be processed.
+        """
+        return self._breaks
 
     @property
     def name(self) -> str:
@@ -537,6 +587,9 @@ class SetupTime(IterableMixin):
 
     where :math:`d` is the setup time duration. Note that this also implies
     an end-before-start relationship between task 1 and task 2.
+
+    When using :attr:`Machine.breaks`, setup times are allowed to take place
+    during the breaks.
     """
 
     machine: int

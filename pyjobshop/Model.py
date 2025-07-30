@@ -213,22 +213,29 @@ class Model:
 
         return job
 
-    def add_machine(self, name: str = "") -> Machine:
+    def add_machine(
+        self, breaks: list[tuple[int, int]] | None = None, name: str = ""
+    ) -> Machine:
         """
         Adds a machine to the model.
         """
-        machine = Machine(name=name)
+        machine = Machine(breaks=breaks, name=name)
 
         self._id2resource[id(machine)] = len(self.resources)
         self._resources.append(machine)
 
         return machine
 
-    def add_renewable(self, capacity: int, name: str = "") -> Renewable:
+    def add_renewable(
+        self,
+        capacity: int,
+        breaks: list[tuple[int, int]] | None = None,
+        name: str = "",
+    ) -> Renewable:
         """
         Adds a renewable resource to the model.
         """
-        resource = Renewable(capacity=capacity, name=name)
+        resource = Renewable(capacity=capacity, breaks=breaks, name=name)
 
         self._id2resource[id(resource)] = len(self.resources)
         self._resources.append(resource)

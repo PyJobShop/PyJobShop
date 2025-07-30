@@ -1,8 +1,10 @@
 import docplex.cp.modeler as cpo
 import numpy as np
+from docplex.cp.function import CpoStepFunction
 from docplex.cp.model import CpoModel
 
 import pyjobshop.solvers.utils as utils
+from pyjobshop.constants import MAX_VALUE
 from pyjobshop.ProblemData import ProblemData
 
 from .Variables import Variables
@@ -86,14 +88,14 @@ class Constraints:
 
         for res_idx in data.renewable_idcs:
             modes = data.resource2modes(res_idx)
-            pulses = [
+            pulses = sum(
                 cpo.pulse(self._mode_vars[mode_idx], demand)
                 for mode_idx in modes
                 # non-positive demand triggers cpo warnings
                 if (demand := self._get_demand(mode_idx, res_idx)) > 0
-            ]
+            )
             capacity = data.resources[res_idx].capacity
-            model.add(model.sum(pulses) <= capacity)
+            model.add(pulses <= capacity)
 
     def _non_renewable_capacity(self):
         """
@@ -103,13 +105,29 @@ class Constraints:
 
         for res_idx in data.non_renewable_idcs:
             modes = data.resource2modes(res_idx)
-            usage = [
+            usage = sum(
                 cpo.presence_of(self._mode_vars[mode_idx])
                 * self._get_demand(mode_idx, res_idx)
                 for mode_idx in modes
-            ]
+            )
             capacity = data.resources[res_idx].capacity
-            model.add(model.sum(usage) <= capacity)
+            model.add(usage <= capacity)
+
+    def _resource_breaks_constraints(self):
+        """
+        Creates constraints for renewable resources that have breaks.
+        """
+        model, data = self._model, self._data
+
+        for res_idx in data.renewable_idcs + data.machine_idcs:
+            for start, end in data.resources[res_idx].breaks:
+                for mode_idx in data.resource2modes(res_idx):
+                    step = CpoStepFunction()
+                    step.set_value(0, MAX_VALUE, 1)
+                    step.set_value(start, end, 0)
+
+                    expr = cpo.forbid_extent(self._mode_vars[mode_idx], step)
+                    model.add(expr)
 
     def _timing_constraints(self):
         """
@@ -201,6 +219,7 @@ class Constraints:
         self._machines_no_overlap_and_setup_times()
         self._renewable_capacity()
         self._non_renewable_capacity()
+        self._resource_breaks_constraints()
         self._timing_constraints()
         self._identical_and_different_resource_constraints()
         self._consecutive_constraints()

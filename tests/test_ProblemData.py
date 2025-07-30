@@ -99,7 +99,8 @@ def test_machine_attributes():
     """
     Tests that the attributes of the Machine class are set correctly.
     """
-    machine = Machine(name="Machine")
+    machine = Machine(breaks=[(1, 2)], name="Machine")
+    assert_equal(machine.breaks, [(1, 2)])
     assert_equal(machine.name, "Machine")
 
 
@@ -108,15 +109,34 @@ def test_machine_default_attributes():
     Tests that the default attributes of the Machine class are set correctly.
     """
     machine = Machine()
+    assert_equal(machine.breaks, [])
     assert_equal(machine.name, "")
+
+
+@pytest.mark.parametrize(
+    "breaks",
+    [
+        [(-1, 0)],  # breaks start < 0
+        [(2, 1)],  # breaks start > end
+        [(1, 3), (2, 4)],  # breaks overlapping
+    ],
+)
+def test_machine_raises_invalid_parameters(breaks):
+    """
+    Tests that a ValueError is raised when invalid parameters are passed
+    to the Machine class.
+    """
+    with assert_raises(ValueError):
+        Machine(breaks=breaks)
 
 
 def test_renewable_attributes():
     """
     Tests that the attributes of the Renewable class are set correctly.
     """
-    renewable = Renewable(capacity=1, name="TestRenewable")
+    renewable = Renewable(capacity=1, breaks=[(1, 2)], name="TestRenewable")
     assert_equal(renewable.capacity, 1)
+    assert_equal(renewable.breaks, [(1, 2)])
     assert_equal(renewable.name, "TestRenewable")
 
 
@@ -125,16 +145,26 @@ def test_renewable_default_attributes():
     Tests that the default attributes of the Renewable class are set correctly.
     """
     renewable = Renewable(capacity=0)
+    assert_equal(renewable.breaks, [])
     assert_equal(renewable.name, "")
 
 
-def test_renewable_raises_invalid_capacity():
+@pytest.mark.parametrize(
+    "capacity, breaks",
+    [
+        (-1, [(0, 1)]),  # capacity < 0
+        (1, [(-1, 0)]),  # breaks start < 0
+        (1, [(2, 1)]),  # breaks start > end
+        (1, [(1, 3), (2, 4)]),  # breaks overlapping
+    ],
+)
+def test_renewable_raises_invalid_parameters(capacity, breaks):
     """
-    Tests that a ValueError is raised when an invalid capacity is passed
+    Tests that a ValueError is raised when invalid parameters are passed
     to the Renewable class.
     """
     with assert_raises(ValueError):
-        Renewable(capacity=-1)  # negative
+        Renewable(capacity=capacity, breaks=breaks)
 
 
 def test_non_renewable_attributes():
@@ -1092,6 +1122,24 @@ def test_task_non_fixed_duration(solver: str):
     assert_equal(result.best.tasks, [TaskData(0, [0], 0, 10)])
 
 
+def test_machine_breaks(solver: str):
+    """
+    Tests that a machine resource respects breaks.
+    """
+    model = Model()
+    machine1 = model.add_machine(breaks=[(1, 2), (3, 4)])
+    machine2 = model.add_machine(breaks=[(0, 10)])
+    task = model.add_task()
+    model.add_mode(task, machine1, duration=2)
+    model.add_mode(task, machine2, duration=2)
+
+    # It's best to use machine 1, and the earliest that the task can start is
+    # at time 4, so the makespan is 6.
+    result = model.solve(solver=solver)
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.objective, 6)
+
+
 def test_resource_processes_two_tasks_simultaneously(solver: str):
     """
     Tests that a resource can process two tasks simultaneously.
@@ -1145,6 +1193,40 @@ def test_resource_zero_capacity_is_respected(solver: str):
     result = model.solve(solver=solver)
     assert_equal(result.status.value, "Optimal")
     assert_equal(result.objective, 10)
+
+
+def test_renewable_breaks(solver: str):
+    """
+    Tests that a renewable resource respects breaks.
+    """
+    model = Model()
+    resource1 = model.add_renewable(capacity=1, breaks=[(1, 2), (3, 4)])
+    resource2 = model.add_renewable(capacity=1, breaks=[(0, 100)])
+    task = model.add_task()
+    model.add_mode(task, resource1, duration=2)
+    model.add_mode(task, resource2, duration=2)
+
+    # It's best to use resource 1, and the earliest that the task can start is
+    # at time 4, so the makespan is 6.
+    result = model.solve(solver=solver)
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.objective, 6)
+
+
+def test_renewable_breaks_respected_by_zero_demand(solver: str):
+    """
+    Tests that a renewable resource break is respected even if the mode has
+    zero demand.
+    """
+    model = Model()
+    resource = model.add_renewable(capacity=1, breaks=[(1, 2), (3, 4)])
+    task = model.add_task()
+    model.add_mode(task, resource, duration=2, demands=[0])
+
+    # The earliest that the task can start is as time 4, so the makespan is 6.
+    result = model.solve(solver=solver)
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.objective, 6)
 
 
 def test_resource_non_renewable_capacity(solver: str):

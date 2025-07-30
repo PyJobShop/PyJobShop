@@ -185,7 +185,9 @@ def test_add_machine_attributes():
     """
     model = Model()
 
-    machine = model.add_machine(name="machine")
+    machine = model.add_machine(breaks=[(0, 1), (1, 2)], name="machine")
+
+    assert_equal(machine.breaks, [(0, 1), (1, 2)])
     assert_equal(machine.name, "machine")
 
 
@@ -195,9 +197,12 @@ def test_add_renewable_resource_attributes():
     """
     model = Model()
 
-    renewable = model.add_renewable(capacity=1, name="resource")
+    renewable = model.add_renewable(
+        capacity=1, breaks=[(0, 1), (1, 2)], name="resource"
+    )
 
     assert_equal(renewable.capacity, 1)
+    assert_equal(renewable.breaks, [(0, 1), (1, 2)])
     assert_equal(renewable.name, "resource")
 
 
