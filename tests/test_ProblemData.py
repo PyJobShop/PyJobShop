@@ -99,8 +99,8 @@ def test_machine_attributes():
     """
     Tests that the attributes of the Machine class are set correctly.
     """
-    machine = Machine(breaks=[(1, 2)], no_idle=True, name="Machine")
-    assert_equal(machine.breaks, [(1, 2)])
+    machine = Machine(breaks=[], no_idle=True, name="Machine")
+    assert_equal(machine.breaks, [])
     assert_equal(machine.no_idle, True)
     assert_equal(machine.name, "Machine")
 
@@ -124,13 +124,13 @@ def test_machine_default_attributes():
         ([(1, 2)], True),  # breaks with no_idle
     ],
 )
-def test_machine_raises_invalid_parameters(breaks):
+def test_machine_raises_invalid_parameters(breaks, no_idle):
     """
     Tests that a ValueError is raised when invalid parameters are passed
     to the Machine class.
     """
     with assert_raises(ValueError):
-        Machine(breaks=breaks)
+        Machine(breaks=breaks, no_idle=no_idle)
 
 
 def test_renewable_attributes():
@@ -642,12 +642,17 @@ def test_problem_data_raises_invalid_indices(name, cls, idcs_list):
 
 
 @pytest.mark.parametrize(
-    "resource", [Renewable(capacity=1), NonRenewable(capacity=1)]
+    "resource",
+    [
+        Renewable(capacity=1),
+        NonRenewable(capacity=1),
+        Machine(no_idle=True),
+    ],
 )
 def test_problem_data_raises_capacitated_resources_and_setup_times(resource):
     """
-    Tests that the ProblemData class raises an error when capacitated resources
-    with have setup times.
+    Tests that the ProblemData class raises an error when invalid resources
+    have setup times.
     """
     with assert_raises(ValueError):
         ProblemData(

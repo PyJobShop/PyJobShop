@@ -185,11 +185,9 @@ def test_add_machine_attributes():
     """
     model = Model()
 
-    machine = model.add_machine(
-        breaks=[(0, 1), (1, 2)], no_idle=True, name="machine"
-    )
+    machine = model.add_machine(breaks=[], no_idle=True, name="machine")
 
-    assert_equal(machine.breaks, [(0, 1), (1, 2)])
+    assert_equal(machine.breaks, [])
     assert_equal(machine.no_idle, True)
     assert_equal(machine.name, "machine")
 
