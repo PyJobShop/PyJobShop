@@ -838,7 +838,13 @@ class ProblemData:
                     msg = f"Invalid task index {task_idx} in same_sequence."
                     raise ValueError(msg)
 
-            # TODO check that tasks1 and tasks2 belong to the machine?
+            # if (res_tasks1 != len(task_idcs1)) or res_tasks2 != len(
+            #     tasks_idcs2
+            # ):
+            #     msg = f"Invalid task index in setup_times: {task_idx2}."
+            #     raise ValueError(msg)
+            # TODO check that tasks1 and tasks2 belong to right machine?
+            # if the length is not equal it's also a problem
 
         for res_idx, task_idx1, task_idx2, dur in self.constraints.setup_times:
             if not (0 <= res_idx < self.num_resources):
