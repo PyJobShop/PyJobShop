@@ -942,14 +942,9 @@ class ProblemData:
                 msg = f"Invalid task index in setup_times: {task_idx2}."
                 raise ValueError(msg)
 
-            resource = self.resources[res_idx]
-            is_machine = isinstance(resource, Machine)
+            is_machine = isinstance(self.resources[res_idx], Machine)
             if not is_machine and dur > 0:
                 raise ValueError("Setup times only allowed for machines.")
-
-            if is_machine and resource.no_idle and dur > 0:
-                msg = "Setup times not allowed for no-idle machines."
-                raise ValueError(msg)
 
         for idx1, idcs2 in self.constraints.mode_dependencies:
             if not (0 <= idx1 < self.num_modes):

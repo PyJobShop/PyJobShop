@@ -646,7 +646,6 @@ def test_problem_data_raises_invalid_indices(name, cls, idcs_list):
     [
         Renewable(capacity=1),
         NonRenewable(capacity=1),
-        Machine(no_idle=True),
     ],
 )
 def test_problem_data_raises_capacitated_resources_and_setup_times(resource):
@@ -1170,6 +1169,34 @@ def test_machine_no_idle(solver: str):
     assert_equal(sol_tasks[0].end, 11)
     assert_equal(sol_tasks[1].start, 8)
     assert_equal(sol_tasks[1].end, 10)
+
+
+def test_machine_no_idle_setup_times(solver: str):
+    """
+    Tests that a machine with no idle time and setup times is respected.
+    Setup times are allowed on machines with idle times.
+    """
+    model = Model()
+    machine = model.add_machine(no_idle=True)
+    task1 = model.add_task(earliest_start=10)
+    task2 = model.add_task()
+    model.add_mode(task1, machine, 1)
+    model.add_mode(task2, machine, 2)
+    model.add_setup_time(machine, task2, task1, 3)
+    model.add_setup_time(machine, task1, task2, 3)
+
+    # Task 1 can start earliest at time 10. Because the machine does not allow
+    # idle times, task 2 will be scheduled at time 5 and complete at 7. The
+    # setup time of 3 is added, so task 2 starts at 10 and ends at 11.
+    result = model.solve(solver=solver)
+    # assert_equal(result.status.value, "Optimal")
+    # assert_equal(result.objective, 11)
+
+    sol_tasks = result.best.tasks
+    assert_equal(sol_tasks[0].start, 10)
+    assert_equal(sol_tasks[0].end, 11)
+    assert_equal(sol_tasks[1].start, 5)
+    assert_equal(sol_tasks[1].end, 7)
 
 
 def test_resource_processes_two_tasks_simultaneously(solver: str):

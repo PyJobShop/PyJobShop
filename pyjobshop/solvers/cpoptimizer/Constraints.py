@@ -74,39 +74,33 @@ class Constraints:
 
             model.add(cpo.no_overlap(seq_var, matrix))
 
-            # No idle times.
             if not machine.no_idle:
                 continue
 
             intervals = seq_var.get_interval_variables()
-            resource_modes = data.resource2modes(idx)
-            task_idcs = [data.modes[m].task for m in resource_modes]
+            task_idcs = [data.modes[m].task for m in data.resource2modes(idx)]
 
             for task_idx, interval in zip(task_idcs, intervals):
-                end1 = cpo.end_of(interval, absentValue=0)
-                start2 = cpo.start_of_next(
-                    seq_var,
-                    interval,
-                    lastValue=0,
-                    absentValue=0,
-                )
+                # This sets end + setup == start for all but the last interval.
+                # We don't know the "last" interval since that's determined by
+                # the sequencing.
                 next_type = cpo.type_of_next(
                     seq_var,
                     interval,
-                    lastValue=data.num_tasks,
+                    lastValue=data.num_tasks,  # dummy type
                 )
-                if setup_times is None:
-                    setup_time = 0
-                else:
-                    task_idx = task_idcs[idx]
+
+                setup = 0
+                if setup_times is not None:
                     setup_array = setup_times[idx, task_idx, :].tolist()
                     setup_array.append(0)  # padding for last or absent
-                    setup_time = cpo.element(setup_array, next_type)
+                    setup = cpo.element(setup_array, next_type)
 
-                expr = end1 + setup_time == start2
+                end1 = cpo.end_of(interval)
+                start2 = cpo.start_of_next(seq_var, interval)
+                expr = end1 + setup == start2
+
                 model.add(cpo.if_then(next_type != data.num_tasks, expr))
-
-                # model.add(end1 + setup_time <= start2)
 
     def _get_demand(self, mode_idx: int, res_idx: int) -> int:
         """
