@@ -105,13 +105,13 @@ class Constraints:
 
         for res_idx in data.non_renewable_idcs:
             modes = data.resource2modes(res_idx)
-            total_use = sum(
+            usage = sum(
                 cpo.presence_of(self._mode_vars[mode_idx])
                 * self._get_demand(mode_idx, res_idx)
                 for mode_idx in modes
             )
             capacity = data.resources[res_idx].capacity
-            model.add(total_use <= capacity)
+            model.add(usage <= capacity)
 
     def _resource_breaks_constraints(self):
         """
