@@ -588,8 +588,8 @@ class SetupTime(IterableMixin):
     where :math:`d` is the setup time duration. Note that this also implies
     an end-before-start relationship between task 1 and task 2.
 
-    When using machine breaks (see :attr:`Machine.breaks`), setup times are
-    allowed to take place during the breaks.
+    When using :attr:`Machine.breaks`, setup times are allowed to take place
+    during the breaks.
     """
 
     machine: int
