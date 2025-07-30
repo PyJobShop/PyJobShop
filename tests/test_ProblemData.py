@@ -291,6 +291,22 @@ def test_negative_setup_times_not_allowed():
         SetupTime(0, 0, 1, -1)  # not OK
 
 
+def test_constraints_str():
+    """
+    Tests the string representation of the Constraints class.
+    """
+    constraints = Constraints()
+    assert_equal(str(constraints), "0 constraints")
+
+    constraints.start_before_start.append(StartBeforeStart(0, 1))
+    expected = "1 constraints\n└─ 1 start_before_start"
+    assert_equal(str(constraints), expected)
+
+    constraints.mode_dependencies.append(ModeDependency(0, [1, 2, 3]))
+    expected = "2 constraints\n├─ 1 start_before_start\n└─ 1 mode_dependencies"
+    assert_equal(str(constraints), expected)
+
+
 @pytest.mark.parametrize(
     "weights",
     [
@@ -311,6 +327,22 @@ def test_objective_valid_values(weights: list[int]):
     """
     with assert_raises(ValueError):
         Objective(*weights)
+
+
+def test_objective_str():
+    """
+    Tests the string representation of the Objective class.
+    """
+    objective = Objective()
+    assert_equal(str(objective), "objective\n└─ no weights")
+
+    objective = Objective(weight_makespan=1)
+    assert_equal(str(objective), "objective\n└─ weight_makespan=1")
+
+    objective = Objective(weight_makespan=1, weight_max_tardiness=10)
+
+    expected = "objective\n├─ weight_makespan=1\n└─ weight_max_tardiness=10"
+    assert_equal(str(objective), expected)
 
 
 def test_problem_data_input_parameter_attributes():
@@ -397,6 +429,45 @@ def test_problem_data_default_values():
 
     assert_equal(data.constraints, Constraints())
     assert_equal(data.objective, Objective(weight_makespan=1))
+
+
+def test_problem_data_str():
+    """
+    Tests the string representation of the ProblemData class.
+    """
+    jobs = [Job(tasks=[idx]) for idx in range(5)]
+    resources = [Machine() for _ in range(5)] + [Renewable(1), NonRenewable(1)]
+    tasks = [Task() for _ in range(5)]
+    modes = [
+        Mode(task=task, resources=[resource], duration=1)
+        for task in range(5)
+        for resource in range(5)
+    ]
+    constraints = Constraints(
+        end_before_start=[
+            EndBeforeStart(0, 1),
+            EndBeforeStart(2, 3),
+            EndBeforeStart(3, 4),
+        ]
+    )
+    objective = Objective(weight_makespan=10, weight_total_flow_time=1)
+    data = ProblemData(jobs, resources, tasks, modes, constraints, objective)
+
+    expected = (
+        "5 jobs\n"
+        "7 resources\n"
+        "├─ 5 machines\n"
+        "├─ 1 renewable\n"
+        "└─ 1 non_renewable\n"
+        "5 tasks\n"
+        "25 modes\n"
+        "3 constraints\n"
+        "└─ 3 end_before_start\n"
+        "objective\n"
+        "├─ weight_makespan=10\n"
+        "└─ weight_total_flow_time=1"
+    )
+    assert_equal(str(data), expected)
 
 
 def test_problem_data_job_must_reference_at_least_one_task():

@@ -403,7 +403,7 @@ class IterableMixin:
     """
 
     def __iter__(self):
-        return iter(getattr(self, field.name) for field in fields(self))
+        return iter(getattr(self, f.name) for f in fields(self))
 
 
 @dataclass
@@ -590,7 +590,24 @@ class Constraints:
     mode_dependencies: list[ModeDependency] = field(default_factory=list)
 
     def __len__(self) -> int:
+        """
+        Returns the total number of constraints across all types.
+        """
         return sum(len(getattr(self, f.name)) for f in fields(self))
+
+    def __str__(self) -> str:
+        parts = []
+        for f in fields(self):
+            count = len(getattr(self, f.name))
+            if count > 0:
+                parts.append(f"{count} {f.name}")
+
+        lines = [f"{len(self)} constraints"]
+        for idx, part in enumerate(parts):
+            symbol = "└─" if idx == len(parts) - 1 else "├─"
+            lines.append(f"{symbol} {part}")
+
+        return "\n".join(lines)
 
 
 @dataclass
@@ -658,6 +675,23 @@ class Objective:
             if value < 0:
                 raise ValueError(f"{f.name} < 0 not understood.")
 
+    def __str__(self) -> str:
+        parts = []
+        for f in fields(self):
+            value = getattr(self, f.name)
+            if value > 0:
+                parts.append(f"{f.name}={value}")
+
+        lines = ["objective"]
+        for idx, part in enumerate(parts):
+            symbol = "└─" if idx == len(parts) - 1 else "├─"
+            lines.append(f"{symbol} {part}")
+
+        if not parts:
+            lines.append("└─ no weights")
+
+        return "\n".join(lines)
+
 
 class ProblemData:
     """
@@ -724,6 +758,35 @@ class ProblemData:
                 self._renewable_idcs.append(idx)
             elif isinstance(resource, NonRenewable):
                 self._non_renewable_idcs.append(idx)
+
+    def __str__(self):
+        lines = [
+            f"{len(self.jobs)} jobs",
+            f"{len(self.resources)} resources",
+        ]
+
+        parts = []
+        if self.num_machines > 0:
+            parts.append(f"{self.num_machines} machines")
+        if self.num_renewables > 0:
+            parts.append(f"{self.num_renewables} renewable")
+        if self.num_non_renewables > 0:
+            parts.append(f"{self.num_non_renewables} non_renewable")
+
+        for idx, part in enumerate(parts):
+            symbol = "└─" if idx == len(parts) - 1 else "├─"
+            lines.append(f"{symbol} {part}")
+
+        lines.extend(
+            [
+                f"{len(self.tasks)} tasks",
+                f"{len(self.modes)} modes",
+                str(self.constraints).rstrip(),
+                str(self.objective).rstrip(),
+            ]
+        )
+
+        return "\n".join(lines)
 
     def _validate(self):
         """
@@ -953,6 +1016,27 @@ class ProblemData:
         Returns the number of resources in this instance.
         """
         return len(self._resources)
+
+    @property
+    def num_machines(self) -> int:
+        """
+        Returns the number of machines in this instance.
+        """
+        return len(self._machine_idcs)
+
+    @property
+    def num_renewables(self) -> int:
+        """
+        Returns the number of renewable resources in this instance.
+        """
+        return len(self._renewable_idcs)
+
+    @property
+    def num_non_renewables(self) -> int:
+        """
+        Returns the number of non-renewable resources in this instance.
+        """
+        return len(self._non_renewable_idcs)
 
     @property
     def num_tasks(self) -> int:
