@@ -42,6 +42,7 @@ class Job:
         deadline: int = MAX_VALUE,
         due_date: int | None = None,
         tasks: list[int] | None = None,
+        *,
         name: str = "",
     ):
         if weight < 0:
@@ -138,7 +139,7 @@ class Machine:
     """
 
     def __init__(
-        self, breaks: list[tuple[int, int]] | None = None, name: str = ""
+        self, breaks: list[tuple[int, int]] | None = None, *, name: str = ""
     ):
         if breaks is not None:
             for start, end in breaks:
@@ -188,6 +189,7 @@ class Renewable:
         self,
         capacity: int,
         breaks: list[tuple[int, int]] | None = None,
+        *,
         name: str = "",
     ):
         if capacity < 0:
@@ -240,7 +242,7 @@ class NonRenewable:
         Name of the resource.
     """
 
-    def __init__(self, capacity: int, name: str = ""):
+    def __init__(self, capacity: int, *, name: str = ""):
         if capacity < 0:
             raise ValueError("Capacity must be non-negative.")
 
@@ -302,6 +304,7 @@ class Task:
         earliest_end: int = 0,
         latest_end: int = MAX_VALUE,
         fixed_duration: bool = True,
+        *,
         name: str = "",
     ):
         if earliest_start > latest_start:
@@ -395,6 +398,7 @@ class Mode:
         resources: list[int],
         duration: int,
         demands: list[int] | None = None,
+        *,
         name: str = "",
     ):
         if len(set(resources)) != len(resources):

@@ -96,24 +96,28 @@ class Model:
 
         for job in data.jobs:
             model.add_job(
-                weight=job.weight,
-                release_date=job.release_date,
-                deadline=job.deadline,
-                due_date=job.due_date,
+                job.weight,
+                job.release_date,
+                job.deadline,
+                job.due_date,
                 name=job.name,
             )
 
         for resource in data.resources:
             if isinstance(resource, Machine):
-                model.add_machine(name=resource.name)
+                model.add_machine(
+                    resource.breaks,
+                    name=resource.name,
+                )
             elif isinstance(resource, Renewable):
                 model.add_renewable(
-                    capacity=resource.capacity,
+                    resource.capacity,
+                    resource.breaks,
                     name=resource.name,
                 )
             elif isinstance(resource, NonRenewable):
                 model.add_non_renewable(
-                    capacity=resource.capacity,
+                    resource.capacity,
                     name=resource.name,
                 )
             else:
@@ -121,21 +125,22 @@ class Model:
 
         for task in data.tasks:
             model.add_task(
-                job=model.jobs[task.job] if task.job is not None else None,
-                earliest_start=task.earliest_start,
-                latest_start=task.latest_start,
-                earliest_end=task.earliest_end,
-                latest_end=task.latest_end,
-                fixed_duration=task.fixed_duration,
+                model.jobs[task.job] if task.job is not None else None,
+                task.earliest_start,
+                task.latest_start,
+                task.earliest_end,
+                task.latest_end,
+                task.fixed_duration,
                 name=task.name,
             )
 
         for mode in data.modes:
             model.add_mode(
-                task=model.tasks[mode.task],
-                resources=[model.resources[res] for res in mode.resources],
-                duration=mode.duration,
-                demands=mode.demands,
+                model.tasks[mode.task],
+                [model.resources[res] for res in mode.resources],
+                mode.duration,
+                mode.demands,
+                name=mode.name,
             )
 
         tasks = model.tasks
@@ -201,6 +206,7 @@ class Model:
         release_date: int = 0,
         deadline: int = MAX_VALUE,
         due_date: int | None = None,
+        *,
         name: str = "",
     ) -> Job:
         """
@@ -214,12 +220,15 @@ class Model:
         return job
 
     def add_machine(
-        self, breaks: list[tuple[int, int]] | None = None, name: str = ""
+        self,
+        breaks: list[tuple[int, int]] | None = None,
+        *,
+        name: str = "",
     ) -> Machine:
         """
         Adds a machine to the model.
         """
-        machine = Machine(breaks=breaks, name=name)
+        machine = Machine(breaks, name=name)
 
         self._id2resource[id(machine)] = len(self.resources)
         self._resources.append(machine)
@@ -230,23 +239,26 @@ class Model:
         self,
         capacity: int,
         breaks: list[tuple[int, int]] | None = None,
+        *,
         name: str = "",
     ) -> Renewable:
         """
         Adds a renewable resource to the model.
         """
-        resource = Renewable(capacity=capacity, breaks=breaks, name=name)
+        resource = Renewable(capacity, breaks, name=name)
 
         self._id2resource[id(resource)] = len(self.resources)
         self._resources.append(resource)
 
         return resource
 
-    def add_non_renewable(self, capacity: int, name: str = "") -> NonRenewable:
+    def add_non_renewable(
+        self, capacity: int, *, name: str = ""
+    ) -> NonRenewable:
         """
         Adds a non-renewable resource to the model.
         """
-        resource = NonRenewable(capacity=capacity, name=name)
+        resource = NonRenewable(capacity, name=name)
 
         self._id2resource[id(resource)] = len(self.resources)
         self._resources.append(resource)
@@ -261,6 +273,7 @@ class Model:
         earliest_end: int = 0,
         latest_end: int = MAX_VALUE,
         fixed_duration: bool = True,
+        *,
         name: str = "",
     ) -> Task:
         """
@@ -274,7 +287,7 @@ class Model:
             earliest_end,
             latest_end,
             fixed_duration,
-            name,
+            name=name,
         )
 
         task_idx = len(self.tasks)
@@ -292,6 +305,7 @@ class Model:
         resources: Resource | Sequence[Resource],
         duration: int,
         demands: int | list[int] | None = None,
+        *,
         name: str = "",
     ) -> Mode:
         """
@@ -305,7 +319,7 @@ class Model:
 
         task_idx = self._id2task[id(task)]
         resource_idcs = [self._id2resource[id(res)] for res in resources]
-        mode = Mode(task_idx, resource_idcs, duration, demands, name)
+        mode = Mode(task_idx, resource_idcs, duration, demands, name=name)
 
         self._id2mode[id(mode)] = len(self.modes)
         self._modes.append(mode)
