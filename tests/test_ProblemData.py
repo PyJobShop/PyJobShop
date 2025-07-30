@@ -99,8 +99,9 @@ def test_machine_attributes():
     """
     Tests that the attributes of the Machine class are set correctly.
     """
-    machine = Machine(breaks=[(1, 2)], name="Machine")
+    machine = Machine(breaks=[(1, 2)], no_idle=True, name="Machine")
     assert_equal(machine.breaks, [(1, 2)])
+    assert_equal(machine.no_idle, True)
     assert_equal(machine.name, "Machine")
 
 
@@ -110,15 +111,17 @@ def test_machine_default_attributes():
     """
     machine = Machine()
     assert_equal(machine.breaks, [])
+    assert_equal(machine.no_idle, False)
     assert_equal(machine.name, "")
 
 
 @pytest.mark.parametrize(
-    "breaks",
+    "breaks, no_idle",
     [
-        [(-1, 0)],  # breaks start < 0
-        [(2, 1)],  # breaks start > end
-        [(1, 3), (2, 4)],  # breaks overlapping
+        ([(-1, 0)], False),  # breaks start < 0
+        ([(2, 1)], False),  # breaks start > end
+        ([(1, 3), (2, 4)], False),  # breaks overlapping
+        ([(1, 2)], True),  # breaks with no_idle
     ],
 )
 def test_machine_raises_invalid_parameters(breaks):

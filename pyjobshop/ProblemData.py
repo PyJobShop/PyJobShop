@@ -134,12 +134,18 @@ class Machine:
         List of time intervals during which tasks cannot be processed.
         Each interval is represented as a tuple (start_time, end_time).
         Default is an empty list (no breaks).
+    no_idle
+        Whether the machine is allowed to have idle time. Default is False.
     name
         Name of the machine.
     """
 
     def __init__(
-        self, breaks: list[tuple[int, int]] | None = None, *, name: str = ""
+        self,
+        breaks: list[tuple[int, int]] | None = None,
+        no_idle: bool = False,
+        *,
+        name: str = "",
     ):
         if breaks is not None:
             for start, end in breaks:
@@ -150,7 +156,11 @@ class Machine:
                 if interval1[1] > interval2[0]:
                     raise ValueError("Break intervals must not overlap.")
 
+        if breaks and no_idle:
+            raise ValueError("Breaks not allowed with no_idle=True.")
+
         self._breaks = breaks or []
+        self._no_idle = no_idle
         self._name = name
 
     @property
@@ -159,6 +169,13 @@ class Machine:
         List of time intervals during which tasks cannot be processed.
         """
         return self._breaks
+
+    @property
+    def no_idle(self) -> bool:
+        """
+        Whether the machine has no idle time constraints.
+        """
+        return self._no_idle
 
     @property
     def name(self) -> str:
