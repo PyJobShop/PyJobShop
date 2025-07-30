@@ -182,19 +182,6 @@ class Constraints:
 
                 model.add(presence2 == 0).only_enforce_if(presence1)
 
-    def _activate_setup_times(self):
-        """
-        Activates the sequence variables for resources that have setup times.
-        The ``_circuit_constraints`` function will in turn add constraints to
-        the CP-SAT model to enforce setup times.
-        """
-        model, data, variables = self._model, self._data, self._variables
-        setup_times = utils.setup_times_matrix(data)
-
-        for idx in data.machine_idcs:
-            if setup_times is not None and np.any(setup_times[idx]):
-                variables.sequence_vars[idx].activate(model, data)
-
     def _consecutive_constraints(self):
         """
         Creates the consecutive constraints.
@@ -219,7 +206,7 @@ class Constraints:
     def _circuit_constraints(self):
         """
         Creates the circuit constraints for each machine, if activated by
-        sequencing constraints (consecutive and setup times).
+        sequencing constraints.
         """
         model, data, variables = self._model, self._data, self._variables
         setup_times = utils.setup_times_matrix(data)
@@ -227,6 +214,9 @@ class Constraints:
         for res_idx in data.machine_idcs:
             machine = data.resources[res_idx]
             seq_var = variables.sequence_vars[res_idx]
+
+            if setup_times is not None and np.any(setup_times[res_idx]):
+                seq_var.activate(model, data)
 
             if machine.no_idle:
                 seq_var.activate(model, data)
@@ -306,7 +296,6 @@ class Constraints:
         self._renewable_resource_breaks_constraints()
         self._timing_constraints()
         self._identical_and_different_resource_constraints()
-        self._activate_setup_times()
         self._consecutive_constraints()
         self._mode_dependencies()
 
