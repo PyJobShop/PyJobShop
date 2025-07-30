@@ -211,8 +211,8 @@ class Constraints:
             pairs2 = product(task_idcs2, repeat=2)
 
             for (i, j), (u, v) in zip(pairs1, pairs2):
-                # This ensures that the positioning between two tasks (i, j) on
-                # machine 1 is the same as between (u, v) on machine 2.
+                # This ensures that task i -> j on machine 1 if and only if
+                # u -> v on machine 2.
                 arc1 = seq_var1.arcs[i, j]
                 arc2 = seq_var2.arcs[u, v]
                 model.add(arc1 == arc2)
@@ -240,27 +240,26 @@ class Constraints:
             res_tasks = {data.modes[m].task for m in res_modes}
 
             for task_idx1 in res_tasks:
+                var1 = variables.assign_vars[task_idx1, res_idx]
+
                 # Absent intervals require selecting loops (self-arcs).
-                present = variables.assign_vars[task_idx1, res_idx].present
                 loop = arcs[task_idx1, task_idx1]
-                model.add(loop == ~present)
+                model.add(loop == ~var1.present)
 
                 # This handles the case where a machine does not process any
                 # task. Selecting the dummy loop makes all intervals absent,
                 # and satisfies the circuit constraint.
                 dummy_loop = arcs[seq_var.DUMMY, seq_var.DUMMY]
-                model.add(dummy_loop <= ~present)
+                model.add(dummy_loop <= ~var1.present)
 
                 for task_idx2 in res_tasks:
                     if task_idx1 == task_idx2:
                         continue
 
-                    var1 = variables.assign_vars[task_idx1, res_idx]
                     var2 = variables.assign_vars[task_idx2, res_idx]
-
-                    arc_selected = arcs[task_idx1, task_idx2]
-                    model.add(arc_selected <= var1.present)
-                    model.add(arc_selected <= var2.present)
+                    arc = arcs[task_idx1, task_idx2]
+                    model.add(arc <= var1.present)
+                    model.add(arc <= var2.present)
 
                     setup = (
                         setup_times[res_idx, task_idx1, task_idx2]
@@ -268,7 +267,7 @@ class Constraints:
                         else 0
                     )
                     expr = var1.end + setup <= var2.start
-                    model.add(expr).only_enforce_if(arc_selected)
+                    model.add(expr).only_enforce_if(arc)
 
     def _mode_dependencies(self):
         """
