@@ -225,7 +225,12 @@ class Constraints:
         setup_times = utils.setup_times_matrix(data)
 
         for res_idx in data.machine_idcs:
+            machine = data.resources[res_idx]
             seq_var = variables.sequence_vars[res_idx]
+
+            if machine.no_idle:
+                seq_var.activate(model, data)
+
             if not seq_var.is_active:
                 # No sequencing constraints active. Skip the creation of
                 # expensive circuit constraints.
@@ -270,7 +275,12 @@ class Constraints:
                         if setup_times is not None
                         else 0
                     )
-                    expr = var1.end + setup <= var2.start
+
+                    if machine.no_idle:
+                        expr = var1.end + setup == var2.start
+                    else:
+                        expr = var1.end + setup <= var2.start
+
                     model.add(expr).only_enforce_if(arc_selected)
 
     def _mode_dependencies(self):
