@@ -1148,6 +1148,30 @@ def test_machine_breaks(solver: str):
     assert_equal(result.objective, 6)
 
 
+def test_machine_no_idle(solver: str):
+    """
+    Tests that a machine with no idle time is respected.
+    """
+    model = Model()
+    machine = model.add_machine(no_idle=True)
+    task1 = model.add_task(earliest_start=10)
+    task2 = model.add_task()
+    model.add_mode(task1, machine, 1)
+    model.add_mode(task2, machine, 2)
+
+    # Task 1 can start earliest at time 10. Because the machine does not allow
+    # idle times, task 2 will be scheduled at time 8.
+    result = model.solve(solver=solver)
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.objective, 11)
+
+    sol_tasks = result.best.tasks
+    assert_equal(sol_tasks[0].start, 10)
+    assert_equal(sol_tasks[0].end, 11)
+    assert_equal(sol_tasks[1].start, 8)
+    assert_equal(sol_tasks[1].end, 10)
+
+
 def test_resource_processes_two_tasks_simultaneously(solver: str):
     """
     Tests that a resource can process two tasks simultaneously.
