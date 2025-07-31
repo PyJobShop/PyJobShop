@@ -51,6 +51,7 @@ def plot_resource_usage(
         ax.set_ylabel(label)
         ax.set_xlim(0, solution.makespan)
 
+    axes[0].set_title("Resource utilization")
     axes[-1].set_xlabel("Time")
 
 
