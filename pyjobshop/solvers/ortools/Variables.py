@@ -170,7 +170,6 @@ class Variables:
         self._tardiness_vars: list[IntVar] | None = None
         self._earliness_vars: list[IntVar] | None = None
         self._max_tardiness_var: IntVar | None = None
-        self._max_lateness_var: IntVar | None = None
 
     @property
     def job_vars(self) -> list[JobVar]:
@@ -319,37 +318,13 @@ class Variables:
 
         if self._job_vars:
             # Need at least one job to enforce this constraint.
-            model.add_max_equality(
-                self._max_tardiness_var, self.tardiness_vars
-            )
+            tardiness_vars = [
+                job.weight * var
+                for job, var in zip(self._data.jobs, self.tardiness_vars)
+            ]
+            model.add_max_equality(self._max_tardiness_var, tardiness_vars)
 
         return self._max_tardiness_var
-
-    @property
-    def max_lateness_var(self) -> IntVar:
-        """
-        Returns the maximum lateness variable, creating it if it does not
-        exist.
-        """
-        if self._max_lateness_var is not None:
-            return self._max_lateness_var
-
-        model, data = self._model, self._data
-        lateness_vars = []
-
-        for job, var in zip(data.jobs, self._job_vars):
-            assert job.due_date is not None
-            lateness = model.new_int_var(
-                -MAX_VALUE, MAX_VALUE, f"lateness_{job}"
-            )
-            model.add(lateness == var.end - job.due_date)
-            lateness_vars.append(job.weight * lateness)
-
-        self._max_lateness_var = model.new_int_var(
-            -MAX_VALUE, MAX_VALUE, "max_lateness"
-        )
-        model.add_max_equality(self._max_lateness_var, lateness_vars)
-        return self._max_lateness_var
 
     def res2assign(self, idx: int) -> list[AssignVar]:
         """
@@ -490,7 +465,6 @@ class Variables:
             model.add_hint(self.makespan_var, solution.makespan)
 
         max_tardiness = []
-        max_lateness = []
         for idx in range(data.num_jobs):
             job = data.jobs[idx]
             job_var = job_vars[idx]
@@ -527,18 +501,10 @@ class Variables:
                 tardiness = max(0, job_end - job.due_date)
                 max_tardiness.append(tardiness)
 
-            if data.objective.weight_max_lateness > 0:
-                assert job.due_date is not None
-                lateness = job_end - job.due_date
-                max_lateness.append(lateness)
-
         if data.objective.weight_max_tardiness > 0:
             model.add_hint(
                 self.max_tardiness_var, max(max_tardiness, default=0)
             )
-
-        if data.objective.weight_max_lateness > 0:
-            model.add_hint(self.max_lateness_var, max(max_lateness, default=0))
 
         for idx in range(data.num_tasks):
             task_var = task_vars[idx]
