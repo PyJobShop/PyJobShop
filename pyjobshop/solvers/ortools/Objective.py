@@ -22,37 +22,36 @@ class Objective:
         """
         Adds the objective expression to the CP model.
         """
-        variables = self._variables
-        obj = self._data.objective
+        variables, objective = self._variables, self._data.objective
         job_weights = [job.weight for job in self._data.jobs]
         expr = 0
 
         def weighted_sum(variables, weights):
             return LinearExpr.weighted_sum(variables, weights)
 
-        if (obj_weight := obj.weight_makespan) > 0:
+        if (obj_weight := objective.weight_makespan) > 0:
             expr += obj_weight * variables.makespan_var
 
-        if (obj_weight := obj.weight_tardy_jobs) > 0:
+        if (obj_weight := objective.weight_tardy_jobs) > 0:
             is_tardy_vars = variables.is_tardy_vars
             expr += obj_weight * weighted_sum(is_tardy_vars, job_weights)
 
-        if (obj_weight := obj.weight_total_flow_time) > 0:
+        if (obj_weight := objective.weight_total_flow_time) > 0:
             flow_time_vars = variables.flow_time_vars
             expr += obj_weight * weighted_sum(flow_time_vars, job_weights)
 
-        if (obj_weight := obj.weight_total_tardiness) > 0:
+        if (obj_weight := objective.weight_total_tardiness) > 0:
             tardiness_vars = variables.tardiness_vars
             expr += obj_weight * weighted_sum(tardiness_vars, job_weights)
 
-        if (obj_weight := obj.weight_total_earliness) > 0:
+        if (obj_weight := objective.weight_total_earliness) > 0:
             earliness_vars = variables.earliness_vars
             expr += obj_weight * weighted_sum(earliness_vars, job_weights)
 
-        if (obj_weight := obj.weight_max_tardiness) > 0:
+        if (obj_weight := objective.weight_max_tardiness) > 0:
             expr += obj_weight * variables.max_tardiness_var
 
-        if (obj_weight := obj.weight_total_setup_time) > 0:
+        if (obj_weight := objective.weight_total_setup_time) > 0:
             data = self._data
             setup_times = utils.setup_times_matrix(data)
             setup_time_vars = []
