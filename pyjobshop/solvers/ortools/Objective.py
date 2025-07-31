@@ -1,11 +1,6 @@
-from ortools.sat.python.cp_model import (
-    CpModel,
-    LinearExpr,
-    LinearExprT,
-)
+from ortools.sat.python.cp_model import CpModel, LinearExpr
 
 import pyjobshop.solvers.utils as utils
-from pyjobshop.ProblemData import Objective as ObjectiveData
 from pyjobshop.ProblemData import ProblemData
 
 from .Variables import Variables
@@ -23,53 +18,41 @@ class Objective:
         self._data = data
         self._variables = variables
 
-    def _objective_expr(self, objective: ObjectiveData) -> LinearExprT:
+    def add_objective(self):
         """
-        Returns the expression corresponding to the given objective.
+        Adds the objective expression to the CP model.
         """
         variables = self._variables
+        obj = self._data.objective
         job_weights = [job.weight for job in self._data.jobs]
-        exprs = []
+        expr = 0
 
-        if objective.weight_makespan > 0:
-            exprs += [objective.weight_makespan * variables.makespan_var]
+        def weighted_sum(variables, weights):
+            return LinearExpr.weighted_sum(variables, weights)
 
-        if objective.weight_tardy_jobs > 0:
-            exprs += [
-                objective.weight_tardy_jobs
-                * LinearExpr.weighted_sum(variables.is_tardy_vars, job_weights)
-            ]
+        if (obj_weight := obj.weight_makespan) > 0:
+            expr += obj_weight * variables.makespan_var
 
-        if objective.weight_total_flow_time > 0:
-            exprs += [
-                objective.weight_total_flow_time
-                * LinearExpr.weighted_sum(
-                    variables.flow_time_vars, job_weights
-                )
-            ]
+        if (obj_weight := obj.weight_tardy_jobs) > 0:
+            is_tardy_vars = variables.is_tardy_vars
+            expr += obj_weight * weighted_sum(is_tardy_vars, job_weights)
 
-        if objective.weight_total_tardiness > 0:
-            exprs += [
-                objective.weight_total_tardiness
-                * LinearExpr.weighted_sum(
-                    variables.tardiness_vars, job_weights
-                )
-            ]
+        if (obj_weight := obj.weight_total_flow_time) > 0:
+            flow_time_vars = variables.flow_time_vars
+            expr += obj_weight * weighted_sum(flow_time_vars, job_weights)
 
-        if objective.weight_total_earliness > 0:
-            exprs += [
-                objective.weight_total_earliness
-                * LinearExpr.weighted_sum(
-                    variables.earliness_vars, job_weights
-                )
-            ]
+        if (obj_weight := obj.weight_total_tardiness) > 0:
+            tardiness_vars = variables.tardiness_vars
+            expr += obj_weight * weighted_sum(tardiness_vars, job_weights)
 
-        if objective.weight_max_tardiness > 0:
-            exprs += [
-                objective.weight_max_tardiness * variables.max_tardiness_var
-            ]
+        if (obj_weight := obj.weight_total_earliness) > 0:
+            earliness_vars = variables.earliness_vars
+            expr += obj_weight * weighted_sum(earliness_vars, job_weights)
 
-        if objective.weight_total_setup_time > 0:
+        if (obj_weight := obj.weight_max_tardiness) > 0:
+            expr += obj_weight * variables.max_tardiness_var
+
+        if (obj_weight := obj.weight_total_setup_time) > 0:
             data = self._data
             setup_times = utils.setup_times_matrix(data)
             setup_time_vars = []
@@ -93,16 +76,6 @@ class Objective:
                         arc_selected = seq_var.arcs[task_idx1, task_idx2]
                         setup_time_vars.append(arc_selected * setup)
 
-            exprs += [
-                objective.weight_total_setup_time
-                * LinearExpr.sum(setup_time_vars)
-            ]
+            expr += obj_weight * LinearExpr.sum(setup_time_vars)
 
-        return LinearExpr.sum(exprs)
-
-    def add_objective(self):
-        """
-        Adds the objective expression to the CP model.
-        """
-        obj_expr = self._objective_expr(self._data.objective)
-        self._model.minimize(obj_expr)
+        self._model.minimize(expr)
