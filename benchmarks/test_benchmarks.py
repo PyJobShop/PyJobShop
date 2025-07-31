@@ -120,5 +120,9 @@ def test_tsp(benchmark, solver):
     model.add_setup_time(machine, arrive, depart, duration=MAX_VALUE)
     model.add_setup_time(machine, depart, arrive, duration=MAX_VALUE)
 
+    if solver == "ortools":
+        # OR-Tools works much faster with this objective to solve TSPs.
+        model.set_objective(weight_total_setup_time=1)
+
     result = benchmark(model.solve, solver=solver, time_limit=10)
     assert_equal(result.objective, 7293)
