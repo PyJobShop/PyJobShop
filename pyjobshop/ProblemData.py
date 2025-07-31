@@ -927,7 +927,7 @@ class ProblemData:
                 if not (0 <= idx2 < self.num_tasks):
                     raise ValueError(f"Invalid task index {idx2} in {name}.")
 
-        for res_idx, task_idx1, task_idx2, dur in self.constraints.setup_times:
+        for res_idx, task_idx1, task_idx2, _ in self.constraints.setup_times:
             if not (0 <= res_idx < self.num_resources):
                 msg = f"Invalid resource index {res_idx} in setup_times."
                 raise ValueError(msg)
@@ -940,8 +940,7 @@ class ProblemData:
                 msg = f"Invalid task index in setup_times: {task_idx2}."
                 raise ValueError(msg)
 
-            is_machine = isinstance(self.resources[res_idx], Machine)
-            if not is_machine and dur > 0:
+            if not isinstance(self.resources[res_idx], Machine):
                 raise ValueError("Setup times only allowed for machines.")
 
         for idx1, idcs2 in self.constraints.mode_dependencies:

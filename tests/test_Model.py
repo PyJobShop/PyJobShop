@@ -98,9 +98,9 @@ def test_from_data():
             different_resources=[DifferentResources(0, 1)],
             consecutive=[Consecutive(1, 2)],
             setup_times=[
-                SetupTime(0, 0, 1, 1),  # machine
-                SetupTime(1, 0, 1, 0),  # renewable
-                SetupTime(2, 0, 1, 0),  # non-renewable
+                SetupTime(0, 0, 1, 1),
+                SetupTime(0, 1, 1, 2),
+                SetupTime(0, 1, 0, 3),
             ],
         ),
         objective=Objective(
