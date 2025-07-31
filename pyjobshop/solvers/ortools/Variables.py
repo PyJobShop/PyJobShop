@@ -477,8 +477,7 @@ class Variables:
         Creates the maximum tardiness variable.
         """
         model = self._model
-        name = "max_tardiness"
-        max_tardiness_var = model.new_int_var(0, MAX_VALUE, name)
+        max_tardiness_var = model.new_int_var(0, MAX_VALUE, "max_tardiness")
 
         if self._job_vars:
             # Need at least one job to enforce this constraint.
