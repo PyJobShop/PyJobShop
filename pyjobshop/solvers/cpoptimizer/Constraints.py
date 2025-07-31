@@ -61,17 +61,18 @@ class Constraints:
                 continue  # skip because cpo warns if there are no modes
 
             seq_var = self._sequence_vars[idx]
+            matrix = None
             setup_times = utils.setup_times_matrix(data)
 
-            if setup_times is not None:
+            if setup_times is not None and np.any(setup_times[idx, :, :] > 0):
                 # The indexing of setup times is correctly handled by the
                 # interval variable's task index "type".
                 matrix = setup_times[idx, :, :]
-                matrix = matrix if np.any(matrix > 0) else None
-            else:
-                matrix = None
 
-            model.add(cpo.no_overlap(seq_var, matrix))
+            # ``is_direct`` enforces setup times between direct successors.
+            # See ICAPS 2017 presentation for details.
+            is_direct = True if matrix is not None else None
+            model.add(cpo.no_overlap(seq_var, matrix, is_direct))
 
     def _get_demand(self, mode_idx: int, res_idx: int) -> int:
         """
