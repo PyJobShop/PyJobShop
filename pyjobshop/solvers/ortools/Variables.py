@@ -163,6 +163,8 @@ class Variables:
         self._assign_vars = self._make_assign_variables(self._task_vars)
         self._sequence_vars = self._make_sequence_variables()
 
+        self._makespan_var = None
+
     @property
     def job_vars(self) -> list[JobVar]:
         """
@@ -197,6 +199,23 @@ class Variables:
         Returns the sequence variables.
         """
         return self._sequence_vars
+
+    @property
+    def makespan_var(self) -> IntVar:
+        """
+        Returns the makespan variable, creating it if it does not exist.
+        """
+        if self._makespan_var is not None:
+            return self._makespan_var
+
+        self._makespan_var = self._model.new_int_var(0, MAX_VALUE, "makespan")
+
+        if self._task_vars:
+            # If there are no tasks, then we can't enforce this constraint.
+            completion_times = [var.end for var in self.task_vars]
+            self._model.add_max_equality(self._makespan_var, completion_times)
+
+        return self._makespan_var
 
     def res2assign(self, idx: int) -> list[AssignVar]:
         """
@@ -357,8 +376,33 @@ class Variables:
 
         for task_idx in range(data.num_tasks):
             sol_task = solution.tasks[task_idx]
+            task_resources = {
+                res
+                for mode in data.task2modes(task_idx)
+                for res in data.modes[mode].resources
+            }
+            selected = set(sol_task.resources)
 
-            for res_idx in sol_task.resources:
-                if (task_idx, res_idx) in assign_vars:
-                    var = assign_vars[task_idx, res_idx]
-                    model.add_hint(var.present, True)
+            for res_idx in task_resources:
+                var = assign_vars[task_idx, res_idx]
+                model.add_hint(var.present, res_idx in selected)
+                model.add_hint(var.demand, 0)  # TODO
+
+        selected_modes = {sol_task.mode for sol_task in solution.tasks}
+        for mode_idx in range(data.num_modes):
+            mode_var = self.mode_vars[mode_idx]
+            model.add_hint(mode_var, mode_idx in selected_modes)
+
+        if self._data.objective.weight_makespan > 0:
+            model.add_hint(self.makespan_var, solution.makespan)
+
+        # items = [
+        #     objective.weight_makespan,
+        #     objective.weight_tardy_jobs,
+        #     objective.weight_total_tardiness,
+        #     objective.weight_total_flow_time,
+        #     objective.weight_total_earliness,
+        #     objective.weight_max_tardiness,
+        #     objective.weight_max_lateness,
+        #     objective.weight_total_setup_time,
+        # ]

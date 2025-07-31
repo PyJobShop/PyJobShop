@@ -28,13 +28,7 @@ class Objective:
         """
         Returns an expression representing the makespan of the model.
         """
-        if not self._variables.task_vars:
-            return LinearExpr.constant(0)
-
-        makespan = self._model.new_int_var(0, MAX_VALUE, "makespan")
-        completion_times = [var.end for var in self._variables.task_vars]
-        self._model.add_max_equality(makespan, completion_times)
-        return makespan
+        return self._variables.makespan_var
 
     def _tardy_jobs_expr(self) -> LinearExprT:
         """
