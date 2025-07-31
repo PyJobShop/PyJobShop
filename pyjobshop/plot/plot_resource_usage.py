@@ -51,6 +51,8 @@ def plot_resource_usage(
         ax.set_ylabel(label)
         ax.set_xlim(0, solution.makespan)
 
+    axes[-1].set_xlabel("Time")
+
 
 def _compute_usage(solution: Solution, data: ProblemData) -> np.ndarray:
     """
