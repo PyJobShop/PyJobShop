@@ -108,6 +108,7 @@ class Model:
             if isinstance(resource, Machine):
                 model.add_machine(
                     resource.breaks,
+                    resource.no_idle,
                     name=resource.name,
                 )
             elif isinstance(resource, Renewable):
@@ -233,13 +234,14 @@ class Model:
     def add_machine(
         self,
         breaks: list[tuple[int, int]] | None = None,
+        no_idle: bool = False,
         *,
         name: str = "",
     ) -> Machine:
         """
         Adds a machine to the model.
         """
-        machine = Machine(breaks, name=name)
+        machine = Machine(breaks, no_idle, name=name)
 
         self._id2resource[id(machine)] = len(self.resources)
         self._resources.append(machine)

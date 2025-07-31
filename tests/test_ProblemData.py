@@ -100,8 +100,9 @@ def test_machine_attributes():
     """
     Tests that the attributes of the Machine class are set correctly.
     """
-    machine = Machine(breaks=[(1, 2)], name="Machine")
-    assert_equal(machine.breaks, [(1, 2)])
+    machine = Machine(breaks=[], no_idle=True, name="Machine")
+    assert_equal(machine.breaks, [])
+    assert_equal(machine.no_idle, True)
     assert_equal(machine.name, "Machine")
 
 
@@ -111,24 +112,26 @@ def test_machine_default_attributes():
     """
     machine = Machine()
     assert_equal(machine.breaks, [])
+    assert_equal(machine.no_idle, False)
     assert_equal(machine.name, "")
 
 
 @pytest.mark.parametrize(
-    "breaks",
+    "breaks, no_idle",
     [
-        [(-1, 0)],  # breaks start < 0
-        [(2, 1)],  # breaks start > end
-        [(1, 3), (2, 4)],  # breaks overlapping
+        ([(-1, 0)], False),  # breaks start < 0
+        ([(2, 1)], False),  # breaks start > end
+        ([(1, 3), (2, 4)], False),  # breaks overlapping
+        ([(1, 2)], True),  # breaks with no_idle
     ],
 )
-def test_machine_raises_invalid_parameters(breaks):
+def test_machine_raises_invalid_parameters(breaks, no_idle):
     """
     Tests that a ValueError is raised when invalid parameters are passed
     to the Machine class.
     """
     with assert_raises(ValueError):
-        Machine(breaks=breaks)
+        Machine(breaks=breaks, no_idle=no_idle)
 
 
 def test_renewable_attributes():
@@ -662,12 +665,16 @@ def test_problem_data_raises_invalid_indices(name, cls, idcs_list):
 
 
 @pytest.mark.parametrize(
-    "resource", [Renewable(capacity=1), NonRenewable(capacity=1)]
+    "resource",
+    [
+        Renewable(capacity=1),
+        NonRenewable(capacity=1),
+    ],
 )
 def test_problem_data_raises_capacitated_resources_and_setup_times(resource):
     """
-    Tests that the ProblemData class raises an error when capacitated resources
-    with have setup times.
+    Tests that the ProblemData class raises an error when invalid resources
+    have setup times.
     """
     with assert_raises(ValueError):
         ProblemData(
@@ -1161,6 +1168,67 @@ def test_machine_breaks(solver: str):
     result = model.solve(solver=solver)
     assert_equal(result.status.value, "Optimal")
     assert_equal(result.objective, 6)
+
+
+def test_machine_no_idle(solver: str):
+    """
+    Tests that a machine with no idle time is respected.
+    """
+    model = Model()
+    machine = model.add_machine(no_idle=True)
+    task1 = model.add_task(earliest_start=10)
+    task2 = model.add_task()
+    model.add_mode(task1, machine, 1)
+    model.add_mode(task2, machine, 2)
+
+    # Add a few dummy modes to check if multiple modes are handled correctly.
+    model.add_mode(task1, machine, 20)
+    model.add_mode(task2, machine, 20)
+
+    # Task 1 can start earliest at time 10. Because the machine does not allow
+    # idle times, task 2 will be scheduled at time 8.
+    result = model.solve(solver=solver)
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.objective, 11)
+
+    sol_tasks = result.best.tasks
+    assert_equal(sol_tasks[0].start, 10)
+    assert_equal(sol_tasks[0].end, 11)
+    assert_equal(sol_tasks[1].start, 8)
+    assert_equal(sol_tasks[1].end, 10)
+
+
+def test_machine_no_idle_setup_times(solver: str):
+    """
+    Tests that a machine with no idle time and setup times is respected.
+    Setup times are allowed on machines with idle times.
+    """
+    model = Model()
+    machine = model.add_machine(no_idle=True)
+    task1 = model.add_task(earliest_start=10)
+    task2 = model.add_task()
+    model.add_mode(task1, machine, 1)
+    model.add_mode(task2, machine, 2)
+
+    # Add a few dummy modes to check if multiple modes are handled correctly.
+    model.add_mode(task1, machine, 20)
+    model.add_mode(task2, machine, 20)
+
+    model.add_setup_time(machine, task2, task1, 3)
+    model.add_setup_time(machine, task1, task2, 3)
+
+    # Task 1 can start earliest at time 10. Because the machine does not allow
+    # idle times, task 2 will be scheduled at time 5 and complete at 7. The
+    # setup time of 3 is added, so task 2 starts at 10 and ends at 11.
+    result = model.solve(solver=solver)
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.objective, 11)
+
+    sol_tasks = result.best.tasks
+    assert_equal(sol_tasks[0].start, 10)
+    assert_equal(sol_tasks[0].end, 11)
+    assert_equal(sol_tasks[1].start, 5)
+    assert_equal(sol_tasks[1].end, 7)
 
 
 def test_resource_processes_two_tasks_simultaneously(solver: str):
