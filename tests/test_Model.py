@@ -1,4 +1,4 @@
-from numpy.testing import assert_equal
+from numpy.testing import assert_, assert_equal
 
 from pyjobshop.Model import Model
 from pyjobshop.ProblemData import (
@@ -362,3 +362,55 @@ def test_solve_additional_kwargs_initial_solution_fixed(small):
     # instance admits a better solution with makespan 3.
     assert_equal(result.objective, 5)
     assert_equal(result.status.value, "Optimal")
+
+
+def test_solve_initial_solution(solver, capfd):
+    """
+    Tests that the display log is correct when an initial solution is provided.
+    """
+    solver2msg = {
+        "ortools": "The solution hint is complete and is feasible.",
+        "cpoptimizer": "Starting point is complete and consistent with constraints.",  # noqa
+    }
+    msg = solver2msg[solver]
+
+    data = ProblemData(
+        [Job(tasks=[1], due_date=1)],
+        [Machine(), Renewable(1), NonRenewable(1)],
+        [Task(), Task(), Task(job=0), Task()],
+        modes=[
+            Mode(0, [0], 1),
+            Mode(1, [0], 1),
+            Mode(2, [1], 2, [1]),
+            Mode(3, [2], 2, [1]),
+        ],
+        constraints=Constraints(
+            setup_times=[
+                # SetupTime(0, 0, 1, 1),
+                # SetupTime(0, 1, 1, 2),
+                # SetupTime(0, 1, 0, 3),
+            ],
+        ),
+        objective=Objective(
+            weight_makespan=2,
+            weight_tardy_jobs=3,
+            weight_total_tardiness=4,
+            weight_total_flow_time=5,
+            weight_total_earliness=6,
+            weight_max_tardiness=7,
+            # weight_total_setup_time=8,
+        ),
+    )
+    init = Solution(
+        [
+            TaskData(0, [0], 0, 1),
+            TaskData(1, [0], 1, 2),
+            TaskData(2, [1], 0, 2),
+            TaskData(3, [2], 0, 2),
+        ]
+    )
+    model = Model.from_data(data)
+    model.solve(solver, display=True, initial_solution=init)
+
+    printed = capfd.readouterr().out
+    assert_(msg in printed)
