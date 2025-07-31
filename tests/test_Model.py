@@ -385,7 +385,6 @@ def test_solve_initial_solution(solver, capfd):
             Mode(3, [2], 2, [1]),
         ],
         constraints=Constraints(
-            consecutive=[Consecutive(0, 1)],
             setup_times=[
                 # SetupTime(0, 0, 1, 1),
                 # SetupTime(0, 1, 1, 2),
@@ -411,14 +410,7 @@ def test_solve_initial_solution(solver, capfd):
         ]
     )
     model = Model.from_data(data)
-
-    # Disable presolve for OR-Tools, because presolve can sometimes turn an
-    # incomplete hint into a complete one.
-    # kwargs = {} if solver == "cpoptimizer" else {"cp_model_presolve": False}
-
-    # model.solve(solver, display=True, initial_solution=init, **kwargs)
     model.solve(solver, display=True, initial_solution=init)
-    # model.solve(solver, display=True)
+
     printed = capfd.readouterr().out
-    print(printed)
     assert_(msg in printed)
