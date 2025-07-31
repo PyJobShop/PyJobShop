@@ -87,7 +87,11 @@ class Constraints:
                 next_type = cpo.type_of_next(
                     seq_var,
                     interval,
-                    lastValue=data.num_tasks,  # dummy type
+                    # When interval is last in sequence or absent, the returned
+                    # value is ``data.num_tasks``, which is out of bounds for
+                    # regular intervals.
+                    lastValue=data.num_tasks,
+                    absentValue=data.num_tasks,
                 )
 
                 setup = 0

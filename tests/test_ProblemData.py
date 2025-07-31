@@ -1158,6 +1158,10 @@ def test_machine_no_idle(solver: str):
     model.add_mode(task1, machine, 1)
     model.add_mode(task2, machine, 2)
 
+    # Add a few dummy modes to check if multiple modes are handled correctly.
+    model.add_mode(task1, machine, 20)
+    model.add_mode(task2, machine, 20)
+
     # Task 1 can start earliest at time 10. Because the machine does not allow
     # idle times, task 2 will be scheduled at time 8.
     result = model.solve(solver=solver)
@@ -1182,6 +1186,11 @@ def test_machine_no_idle_setup_times(solver: str):
     task2 = model.add_task()
     model.add_mode(task1, machine, 1)
     model.add_mode(task2, machine, 2)
+
+    # Add a few dummy modes to check if multiple modes are handled correctly.
+    model.add_mode(task1, machine, 20)
+    model.add_mode(task2, machine, 20)
+
     model.add_setup_time(machine, task2, task1, 3)
     model.add_setup_time(machine, task1, task2, 3)
 
@@ -1189,8 +1198,8 @@ def test_machine_no_idle_setup_times(solver: str):
     # idle times, task 2 will be scheduled at time 5 and complete at 7. The
     # setup time of 3 is added, so task 2 starts at 10 and ends at 11.
     result = model.solve(solver=solver)
-    # assert_equal(result.status.value, "Optimal")
-    # assert_equal(result.objective, 11)
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.objective, 11)
 
     sol_tasks = result.best.tasks
     assert_equal(sol_tasks[0].start, 10)
