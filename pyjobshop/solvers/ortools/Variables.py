@@ -382,11 +382,15 @@ class Variables:
                 for res in data.modes[mode].resources
             }
             selected = set(sol_task.resources)
+            selected_mode = data.modes[sol_task.mode]
+            res2demands = dict(
+                zip(selected_mode.resources, selected_mode.demands)
+            )
 
             for res_idx in task_resources:
                 var = assign_vars[task_idx, res_idx]
                 model.add_hint(var.present, res_idx in selected)
-                model.add_hint(var.demand, 0)  # TODO
+                model.add_hint(var.demand, res2demands[res_idx])  # type: ignore
 
         selected_modes = {sol_task.mode for sol_task in solution.tasks}
         for mode_idx in range(data.num_modes):

@@ -1,4 +1,4 @@
-from numpy.testing import assert_equal
+from numpy.testing import assert_, assert_equal
 
 from pyjobshop.Model import Model
 from pyjobshop.ProblemData import (
@@ -365,3 +365,56 @@ def test_solve_additional_kwargs_initial_solution_fixed(small):
     # instance admits a better solution with makespan 3.
     assert_equal(result.objective, 5)
     assert_equal(result.status.value, "Optimal")
+
+
+def test_solve_initial_solution(solver, capfd):
+    """
+    Tests that the display log is correct when an initial solution is provided.
+    """
+    solver2msg = {
+        # Not all variables are hinted so this message is correct.
+        "ortools": "The solution hint is complete and is feasible.",
+        "cpoptimizer": "Starting point is complete and consistent with constraints.",  # noqa
+    }
+    msg = solver2msg[solver]
+
+    data = ProblemData(
+        [Job(tasks=[1], due_date=1)],
+        [Machine(), Renewable(1), NonRenewable(1)],
+        [Task(), Task(job=0), Task()],
+        modes=[Mode(0, [0], 1), Mode(1, [1], 2, [1]), Mode(2, [2], 2, [1])],
+        constraints=Constraints(
+            # start_before_start=[StartBeforeStart(0, 1)],
+            # start_before_end=[StartBeforeEnd(0, 1)],
+            # end_before_start=[EndBeforeStart(0, 1)],
+            # end_before_end=[EndBeforeEnd(0, 1)],
+            # identical_resources=[IdenticalResources(0, 1)],
+            # different_resources=[DifferentResources(0, 1)],
+            # consecutive=[Consecutive(1, 2)],
+            # setup_times=[
+            #     SetupTime(0, 0, 1, 1),  # machine
+            #     SetupTime(1, 0, 1, 0),  # renewable
+            #     SetupTime(2, 0, 1, 0),  # non-renewable
+            # ],
+        ),
+        objective=Objective(
+            weight_makespan=2,
+            # weight_tardy_jobs=3,
+            # weight_total_tardiness=4,
+            # weight_total_flow_time=5,
+            # weight_total_earliness=6,
+            # weight_max_tardiness=7,
+            # weight_max_lateness=8,
+        ),
+    )
+    init = Solution(
+        [
+            TaskData(0, [0], 0, 1),
+            TaskData(1, [1], 0, 2),
+            TaskData(2, [2], 0, 2),
+        ]
+    )
+    model = Model.from_data(data)
+    model.solve(solver, display=True, initial_solution=init)
+    printed = capfd.readouterr().out
+    assert_(msg in printed)
