@@ -464,7 +464,7 @@ class Variables:
         if self._data.objective.weight_makespan > 0:
             model.add_hint(self.makespan_var, solution.makespan)
 
-        max_tardiness = []
+        max_tardiness = 0
         for idx in range(data.num_jobs):
             job = data.jobs[idx]
             job_var = job_vars[idx]
@@ -478,33 +478,30 @@ class Variables:
             model.add_hint(job_var.duration, job_duration)  # type: ignore
             model.add_hint(job_var.end, job_end)  # type: ignore
 
-            if data.objective.weight_tardy_jobs > 0:
-                assert job.due_date is not None
-                model.add_hint(self.is_tardy_vars[idx], job_end > job.due_date)
-
-            if data.objective.weight_total_tardiness > 0:
-                assert job.due_date is not None
-                tardiness = max(0, job_end - job.due_date)
-                model.add_hint(self.tardiness_vars[idx], tardiness)
-
             if data.objective.weight_total_flow_time > 0:
                 flow_time = job_end - job.release_date
                 model.add_hint(self.flow_time_vars[idx], flow_time)
 
-            if data.objective.weight_total_earliness > 0:
-                assert job.due_date is not None
-                earliness = max(0, job.due_date - job_end)
-                model.add_hint(self.earliness_vars[idx], earliness)
+            if job.due_date is not None:
+                if data.objective.weight_tardy_jobs > 0:
+                    is_tardy = job_end > job.due_date
+                    model.add_hint(self.is_tardy_vars[idx], is_tardy)
 
-            if data.objective.weight_max_tardiness > 0:
-                assert job.due_date is not None
-                tardiness = max(0, job_end - job.due_date)
-                max_tardiness.append(tardiness)
+                if data.objective.weight_total_tardiness > 0:
+                    tardiness = max(0, job_end - job.due_date)
+                    model.add_hint(self.tardiness_vars[idx], tardiness)
+
+                if data.objective.weight_total_earliness > 0:
+                    earliness = max(0, job.due_date - job_end)
+                    model.add_hint(self.earliness_vars[idx], earliness)
+
+                if data.objective.weight_max_tardiness > 0:
+                    # Store tardiness values to compute max_tardiness later.
+                    tardiness = max(0, job_end - job.due_date)
+                    max_tardiness = max(max_tardiness, tardiness)
 
         if data.objective.weight_max_tardiness > 0:
-            model.add_hint(
-                self.max_tardiness_var, max(max_tardiness, default=0)
-            )
+            model.add_hint(self.max_tardiness_var, max_tardiness)
 
         for idx in range(data.num_tasks):
             task_var = task_vars[idx]
