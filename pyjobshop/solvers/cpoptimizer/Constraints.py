@@ -78,19 +78,18 @@ class Constraints:
             if not machine.no_idle:
                 continue
 
+            # For no-idle machines, enforce: end + setup_time == next_start.
+            # This applies to all task pairs except the last task in sequence.
+            # The last task is determined dynamically by the solver sequencing.
             intervals = seq_var.get_interval_variables()
             task_idcs = [data.modes[m].task for m in data.resource2modes(idx)]
 
             for task_idx, interval in zip(task_idcs, intervals):
-                # This sets end + setup == start for all but the last interval.
-                # We don't know the "last" interval since that's determined by
-                # the sequencing.
                 next_type = cpo.type_of_next(
                     seq_var,
                     interval,
-                    # When interval is last in sequence or absent, the returned
-                    # value is ``data.num_tasks``, which is out of bounds for
-                    # regular intervals.
+                    # The returned value ``data.num_tasks`` is used to
+                    # deactivate the precedence constraint.
                     lastValue=data.num_tasks,
                     absentValue=data.num_tasks,
                 )
@@ -101,11 +100,12 @@ class Constraints:
                     setup_array.append(0)  # padding for last or absent
                     setup = cpo.element(setup_array, next_type)
 
+                not_absent_or_last = next_type != data.num_tasks
                 end1 = cpo.end_of(interval)
                 start2 = cpo.start_of_next(seq_var, interval)
                 expr = end1 + setup == start2
 
-                model.add(cpo.if_then(next_type != data.num_tasks, expr))
+                model.add(cpo.if_then(not_absent_or_last, expr))
 
     def _get_demand(self, mode_idx: int, res_idx: int) -> int:
         """

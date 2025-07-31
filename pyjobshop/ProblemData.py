@@ -135,10 +135,10 @@ class Machine:
         Each interval is represented as a tuple (start_time, end_time).
         Default is an empty list (no breaks).
     no_idle
-        Whether the machine is allowed to have idle time between tasks. When
-        True, the machine processes tasks continuously without gaps (except
-        for setup times). When False, machine can wait idle between tasks.
-        Default is False.
+        Whether the machine must operate continuously without idle time between
+        tasks. When ``True``, tasks are scheduled back-to-back with no gaps,
+        except for required setup times. When ``False`` (default), the machine
+        can remain idle between tasks. Cannot be used with machine breaks.
     name
         Name of the machine.
     """
