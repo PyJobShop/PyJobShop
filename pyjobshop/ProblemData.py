@@ -1,6 +1,7 @@
 from collections import Counter
 from copy import deepcopy
 from dataclasses import dataclass, field, fields
+from itertools import pairwise
 from typing import Sequence, TypeVar
 
 from pyjobshop.constants import MAX_VALUE
@@ -41,6 +42,7 @@ class Job:
         deadline: int = MAX_VALUE,
         due_date: int | None = None,
         tasks: list[int] | None = None,
+        *,
         name: str = "",
     ):
         if weight < 0:
@@ -128,12 +130,35 @@ class Machine:
 
     Parameters
     ----------
+    breaks
+        List of time intervals during which tasks cannot be processed.
+        Each interval is represented as a tuple (start_time, end_time).
+        Default is an empty list (no breaks).
     name
         Name of the machine.
     """
 
-    def __init__(self, name: str = ""):
+    def __init__(
+        self, breaks: list[tuple[int, int]] | None = None, *, name: str = ""
+    ):
+        if breaks is not None:
+            for start, end in breaks:
+                if start < 0 or start >= end:
+                    raise ValueError("Break start < 0 or start > end.")
+
+            for interval1, interval2 in pairwise(sorted(breaks)):
+                if interval1[1] > interval2[0]:
+                    raise ValueError("Break intervals must not overlap.")
+
+        self._breaks = breaks or []
         self._name = name
+
+    @property
+    def breaks(self) -> list[tuple[int, int]]:
+        """
+        List of time intervals during which tasks cannot be processed.
+        """
+        return self._breaks
 
     @property
     def name(self) -> str:
@@ -152,15 +177,35 @@ class Renewable:
     ----------
     capacity
         Capacity of the resource.
+    breaks
+        List of time intervals during which tasks cannot be processed.
+        Each interval is represented as a tuple (start_time, end_time).
+        Default is an empty list (no breaks).
     name
         Name of the resource.
     """
 
-    def __init__(self, capacity: int, name: str = ""):
+    def __init__(
+        self,
+        capacity: int,
+        breaks: list[tuple[int, int]] | None = None,
+        *,
+        name: str = "",
+    ):
         if capacity < 0:
             raise ValueError("Capacity must be non-negative.")
 
+        if breaks is not None:
+            for start, end in breaks:
+                if start < 0 or start >= end:
+                    raise ValueError("Break start < 0 or start > end.")
+
+            for interval1, interval2 in pairwise(sorted(breaks)):
+                if interval1[1] > interval2[0]:
+                    raise ValueError("Break intervals must not overlap.")
+
         self._capacity = capacity
+        self._breaks = breaks or []
         self._name = name
 
     @property
@@ -169,6 +214,13 @@ class Renewable:
         Capacity of the resource.
         """
         return self._capacity
+
+    @property
+    def breaks(self) -> list[tuple[int, int]]:
+        """
+        List of time intervals during which tasks cannot be processed.
+        """
+        return self._breaks
 
     @property
     def name(self) -> str:
@@ -190,7 +242,7 @@ class NonRenewable:
         Name of the resource.
     """
 
-    def __init__(self, capacity: int, name: str = ""):
+    def __init__(self, capacity: int, *, name: str = ""):
         if capacity < 0:
             raise ValueError("Capacity must be non-negative.")
 
@@ -255,6 +307,7 @@ class Task:
         latest_end: int = MAX_VALUE,
         fixed_duration: bool = True,
         optional: bool = False,
+        *,
         name: str = "",
     ):
         if earliest_start > latest_start:
@@ -356,6 +409,7 @@ class Mode:
         resources: list[int],
         duration: int,
         demands: list[int] | None = None,
+        *,
         name: str = "",
     ):
         if len(set(resources)) != len(resources):
@@ -414,7 +468,7 @@ class IterableMixin:
     """
 
     def __iter__(self):
-        return iter(getattr(self, field.name) for field in fields(self))
+        return iter(getattr(self, f.name) for f in fields(self))
 
 
 @dataclass
@@ -587,6 +641,9 @@ class SetupTime(IterableMixin):
 
     where :math:`d` is the setup time duration. Note that this also implies
     an end-before-start relationship between task 1 and task 2.
+
+    When using :attr:`Machine.breaks`, setup times are allowed to take place
+    during the breaks.
     """
 
     machine: int
@@ -643,7 +700,24 @@ class Constraints:
     mode_dependencies: list[ModeDependency] = field(default_factory=list)
 
     def __len__(self) -> int:
+        """
+        Returns the total number of constraints across all types.
+        """
         return sum(len(getattr(self, f.name)) for f in fields(self))
+
+    def __str__(self) -> str:
+        parts = []
+        for f in fields(self):
+            count = len(getattr(self, f.name))
+            if count > 0:
+                parts.append(f"{count} {f.name}")
+
+        lines = [f"{len(self)} constraints"]
+        for idx, part in enumerate(parts):
+            symbol = "└─" if idx == len(parts) - 1 else "├─"
+            lines.append(f"{symbol} {part}")
+
+        return "\n".join(lines)
 
 
 @dataclass
@@ -711,6 +785,23 @@ class Objective:
             if value < 0:
                 raise ValueError(f"{f.name} < 0 not understood.")
 
+    def __str__(self) -> str:
+        parts = []
+        for f in fields(self):
+            value = getattr(self, f.name)
+            if value > 0:
+                parts.append(f"{f.name}={value}")
+
+        lines = ["objective"]
+        for idx, part in enumerate(parts):
+            symbol = "└─" if idx == len(parts) - 1 else "├─"
+            lines.append(f"{symbol} {part}")
+
+        if not parts:
+            lines.append("└─ no weights")
+
+        return "\n".join(lines)
+
 
 class ProblemData:
     """
@@ -777,6 +868,35 @@ class ProblemData:
                 self._renewable_idcs.append(idx)
             elif isinstance(resource, NonRenewable):
                 self._non_renewable_idcs.append(idx)
+
+    def __str__(self):
+        lines = [
+            f"{len(self.jobs)} jobs",
+            f"{len(self.resources)} resources",
+        ]
+
+        parts = []
+        if self.num_machines > 0:
+            parts.append(f"{self.num_machines} machines")
+        if self.num_renewables > 0:
+            parts.append(f"{self.num_renewables} renewable")
+        if self.num_non_renewables > 0:
+            parts.append(f"{self.num_non_renewables} non_renewable")
+
+        for idx, part in enumerate(parts):
+            symbol = "└─" if idx == len(parts) - 1 else "├─"
+            lines.append(f"{symbol} {part}")
+
+        lines.extend(
+            [
+                f"{len(self.tasks)} tasks",
+                f"{len(self.modes)} modes",
+                str(self.constraints).rstrip(),
+                str(self.objective).rstrip(),
+            ]
+        )
+
+        return "\n".join(lines)
 
     def _validate(self):
         """
@@ -1006,6 +1126,27 @@ class ProblemData:
         Returns the number of resources in this instance.
         """
         return len(self._resources)
+
+    @property
+    def num_machines(self) -> int:
+        """
+        Returns the number of machines in this instance.
+        """
+        return len(self._machine_idcs)
+
+    @property
+    def num_renewables(self) -> int:
+        """
+        Returns the number of renewable resources in this instance.
+        """
+        return len(self._renewable_idcs)
+
+    @property
+    def num_non_renewables(self) -> int:
+        """
+        Returns the number of non-renewable resources in this instance.
+        """
+        return len(self._non_renewable_idcs)
 
     @property
     def num_tasks(self) -> int:

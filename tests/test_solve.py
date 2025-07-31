@@ -31,7 +31,12 @@ def test_solve_display(small, solver, capfd):
     solve(small, solver, display=True)
     printed = capfd.readouterr().out
     assert_(printed != "")
+    assert_("PyJobShop v" in printed)
+    assert_("Solving an instance with:" in printed)
+    assert_("START SOLVER LOG" in printed)
+    assert_("END SOLVER LOG" in printed)
 
+    # Disabling display should not print anything.
     solve(small, solver, display=False)
     printed = capfd.readouterr().out
     assert_equal(printed, "")

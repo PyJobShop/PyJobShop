@@ -60,6 +60,8 @@ dev = [
     "pre-commit>=3.8.0",
     "pytest>=8.3.2",
     "pytest-cov>=5.0.0",
+    "pytest-codspeed>=4.0.0",
+    "pytest-sugar>=1.0.0",
     "codecov>=2.1.13",
 ]
 docs = [
@@ -127,6 +129,7 @@ testpaths = ["tests"]
 omit = [
     "docs/*",
     "tests/*",
+    "benchmarks/*",
     "setup.py",
     "cpo_config.py",
     "conftest.py",
