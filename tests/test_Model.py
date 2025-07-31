@@ -98,9 +98,9 @@ def test_from_data():
             different_resources=[DifferentResources(0, 1)],
             consecutive=[Consecutive(1, 2)],
             setup_times=[
-                SetupTime(0, 0, 1, 1),  # machine
-                SetupTime(1, 0, 1, 0),  # renewable
-                SetupTime(2, 0, 1, 0),  # non-renewable
+                SetupTime(0, 0, 1, 1),
+                SetupTime(0, 1, 1, 2),
+                SetupTime(0, 1, 0, 3),
             ],
         ),
         objective=Objective(
@@ -377,21 +377,20 @@ def test_solve_initial_solution(solver, capfd):
     data = ProblemData(
         [Job(tasks=[1], due_date=1)],
         [Machine(), Renewable(1), NonRenewable(1)],
-        [Task(), Task(job=0), Task()],
-        modes=[Mode(0, [0], 1), Mode(1, [1], 2, [1]), Mode(2, [2], 2, [1])],
+        [Task(), Task(), Task(job=0), Task()],
+        modes=[
+            Mode(0, [0], 1),
+            Mode(1, [0], 1),
+            Mode(2, [1], 2, [1]),
+            Mode(3, [2], 2, [1]),
+        ],
         constraints=Constraints(
-            # start_before_start=[StartBeforeStart(0, 1)],
-            # start_before_end=[StartBeforeEnd(0, 1)],
-            # end_before_start=[EndBeforeStart(0, 1)],
-            # end_before_end=[EndBeforeEnd(0, 1)],
-            # identical_resources=[IdenticalResources(0, 1)],
-            # different_resources=[DifferentResources(0, 1)],
-            # consecutive=[Consecutive(1, 2)],
-            # setup_times=[
-            #     SetupTime(0, 0, 1, 1),  # machine
-            #     SetupTime(1, 0, 1, 0),  # renewable
-            #     SetupTime(2, 0, 1, 0),  # non-renewable
-            # ],
+            consecutive=[Consecutive(0, 1)],
+            setup_times=[
+                # SetupTime(0, 0, 1, 1),
+                # SetupTime(0, 1, 1, 2),
+                # SetupTime(0, 1, 0, 3),
+            ],
         ),
         objective=Objective(
             weight_makespan=2,
@@ -400,21 +399,26 @@ def test_solve_initial_solution(solver, capfd):
             weight_total_flow_time=5,
             weight_total_earliness=6,
             weight_max_tardiness=7,
+            # weight_total_setup_time=8,
         ),
     )
     init = Solution(
         [
             TaskData(0, [0], 0, 1),
-            TaskData(1, [1], 0, 2),
-            TaskData(2, [2], 0, 2),
+            TaskData(1, [0], 1, 2),
+            TaskData(2, [1], 0, 2),
+            TaskData(3, [2], 0, 2),
         ]
     )
     model = Model.from_data(data)
 
     # Disable presolve for OR-Tools, because presolve can sometimes turn an
     # incomplete hint into a complete one.
-    kwargs = {} if solver == "cpoptimizer" else {"cp_model_presolve": False}
+    # kwargs = {} if solver == "cpoptimizer" else {"cp_model_presolve": False}
 
-    model.solve(solver, display=True, initial_solution=init, **kwargs)
+    # model.solve(solver, display=True, initial_solution=init, **kwargs)
+    model.solve(solver, display=True, initial_solution=init)
+    # model.solve(solver, display=True)
     printed = capfd.readouterr().out
+    print(printed)
     assert_(msg in printed)

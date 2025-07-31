@@ -800,7 +800,7 @@ def test_problem_data_replace_with_changes():
         ],
         constraints=Constraints(
             end_before_start=[EndBeforeStart(1, 0)],
-            setup_times=[SetupTime(0, 0, 1, 0), SetupTime(1, 0, 1, 10)],
+            setup_times=[SetupTime(1, 0, 1, 0), SetupTime(1, 1, 0, 10)],
         ),
         objective=Objective(weight_total_tardiness=1),
     )
