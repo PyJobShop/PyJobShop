@@ -372,7 +372,6 @@ def test_solve_initial_solution(solver, capfd):
     Tests that the display log is correct when an initial solution is provided.
     """
     solver2msg = {
-        # Not all variables are hinted so this message is correct.
         "ortools": "The solution hint is complete and is feasible.",
         "cpoptimizer": "Starting point is complete and consistent with constraints.",  # noqa
     }
@@ -399,11 +398,11 @@ def test_solve_initial_solution(solver, capfd):
         ),
         objective=Objective(
             weight_makespan=2,
-            # weight_tardy_jobs=3,
-            # weight_total_tardiness=4,
-            # weight_total_flow_time=5,
-            # weight_total_earliness=6,
-            # weight_max_tardiness=7,
+            weight_tardy_jobs=3,
+            weight_total_tardiness=4,
+            weight_total_flow_time=5,
+            weight_total_earliness=6,
+            weight_max_tardiness=7,
             # weight_max_lateness=8,
         ),
     )
@@ -415,6 +414,11 @@ def test_solve_initial_solution(solver, capfd):
         ]
     )
     model = Model.from_data(data)
-    model.solve(solver, display=True, initial_solution=init)
+
+    # Disable presolve for OR-Tools, because presolve can sometimes turn an
+    # incomplete hint into a complete one.
+    kwargs = {} if solver == "cpoptimizer" else {"cp_model_presolve": False}
+
+    model.solve(solver, display=True, initial_solution=init, **kwargs)
     printed = capfd.readouterr().out
     assert_(msg in printed)

@@ -218,7 +218,7 @@ class Variables:
         self._makespan_var = self._model.new_int_var(0, MAX_VALUE, "makespan")
 
         if self._task_vars:
-            # If there are no tasks, then we can't enforce this constraint.
+            # Need at least one task to enforce this constraint.
             completion_times = [var.end for var in self.task_vars]
             self._model.add_max_equality(self._makespan_var, completion_times)
 
@@ -313,19 +313,16 @@ class Variables:
         if self._max_tardiness_var is not None:
             return self._max_tardiness_var
 
-        model, data = self._model, self._data
-        tardiness_vars = []
+        model = self._model
+        name = "max_tardiness"
+        self._max_tardiness_var = model.new_int_var(0, MAX_VALUE, name)
 
-        for job, var in zip(data.jobs, self._job_vars):
-            assert job.due_date is not None
-            tardiness = model.new_int_var(0, MAX_VALUE, f"tardiness_{job}")
-            model.add_max_equality(tardiness, [0, var.end - job.due_date])
-            tardiness_vars.append(job.weight * tardiness)
+        if self._job_vars:
+            # Need at least one job to enforce this constraint.
+            model.add_max_equality(
+                self._max_tardiness_var, self.tardiness_vars
+            )
 
-        self._max_tardiness_var = model.new_int_var(
-            0, MAX_VALUE, "max_tardiness"
-        )
-        model.add_max_equality(self._max_tardiness_var, tardiness_vars)
         return self._max_tardiness_var
 
     @property
@@ -489,6 +486,11 @@ class Variables:
 
         model.clear_hints()
 
+        if self._data.objective.weight_makespan > 0:
+            model.add_hint(self.makespan_var, solution.makespan)
+
+        max_tardiness = []
+        max_lateness = []
         for idx in range(data.num_jobs):
             job = data.jobs[idx]
             job_var = job_vars[idx]
@@ -501,6 +503,42 @@ class Variables:
             model.add_hint(job_var.start, job_start)  # type: ignore
             model.add_hint(job_var.duration, job_duration)  # type: ignore
             model.add_hint(job_var.end, job_end)  # type: ignore
+
+            if data.objective.weight_tardy_jobs > 0:
+                assert job.due_date is not None
+                model.add_hint(self.is_tardy_vars[idx], job_end > job.due_date)
+
+            if data.objective.weight_total_tardiness > 0:
+                assert job.due_date is not None
+                tardiness = max(0, job_end - job.due_date)
+                model.add_hint(self.tardiness_vars[idx], tardiness)
+
+            if data.objective.weight_total_flow_time > 0:
+                flow_time = job_end - job.release_date
+                model.add_hint(self.flow_time_vars[idx], flow_time)
+
+            if data.objective.weight_total_earliness > 0:
+                assert job.due_date is not None
+                earliness = max(0, job.due_date - job_end)
+                model.add_hint(self.earliness_vars[idx], earliness)
+
+            if data.objective.weight_max_tardiness > 0:
+                assert job.due_date is not None
+                tardiness = max(0, job_end - job.due_date)
+                max_tardiness.append(tardiness)
+
+            if data.objective.weight_max_lateness > 0:
+                assert job.due_date is not None
+                lateness = job_end - job.due_date
+                max_lateness.append(lateness)
+
+        if data.objective.weight_max_tardiness > 0:
+            model.add_hint(
+                self.max_tardiness_var, max(max_tardiness, default=0)
+            )
+
+        if data.objective.weight_max_lateness > 0:
+            model.add_hint(self.max_lateness_var, max(max_lateness, default=0))
 
         for idx in range(data.num_tasks):
             task_var = task_vars[idx]
@@ -533,18 +571,3 @@ class Variables:
         for mode_idx in range(data.num_modes):
             mode_var = self.mode_vars[mode_idx]
             model.add_hint(mode_var, mode_idx in selected_modes)
-
-        if self._data.objective.weight_makespan > 0:
-            model.add_hint(self.makespan_var, solution.makespan)
-
-        # TODO only add hints if they are relevant.
-        # items = [
-        #     objective.weight_makespan,
-        #     objective.weight_tardy_jobs,
-        #     objective.weight_total_tardiness,
-        #     objective.weight_total_flow_time,
-        #     objective.weight_total_earliness,
-        #     objective.weight_max_tardiness,
-        #     objective.weight_max_lateness,
-        #     objective.weight_total_setup_time,
-        # ]
