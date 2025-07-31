@@ -117,25 +117,6 @@ class Objective:
         model.add_max_equality(max_tardiness, tardiness_vars)
         return max_tardiness
 
-    def _max_lateness_expr(self) -> LinearExprT:
-        """
-        Returns an expression representing the maximum tardiness of jobs.
-        """
-        model, data = self._model, self._data
-        lateness_vars = []
-
-        for job, var in zip(data.jobs, self._variables.job_vars):
-            assert job.due_date is not None
-            lateness = model.new_int_var(
-                -MAX_VALUE, MAX_VALUE, f"lateness_{job}"
-            )
-            model.add(lateness == var.end - job.due_date)
-            lateness_vars.append(job.weight * lateness)
-
-        max_lateness = model.new_int_var(-MAX_VALUE, MAX_VALUE, "max_lateness")
-        model.add_max_equality(max_lateness, lateness_vars)
-        return max_lateness
-
     def _total_setup_time_expr(self) -> LinearExprT:
         """
         Returns an expression representing the total setup time of tasks.
@@ -177,7 +158,6 @@ class Objective:
             (objective.weight_total_flow_time, self._total_flow_time_expr),
             (objective.weight_total_earliness, self._total_earliness_expr),
             (objective.weight_max_tardiness, self._max_tardiness_expr),
-            (objective.weight_max_lateness, self._max_lateness_expr),
             (objective.weight_total_setup_time, self._total_setup_time_expr),
         ]
         exprs = [weight * expr() for weight, expr in items if weight > 0]
