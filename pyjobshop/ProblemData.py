@@ -742,10 +742,6 @@ class Objective:
         .. math::
             U_{\max} = \max_{j \in J} w_j (\max(C_j - d_j, 0))
 
-    **Maximum lateness** (:math:`L_{\max}`): The weighted maximum lateness of all jobs. Lateness can be negative, unlike tardiness.
-        .. math::
-            L_{\max} = \max_{j \in J} w_j (C_j - d_j)
-
     **Total setup time** (:math:`TST`): The sum of all sequence-dependent setup times between consecutive tasks on each machine, where :math:`R` denotes the set of machines, :math:`M^R_r` denotes the set of modes requiring :math:`r \in R`, :math:`s_{t_u, t_v, r}` denotes the setup time between tasks :math:`t_u` and :math:`t_v` on machine :math:`r` and :math:`b_{ruv}` is the binary variable indicating whether task :math:`t_u` is followed by task :math:`t_v` on machine :math:`r`.
         .. math::
             TST = \sum_{r \in R} \sum_{u, v \in M^R_r} s_{t_u, t_v, r} b_{ruv}
@@ -761,7 +757,6 @@ class Objective:
     weight_total_tardiness: int = 0
     weight_total_earliness: int = 0
     weight_max_tardiness: int = 0
-    weight_max_lateness: int = 0
     weight_total_setup_time: int = 0
 
     def __post_init__(self):
@@ -986,7 +981,7 @@ class ProblemData:
             # TODO check that tasks1 and tasks2 belong to right machine?
             # if the length is not equal it's also a problem
 
-        for res_idx, task_idx1, task_idx2, dur in self.constraints.setup_times:
+        for res_idx, task_idx1, task_idx2, _ in self.constraints.setup_times:
             if not (0 <= res_idx < self.num_resources):
                 msg = f"Invalid resource index {res_idx} in setup_times."
                 raise ValueError(msg)
@@ -999,8 +994,7 @@ class ProblemData:
                 msg = f"Invalid task index in setup_times: {task_idx2}."
                 raise ValueError(msg)
 
-            is_machine = isinstance(self.resources[res_idx], Machine)
-            if not is_machine and dur > 0:
+            if not isinstance(self.resources[res_idx], Machine):
                 raise ValueError("Setup times only allowed for machines.")
 
         for idx1, idcs2 in self.constraints.mode_dependencies:
@@ -1026,7 +1020,6 @@ class ProblemData:
             or self.objective.weight_total_tardiness > 0
             or self.objective.weight_total_earliness > 0
             or self.objective.weight_max_tardiness > 0
-            or self.objective.weight_max_lateness > 0
         ):
             if any(job.due_date is None for job in self.jobs):
                 msg = "Job due dates required for due date-based objectives."

@@ -353,14 +353,13 @@ def test_constraints_str():
 @pytest.mark.parametrize(
     "weights",
     [
-        [-1, 0, 0, 0, 0, 0, 0, 0],  # weight_makespan < 0,
-        [0, -1, 0, 0, 0, 0, 0, 0],  # weight_tardy_jobs < 0
-        [0, 0, -1, 0, 0, 0, 0, 0],  # weight_total_flow_time < 0
-        [0, 0, 0, -1, 0, 0, 0, 0],  # weight_total_tardiness < 0
-        [0, 0, 0, 0, -1, 0, 0, 0],  # weight_total_earliness < 0
-        [0, 0, 0, 0, 0, -1, 0, 0],  # weight_max_tardiness < 0
-        [0, 0, 0, 0, 0, 0, -1, 0],  # weight_max_lateness < 0
-        [0, 0, 0, 0, 0, 0, 0, -1],  # weight_total_setup_time < 0
+        [-1, 0, 0, 0, 0, 0, 0],  # weight_makespan < 0,
+        [0, -1, 0, 0, 0, 0, 0],  # weight_tardy_jobs < 0
+        [0, 0, -1, 0, 0, 0, 0],  # weight_total_flow_time < 0
+        [0, 0, 0, -1, 0, 0, 0],  # weight_total_tardiness < 0
+        [0, 0, 0, 0, -1, 0, 0],  # weight_total_earliness < 0
+        [0, 0, 0, 0, 0, -1, 0],  # weight_max_tardiness < 0
+        [0, 0, 0, 0, 0, 0, -1],  # weight_total_setup_time < 0
     ],
 )
 def test_objective_valid_values(weights: list[int]):
@@ -708,7 +707,6 @@ def test_problem_data_raises_mode_dependency_same_task():
         Objective(weight_total_tardiness=1),
         Objective(weight_total_earliness=1),
         Objective(weight_max_tardiness=1),
-        Objective(weight_max_lateness=1),
     ],
 )
 def test_problem_data_tardy_objective_without_job_due_dates(
@@ -825,7 +823,7 @@ def test_problem_data_replace_with_changes():
         ],
         constraints=Constraints(
             end_before_start=[EndBeforeStart(1, 0)],
-            setup_times=[SetupTime(0, 0, 1, 0), SetupTime(1, 0, 1, 10)],
+            setup_times=[SetupTime(1, 0, 1, 0), SetupTime(1, 1, 0, 10)],
         ),
         objective=Objective(weight_total_tardiness=1),
     )
@@ -1879,31 +1877,6 @@ def test_max_tardiness(solver: str):
     # has weight 1. So the maximum tardiness is 2 * 2 = 4. Multiplied with the
     # ``weight_max_tardiness`` of 2, the objective value is 8.
     assert_equal(result.objective, 8)
-    assert_equal(result.best.tasks[0].end, 2)
-    assert_equal(result.best.tasks[1].end, 2)
-
-
-def test_max_lateness(solver: str):
-    """
-    Tests that the maximum lateness objective function is correctly optimized.
-    Specifically, we also check that lateness can be negative.
-    """
-    model = Model()
-
-    for idx in range(2):
-        machine = model.add_machine()
-        job = model.add_job(weight=idx + 1, due_date=4)
-        task = model.add_task(job=job)
-        model.add_mode(task, machine, duration=2)
-
-    model.set_objective(weight_max_lateness=2)
-
-    result = model.solve(solver=solver)
-
-    # Both jobs are "late" by -2 time units, but job 1 has weight 2 and job 2
-    # has weight 1. So the maximum lateness is -2 * 1 = -2. Multiplied with the
-    # ``weight_max_lateness`` of 2, the objective value is -4.
-    assert_equal(result.objective, -4)
     assert_equal(result.best.tasks[0].end, 2)
     assert_equal(result.best.tasks[1].end, 2)
 

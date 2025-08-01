@@ -106,9 +106,9 @@ def test_from_data():
             consecutive=[Consecutive(1, 2)],
             same_sequence=[SameSequence(0, 3, [0], [2])],
             setup_times=[
-                SetupTime(0, 0, 1, 1),  # machine
-                SetupTime(1, 0, 1, 0),  # renewable
-                SetupTime(2, 0, 1, 0),  # non-renewable
+                SetupTime(0, 0, 1, 1),
+                SetupTime(0, 1, 1, 2),
+                SetupTime(0, 1, 0, 3),
             ],
         ),
         objective=Objective(
@@ -118,8 +118,7 @@ def test_from_data():
             weight_total_flow_time=5,
             weight_total_earliness=6,
             weight_max_tardiness=7,
-            weight_max_lateness=8,
-            weight_total_setup_time=9,
+            weight_total_setup_time=8,
         ),
     )
     model = Model.from_data(data)
@@ -324,8 +323,7 @@ def test_model_set_objective():
         weight_total_flow_time=4,
         weight_total_earliness=5,
         weight_max_tardiness=6,
-        weight_max_lateness=7,
-        weight_total_setup_time=8,
+        weight_total_setup_time=7,
     )
 
     assert_equal(model.objective.weight_makespan, 1)
@@ -334,8 +332,7 @@ def test_model_set_objective():
     assert_equal(model.objective.weight_total_flow_time, 4)
     assert_equal(model.objective.weight_total_earliness, 5)
     assert_equal(model.objective.weight_max_tardiness, 6)
-    assert_equal(model.objective.weight_max_lateness, 7)
-    assert_equal(model.objective.weight_total_setup_time, 8)
+    assert_equal(model.objective.weight_total_setup_time, 7)
 
 
 def test_solve(solver: str):
