@@ -5,7 +5,6 @@ import numpy as np
 from ortools.sat.python.cp_model import CpModel, LinearExpr
 
 import pyjobshop.solvers.utils as utils
-from pyjobshop.constants import MAX_VALUE
 from pyjobshop.ProblemData import ProblemData
 from pyjobshop.solvers.ortools.Variables import Variables
 
@@ -30,26 +29,8 @@ class Constraints:
 
         for idx, job in enumerate(data.jobs):
             job_var = variables.job_vars[idx]
-            starts = []
-            ends = []
-
-            for task in job.tasks:
-                task_var = variables.task_vars[task]
-
-                # Introduce intermediate task start and end variables. When
-                # tasks are absent, they should not affect the job's start and
-                # end times.
-                task_start = model.new_int_var(0, MAX_VALUE, "")
-                task_end = model.new_int_var(0, MAX_VALUE, "")
-
-                expr = task_start == task_var.start
-                model.add(expr).only_enforce_if(task_var.present)
-
-                expr = task_end == task_var.end
-                model.add(expr).only_enforce_if(task_var.present)
-
-                starts.append(task_start)
-                ends.append(task_end)
+            starts = [variables.task_vars[task].start for task in job.tasks]
+            ends = [variables.task_vars[task].end for task in job.tasks]
 
             model.add_min_equality(job_var.start, starts)
             model.add_max_equality(job_var.end, ends)

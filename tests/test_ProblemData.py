@@ -1053,7 +1053,6 @@ def test_task_fixed_start(solver: str):
 
     machine = model.add_machine()
     task = model.add_task(earliest_start=42, latest_start=42)
-
     model.add_mode(task, machine, duration=1)
 
     result = model.solve(solver=solver)
@@ -1071,7 +1070,6 @@ def test_task_earliest_end(solver: str):
 
     machine = model.add_machine()
     task = model.add_task(earliest_end=2)
-
     model.add_mode(task, machine, duration=1)
 
     result = model.solve(solver=solver)
@@ -1115,7 +1113,6 @@ def test_task_fixed_end(solver: str):
 
     machine = model.add_machine()
     task = model.add_task(earliest_end=42, latest_end=42)
-
     model.add_mode(task, machine, duration=1)
 
     result = model.solve(solver=solver)

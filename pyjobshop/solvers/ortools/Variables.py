@@ -352,6 +352,8 @@ class Variables:
         variables = []
         task_durations = utils.compute_task_durations(data)
 
+        # TODO task restrictions should only apply when task is present
+
         for idx, task in enumerate(data.tasks):
             name = f"T{idx}"
             start = model.new_int_var(
