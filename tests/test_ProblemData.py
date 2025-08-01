@@ -346,9 +346,10 @@ def test_constraints_len():
             SetupTime(1, 0, 1, 0),  # renewable
             SetupTime(2, 0, 1, 0),  # non-renewable
         ],
+        mode_dependencies=[ModeDependency(0, [1])],
     )
 
-    assert_equal(len(constraints), 13)
+    assert_equal(len(constraints), 14)
 
 
 def test_constraints_str():
