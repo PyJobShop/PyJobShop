@@ -526,6 +526,7 @@ class Variables:
             self.task_vars,
             self.assign_vars,
         )
+        sol_tasks = solution.tasks
 
         model.clear_hints()
 
@@ -534,10 +535,10 @@ class Variables:
         for task_idx in range(data.num_jobs):
             job = data.jobs[task_idx]
             job_var = job_vars[task_idx]
-            sol_tasks = [solution.tasks[task] for task in job.tasks]
+            job_sol_tasks = [sol_tasks[task] for task in job.tasks]
 
-            job_start = min(task.start for task in sol_tasks)
-            job_end = max(task.end for task in sol_tasks)
+            job_start = min(task.start for task in job_sol_tasks)
+            job_end = max(task.end for task in job_sol_tasks)
             job_duration = job_end - job_start
 
             model.add_hint(job_var.start, job_start)  # type: ignore
@@ -605,43 +606,30 @@ class Variables:
 
             tasks = {data.modes[m].task for m in data.resource2modes(res_idx)}
             starts = [solution.tasks[idx].start for idx in tasks]
-            present = [
-                res_idx in solution.tasks[idx].resources for idx in tasks
-            ]
+            present_tasks = {
+                idx for idx in tasks if res_idx in sol_tasks[idx].resources
+            }
 
             # Identify the first and last task in the sequence.
-            present_tasks = [idx for idx in tasks if present[idx]]
-            first = min(
-                present_tasks,
-                key=lambda idx: starts[idx],
-                default=data.num_tasks,
-            )
-            last = max(
-                present_tasks,
-                key=lambda idx: starts[idx],
-                default=data.num_tasks,
-            )
+            first = min(present_tasks, key=lambda idx: starts[idx])
+            last = max(present_tasks, key=lambda idx: starts[idx])
 
-            hints = []  # for debugging
             for (idx1, idx2), arc in seq_var.arcs.items():
                 if idx1 == seq_var.DUMMY and idx2 == seq_var.DUMMY:
-                    all_tasks_absent = all(not pres for pres in present)
-                    model.add_hint(arc, all_tasks_absent)
-                    hints.append(((idx1, idx2), all_tasks_absent))
+                    hint = not present_tasks
                 elif idx1 == seq_var.DUMMY:
-                    model.add_hint(arc, idx2 == first)
-                    hints.append(((idx1, idx2), idx2 == first))
+                    hint = idx2 == first
                 elif idx2 == seq_var.DUMMY:
-                    model.add_hint(arc, idx1 == last)
-                    hints.append(((idx1, idx2), idx1 == last))
+                    hint = idx1 == last
                 elif idx1 == idx2:
-                    task_absent = not present[idx1]
-                    model.add_hint(arc, task_absent)
-                    hints.append(((idx1, idx2), task_absent))
+                    hint = idx1 not in present_tasks
                 else:
-                    both_present = present[idx1] and present[idx2]
-                    starts_before = starts[idx1] < starts[idx2]
-                    model.add_hint(arc, both_present and starts_before)
-                    hints.append(
-                        ((idx1, idx2), both_present and starts_before)
+                    hint = (
+                        idx1 in present_tasks
+                        and idx2 in present_tasks
+                        and starts[idx1] < starts[idx2]
                     )
+                    # TODO edge case when task duration is 0. we need to
+                    # retrieve this directly from the solution?
+
+                model.add_hint(arc, hint)
