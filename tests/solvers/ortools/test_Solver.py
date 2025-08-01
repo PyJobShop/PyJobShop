@@ -18,6 +18,7 @@ def test_solve_initial_solution(complete, capfd):
             TaskData(2, [1], 1, 2),
             TaskData(4, [2], 0, 1),
             TaskData(5, [3], 0, 1),
+            TaskData(0, [], 0, 0, False),
         ]
     )
     solver.solve(display=True, initial_solution=init)

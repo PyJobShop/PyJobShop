@@ -57,7 +57,8 @@ def complete():
         Task(),
         Task(job=0),
         Task(),
-        Task(optional=True),
+        Task(optional=True),  # needs to be scheduled
+        Task(optional=True),  # does not need to be scheduled
     ]
     modes = [
         Mode(0, [0], 1),
@@ -66,6 +67,7 @@ def complete():
         Mode(3, [1], 1, [1]),
         Mode(3, [2], 1, [1]),
         Mode(4, [3], 1),
+        Mode(5, [3], 100),
     ]
     constraints = Constraints(
         start_before_start=[StartBeforeStart(0, 1)],
