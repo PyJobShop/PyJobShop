@@ -244,19 +244,6 @@ class Constraints:
             presences = [variables.task_vars[idx].present for idx in idcs]
             model.add(sum(presences) == 1).only_enforce_if(trigger)
 
-    def _activate_setup_times(self):
-        """
-        Activates the sequence variables for resources that have setup times.
-        The ``_circuit_constraints`` function will in turn add constraints to
-        the CP-SAT model to enforce setup times.
-        """
-        model, data, variables = self._model, self._data, self._variables
-        setup_times = utils.setup_times_matrix(data)
-
-        for idx in data.machine_idcs:
-            if setup_times is not None and np.any(setup_times[idx]):
-                variables.sequence_vars[idx].activate(model, data)
-
     def _consecutive_constraints(self):
         """
         Creates the consecutive constraints.
