@@ -186,6 +186,11 @@ class Model:
                 duration=duration,
             )
 
+        for mode1, modes2 in data.constraints.mode_dependencies:
+            model.add_mode_dependency(
+                model.modes[mode1], [model.modes[m] for m in modes2]
+            )
+
         model.set_objective(
             weight_makespan=data.objective.weight_makespan,
             weight_tardy_jobs=data.objective.weight_tardy_jobs,

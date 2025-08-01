@@ -8,19 +8,13 @@ from pyjobshop.ProblemData import (
     EndBeforeEnd,
     EndBeforeStart,
     IdenticalResources,
-    Job,
-    Machine,
     Mode,
     ModeDependency,
-    NonRenewable,
     Objective,
-    ProblemData,
-    Renewable,
     SameSequence,
     SetupTime,
     StartBeforeEnd,
     StartBeforeStart,
-    Task,
 )
 from pyjobshop.Solution import Solution, TaskData
 
@@ -45,8 +39,8 @@ def test_model_to_data():
     model.add_identical_resources(task2, task1)
     model.add_different_resources(task2, task1)
     model.add_consecutive(task2, task1)
-    model.add_same_sequence(machine1, machine2, [task1], [task2])
     model.add_mode_dependency(mode1, [mode2])
+    model.add_same_sequence(machine1, machine2, [task1], [task2])
     model.add_setup_time(machine1, task1, task2, 3)
     model.add_setup_time(machine2, task1, task2, 4)
 
@@ -65,72 +59,37 @@ def test_model_to_data():
         ],
     )
 
-    constraints = data.constraints
-    assert_equal(constraints.start_before_start, [StartBeforeStart(0, 1)])
-    assert_equal(constraints.start_before_end, [StartBeforeEnd(0, 1)])
-    assert_equal(constraints.end_before_end, [EndBeforeEnd(0, 1)])
-    assert_equal(constraints.end_before_start, [EndBeforeStart(0, 1)])
-    assert_equal(constraints.identical_resources, [IdenticalResources(1, 0)])
-    assert_equal(constraints.different_resources, [DifferentResources(1, 0)])
-    assert_equal(constraints.consecutive, [Consecutive(1, 0)])
-    assert_equal(constraints.same_sequence, [SameSequence(0, 1, [0], [1])])
-    assert_equal(constraints.mode_dependencies, [ModeDependency(0, [1])])
-    assert_equal(
-        constraints.setup_times, [SetupTime(0, 0, 1, 3), SetupTime(1, 0, 1, 4)]
+    constraints = Constraints(
+        start_before_start=[StartBeforeStart(0, 1)],
+        start_before_end=[StartBeforeEnd(0, 1)],
+        end_before_end=[EndBeforeEnd(0, 1)],
+        end_before_start=[EndBeforeStart(0, 1)],
+        identical_resources=[IdenticalResources(1, 0)],
+        different_resources=[DifferentResources(1, 0)],
+        consecutive=[Consecutive(1, 0)],
+        same_sequence=[SameSequence([0], [1])],
+        setup_times=[SetupTime(0, 0, 1, 3), SetupTime(1, 0, 1, 4)],
+        mode_dependencies=[ModeDependency(0, [1])],
     )
+    assert_equal(data.constraints, constraints)
     assert_equal(data.objective, Objective(weight_total_flow_time=1))
 
 
-def test_from_data():
+def test_from_data(complete):
     """
     Tests that initializing from a data instance returns a valid model
     representation of that instance.
     """
-    data = ProblemData(
-        [Job(tasks=[1], due_date=1)],
-        [Machine(), Renewable(1), NonRenewable(0), Machine()],
-        [Task(), Task(job=0), Task()],
-        modes=[
-            Mode(0, [0], 1),
-            Mode(1, [1], 2),
-            Mode(2, [1], 2),
-            Mode(0, [3], 1),
-        ],
-        constraints=Constraints(
-            start_before_start=[StartBeforeStart(0, 1)],
-            start_before_end=[StartBeforeEnd(0, 1)],
-            end_before_start=[EndBeforeStart(0, 1)],
-            end_before_end=[EndBeforeEnd(0, 1)],
-            identical_resources=[IdenticalResources(0, 1)],
-            different_resources=[DifferentResources(0, 1)],
-            consecutive=[Consecutive(1, 2)],
-            same_sequence=[SameSequence(0, 3, [0], [2])],
-            setup_times=[
-                SetupTime(0, 0, 1, 1),
-                SetupTime(0, 1, 1, 2),
-                SetupTime(0, 1, 0, 3),
-            ],
-        ),
-        objective=Objective(
-            weight_makespan=2,
-            weight_tardy_jobs=3,
-            weight_total_tardiness=4,
-            weight_total_flow_time=5,
-            weight_total_earliness=6,
-            weight_max_tardiness=7,
-            weight_total_setup_time=8,
-        ),
-    )
-    model = Model.from_data(data)
+    model = Model.from_data(complete)
     m_data = model.data()
 
-    assert_equal(m_data.num_jobs, data.num_jobs)
-    assert_equal(m_data.num_resources, data.num_resources)
-    assert_equal(m_data.num_tasks, data.num_tasks)
-    assert_equal(m_data.num_modes, data.num_modes)
-    assert_equal(m_data.modes, data.modes)
-    assert_equal(m_data.constraints, data.constraints)
-    assert_equal(m_data.objective, data.objective)
+    assert_equal(m_data.num_jobs, complete.num_jobs)
+    assert_equal(m_data.num_resources, complete.num_resources)
+    assert_equal(m_data.num_tasks, complete.num_tasks)
+    assert_equal(m_data.num_modes, complete.num_modes)
+    assert_equal(m_data.modes, complete.modes)
+    assert_equal(m_data.constraints, complete.constraints)
+    assert_equal(m_data.objective, complete.objective)
 
 
 def test_model_to_data_default_values():
