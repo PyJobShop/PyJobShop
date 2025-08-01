@@ -624,12 +624,12 @@ class Variables:
                 elif idx1 == idx2:
                     hint = idx1 not in present_tasks
                 else:
+                    # TODO There's an edge case when the task duration is 0.
+                    # Revisit after #257.
                     hint = (
                         idx1 in present_tasks
                         and idx2 in present_tasks
                         and starts[idx1] < starts[idx2]
                     )
-                    # TODO There's an edge case when the task duration is 0.
-                    # Revisit after #257.
 
                 model.add_hint(arc, hint)
