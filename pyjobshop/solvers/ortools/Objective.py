@@ -22,8 +22,12 @@ class Objective:
         """
         Adds the objective expression to the CP model.
         """
-        variables, objective = self._variables, self._data.objective
-        job_weights = [job.weight for job in self._data.jobs]
+        data, variables, objective = (
+            self._data,
+            self._variables,
+            self._data.objective,
+        )
+        job_weights = [job.weight for job in data.jobs]
         expr = 0
 
         def weighted_sum(variables, weights):
@@ -55,25 +59,23 @@ class Objective:
             data = self._data
             setup_times = utils.setup_times_matrix(data)
             setup_time_vars = []
+
             for res_idx in data.machine_idcs:
                 seq_var = variables.sequence_vars[res_idx]
                 if not seq_var.is_active:
                     continue
 
-                for task_idx1 in range(data.num_tasks):
-                    for task_idx2 in range(data.num_tasks):
-                        var1 = variables.assign_vars.get((task_idx1, res_idx))
-                        var2 = variables.assign_vars.get((task_idx2, res_idx))
-                        if not (var1 and var2):
-                            continue
+                for (idx1, idx2), arc in seq_var.arcs.items():
+                    if idx1 == seq_var.DUMMY or idx2 == seq_var.DUMMY:
+                        # Arcs to/from dummy nodes don't have setup time.
+                        continue
 
-                        setup = (
-                            setup_times[res_idx, task_idx1, task_idx2]
-                            if setup_times is not None
-                            else 0
-                        )
-                        arc_selected = seq_var.arcs[task_idx1, task_idx2]
-                        setup_time_vars.append(arc_selected * setup)
+                    setup = (
+                        setup_times[res_idx, idx1, idx2]
+                        if setup_times is not None
+                        else 0
+                    )
+                    setup_time_vars.append(arc * setup)
 
             expr += obj_weight * LinearExpr.sum(setup_time_vars)
 
