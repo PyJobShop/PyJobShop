@@ -364,9 +364,10 @@ def test_solve_additional_kwargs_initial_solution_fixed(small):
     assert_equal(result.status.value, "Optimal")
 
 
-def test_solve_initial_solution(solver, capfd):
+def test_solve_initial_solution_complete_example(solver, capfd):
     """
-    Tests that the display log is correct when an initial solution is provided.
+    Tests that the solver correctly hints the solution by checking that the
+    display log is correct when an initial solution is provided.
     """
     solver2msg = {
         "ortools": "The solution hint is complete and is feasible.",
