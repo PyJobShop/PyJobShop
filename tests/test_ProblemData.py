@@ -384,7 +384,7 @@ def test_problem_data_input_parameter_attributes():
     """
     jobs = [Job(tasks=[idx]) for idx in range(5)]
     resources = [Machine() for _ in range(5)]
-    tasks = [Task() for _ in range(5)]
+    tasks = [Task(job=idx) for idx in range(5)]
     modes = [
         Mode(task=task, resources=[resource], duration=1)
         for task in range(5)
@@ -423,7 +423,7 @@ def test_problem_data_non_input_parameter_attributes():
     """
     jobs = [Job(tasks=[0, 1, 2])]
     resources = [Machine(), Renewable(1), NonRenewable(2)]
-    tasks = [Task() for _ in range(3)]
+    tasks = [Task(job=0) for _ in range(3)]
     modes = [
         Mode(task=2, resources=[1], duration=1),
         Mode(task=1, resources=[2], duration=1),
@@ -455,7 +455,7 @@ def test_problem_data_default_values():
     """
     jobs = [Job(tasks=[0])]
     resources = [Renewable(0)]
-    tasks = [Task()]
+    tasks = [Task(job=0)]
     modes = [Mode(task=0, resources=[0], duration=1)]
     data = ProblemData(jobs, resources, tasks, modes)
 
@@ -469,7 +469,7 @@ def test_problem_data_str():
     """
     jobs = [Job(tasks=[idx]) for idx in range(5)]
     resources = [Machine() for _ in range(5)] + [Renewable(1), NonRenewable(1)]
-    tasks = [Task() for _ in range(5)]
+    tasks = [Task(job=idx) for idx in range(5)]
     modes = [
         Mode(task=task, resources=[resource], duration=1)
         for task in range(5)
@@ -528,6 +528,20 @@ def test_problem_data_job_references_unknown_task():
         )
 
 
+def test_problem_data_job_task_reference_mismatch():
+    """
+    Tests that an error is raised when a job references a task that does
+    not reference the job.
+    """
+    with assert_raises(ValueError):
+        ProblemData(
+            [Job(tasks=[0])],
+            [Renewable(0)],
+            [Task()],
+            [Mode(0, [0], 1)],
+        )
+
+
 def test_problem_data_task_references_unknown_job():
     """
     Tests that an error is raised when a task references an unknown job.
@@ -536,7 +550,7 @@ def test_problem_data_task_references_unknown_job():
         ProblemData(
             [Job(tasks=[0])],
             [Renewable(0)],
-            [Task(job=42)],
+            [Task(job=0), Task(job=42)],
             [Mode(0, [0], 1)],
         )
 
@@ -554,7 +568,7 @@ def test_problem_data_mode_references_unknown_data(mode):
     """
     with assert_raises(ValueError):
         ProblemData(
-            [Job(tasks=[0])],
+            [],
             [Renewable(0)],
             [Task()],
             [mode],
@@ -566,7 +580,7 @@ def test_problem_data_task_without_modes():
     Tests that an error is raised when a task has no processing modes.
     """
     with assert_raises(ValueError):
-        ProblemData([Job(tasks=[0])], [Renewable(0)], [Task()], [])
+        ProblemData([], [Renewable(0)], [Task()], [])
 
 
 def test_problem_data_all_modes_demand_infeasible():
@@ -577,7 +591,7 @@ def test_problem_data_all_modes_demand_infeasible():
 
     # This is OK: at least one mode is feasible.
     ProblemData(
-        [Job(tasks=[0])],
+        [],
         [Renewable(capacity=1)],
         [Task()],
         [
@@ -727,7 +741,7 @@ def make_replace_data():
         Renewable(capacity=0, name="resource"),
         NonRenewable(capacity=0, name="resource"),
     ]
-    tasks = [Task(earliest_start=1), Task(earliest_start=1)]
+    tasks = [Task(job=0, earliest_start=1), Task(job=1, earliest_start=1)]
     modes = [
         Mode(task=0, resources=[0], duration=1),
         Mode(task=1, resources=[1], duration=2),
@@ -793,7 +807,7 @@ def test_problem_data_replace_with_changes():
             Job(tasks=[0], due_date=1, deadline=1),
         ],
         resources=[Renewable(capacity=0, name="new"), Machine(name="new")],
-        tasks=[Task(earliest_start=2), Task(earliest_start=2)],
+        tasks=[Task(job=1, earliest_start=2), Task(job=0, earliest_start=2)],
         modes=[
             Mode(task=0, resources=[0], duration=20),
             Mode(task=1, resources=[1], duration=10),
@@ -835,7 +849,7 @@ def test_problem_data_resource2modes():
     computed.
     """
     data = ProblemData(
-        [Job(tasks=[0])],
+        [],
         [Renewable(0), Renewable(0)],
         [Task(), Task()],
         modes=[Mode(0, [0], 1), Mode(0, [1], 10), Mode(1, [1], 0)],
@@ -859,7 +873,7 @@ def test_problem_data_task2modes():
     computed.
     """
     data = ProblemData(
-        [Job(tasks=[0])],
+        [],
         [Renewable(0), Renewable(0)],
         [Task(), Task()],
         modes=[Mode(0, [0], 1), Mode(0, [1], 10), Mode(1, [1], 0)],
