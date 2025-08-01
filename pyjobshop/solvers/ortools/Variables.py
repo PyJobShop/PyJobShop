@@ -352,37 +352,34 @@ class Variables:
         variables = []
         task_durations = utils.compute_task_durations(data)
 
-        # TODO task restrictions should only apply when task is present
-
         for idx, task in enumerate(data.tasks):
             name = f"T{idx}"
-            start = model.new_int_var(
-                lb=task.earliest_start,
-                ub=min(task.latest_start, MAX_VALUE),
-                name=f"{name}_start",
-            )
-            if task.fixed_duration:
-                duration = model.new_int_var_from_domain(
-                    Domain.from_values(task_durations[idx]), f"{name}_duration"
-                )
-            else:
-                duration = model.new_int_var(
-                    lb=min(task_durations[idx]),
-                    ub=MAX_VALUE,
-                    name=f"{name}_duration",
-                )
-            end = model.new_int_var(
-                lb=task.earliest_end,
-                ub=min(task.latest_end, MAX_VALUE),
-                name=f"{name}_end",
-            )
             present = (
                 model.new_bool_var(f"{name}_present")
                 if task.optional
                 else model.new_constant(True)
             )
+
+            start = model.new_int_var(lb=0, ub=MAX_VALUE, name=f"{name}_start")
+            model.add(start >= task.earliest_start).only_enforce_if(present)
+            model.add(start <= task.latest_start).only_enforce_if(present)
+
+            end = model.new_int_var(lb=0, ub=MAX_VALUE, name=f"{name}_end")
+            model.add(end >= task.earliest_end).only_enforce_if(present)
+            model.add(end <= task.latest_end).only_enforce_if(present)
+
+            if task.fixed_duration and not task.optional:
+                domain = Domain.from_values(task_durations[idx])
+                duration = model.new_int_var_from_domain(
+                    domain, f"{name}_duration"
+                )
+            else:
+                duration = model.new_int_var(
+                    lb=0, ub=MAX_VALUE, name=f"{name}_duration"
+                )
+
             interval = model.new_optional_interval_var(
-                start, duration, end, present, f"interval_{task}"
+                start, duration, end, present, f"{name}_interval"
             )
             variables.append(TaskVar(interval, present))
 
