@@ -55,9 +55,12 @@ class TaskVar:
     ----------
     interval
         The interval variable representing the task.
+    present
+        The boolean variable indicating whether the interval is present.
     """
 
     interval: IntervalVar
+    present: BoolVarT
 
     @property
     def start(self) -> LinearExprT:
@@ -351,30 +354,34 @@ class Variables:
 
         for idx, task in enumerate(data.tasks):
             name = f"T{idx}"
-            start = model.new_int_var(
-                lb=task.earliest_start,
-                ub=min(task.latest_start, MAX_VALUE),
-                name=f"{name}_start",
+            present = (
+                model.new_bool_var(f"{name}_present")
+                if task.optional
+                else model.new_constant(True)
             )
-            if task.fixed_duration:
+
+            start = model.new_int_var(lb=0, ub=MAX_VALUE, name=f"{name}_start")
+            model.add(start >= task.earliest_start).only_enforce_if(present)
+            model.add(start <= task.latest_start).only_enforce_if(present)
+
+            end = model.new_int_var(lb=0, ub=MAX_VALUE, name=f"{name}_end")
+            model.add(end >= task.earliest_end).only_enforce_if(present)
+            model.add(end <= task.latest_end).only_enforce_if(present)
+
+            if task.fixed_duration and not task.optional:
+                domain = Domain.from_values(task_durations[idx])
                 duration = model.new_int_var_from_domain(
-                    Domain.from_values(task_durations[idx]), f"{name}_duration"
+                    domain, f"{name}_duration"
                 )
             else:
                 duration = model.new_int_var(
-                    lb=min(task_durations[idx]),
-                    ub=MAX_VALUE,
-                    name=f"{name}_duration",
+                    lb=0, ub=MAX_VALUE, name=f"{name}_duration"
                 )
-            end = model.new_int_var(
-                lb=task.earliest_end,
-                ub=min(task.latest_end, MAX_VALUE),
-                name=f"{name}_end",
+
+            interval = model.new_optional_interval_var(
+                start, duration, end, present, f"{name}_interval"
             )
-            interval = model.new_interval_var(
-                start, duration, end, f"interval_{task}"
-            )
-            variables.append(TaskVar(interval))
+            variables.append(TaskVar(interval, present))
 
         return variables
 
@@ -581,6 +588,11 @@ class Variables:
             model.add_hint(task_var.start, sol_task.start)  # type: ignore
             model.add_hint(task_var.duration, task_duration)  # type: ignore
             model.add_hint(task_var.end, sol_task.end)  # type: ignore
+
+            if data.tasks[task_idx].optional:
+                # OR-Tools complains about adding presence hints to interval
+                # variables that are always present (i.e., non-optional tasks).
+                model.add_hint(task_var.present, sol_task.present)
 
             for mode_idx in data.task2modes(task_idx):
                 mode_var = self.mode_vars[mode_idx]

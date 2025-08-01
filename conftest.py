@@ -16,6 +16,9 @@ from pyjobshop.ProblemData import (
     Objective,
     ProblemData,
     Renewable,
+    SelectAllOrNone,
+    SelectAtLeastOne,
+    SelectExactlyOne,
     SetupTime,
     StartBeforeEnd,
     StartBeforeStart,
@@ -47,14 +50,24 @@ def complete():
         Machine(no_idle=True),
         Renewable(1, breaks=[(0, 1)]),
         NonRenewable(1),
+        Machine(),
     ]
-    tasks = [Task(), Task(), Task(job=0), Task()]
+    tasks = [
+        Task(),
+        Task(),
+        Task(job=0),
+        Task(),
+        Task(optional=True),  # needs to be scheduled
+        Task(optional=True),  # does not need to be scheduled
+    ]
     modes = [
         Mode(0, [0], 1),
         Mode(1, [0], 1),
         Mode(2, [1], 1, [1]),
         Mode(3, [1], 1, [1]),
         Mode(3, [2], 1, [1]),
+        Mode(4, [3], 1),
+        Mode(5, [3], 100),
     ]
     constraints = Constraints(
         start_before_start=[StartBeforeStart(0, 1)],
@@ -63,6 +76,9 @@ def complete():
         end_before_end=[EndBeforeEnd(0, 1)],
         identical_resources=[IdenticalResources(0, 1)],
         different_resources=[DifferentResources(0, 2)],
+        select_all_or_none=[SelectAllOrNone([4])],
+        select_at_least_one=[SelectAtLeastOne([4])],
+        select_exactly_one=[SelectExactlyOne([4])],
         consecutive=[Consecutive(0, 1)],
         setup_times=[
             SetupTime(0, 0, 1, 1),

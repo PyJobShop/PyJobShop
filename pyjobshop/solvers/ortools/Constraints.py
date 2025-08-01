@@ -1,4 +1,5 @@
 from collections import defaultdict
+from itertools import pairwise
 
 import numpy as np
 from ortools.sat.python.cp_model import CpModel, LinearExpr
@@ -43,10 +44,11 @@ class Constraints:
         model, data, variables = self._model, self._data, self._variables
 
         for task_idx in range(data.num_tasks):
+            # Select exactly one mode iff the task is present.
             task_var = variables.task_vars[task_idx]
             mode_idcs = data.task2modes(task_idx)
             mode_vars = [variables.mode_vars[idx] for idx in mode_idcs]
-            model.add_exactly_one(mode_vars)
+            model.add(sum(mode_vars) == task_var.present)
 
             for mode_idx, mode_var in zip(mode_idcs, mode_vars):
                 mode = data.modes[mode_idx]
@@ -75,6 +77,17 @@ class Constraints:
                     # Set demands based on selected mode's demands.
                     dem_var = variables.assign_vars[task_idx, res_idx].demand
                     model.add(dem_var == demand).only_enforce_if(mode_var)
+
+        for task_idx in range(data.num_tasks):
+            for res_idx in range(data.num_resources):
+                if (task_idx, res_idx) not in variables.assign_vars:
+                    continue
+
+                task_var = variables.task_vars[task_idx]
+                assign_var = variables.assign_vars[task_idx, res_idx]
+
+                # Assignment variable can only be present if task is present.
+                model.add(assign_var.present <= task_var.present)
 
     def _machines_no_overlap(self):
         """
@@ -139,24 +152,32 @@ class Constraints:
         model, data, variables = self._model, self._data, self._variables
 
         for idx1, idx2, delay in data.constraints.start_before_start:
-            expr1 = variables.task_vars[idx1].start + delay
-            expr2 = variables.task_vars[idx2].start
-            model.add(expr1 <= expr2)
+            var1 = variables.task_vars[idx1]
+            var2 = variables.task_vars[idx2]
+            both_present = [var1.present, var2.present]
+            expr = var1.start + delay <= var2.start
+            model.add(expr).only_enforce_if(both_present)
 
         for idx1, idx2, delay in data.constraints.start_before_end:
-            expr1 = variables.task_vars[idx1].start + delay
-            expr2 = variables.task_vars[idx2].end
-            model.add(expr1 <= expr2)
+            var1 = variables.task_vars[idx1]
+            var2 = variables.task_vars[idx2]
+            both_present = [var1.present, var2.present]
+            expr = var1.start + delay <= var2.end
+            model.add(expr).only_enforce_if(both_present)
 
         for idx1, idx2, delay in data.constraints.end_before_start:
-            expr1 = variables.task_vars[idx1].end + delay
-            expr2 = variables.task_vars[idx2].start
-            model.add(expr1 <= expr2)
+            var1 = variables.task_vars[idx1]
+            var2 = variables.task_vars[idx2]
+            both_present = [var1.present, var2.present]
+            expr = var1.end + delay <= var2.start
+            model.add(expr).only_enforce_if(both_present)
 
         for idx1, idx2, delay in data.constraints.end_before_end:
-            expr1 = variables.task_vars[idx1].end + delay
-            expr2 = variables.task_vars[idx2].end
-            model.add(expr1 <= expr2)
+            var1 = variables.task_vars[idx1]
+            var2 = variables.task_vars[idx2]
+            both_present = [var1.present, var2.present]
+            expr = var1.end + delay <= var2.end
+            model.add(expr).only_enforce_if(both_present)
 
     def _identical_and_different_resource_constraints(self):
         """
@@ -182,6 +203,47 @@ class Constraints:
 
                 model.add(presence2 == 0).only_enforce_if(presence1)
 
+    def _task_selection_constraints(self):
+        """
+        Creates the task selection constraints.
+        """
+        model, data, variables = self._model, self._data, self._variables
+
+        for idcs, trigger_idx in data.constraints.select_all_or_none:
+            trigger = (
+                variables.task_vars[trigger_idx].present
+                if trigger_idx is not None
+                else None
+            )
+
+            for idx1, idx2 in pairwise(idcs):
+                var1 = variables.task_vars[idx1]
+                var2 = variables.task_vars[idx2]
+                expr = var1.present == var2.present
+
+                if trigger is not None:
+                    model.add(expr).only_enforce_if(trigger)
+                else:
+                    model.add(expr)
+
+        for idcs, trigger_idx in data.constraints.select_at_least_one:
+            trigger = (
+                variables.task_vars[trigger_idx].present
+                if trigger_idx is not None
+                else 1
+            )
+            presences = [variables.task_vars[idx].present for idx in idcs]
+            model.add(trigger <= sum(presences))
+
+        for idcs, trigger_idx in data.constraints.select_exactly_one:
+            trigger = (
+                variables.task_vars[trigger_idx].present
+                if trigger_idx is not None
+                else 1
+            )
+            presences = [variables.task_vars[idx].present for idx in idcs]
+            model.add(sum(presences) == 1).only_enforce_if(trigger)
+
     def _consecutive_constraints(self):
         """
         Creates the consecutive constraints.
@@ -192,6 +254,7 @@ class Constraints:
             for res_idx in data.machine_idcs:
                 seq_var = variables.sequence_vars[res_idx]
                 seq_var.activate(model)
+
                 var1 = variables.assign_vars.get((task_idx1, res_idx))
                 var2 = variables.assign_vars.get((task_idx2, res_idx))
 
@@ -291,6 +354,7 @@ class Constraints:
         self._renewable_resource_breaks_constraints()
         self._timing_constraints()
         self._identical_and_different_resource_constraints()
+        self._task_selection_constraints()
         self._consecutive_constraints()
         self._mode_dependencies()
 

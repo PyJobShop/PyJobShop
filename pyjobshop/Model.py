@@ -17,6 +17,9 @@ from pyjobshop.ProblemData import (
     ProblemData,
     Renewable,
     Resource,
+    SelectAllOrNone,
+    SelectAtLeastOne,
+    SelectExactlyOne,
     SetupTime,
     StartBeforeEnd,
     StartBeforeStart,
@@ -132,6 +135,7 @@ class Model:
                 task.earliest_end,
                 task.latest_end,
                 task.fixed_duration,
+                task.optional,
                 name=task.name,
             )
 
@@ -163,6 +167,24 @@ class Model:
 
         for idx1, idx2 in data.constraints.different_resources:
             model.add_different_resources(tasks[idx1], tasks[idx2])
+
+        for idcs1, idx2 in data.constraints.select_all_or_none:
+            model.add_select_all_or_none(
+                [tasks[idx] for idx in idcs1],
+                tasks[idx2] if idx2 is not None else None,
+            )
+
+        for idcs1, idx2 in data.constraints.select_at_least_one:
+            model.add_select_at_least_one(
+                [tasks[idx] for idx in idcs1],
+                tasks[idx2] if idx2 is not None else None,
+            )
+
+        for idcs1, idx2 in data.constraints.select_exactly_one:
+            model.add_select_exactly_one(
+                [tasks[idx] for idx in idcs1],
+                tasks[idx2] if idx2 is not None else None,
+            )
 
         for idx1, idx2 in data.constraints.consecutive:
             model.add_consecutive(tasks[idx1], tasks[idx2])
@@ -279,6 +301,7 @@ class Model:
         earliest_end: int = 0,
         latest_end: int = MAX_VALUE,
         fixed_duration: bool = True,
+        optional: bool = False,
         *,
         name: str = "",
     ) -> Task:
@@ -293,6 +316,7 @@ class Model:
             earliest_end,
             latest_end,
             fixed_duration,
+            optional,
             name=name,
         )
 
@@ -407,6 +431,51 @@ class Model:
         idx1, idx2 = self._id2task[id(task1)], self._id2task[id(task2)]
         constraint = DifferentResources(idx1, idx2)
         self._constraints.different_resources.append(constraint)
+
+        return constraint
+
+    def add_select_all_or_none(
+        self, tasks: list[Task], trigger_task: Task | None = None
+    ) -> SelectAllOrNone:
+        """
+        Adds a constraint that all tasks from the given list are selected,
+        or none are. If ``trigger_task`` is provided, this rule only applies
+        when that task is selected.
+        """
+        idcs = [self._id2task[id(task)] for task in tasks]
+        trigger_idx = self._id2task[id(trigger_task)] if trigger_task else None
+        constraint = SelectAllOrNone(idcs, trigger_idx)
+        self._constraints.select_all_or_none.append(constraint)
+
+        return constraint
+
+    def add_select_at_least_one(
+        self, tasks: list[Task], trigger_task: Task | None = None
+    ) -> SelectAtLeastOne:
+        """
+        Adds a constraint that at least one task from the given list is
+        selected. If ``trigger_task`` is provided, this rule only applies when
+        that task is selected.
+        """
+        idcs = [self._id2task[id(task)] for task in tasks]
+        trigger_idx = self._id2task[id(trigger_task)] if trigger_task else None
+        constraint = SelectAtLeastOne(idcs, trigger_idx)
+        self._constraints.select_at_least_one.append(constraint)
+
+        return constraint
+
+    def add_select_exactly_one(
+        self, tasks: list[Task], trigger_task: Task | None = None
+    ) -> SelectExactlyOne:
+        """
+        Adds a constraint that exactly one task from the given list is
+        selected. If ``trigger_task`` is provided, this rule only applies when
+        that task is selected.
+        """
+        idcs = [self._id2task[id(task)] for task in tasks]
+        trigger_idx = self._id2task[id(trigger_task)] if trigger_task else None
+        constraint = SelectExactlyOne(idcs, trigger_idx)
+        self._constraints.select_exactly_one.append(constraint)
 
         return constraint
 

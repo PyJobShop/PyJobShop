@@ -47,11 +47,14 @@ class Solver:
         Converts a result from OR-Tools to a Solution object.
         """
         tasks = []
-
         for task_idx in range(self._data.num_tasks):
-            modes = self._data.task2modes(task_idx)
+            task_var = self._variables.task_vars[task_idx]
 
-            for mode_idx in modes:
+            if not cp_solver.value(task_var.present):
+                tasks.append(TaskData(0, [], 0, 0, present=False))
+                continue
+
+            for mode_idx in self._data.task2modes(task_idx):
                 mode_var = self._variables.mode_vars[mode_idx]
 
                 if cp_solver.value(mode_var):  # selected mode
