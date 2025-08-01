@@ -67,7 +67,6 @@ class Objective:
 
                 for (idx1, idx2), arc in seq_var.arcs.items():
                     if idx1 == seq_var.DUMMY or idx2 == seq_var.DUMMY:
-                        # Arcs to/from dummy nodes don't have setup time.
                         continue
 
                     setup = (
