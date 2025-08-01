@@ -18,6 +18,7 @@ from pyjobshop.ProblemData import (
     Objective,
     ProblemData,
     Renewable,
+    SameSequence,
     SetupTime,
     StartBeforeEnd,
     StartBeforeStart,
@@ -312,6 +313,15 @@ def test_mode_dependency_must_have_at_least_one_succesor_mode():
     """
     with assert_raises(ValueError):
         ModeDependency(0, [])
+
+
+def test_same_sequence_raises_unequal_length_tasks():
+    """
+    Tests that SameSequence raises an error when the tasks are not of equal
+    length.
+    """
+    with assert_raises(ValueError):
+        SameSequence(0, 1, [0], [1, 2])
 
 
 def test_negative_setup_times_not_allowed():
@@ -624,10 +634,23 @@ def test_problem_data_all_modes_demand_infeasible():
         ("different_resources", DifferentResources, [(2, 0), (0, 2)]),
         ("consecutive", Consecutive, [(2, 0), (0, 2)]),
         (
+            "same_sequence",
+            SameSequence,
+            [
+                (0, 2, [0], [0]),  # invalid resource idx
+                (2, 0, [0], [0]),  # invalid resource idx
+                (0, 1, [0], [0]),  # not a machine idx
+                (1, 0, [0], [0]),  # not a machine idx
+                (0, 0, [2], [0]),  # invalid task idx
+                (0, 0, [0], [2]),  # invalid task idx
+            ],
+        ),
+        (
             "setup_times",
             SetupTime,
             [
                 (1, 0, 0, 1),  # invalid resource idx
+                (2, 0, 0, 1),  # not a machine idx
                 (0, 2, 0, 1),  # invalid task idx1
                 (0, 0, 2, 1),  # invalid task idx2
             ],
@@ -647,7 +670,7 @@ def test_problem_data_raises_invalid_indices(name, cls, idcs_list):
         with assert_raises(ValueError):
             ProblemData(
                 [Job(tasks=[0])],
-                [Machine()],
+                [Machine(), Renewable(0)],
                 [Task(), Task()],
                 [Mode(0, [0], 1), Mode(1, [0], 2)],
                 constraints,
@@ -1583,6 +1606,68 @@ def test_consecutive_multiple_machines(solver: str):
     assert_equal(result.status.value, "Optimal")
 
 
+def test_same_sequence(solver: str):
+    """
+    Tests that the same sequence constraint is respected for a simple
+    permutation flow shop problem.
+    """
+    model = Model()
+
+    machine1 = model.add_machine()
+    machine2 = model.add_machine()
+
+    tasks1 = [model.add_task() for _ in range(2)]
+    tasks2 = [model.add_task() for _ in range(2)]
+
+    for task in tasks1:
+        model.add_mode(task, machine1, duration=1)
+
+    for task in tasks2:
+        model.add_mode(task, machine2, duration=1)
+
+    for task1, task2 in zip(tasks1, tasks2):
+        model.add_end_before_start(task1, task2)
+
+    model.add_consecutive(tasks1[0], tasks1[1])
+    model.add_setup_time(machine2, tasks2[0], tasks2[1], 10)
+    model.add_same_sequence(machine1, machine2, tasks1, tasks2)
+
+    # Tasks1 and tasks2 must be scheduled in the same sequence on both
+    # machines. Because of the consecutive constraint, the first task
+    # must be scheduled before the second task on both machines. This
+    # incurs a setup time of 10.
+    result = model.solve(solver=solver)
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.objective, 13)
+
+
+def test_same_sequence_invalid_multiple_modes_cpoptimizer():
+    """
+    Tests that a ValueError is raised when the same sequence constraint is
+    imposed on tasks that have multiple modes using the same resource, and
+    CP Optimizer is used as solver.
+    """
+    model = Model()
+
+    machine1 = model.add_machine()
+    machine2 = model.add_machine()
+
+    tasks1 = [model.add_task() for _ in range(2)]
+    tasks2 = [model.add_task() for _ in range(2)]
+
+    for task in tasks1:
+        model.add_mode(task, machine1, duration=1)
+        model.add_mode(task, machine1, duration=1)
+
+    for task in tasks2:
+        model.add_mode(task, machine2, duration=1)
+
+    model.add_same_sequence(machine1, machine2, tasks1, tasks2)
+
+    with assert_raises(ValueError):
+        model.solve(solver="cpoptimizer")
+
+
 def test_setup_time_bug(solver: str):
     """
     Tests that a bug identified in #307 is correctly fixed. This bug caused
@@ -1652,7 +1737,6 @@ def test_empty_objective(solver: str):
     """
     data = ProblemData([], [], [], [], objective=Objective())
     result = solve(data, solver=solver)
-
     assert_equal(result.status.value, "Optimal")
     assert_equal(result.objective, 0)
 

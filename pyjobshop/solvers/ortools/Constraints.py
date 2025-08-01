@@ -1,4 +1,5 @@
 from collections import defaultdict
+from itertools import product
 
 import numpy as np
 from ortools.sat.python.cp_model import CpModel, LinearExpr
@@ -203,6 +204,29 @@ class Constraints:
 
                 model.add(arc == 1).only_enforce_if(both_present)
 
+    def _same_sequence_constraints(self):
+        """
+        Creates the same sequence constraints.
+        """
+        model, data, variables = self._model, self._data, self._variables
+        same_sequence = data.constraints.same_sequence
+
+        for res_idx1, res_idx2, task_idcs1, task_idcs2 in same_sequence:
+            seq_var1 = variables.sequence_vars[res_idx1]
+            seq_var2 = variables.sequence_vars[res_idx2]
+            seq_var1.activate(model)
+            seq_var2.activate(model)
+
+            pairs1 = product(task_idcs1, repeat=2)
+            pairs2 = product(task_idcs2, repeat=2)
+
+            for (i, j), (u, v) in zip(pairs1, pairs2):
+                # This ensures that task i -> j on machine 1 if and only if
+                # u -> v on machine 2.
+                arc1 = seq_var1.arcs[i, j]
+                arc2 = seq_var2.arcs[u, v]
+                model.add(arc1 == arc2)
+
     def _circuit_constraints(self):
         """
         Creates the circuit constraints for each machine, if activated by
@@ -292,6 +316,7 @@ class Constraints:
         self._timing_constraints()
         self._identical_and_different_resource_constraints()
         self._consecutive_constraints()
+        self._same_sequence_constraints()
         self._mode_dependencies()
 
         # From here onwards we know which sequence constraints are active.

@@ -230,6 +230,44 @@ class Constraints:
 
                     model.add(cpo.previous(seq_var, var1, var2))
 
+    def _same_sequence_constraints(self):
+        """
+        Creates the same sequence constraints.
+        """
+        model, data = self._model, self._data
+        same_sequence = data.constraints.same_sequence
+
+        def _find_mode(task_idx: int, res_idx: int) -> int:
+            task_modes = data.task2modes(task_idx)
+            res_modes = data.resource2modes(res_idx)
+            incommon = set(task_modes) & set(res_modes)
+
+            if len(incommon) != 1:
+                msg = (
+                    f"Multiple modes found that require task {task_idx} "
+                    f"and resource {res_idx}. PyJobShop cannot solve such"
+                    "instances with CP Optimizer."
+                )
+                raise ValueError(msg)
+
+            return incommon.pop()
+
+        for res_idx1, res_idx2, task_idcs1, task_idcs2 in same_sequence:
+            seq_var1 = self._sequence_vars[res_idx1]
+            seq_var2 = self._sequence_vars[res_idx2]
+
+            mode_vars1 = [
+                self._mode_vars[_find_mode(task_idx, res_idx1)]
+                for task_idx in task_idcs1
+            ]
+            mode_vars2 = [
+                self._mode_vars[_find_mode(task_idx, res_idx2)]
+                for task_idx in task_idcs2
+            ]
+            model.add(
+                cpo.same_sequence(seq_var1, seq_var2, mode_vars1, mode_vars2)
+            )
+
     def _mode_dependencies(self):
         """
         Implements the mode dependency constraints.
@@ -257,4 +295,5 @@ class Constraints:
         self._timing_constraints()
         self._identical_and_different_resource_constraints()
         self._consecutive_constraints()
+        self._same_sequence_constraints()
         self._mode_dependencies()
