@@ -134,12 +134,21 @@ class Machine:
         List of time intervals during which tasks cannot be processed.
         Each interval is represented as a tuple (start_time, end_time).
         Default is an empty list (no breaks).
+    no_idle
+        Whether the machine must operate continuously without idle time between
+        tasks. When ``True``, tasks are scheduled back-to-back with no gaps,
+        except for required setup times. When ``False`` (default), the machine
+        can remain idle between tasks. Cannot be used with machine breaks.
     name
         Name of the machine.
     """
 
     def __init__(
-        self, breaks: list[tuple[int, int]] | None = None, *, name: str = ""
+        self,
+        breaks: list[tuple[int, int]] | None = None,
+        no_idle: bool = False,
+        *,
+        name: str = "",
     ):
         if breaks is not None:
             for start, end in breaks:
@@ -150,7 +159,11 @@ class Machine:
                 if interval1[1] > interval2[0]:
                     raise ValueError("Break intervals must not overlap.")
 
+        if breaks and no_idle:
+            raise ValueError("Breaks not allowed with no_idle=True.")
+
         self._breaks = breaks or []
+        self._no_idle = no_idle
         self._name = name
 
     @property
@@ -159,6 +172,13 @@ class Machine:
         List of time intervals during which tasks cannot be processed.
         """
         return self._breaks
+
+    @property
+    def no_idle(self) -> bool:
+        """
+        Whether the machine has no idle time constraints.
+        """
+        return self._no_idle
 
     @property
     def name(self) -> str:
@@ -757,10 +777,6 @@ class Objective:
         .. math::
             U_{\max} = \max_{j \in J} w_j (\max(C_j - d_j, 0))
 
-    **Maximum lateness** (:math:`L_{\max}`): The weighted maximum lateness of all jobs. Lateness can be negative, unlike tardiness.
-        .. math::
-            L_{\max} = \max_{j \in J} w_j (C_j - d_j)
-
     **Total setup time** (:math:`TST`): The sum of all sequence-dependent setup times between consecutive tasks on each machine, where :math:`R` denotes the set of machines, :math:`M^R_r` denotes the set of modes requiring :math:`r \in R`, :math:`s_{t_u, t_v, r}` denotes the setup time between tasks :math:`t_u` and :math:`t_v` on machine :math:`r` and :math:`b_{ruv}` is the binary variable indicating whether task :math:`t_u` is followed by task :math:`t_v` on machine :math:`r`.
         .. math::
             TST = \sum_{r \in R} \sum_{u, v \in M^R_r} s_{t_u, t_v, r} b_{ruv}
@@ -776,7 +792,6 @@ class Objective:
     weight_total_tardiness: int = 0
     weight_total_earliness: int = 0
     weight_max_tardiness: int = 0
-    weight_max_lateness: int = 0
     weight_total_setup_time: int = 0
 
     def __post_init__(self):
@@ -902,14 +917,21 @@ class ProblemData:
         """
         Validates the problem data parameters.
         """
-        for idx, job in enumerate(self.jobs):
+        for job_idx, job in enumerate(self.jobs):
             if len(job.tasks) == 0:
-                msg = f"Job {idx} does not reference any task."
+                msg = f"Job {job_idx} does not reference any task."
                 raise ValueError(msg)
 
             for task_idx in job.tasks:
                 if not (0 <= task_idx < self.num_tasks):
-                    msg = f"Job {idx} references to unknown task index."
+                    msg = f"Job {job_idx} references to unknown task index."
+                    raise ValueError(msg)
+
+                if job_idx != self.tasks[task_idx].job:
+                    msg = (
+                        f"Job {job_idx} contains task {task_idx}, but task "
+                        f"belongs to job {self.tasks[task_idx].job}."
+                    )
                     raise ValueError(msg)
 
         for idx, task in enumerate(self.tasks):
@@ -965,7 +987,7 @@ class ProblemData:
                 if not (0 <= idx2 < self.num_tasks):
                     raise ValueError(f"Invalid task index {idx2} in {name}.")
 
-        for res_idx, task_idx1, task_idx2, dur in self.constraints.setup_times:
+        for res_idx, task_idx1, task_idx2, _ in self.constraints.setup_times:
             if not (0 <= res_idx < self.num_resources):
                 msg = f"Invalid resource index {res_idx} in setup_times."
                 raise ValueError(msg)
@@ -978,8 +1000,7 @@ class ProblemData:
                 msg = f"Invalid task index in setup_times: {task_idx2}."
                 raise ValueError(msg)
 
-            is_machine = isinstance(self.resources[res_idx], Machine)
-            if not is_machine and dur > 0:
+            if not isinstance(self.resources[res_idx], Machine):
                 raise ValueError("Setup times only allowed for machines.")
 
         for idx1, idcs2 in self.constraints.mode_dependencies:
@@ -1005,7 +1026,6 @@ class ProblemData:
             or self.objective.weight_total_tardiness > 0
             or self.objective.weight_total_earliness > 0
             or self.objective.weight_max_tardiness > 0
-            or self.objective.weight_max_lateness > 0
         ):
             if any(job.due_date is None for job in self.jobs):
                 msg = "Job due dates required for due date-based objectives."

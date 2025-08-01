@@ -85,16 +85,6 @@ class Objective:
         ]
         return cpo.max(tardiness)  # type: ignore
 
-    def _max_lateness_expr(self) -> CpoExpr:
-        """
-        Returns an expression representing the maximum lateness of jobs.
-        """
-        lateness = [
-            job.weight * (cpo.end_of(var) - job.due_date)
-            for job, var in zip(self._data.jobs, self._job_vars)
-        ]
-        return cpo.max(lateness)  # type: ignore
-
     def _total_setup_time_expr(self) -> CpoExpr:
         """
         Returns an expression representing the total setup times.
@@ -140,7 +130,6 @@ class Objective:
             (objective.weight_total_flow_time, self._total_flow_time_expr),
             (objective.weight_total_earliness, self._total_earliness_expr),
             (objective.weight_max_tardiness, self._max_tardiness_expr),
-            (objective.weight_max_lateness, self._max_lateness_expr),
             (objective.weight_total_setup_time, self._total_setup_time_expr),
         ]
         exprs = [weight * expr() for weight, expr in items if weight > 0]

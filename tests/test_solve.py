@@ -72,8 +72,7 @@ def test_solve_initial_solution(small, solver, capfd):
     Tests that the display log is correct when an initial solution is provided.
     """
     solver2msg = {
-        # Not all variables are hinted so this message is correct.
-        "ortools": "The solution hint is incomplete",
+        "ortools": "The solution hint is complete and is feasible.",
         "cpoptimizer": "Starting point is complete and consistent with constraints.",  # noqa
     }
     msg = solver2msg[solver]

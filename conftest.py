@@ -1,6 +1,29 @@
 import pytest
 
 from pyjobshop import Model
+from pyjobshop.ProblemData import (
+    Consecutive,
+    Constraints,
+    DifferentResources,
+    EndBeforeEnd,
+    EndBeforeStart,
+    IdenticalResources,
+    Job,
+    Machine,
+    Mode,
+    ModeDependency,
+    NonRenewable,
+    Objective,
+    ProblemData,
+    Renewable,
+    SelectAllOrNone,
+    SelectAtLeastOne,
+    SelectExactlyOne,
+    SetupTime,
+    StartBeforeEnd,
+    StartBeforeStart,
+    Task,
+)
 
 
 @pytest.fixture(scope="session")
@@ -15,6 +38,70 @@ def small():
         model.add_mode(task, machine, duration)
 
     return model.data()
+
+
+@pytest.fixture(scope="session")
+def complete():
+    """
+    A ProblemData object with almost all features of the library.
+    """
+    jobs = [Job(tasks=[2], due_date=1)]
+    resources = [
+        Machine(no_idle=True),
+        Renewable(1, breaks=[(0, 1)]),
+        NonRenewable(1),
+        Machine(),
+    ]
+    tasks = [
+        Task(),
+        Task(),
+        Task(job=0),
+        Task(),
+        Task(optional=True),
+    ]
+    modes = [
+        Mode(0, [0], 1),
+        Mode(1, [0], 1),
+        Mode(2, [1], 1, [1]),
+        Mode(3, [1], 1, [1]),
+        Mode(3, [2], 1, [1]),
+        Mode(4, [3], 1),
+    ]
+    constraints = Constraints(
+        start_before_start=[StartBeforeStart(0, 1)],
+        start_before_end=[StartBeforeEnd(0, 1)],
+        end_before_start=[EndBeforeStart(0, 1)],
+        end_before_end=[EndBeforeEnd(0, 1)],
+        identical_resources=[IdenticalResources(0, 1)],
+        different_resources=[DifferentResources(0, 2)],
+        select_all_or_none=[SelectAllOrNone([4])],
+        select_at_least_one=[SelectAtLeastOne([4])],
+        select_exactly_one=[SelectExactlyOne([4])],
+        consecutive=[Consecutive(0, 1)],
+        setup_times=[
+            SetupTime(0, 0, 1, 1),
+            SetupTime(0, 1, 1, 1),
+            SetupTime(0, 1, 0, 1),
+        ],
+        mode_dependencies=[ModeDependency(0, [1])],
+    )
+    objective = Objective(
+        weight_makespan=2,
+        weight_tardy_jobs=3,
+        weight_total_tardiness=4,
+        weight_total_flow_time=5,
+        weight_total_earliness=6,
+        weight_max_tardiness=7,
+        weight_total_setup_time=8,
+    )
+    return ProblemData(
+        jobs,
+        resources,
+        tasks,
+        modes,
+        constraints,
+        objective,
+    )
 
 
 @pytest.fixture(scope="session")

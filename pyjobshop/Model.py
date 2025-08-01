@@ -110,6 +110,7 @@ class Model:
             if isinstance(resource, Machine):
                 model.add_machine(
                     resource.breaks,
+                    resource.no_idle,
                     name=resource.name,
                 )
             elif isinstance(resource, Renewable):
@@ -196,6 +197,11 @@ class Model:
                 duration=duration,
             )
 
+        for mode1, modes2 in data.constraints.mode_dependencies:
+            model.add_mode_dependency(
+                model.modes[mode1], [model.modes[m] for m in modes2]
+            )
+
         model.set_objective(
             weight_makespan=data.objective.weight_makespan,
             weight_tardy_jobs=data.objective.weight_tardy_jobs,
@@ -203,7 +209,6 @@ class Model:
             weight_total_flow_time=data.objective.weight_total_flow_time,
             weight_total_earliness=data.objective.weight_total_earliness,
             weight_max_tardiness=data.objective.weight_max_tardiness,
-            weight_max_lateness=data.objective.weight_max_lateness,
             weight_total_setup_time=data.objective.weight_total_setup_time,
         )
 
@@ -244,13 +249,14 @@ class Model:
     def add_machine(
         self,
         breaks: list[tuple[int, int]] | None = None,
+        no_idle: bool = False,
         *,
         name: str = "",
     ) -> Machine:
         """
         Adds a machine to the model.
         """
-        machine = Machine(breaks, name=name)
+        machine = Machine(breaks, no_idle, name=name)
 
         self._id2resource[id(machine)] = len(self.resources)
         self._resources.append(machine)
@@ -523,7 +529,6 @@ class Model:
         weight_total_flow_time: int = 0,
         weight_total_earliness: int = 0,
         weight_max_tardiness: int = 0,
-        weight_max_lateness: int = 0,
         weight_total_setup_time: int = 0,
     ) -> Objective:
         """
@@ -536,7 +541,6 @@ class Model:
             weight_total_flow_time=weight_total_flow_time,
             weight_total_earliness=weight_total_earliness,
             weight_max_tardiness=weight_max_tardiness,
-            weight_max_lateness=weight_max_lateness,
             weight_total_setup_time=weight_total_setup_time,
         )
         return self._objective

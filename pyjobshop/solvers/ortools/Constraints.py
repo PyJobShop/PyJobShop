@@ -285,7 +285,7 @@ class Constraints:
         for task_idx1, task_idx2 in data.constraints.consecutive:
             for res_idx in data.machine_idcs:
                 seq_var = variables.sequence_vars[res_idx]
-                seq_var.activate(model, data)
+                seq_var.activate(model)
 
                 var1 = variables.assign_vars.get((task_idx1, res_idx))
                 var2 = variables.assign_vars.get((task_idx2, res_idx))
@@ -301,13 +301,21 @@ class Constraints:
     def _circuit_constraints(self):
         """
         Creates the circuit constraints for each machine, if activated by
-        sequencing constraints (consecutive and setup times).
+        sequencing constraints.
         """
         model, data, variables = self._model, self._data, self._variables
         setup_times = utils.setup_times_matrix(data)
 
         for res_idx in data.machine_idcs:
+            machine = data.resources[res_idx]
             seq_var = variables.sequence_vars[res_idx]
+
+            if setup_times is not None and np.any(setup_times[res_idx]):
+                seq_var.activate(model)
+
+            if machine.no_idle:
+                seq_var.activate(model)
+
             if not seq_var.is_active:
                 # No sequencing constraints active. Skip the creation of
                 # expensive circuit constraints.
@@ -317,42 +325,43 @@ class Constraints:
             graph = [(u, v, var) for (u, v), var in arcs.items()]
             model.add_circuit(graph)
 
-            for task_idx in range(data.num_tasks):
-                if (task_idx, res_idx) in variables.assign_vars:
-                    # Absent intervals require selecting loops (self-arcs).
-                    present = variables.assign_vars[task_idx, res_idx].present
-                    loop = arcs[task_idx, task_idx]
-                    model.add(loop == ~present)
+            res_modes = data.resource2modes(res_idx)
+            res_tasks = {data.modes[m].task for m in res_modes}
 
-                    # This handles the case where a machine does not process
-                    # any task. Selecting the dummy loop makes all intervals
-                    # absent, and satisfies the circuit constraint.
-                    dummy_loop = arcs[seq_var.DUMMY, seq_var.DUMMY]
-                    model.add(dummy_loop <= ~present)
+            for task_idx1 in res_tasks:
+                var1 = variables.assign_vars[task_idx1, res_idx]
 
-            for task_idx1 in range(data.num_tasks):
-                for task_idx2 in range(data.num_tasks):
+                # Absent intervals require selecting loops (self-arcs).
+                loop = arcs[task_idx1, task_idx1]
+                model.add(loop == ~var1.present)
+
+                # This handles the case where a machine does not process any
+                # task. Selecting the dummy loop makes all intervals absent,
+                # and satisfies the circuit constraint.
+                dummy_loop = arcs[seq_var.DUMMY, seq_var.DUMMY]
+                model.add(dummy_loop <= ~var1.present)
+
+                for task_idx2 in res_tasks:
                     if task_idx1 == task_idx2:
                         continue
 
-                    var1 = variables.assign_vars.get((task_idx1, res_idx))
-                    var2 = variables.assign_vars.get((task_idx2, res_idx))
-                    if not (var1 and var2):
-                        # Deactivate arc if tasks are not on this machine.
-                        model.add(arcs[task_idx1, task_idx2] == 0)
-                        continue
-
-                    arc_selected = arcs[task_idx1, task_idx2]
-                    model.add(arc_selected <= var1.present)
-                    model.add(arc_selected <= var2.present)
+                    var2 = variables.assign_vars[task_idx2, res_idx]
+                    arc = arcs[task_idx1, task_idx2]
+                    model.add(arc <= var1.present)
+                    model.add(arc <= var2.present)
 
                     setup = (
                         setup_times[res_idx, task_idx1, task_idx2]
                         if setup_times is not None
                         else 0
                     )
-                    expr = var1.end + setup <= var2.start
-                    model.add(expr).only_enforce_if(arc_selected)
+
+                    if machine.no_idle:
+                        expr = var1.end + setup == var2.start
+                    else:
+                        expr = var1.end + setup <= var2.start
+
+                    model.add(expr).only_enforce_if(arc)
 
     def _mode_dependencies(self):
         """
@@ -378,7 +387,6 @@ class Constraints:
         self._timing_constraints()
         self._identical_and_different_resource_constraints()
         self._task_selection_constraints()
-        self._activate_setup_times()
         self._consecutive_constraints()
         self._mode_dependencies()
 

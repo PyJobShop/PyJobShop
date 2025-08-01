@@ -63,18 +63,52 @@ class Constraints:
             if not data.resource2modes(idx):
                 continue  # skip because cpo warns if there are no modes
 
+            machine = data.resources[idx]
             seq_var = self._sequence_vars[idx]
+            matrix = None
             setup_times = utils.setup_times_matrix(data)
 
-            if setup_times is not None:
+            if setup_times is not None and np.any(setup_times[idx, :, :] > 0):
                 # The indexing of setup times is correctly handled by the
                 # interval variable's task index "type".
                 matrix = setup_times[idx, :, :]
-                matrix = matrix if np.any(matrix > 0) else None
-            else:
-                matrix = None
 
-            model.add(cpo.no_overlap(seq_var, matrix))
+            # ``is_direct`` enforces setup times between direct successors.
+            # See ICAPS 2017 presentation for details.
+            is_direct = True if matrix is not None else None
+            model.add(cpo.no_overlap(seq_var, matrix, is_direct))
+
+            if not machine.no_idle:
+                continue
+
+            # For no-idle machines, enforce: end + setup_time == next_start.
+            # This applies to all task pairs except the last task in sequence.
+            # The last task is determined dynamically by the solver sequencing.
+            intervals = seq_var.get_interval_variables()
+            task_idcs = [data.modes[m].task for m in data.resource2modes(idx)]
+
+            for task_idx, interval in zip(task_idcs, intervals):
+                next_type = cpo.type_of_next(
+                    seq_var,
+                    interval,
+                    # The returned value ``data.num_tasks`` is used to
+                    # deactivate the precedence constraint.
+                    lastValue=data.num_tasks,
+                    absentValue=data.num_tasks,
+                )
+
+                setup = 0
+                if setup_times is not None:
+                    setup_array = setup_times[idx, task_idx, :].tolist()
+                    setup_array.append(0)  # padding for last or absent
+                    setup = cpo.element(setup_array, next_type)
+
+                not_absent_or_last = next_type != data.num_tasks
+                end1 = cpo.end_of(interval)
+                start2 = cpo.start_of_next(seq_var, interval)
+                expr = end1 + setup == start2
+
+                model.add(cpo.if_then(not_absent_or_last, expr))
 
     def _get_demand(self, mode_idx: int, res_idx: int) -> int:
         """
