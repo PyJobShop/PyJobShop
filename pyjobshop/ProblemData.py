@@ -864,14 +864,21 @@ class ProblemData:
         """
         Validates the problem data parameters.
         """
-        for idx, job in enumerate(self.jobs):
+        for job_idx, job in enumerate(self.jobs):
             if len(job.tasks) == 0:
-                msg = f"Job {idx} does not reference any task."
+                msg = f"Job {job_idx} does not reference any task."
                 raise ValueError(msg)
 
             for task_idx in job.tasks:
                 if not (0 <= task_idx < self.num_tasks):
-                    msg = f"Job {idx} references to unknown task index."
+                    msg = f"Job {job_idx} references to unknown task index."
+                    raise ValueError(msg)
+
+                if job_idx != self.tasks[task_idx].job:
+                    msg = (
+                        f"Job {job_idx} contains task {task_idx}, but task "
+                        f"belongs to job {self.tasks[task_idx].job}."
+                    )
                     raise ValueError(msg)
 
         for idx, task in enumerate(self.tasks):
