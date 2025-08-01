@@ -386,9 +386,9 @@ def test_solve_initial_solution(solver, capfd):
         ],
         constraints=Constraints(
             setup_times=[
-                # SetupTime(0, 0, 1, 1),
-                # SetupTime(0, 1, 1, 2),
-                # SetupTime(0, 1, 0, 3),
+                SetupTime(0, 0, 1, 1),
+                SetupTime(0, 1, 1, 1),
+                SetupTime(0, 1, 0, 1),
             ],
         ),
         objective=Objective(
@@ -398,13 +398,13 @@ def test_solve_initial_solution(solver, capfd):
             weight_total_flow_time=5,
             weight_total_earliness=6,
             weight_max_tardiness=7,
-            # weight_total_setup_time=8,
+            weight_total_setup_time=8,
         ),
     )
     init = Solution(
         [
             TaskData(0, [0], 0, 1),
-            TaskData(1, [0], 1, 2),
+            TaskData(1, [0], 2, 3),
             TaskData(2, [1], 0, 2),
             TaskData(3, [2], 0, 2),
         ]
