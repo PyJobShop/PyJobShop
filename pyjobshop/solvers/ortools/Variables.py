@@ -598,7 +598,7 @@ class Variables:
                 model.add_hint(var.present, res_idx in sol_task.resources)
                 model.add_hint(var.demand, res2demands.get(res_idx, 0))  # type: ignore
 
-        # Sequencing variables.
+        # Sequencing related variables.
         for res_idx in data.machine_idcs:
             seq_var = self.sequence_vars[res_idx]
             if not seq_var.is_active:
@@ -629,7 +629,7 @@ class Variables:
                         and idx2 in present_tasks
                         and starts[idx1] < starts[idx2]
                     )
-                    # TODO edge case when task duration is 0. we need to
-                    # retrieve this directly from the solution?
+                    # TODO There's an edge case when the task duration is 0.
+                    # Revisit after #257.
 
                 model.add_hint(arc, hint)
