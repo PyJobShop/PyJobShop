@@ -1,6 +1,6 @@
 from numpy.testing import assert_equal
 
-from pyjobshop.ProblemData import Job, Mode, ProblemData, Renewable, Task
+from pyjobshop.ProblemData import Mode, ProblemData, Renewable, Task
 from pyjobshop.solvers.utils import (
     compute_task_durations,
     different_modes,
