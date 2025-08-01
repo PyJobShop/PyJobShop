@@ -605,14 +605,13 @@ class Variables:
                 continue
 
             tasks = {data.modes[m].task for m in data.resource2modes(res_idx)}
-            starts = [solution.tasks[idx].start for idx in tasks]
             present_tasks = {
                 idx for idx in tasks if res_idx in sol_tasks[idx].resources
             }
 
             # Identify the first and last task in the sequence.
-            first = min(present_tasks, key=lambda idx: starts[idx])
-            last = max(present_tasks, key=lambda idx: starts[idx])
+            first = min(present_tasks, key=lambda idx: sol_tasks[idx].start)
+            last = max(present_tasks, key=lambda idx: sol_tasks[idx].start)
 
             for (idx1, idx2), arc in seq_var.arcs.items():
                 if idx1 == seq_var.DUMMY and idx2 == seq_var.DUMMY:
@@ -629,7 +628,7 @@ class Variables:
                     hint = (
                         idx1 in present_tasks
                         and idx2 in present_tasks
-                        and starts[idx1] < starts[idx2]
+                        and sol_tasks[idx1].start < sol_tasks[idx2].start
                     )
 
                 model.add_hint(arc, hint)
