@@ -192,7 +192,7 @@ class Constraints:
         for task_idx1, task_idx2 in data.constraints.consecutive:
             for res_idx in data.machine_idcs:
                 seq_var = variables.sequence_vars[res_idx]
-                seq_var.activate(model, data, res_idx)
+                seq_var.activate(model)
                 var1 = variables.assign_vars.get((task_idx1, res_idx))
                 var2 = variables.assign_vars.get((task_idx2, res_idx))
 
@@ -214,8 +214,8 @@ class Constraints:
         for res_idx1, res_idx2, task_idcs1, task_idcs2 in same_sequence:
             seq_var1 = variables.sequence_vars[res_idx1]
             seq_var2 = variables.sequence_vars[res_idx2]
-            seq_var1.activate(model, data, res_idx1)
-            seq_var2.activate(model, data, res_idx2)
+            seq_var1.activate(model)
+            seq_var2.activate(model)
 
             pairs1 = product(task_idcs1, repeat=2)
             pairs2 = product(task_idcs2, repeat=2)
@@ -240,10 +240,10 @@ class Constraints:
             seq_var = variables.sequence_vars[res_idx]
 
             if setup_times is not None and np.any(setup_times[res_idx]):
-                seq_var.activate(model, data, res_idx)
+                seq_var.activate(model)
 
             if machine.no_idle:
-                seq_var.activate(model, data, res_idx)
+                seq_var.activate(model)
 
             if not seq_var.is_active:
                 # No sequencing constraints active. Skip the creation of
