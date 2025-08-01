@@ -1,4 +1,4 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import TypeAlias
 
 from ortools.sat.python.cp_model import (
@@ -104,13 +104,19 @@ class AssignVar:
         return self.interval.end_expr()
 
 
-@dataclass
 class SequenceVar:
     """
     Represents the sequence of interval variables for all tasks that may
     be assigned to this machine.
 
     Parameters
+    ----------
+    data
+        The problem data.
+    res_idx
+        The index of the resource (machine) for which the sequence is created.
+
+    Attributes
     ----------
     arcs
         The arc literals between each pair of intervals indicating whether
@@ -124,27 +130,50 @@ class SequenceVar:
     -----
     Sequence variables are lazily generated when activated by constraints that
     call the ``activate`` method. This avoids creating unnecessary variables
-    when the sequence variable is not used in the model.
+    when the sequence variable is not used in the model, because creating
+    them is takes O(n^2) time, where n is the number of tasks.
 
     """
 
     DUMMY = -1
 
-    arcs: dict[tuple[TaskIdx, TaskIdx], BoolVarT] = field(default_factory=dict)
-    is_active: bool = False
+    def __init__(self, data: ProblemData, res_idx: int):
+        self._arcs: dict[tuple[TaskIdx, TaskIdx], BoolVarT] = {}
+        self._is_active = False
 
-    def activate(self, m: CpModel, data: ProblemData):
+        # We only need to create nodes for tasks that can be assigned to this
+        # resource, because any other task is not going to be used.
+        tasks = {data.modes[m].task for m in data.resource2modes(res_idx)}
+        self._tasks = sorted(tasks)
+
+    @property
+    def arcs(self) -> dict[tuple[TaskIdx, TaskIdx], BoolVarT]:
+        """
+        Returns the arcs of the sequence variable.
+        """
+        return self._arcs
+
+    @property
+    def is_active(self) -> bool:
+        """
+        Returns whether the sequence variable is active.
+        """
+        return self._is_active
+
+    def activate(self, model: CpModel):
         """
         Activates the sequence variable by creating all relevant literals.
         """
         if self.is_active:
             return
 
-        nodes = list(range(data.num_tasks)) + [self.DUMMY]
+        self._is_active = True
 
-        self.is_active = True
-        self.arcs = {
-            (i, j): m.new_bool_var(f"{i}->{j}") for i in nodes for j in nodes
+        nodes = self._tasks + [self.DUMMY]
+        self._arcs = {
+            (i, j): model.new_bool_var(f"{i}->{j}")
+            for i in nodes
+            for j in nodes
         }
 
 
@@ -395,7 +424,7 @@ class Variables:
         variables: dict[ResourceIdx, SequenceVar] = {}
 
         for idx in data.machine_idcs:
-            variables[idx] = SequenceVar()
+            variables[idx] = SequenceVar(data, idx)
 
         return variables
 
