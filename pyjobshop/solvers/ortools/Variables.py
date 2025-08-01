@@ -529,13 +529,11 @@ class Variables:
 
         model.clear_hints()
 
-        if self._data.objective.weight_makespan > 0:
-            model.add_hint(self.makespan_var, solution.makespan)
-
+        # Job related variables.
         max_tardiness = 0
-        for idx in range(data.num_jobs):
-            job = data.jobs[idx]
-            job_var = job_vars[idx]
+        for task_idx in range(data.num_jobs):
+            job = data.jobs[task_idx]
+            job_var = job_vars[task_idx]
             sol_tasks = [solution.tasks[task] for task in job.tasks]
 
             job_start = min(task.start for task in sol_tasks)
@@ -548,20 +546,20 @@ class Variables:
 
             if data.objective.weight_total_flow_time > 0:
                 flow_time = job_end - job.release_date
-                model.add_hint(self.flow_time_vars[idx], flow_time)
+                model.add_hint(self.flow_time_vars[task_idx], flow_time)
 
             if job.due_date is not None:
                 if data.objective.weight_tardy_jobs > 0:
                     is_tardy = job_end > job.due_date
-                    model.add_hint(self.is_tardy_vars[idx], is_tardy)
+                    model.add_hint(self.is_tardy_vars[task_idx], is_tardy)
 
                 if data.objective.weight_total_tardiness > 0:
                     tardiness = max(0, job_end - job.due_date)
-                    model.add_hint(self.tardiness_vars[idx], tardiness)
+                    model.add_hint(self.tardiness_vars[task_idx], tardiness)
 
                 if data.objective.weight_total_earliness > 0:
                     earliness = max(0, job.due_date - job_end)
-                    model.add_hint(self.earliness_vars[idx], earliness)
+                    model.add_hint(self.earliness_vars[task_idx], earliness)
 
                 if data.objective.weight_max_tardiness > 0:
                     tardiness = max(0, job_end - job.due_date)
@@ -570,38 +568,36 @@ class Variables:
         if data.objective.weight_max_tardiness > 0:
             model.add_hint(self.max_tardiness_var, max_tardiness)
 
-        for idx in range(data.num_tasks):
-            task_var = task_vars[idx]
-            sol_task = solution.tasks[idx]
+        if data.objective.weight_makespan > 0:
+            model.add_hint(self.makespan_var, solution.makespan)
+
+        # Task and mode related variables.
+        for task_idx in range(data.num_tasks):
+            task_var = task_vars[task_idx]
+            sol_task = solution.tasks[task_idx]
             task_duration = sol_task.end - sol_task.start
 
             model.add_hint(task_var.start, sol_task.start)  # type: ignore
             model.add_hint(task_var.duration, task_duration)  # type: ignore
             model.add_hint(task_var.end, sol_task.end)  # type: ignore
 
-        for task_idx in range(data.num_tasks):
-            sol_task = solution.tasks[task_idx]
-            task_resources = {
-                res
-                for mode in data.task2modes(task_idx)
-                for res in data.modes[mode].resources
-            }
-            selected = set(sol_task.resources)
-            selected_mode = data.modes[sol_task.mode]
-            res2demands = dict(
-                zip(selected_mode.resources, selected_mode.demands)
-            )
+            for mode_idx in data.task2modes(task_idx):
+                mode_var = self.mode_vars[mode_idx]
+                model.add_hint(mode_var, mode_idx == sol_task.mode)
+
+            mode_data = data.modes[sol_task.mode]
+            res2demands = dict(zip(mode_data.resources, mode_data.demands))
+
+            task_resources = set()
+            for mode in data.task2modes(task_idx):
+                task_resources.update(data.modes[mode].resources)
 
             for res_idx in task_resources:
                 var = assign_vars[task_idx, res_idx]
-                model.add_hint(var.present, res_idx in selected)
-                model.add_hint(var.demand, res2demands[res_idx])  # type: ignore
+                model.add_hint(var.present, res_idx in sol_task.resources)
+                model.add_hint(var.demand, res2demands.get(res_idx, 0))  # type: ignore
 
-        selected_modes = {sol_task.mode for sol_task in solution.tasks}
-        for mode_idx in range(data.num_modes):
-            mode_var = self.mode_vars[mode_idx]
-            model.add_hint(mode_var, mode_idx in selected_modes)
-
+        # Sequencing variables.
         for res_idx in data.machine_idcs:
             seq_var = self.sequence_vars[res_idx]
             if not seq_var.is_active:
@@ -626,7 +622,7 @@ class Variables:
                 default=data.num_tasks,
             )
 
-            hints = []
+            hints = []  # for debugging
             for (idx1, idx2), arc in seq_var.arcs.items():
                 if idx1 == seq_var.DUMMY and idx2 == seq_var.DUMMY:
                     all_tasks_absent = all(not pres for pres in present)

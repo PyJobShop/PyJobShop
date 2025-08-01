@@ -381,8 +381,9 @@ def test_solve_initial_solution(solver, capfd):
         modes=[
             Mode(0, [0], 1),
             Mode(1, [0], 1),
-            Mode(2, [1], 2, [1]),
-            Mode(3, [2], 2, [1]),
+            Mode(2, [1], 1, [1]),
+            Mode(3, [1], 1, [1]),
+            Mode(3, [2], 1, [1]),
         ],
         constraints=Constraints(
             setup_times=[
@@ -405,8 +406,8 @@ def test_solve_initial_solution(solver, capfd):
         [
             TaskData(0, [0], 0, 1),
             TaskData(1, [0], 2, 3),
-            TaskData(2, [1], 0, 2),
-            TaskData(3, [2], 0, 2),
+            TaskData(2, [1], 0, 1),
+            TaskData(4, [2], 0, 1),
         ]
     )
     model = Model.from_data(data)
