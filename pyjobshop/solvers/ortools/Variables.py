@@ -191,6 +191,7 @@ class Variables:
 
         # Variables below are lazily created.
         self._makespan_var: IntVar | None = None
+        self._interval_makespan_var: IntervalVar | None = None
         self._is_tardy_vars: list[IntVar] | None = None
         self._flow_time_vars: list[IntVar] | None = None
         self._tardiness_vars: list[IntVar] | None = None
@@ -242,6 +243,18 @@ class Variables:
 
         self._makespan_var = self._make_makespan_variable()
         return self._makespan_var
+
+    @property
+    def interval_makespan_var(self) -> IntervalVar:
+        """
+        Returns the makespan interval variable, creating it if it does not
+        exist.
+        """
+        if self._interval_makespan_var is not None:
+            return self._interval_makespan_var
+
+        self._interval_makespan_var = self._make_interval_makespan_variable()
+        return self._interval_makespan_var
 
     @property
     def is_tardy_vars(self) -> list[IntVar]:
@@ -439,6 +452,22 @@ class Variables:
 
         return makespan_var
 
+    def _make_interval_makespan_variable(self) -> IntervalVar:
+        """
+        Creates the makespan interval variable.
+        """
+        model = self._model
+
+        makespan_size = model.new_int_var(1, MAX_VALUE, "")
+        interval_makespan = model.new_interval_var(
+            self.makespan_var,
+            makespan_size,
+            model.new_constant(MAX_VALUE + 1),
+            "interval_makespan",
+        )
+
+        return interval_makespan
+
     def _make_is_tardy_variables(self) -> list[IntVar]:
         """
         Creates the Boolean variables indicating whether each job is tardy.
@@ -572,6 +601,11 @@ class Variables:
         if data.objective.weight_makespan > 0:
             model.add_hint(self.makespan_var, solution.makespan)
 
+            if data.renewable_idcs:
+                size = self.interval_makespan_var.size_expr()
+                value = MAX_VALUE + 1 - solution.makespan
+                model.add_hint(size, value)  # type: ignore
+
         # Task and mode related variables.
         for task_idx in range(data.num_tasks):
             task_var = task_vars[task_idx]
@@ -594,9 +628,9 @@ class Variables:
                 task_resources.update(data.modes[mode].resources)
 
             for res_idx in task_resources:
-                var = assign_vars[task_idx, res_idx]
-                model.add_hint(var.present, res_idx in sol_task.resources)
-                model.add_hint(var.demand, res2demands.get(res_idx, 0))  # type: ignore
+                size = assign_vars[task_idx, res_idx]
+                model.add_hint(size.present, res_idx in sol_task.resources)
+                model.add_hint(size.demand, res2demands.get(res_idx, 0))  # type: ignore
 
         # Sequencing related variables.
         for res_idx in data.machine_idcs:

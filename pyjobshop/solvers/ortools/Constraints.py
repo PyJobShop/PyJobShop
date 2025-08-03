@@ -100,6 +100,12 @@ class Constraints:
             intervals = [var.interval for var in variables.res2assign(idx)]
             demands = [var.demand for var in variables.res2assign(idx)]
             capacity = data.resources[idx].capacity
+
+            # The interval makespan variable improves solver performance as it
+            # benefits from energetic reasoning in the cumulative constraint.
+            intervals.append(variables.interval_makespan_var)
+            demands.append(capacity)
+
             model.add_cumulative(intervals, demands, capacity)
 
     def _non_renewable_capacity(self):
