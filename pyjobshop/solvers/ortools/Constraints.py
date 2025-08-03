@@ -84,7 +84,9 @@ class Constraints:
 
         for idx in data.machine_idcs:
             intervals = [var.interval for var in variables.res2assign(idx)]
-            intervals.append(variables.interval_makespan_var)  # TODO explain
+
+            if data.objective.weight_makespan > 0:
+                intervals.append(variables.interval_makespan_var)
 
             model.add_no_overlap(intervals)
 
@@ -99,9 +101,9 @@ class Constraints:
             demands = [var.demand for var in variables.res2assign(idx)]
             capacity = data.resources[idx].capacity
 
-            # TODO explain
-            intervals.append(variables.interval_makespan_var)
-            demands.append(capacity)
+            if data.objective.weight_makespan > 0:
+                intervals.append(variables.interval_makespan_var)
+                demands.append(capacity)
 
             model.add_cumulative(intervals, demands, capacity)
 
