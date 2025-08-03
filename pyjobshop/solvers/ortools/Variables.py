@@ -601,10 +601,9 @@ class Variables:
         if data.objective.weight_makespan > 0:
             model.add_hint(self.makespan_var, solution.makespan)
 
-            if data.renewable_idcs:
-                size = self.interval_makespan_var.size_expr()
-                value = MAX_VALUE + 1 - solution.makespan
-                model.add_hint(size, value)  # type: ignore
+            size = self.interval_makespan_var.size_expr()
+            value = MAX_VALUE + 1 - solution.makespan
+            model.add_hint(size, value)  # type: ignore
 
         # Task and mode related variables.
         for task_idx in range(data.num_tasks):
