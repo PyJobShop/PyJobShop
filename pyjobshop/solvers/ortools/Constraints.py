@@ -88,6 +88,8 @@ class Constraints:
                 model.new_fixed_size_interval_var(start, end - start, "")
                 for start, end in data.resources[idx].breaks
             ]
+            intervals.append(variables.interval_makespan_var)  # TODO explain
+
             model.add_no_overlap(intervals)
 
     def _renewable_capacity(self):
@@ -101,8 +103,7 @@ class Constraints:
             demands = [var.demand for var in variables.res2assign(idx)]
             capacity = data.resources[idx].capacity
 
-            # The interval makespan variable improves solver performance as it
-            # benefits from energetic reasoning in the cumulative constraint.
+            # TODO explain
             intervals.append(variables.interval_makespan_var)
             demands.append(capacity)
 
