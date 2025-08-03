@@ -1,4 +1,5 @@
 from collections import defaultdict
+from itertools import product
 
 import numpy as np
 from ortools.sat.python.cp_model import CpModel, LinearExpr
@@ -279,6 +280,80 @@ class Constraints:
             expr2 = sum(variables.mode_vars[idx] for idx in idcs2)
             model.add(expr1 <= expr2)
 
+    def _redundant_cumulative(self):
+        def find_connected_components(
+            adj_list: dict[int, set[int]],
+        ) -> list[set[int]]:
+            """
+            Find connected components in an undirected graph.
+
+            Parameters
+            ----------
+            adj_list:
+                Dict where keys are nodes and values are sets of neighbors.
+
+            Returns
+            -------
+            List of sets, each set representing the nodes in a component.
+            """
+            visited = set()
+            components: list[set[int]] = []
+
+            def dfs(node, component):
+                visited.add(node)
+                component.add(node)
+
+                for neighbor in adj_list.get(node, []):
+                    if neighbor not in visited:
+                        dfs(neighbor, component)
+
+            nodes = set(adj_list.keys())
+            for neighbor_list in adj_list.values():
+                nodes.update(neighbor_list)
+
+            for node in nodes:
+                if node not in visited:
+                    component: set[int] = set()
+                    dfs(node, component)
+                    components.append(component)
+
+            return components
+
+        model, data, variables = self._model, self._data, self._variables
+        graph = defaultdict(set)
+
+        for task_idx in range(data.num_tasks):
+            mode_idcs = data.task2modes(task_idx)
+
+            for mode_idx1, mode_idx2 in product(mode_idcs, repeat=2):
+                resources1 = data.modes[mode_idx1].resources
+                resources2 = data.modes[mode_idx2].resources
+
+                for res1 in resources1:
+                    graph[res1].update(resources2)
+
+        for component in find_connected_components(graph):
+            if len(component) < 1 or len(component) == data.num_resources:
+                continue
+
+            intervals = []
+            for task_idx, task_var in enumerate(variables.task_vars):
+                if any(
+                    (task_idx, res_idx) in variables.assign_vars
+                    for res_idx in component
+                ):
+                    # Collect intervals for tasks that are assigned to
+                    # resource in the component.
+                    intervals.append(task_var.interval)
+
+            if len(intervals) <= 1 or len(intervals) == data.num_tasks:
+                continue
+
+            # Create a cumulative constraint for the component.
+            demands = [1] * len(intervals)
+            capacity = len(component)
+            model.add_cumulative(intervals, demands, capacity)
+
     def add_constraints(self):
         """
         Adds all the constraints to the CP model.
@@ -296,3 +371,5 @@ class Constraints:
 
         # From here onwards we know which sequence constraints are active.
         self._circuit_constraints()
+
+        self._redundant_cumulative()
