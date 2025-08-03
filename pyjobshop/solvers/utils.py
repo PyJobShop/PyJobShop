@@ -1,3 +1,4 @@
+from collections import defaultdict
 from itertools import product
 
 import numpy as np
@@ -157,3 +158,49 @@ def setup_times_matrix(data: ProblemData) -> np.ndarray | None:
         setup[res, task1, task2] = duration
 
     return setup
+
+
+def connected_resource_components(data: ProblemData) -> list[set[int]]:
+    """
+    Find connected components in an undirected graph.
+
+    Parameters
+    ----------
+    adj_list:
+        Dict where keys are nodes and values are sets of neighbors.
+
+    Returns
+    -------
+    List of sets, each set representing the nodes in a component.
+    """
+    graph = defaultdict(set)
+
+    for task_idx in range(data.num_tasks):
+        mode_idcs = data.task2modes(task_idx)
+
+        for mode_idx1, mode_idx2 in product(mode_idcs, repeat=2):
+            resources1 = data.modes[mode_idx1].resources
+            resources2 = data.modes[mode_idx2].resources
+
+            for res1 in resources1:
+                graph[res1].update(resources2)
+
+    nodes = set(graph.keys())
+    visited = set()
+    components: list[set[int]] = []
+
+    def dfs(node, component):
+        visited.add(node)
+        component.add(node)
+
+        for neighbor in graph.get(node, []):
+            if neighbor not in visited:
+                dfs(neighbor, component)
+
+    for node in nodes:
+        if node not in visited:
+            component: set[int] = set()
+            dfs(node, component)
+            components.append(component)
+
+    return components

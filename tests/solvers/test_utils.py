@@ -122,3 +122,10 @@ def test_intersecting_modes():
             (1, 3, []),
         ],
     )
+
+
+def test_connected_resource_components():
+    """
+    TODO
+    """
+    pass
