@@ -66,4 +66,5 @@ def plot_task_gantt(
     ax.set_xlim(0, solution.makespan)
     ax.set_ylabel("Tasks", fontsize=12)
     ax.set_title("Task Gantt Chart", fontsize=14)
+    ax.set_yticks([])
     ax.invert_yaxis()
