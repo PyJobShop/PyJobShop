@@ -39,6 +39,9 @@ def plot_task_gantt(
 
     for row_idx, task_idx in enumerate(tasks):
         task = solution.tasks[task_idx]
+        if not task.present:
+            continue
+
         start = task.start
         end = task.end
         duration = task.end - task.start
