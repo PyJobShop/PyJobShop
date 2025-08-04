@@ -36,12 +36,10 @@ def plot_task_gantt(
         tasks = list(range(len(solution.tasks)))
 
     colors = plt.cm.tab20.colors  # Use a qualitative colormap for task colors
+    present = [task for task in tasks if solution.tasks[task].present]
 
-    for row_idx, task_idx in enumerate(tasks):
+    for row_idx, task_idx in enumerate(present):
         task = solution.tasks[task_idx]
-        if not task.present:
-            continue
-
         start = task.start
         end = task.end
         duration = task.end - task.start
