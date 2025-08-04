@@ -1,7 +1,7 @@
 from numpy.testing import assert_
 
 from pyjobshop.Solution import Solution, TaskData
-from pyjobshop.solvers.ortools.Solver import Solver
+from pyjobshop.solvers.cpoptimizer.Solver import Solver
 
 
 def test_solve_initial_solution(complete, capfd):
@@ -22,6 +22,6 @@ def test_solve_initial_solution(complete, capfd):
     )
     solver.solve(display=True, initial_solution=init)
 
-    msg = "The solution hint is complete and is feasible."
+    msg = "Starting point is complete and consistent with constraints."
     printed = capfd.readouterr().out
     assert_(msg in printed)
