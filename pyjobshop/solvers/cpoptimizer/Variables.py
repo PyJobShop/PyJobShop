@@ -58,12 +58,13 @@ class Variables:
         """
         Creates an interval variable for each job.
         """
+        data = self._data
         variables = []
 
-        for job in self._data.jobs:
+        for idx, job in enumerate(data.jobs):
             # Job variable has to be optional if all tasks are optional.
-            optional = all(self._data.tasks[idx].optional for idx in job.tasks)
-            var = interval_var(optional=optional, name=f"J{job}")
+            optional = all(data.tasks[idx].optional for idx in job.tasks)
+            var = interval_var(optional=optional, name=f"J{idx}")
 
             var.set_start_min(job.release_date)
             var.set_end_max(min(job.deadline, MAX_VALUE))
@@ -79,10 +80,10 @@ class Variables:
         """
         data = self._data
         variables = []
-        task_durations = utils.compute_task_durations(self._data)
+        task_durations = utils.compute_task_durations(data)
 
         for idx, task in enumerate(data.tasks):
-            var = interval_var(optional=task.optional, name=f"T{task}")
+            var = interval_var(optional=task.optional, name=f"T{idx}")
 
             var.set_start_min(task.earliest_start)
             var.set_start_max(min(task.latest_start, MAX_VALUE))
