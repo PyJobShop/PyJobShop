@@ -315,15 +315,6 @@ def test_mode_dependency_must_have_at_least_one_succesor_mode():
         ModeDependency(0, [])
 
 
-def test_same_sequence_raises_unequal_length_tasks():
-    """
-    Tests that SameSequence raises an error when the tasks are not of equal
-    length.
-    """
-    with assert_raises(ValueError):
-        SameSequence(0, 1, [0], [1, 2])
-
-
 def test_negative_setup_times_not_allowed():
     """
     Tests that SetupTime duration must be non-negative.
@@ -637,12 +628,10 @@ def test_problem_data_all_modes_demand_infeasible():
             "same_sequence",
             SameSequence,
             [
-                (0, 2, [0], [0]),  # invalid resource idx
-                (2, 0, [0], [0]),  # invalid resource idx
-                (0, 1, [0], [0]),  # not a machine idx
-                (1, 0, [0], [0]),  # not a machine idx
-                (0, 0, [2], [0]),  # invalid task idx
-                (0, 0, [0], [2]),  # invalid task idx
+                (0, 2),  # invalid resource idx
+                (2, 0),  # invalid resource idx
+                (0, 1),  # not a machine idx
+                (1, 0),  # not a machine idx
             ],
         ),
         (
@@ -675,36 +664,6 @@ def test_problem_data_raises_invalid_indices(name, cls, idcs_list):
                 [Mode(0, [0], 1), Mode(1, [0], 2)],
                 constraints,
             )
-
-
-@pytest.mark.parametrize(
-    "same_sequence",
-    [
-        SameSequence(0, 1, [0, 2], [2, 3]),  # tasks1 invalid
-        SameSequence(0, 1, [0, 1], [0, 3]),  # tasks2 invalid
-        SameSequence(0, 1, [0], [2]),  # incomplete
-        SameSequence(0, 1, [0, 1, 4], [2, 3, 4]),  # incomplete
-    ],
-)
-def test_problem_data_raises_same_sequence_invalid_tasks(same_sequence):
-    """
-    Tests that the ProblemData class raises an error when the tasks in a
-    SameSequence constraint are not valid.
-    """
-    with pytest.raises(ValueError, match="tasks"):
-        ProblemData(
-            [],
-            [Machine(), Machine(), Machine()],
-            [Task(), Task(), Task(), Task(), Task()],
-            [
-                Mode(0, [0], 1),
-                Mode(1, [0], 1),
-                Mode(2, [1], 1),
-                Mode(3, [1], 1),
-                Mode(4, [2], 1),
-            ],
-            Constraints(same_sequence=[same_sequence]),
-        )
 
 
 @pytest.mark.parametrize(
@@ -1660,7 +1619,7 @@ def test_same_sequence(solver: str):
 
     model.add_consecutive(tasks1[0], tasks1[1])
     model.add_setup_time(machine2, tasks2[0], tasks2[1], 10)
-    model.add_same_sequence(machine1, machine2, tasks1, tasks2)
+    model.add_same_sequence(machine1, machine2)
 
     # Tasks1 and tasks2 must be scheduled in the same sequence on both
     # machines. Because of the consecutive constraint, the first task
@@ -1758,7 +1717,7 @@ def test_same_sequence_invalid_multiple_modes_cpoptimizer():
     for task in tasks2:
         model.add_mode(task, machine2, duration=1)
 
-    model.add_same_sequence(machine1, machine2, tasks1, tasks2)
+    model.add_same_sequence(machine1, machine2)
 
     with assert_raises(ValueError):
         model.solve(solver="cpoptimizer")

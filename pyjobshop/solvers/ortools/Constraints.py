@@ -211,30 +211,23 @@ class Constraints:
         model, data, variables = self._model, self._data, self._variables
         same_sequence = data.constraints.same_sequence
 
-        for res_idx1, res_idx2, task_idcs1, task_idcs2 in same_sequence:
+        for res_idx1, res_idx2 in same_sequence:
             seq_var1 = variables.sequence_vars[res_idx1]
             seq_var2 = variables.sequence_vars[res_idx2]
             seq_var1.activate(model)
             seq_var2.activate(model)
 
-            if task_idcs1 is None:
-                task_idcs1 = sorted(
-                    data.modes[mode].task
-                    for mode in data.resource2modes(res_idx1)
-                )
-
-            if task_idcs2 is None:
-                task_idcs2 = sorted(
-                    data.modes[mode].task
-                    for mode in data.resource2modes(res_idx2)
-                )
+            task_idcs1 = sorted(
+                data.modes[mode].task for mode in data.resource2modes(res_idx1)
+            )
+            task_idcs2 = sorted(
+                data.modes[mode].task for mode in data.resource2modes(res_idx2)
+            )
 
             pairs1 = product(task_idcs1, repeat=2)
             pairs2 = product(task_idcs2, repeat=2)
 
             for (i, j), (u, v) in zip(pairs1, pairs2):
-                # This ensures that task i -> j on machine 1 if and only if
-                # u -> v on machine 2.
                 arc1 = seq_var1.arcs[i, j]
                 arc2 = seq_var2.arcs[u, v]
                 model.add(arc1 == arc2)
