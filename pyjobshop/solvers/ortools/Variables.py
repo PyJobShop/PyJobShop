@@ -627,9 +627,9 @@ class Variables:
                 task_resources.update(data.modes[mode].resources)
 
             for res_idx in task_resources:
-                size = assign_vars[task_idx, res_idx]
-                model.add_hint(size.present, res_idx in sol_task.resources)
-                model.add_hint(size.demand, res2demands.get(res_idx, 0))  # type: ignore
+                var = assign_vars[task_idx, res_idx]
+                model.add_hint(var.present, res_idx in sol_task.resources)
+                model.add_hint(var.demand, res2demands.get(res_idx, 0))  # type: ignore
 
         # Sequencing related variables.
         for res_idx in data.machine_idcs:
