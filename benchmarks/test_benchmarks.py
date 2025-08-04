@@ -132,8 +132,7 @@ def test_tsp(benchmark, solver):
 
 def test_pfsp(benchmark, solver: str):
     """
-    Benchmark a small permutation flow shop problem instance (1.txt) from
-    https://github.com/INFORMSJoC/2021.0326.
+    Benchmark a small permutation flow shop problem instance.
     """
     DURATIONS = np.array(
         [
