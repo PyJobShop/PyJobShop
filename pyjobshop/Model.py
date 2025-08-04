@@ -437,8 +437,8 @@ class Model:
         self,
         machine1: Machine,
         machine2: Machine,
-        tasks1: list[Task],
-        tasks2: list[Task],
+        tasks1: list[Task] | None = None,
+        tasks2: list[Task] | None = None,
     ) -> SameSequence:
         """
         Adds a constraint that requires the two machines to schedule its tasks
@@ -446,8 +446,14 @@ class Model:
         """
         res_idx1 = self._id2resource[id(machine1)]
         res_idx2 = self._id2resource[id(machine2)]
-        task_idcs1 = [self._id2task[id(task)] for task in tasks1]
-        task_idcs2 = [self._id2task[id(task)] for task in tasks2]
+
+        task_idcs1 = None
+        if tasks1 is not None:
+            task_idcs1 = [self._id2task[id(task)] for task in tasks1]
+
+        task_idcs2 = None
+        if tasks2 is not None:
+            task_idcs2 = [self._id2task[id(task)] for task in tasks2]
 
         constraint = SameSequence(res_idx1, res_idx2, task_idcs1, task_idcs2)
         self._constraints.same_sequence.append(constraint)

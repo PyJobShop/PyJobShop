@@ -609,19 +609,27 @@ class SameSequence(IterableMixin):
         The second machine.
     tasks1
         Order of tasks on the first machine. Must exactly match the set of
-        tasks that may be scheduled on the first machine.
+        tasks that may be scheduled on the first machine. If not passed,
+        assumes that the order is given by the order of task indices of
+        tasks that may be assigned to this machine.
     tasks2
         Order of tasks on the second machine. Must exactly match the set of
-        tasks that may be scheduled on the second machine.
+        tasks that may be scheduled on the second machine. If not passed,
+        assumes that the order is given by the order of task indices of
+        tasks that may be assigned to this machine.
     """
 
     machine1: int
     machine2: int
-    tasks1: list[int]
-    tasks2: list[int]
+    tasks1: list[int] | None = None
+    tasks2: list[int] | None = None
 
     def __post_init__(self):
-        if len(self.tasks1) != len(self.tasks2):
+        if (
+            self.tasks1 is not None
+            and self.tasks2 is not None
+            and len(self.tasks1) != len(self.tasks2)
+        ):
             msg = "tasks1 and tasks2 must be same length for same_sequence."
             raise ValueError(msg)
 
@@ -987,6 +995,9 @@ class ProblemData:
             if not isinstance(self.resources[res_idx2], Machine):
                 msg = f"Resource {res_idx2} is not a machine in same_sequence."
                 raise ValueError(msg)
+
+            if task_idcs1 is None and task_idcs2 is None:
+                continue
 
             for task_idx in task_idcs1:
                 if not (0 <= task_idx < self.num_tasks):

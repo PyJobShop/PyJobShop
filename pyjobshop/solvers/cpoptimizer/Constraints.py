@@ -256,6 +256,18 @@ class Constraints:
             seq_var1 = self._sequence_vars[res_idx1]
             seq_var2 = self._sequence_vars[res_idx2]
 
+            if task_idcs1 is None:
+                task_idcs1 = sorted(
+                    data.modes[mode].task
+                    for mode in data.resource2modes(res_idx1)
+                )
+
+            if task_idcs2 is None:
+                task_idcs2 = sorted(
+                    data.modes[mode].task
+                    for mode in data.resource2modes(res_idx2)
+                )
+
             mode_vars1 = [
                 self._mode_vars[_find_mode(task_idx, res_idx1)]
                 for task_idx in task_idcs1

@@ -217,6 +217,18 @@ class Constraints:
             seq_var1.activate(model)
             seq_var2.activate(model)
 
+            if task_idcs1 is None:
+                task_idcs1 = sorted(
+                    data.modes[mode].task
+                    for mode in data.resource2modes(res_idx1)
+                )
+
+            if task_idcs2 is None:
+                task_idcs2 = sorted(
+                    data.modes[mode].task
+                    for mode in data.resource2modes(res_idx2)
+                )
+
             pairs1 = product(task_idcs1, repeat=2)
             pairs2 = product(task_idcs2, repeat=2)
 

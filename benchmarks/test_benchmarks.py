@@ -181,12 +181,7 @@ def test_pfsp(benchmark, solver: str):
 
     # Permutation constraints between tasks of different machines.
     for idx1, idx2 in pairwise(range(num_machines)):
-        model.add_same_sequence(
-            machines[idx1],
-            machines[idx2],
-            tasks[:, idx1].tolist(),
-            tasks[:, idx2].tolist(),
-        )
+        model.add_same_sequence(machines[idx1], machines[idx2])
 
     result = benchmark(model.solve, solver=solver, time_limit=10)
     assert_equal(result.objective, 1278)
@@ -264,10 +259,7 @@ def test_dpfsp(benchmark, solver: str):
     for factory_idx in range(num_factories):
         for idx1, idx2 in pairwise(range(num_machines)):
             model.add_same_sequence(
-                machines[factory_idx][idx1],
-                machines[factory_idx][idx2],
-                tasks[:, idx1].tolist(),
-                tasks[:, idx2].tolist(),
+                machines[factory_idx][idx1], machines[factory_idx][idx2]
             )
 
     result = benchmark(model.solve, solver, time_limit=10)
