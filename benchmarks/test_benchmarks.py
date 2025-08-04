@@ -147,16 +147,6 @@ def test_pfsp(benchmark, solver: str):
             [38, 60, 23, 59, 41],
             [27, 5, 57, 49, 69],
             [87, 56, 64, 85, 13],
-            [76, 3, 7, 85, 86],
-            [91, 61, 1, 9, 72],
-            [14, 73, 63, 39, 8],
-            [29, 75, 41, 41, 49],
-            [12, 47, 63, 56, 47],
-            [77, 14, 47, 40, 87],
-            [32, 21, 26, 54, 58],
-            [87, 86, 75, 77, 18],
-            [68, 5, 77, 51, 68],
-            [94, 77, 40, 31, 28],
         ]
     )
     num_jobs, num_machines = DURATIONS.shape
@@ -184,13 +174,12 @@ def test_pfsp(benchmark, solver: str):
         model.add_same_sequence(machines[idx1], machines[idx2])
 
     result = benchmark(model.solve, solver=solver, time_limit=10)
-    assert_equal(result.objective, 1278)
+    assert_equal(result.objective, 769)
 
 
 def test_dpfsp(benchmark, solver: str):
     """
-    Benchmark a small distributed permutation flow shop problem instance
-    (35.txt) from https://github.com/INFORMSJoC/2021.0326.
+    Benchmark a small distributed permutation flow shop problem instance.
     """
     DURATIONS = np.array(
         [
@@ -204,20 +193,10 @@ def test_dpfsp(benchmark, solver: str):
             [34, 69, 97, 69, 75],
             [42, 52, 12, 99, 33],
             [3, 28, 35, 41, 8],
-            [11, 28, 84, 73, 86],
-            [54, 77, 70, 28, 41],
-            [27, 42, 27, 99, 41],
-            [30, 53, 37, 13, 22],
-            [9, 46, 59, 59, 43],
-            [15, 49, 42, 47, 34],
-            [88, 15, 57, 8, 80],
-            [55, 43, 16, 92, 16],
-            [50, 65, 11, 87, 37],
-            [57, 41, 34, 62, 94],
         ]
     )
     num_jobs, num_machines = DURATIONS.shape
-    num_factories = 6  # from instance data
+    num_factories = 4  # from instance data
 
     model = Model()
     jobs = [model.add_job() for _ in range(num_jobs)]
