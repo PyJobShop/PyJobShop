@@ -29,7 +29,7 @@ dependencies = [
     "ortools>=9.12.4544",
     "matplotlib>=3.9.2",
     "fjsplib",
-    "psplib>=0.2.0",
+    "psplib>=0.3.0",
     "tqdm>=4.66.5",
     "tomli>=2.0.1",
 ]
