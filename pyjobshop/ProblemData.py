@@ -1,4 +1,4 @@
-from collections import Counter
+from collections import Counter, defaultdict
 from copy import deepcopy
 from dataclasses import dataclass, field, fields
 from itertools import pairwise
@@ -599,7 +599,20 @@ class Consecutive(IterableMixin):
 @dataclass
 class SameSequence(IterableMixin):
     """
-    Sequence all tasks on machine1 and machine2 in the same order.
+    Sequence all tasks on machine 1 and machine 2 in the same order.
+
+    Parameters
+    ----------
+    machine1
+        The first machine.
+    machine2
+        The second machine.
+    tasks1
+        Order of tasks on the first machine. Must exactly match the set of
+        tasks that may be scheduled on the first machine.
+    tasks2
+        Order of tasks on the second machine. Must exactly match the set of
+        tasks that may be scheduled on the second machine.
     """
 
     machine1: int
@@ -952,6 +965,11 @@ class ProblemData:
                 if not (0 <= idx2 < self.num_tasks):
                     raise ValueError(f"Invalid task index {idx2} in {name}.")
 
+        res2tasks = defaultdict(set)
+        for mode in self.modes:
+            for res_idx in mode.resources:
+                res2tasks[res_idx].add(mode.task)
+
         same_sequence = self.constraints.same_sequence
         for res_idx1, res_idx2, task_idcs1, task_idcs2 in same_sequence:
             if not (0 <= res_idx1 < self.num_resources):
@@ -962,11 +980,11 @@ class ProblemData:
                 msg = f"Invalid resource index {res_idx2} in same_sequence."
                 raise ValueError(msg)
 
-            if not (isinstance(self.resources[res_idx1], Machine)):
+            if not isinstance(self.resources[res_idx1], Machine):
                 msg = f"Resource {res_idx1} is not a machine in same_sequence."
                 raise ValueError(msg)
 
-            if not (isinstance(self.resources[res_idx2], Machine)):
+            if not isinstance(self.resources[res_idx2], Machine):
                 msg = f"Resource {res_idx2} is not a machine in same_sequence."
                 raise ValueError(msg)
 
@@ -980,13 +998,16 @@ class ProblemData:
                     msg = f"Invalid task index {task_idx} in same_sequence."
                     raise ValueError(msg)
 
-            # if (res_tasks1 != len(task_idcs1)) or res_tasks2 != len(
-            #     tasks_idcs2
-            # ):
-            #     msg = f"Invalid task index in setup_times: {task_idx2}."
-            #     raise ValueError(msg)
-            # TODO check that tasks1 and tasks2 belong to right machine?
-            # if the length is not equal it's also a problem
+            res_tasks1 = res2tasks[res_idx1]
+            res_tasks2 = res2tasks[res_idx2]
+
+            if res_tasks1 != set(task_idcs1):
+                msg = "tasks1 must exactly match tasks that require machine1."
+                raise ValueError(msg)
+
+            if res_tasks2 != set(task_idcs2):
+                msg = "tasks2 must exactly match tasks that require machine2."
+                raise ValueError(msg)
 
         for res_idx, task_idx1, task_idx2, _ in self.constraints.setup_times:
             if not (0 <= res_idx < self.num_resources):

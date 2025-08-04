@@ -613,7 +613,7 @@ def test_problem_data_all_modes_demand_infeasible():
     with assert_raises(ValueError):
         # This is not OK: no mode is feasible.
         ProblemData(
-            [Job(tasks=[0])],
+            [],
             [Renewable(capacity=1)],
             [Task()],
             [
@@ -669,12 +669,42 @@ def test_problem_data_raises_invalid_indices(name, cls, idcs_list):
 
         with assert_raises(ValueError):
             ProblemData(
-                [Job(tasks=[0])],
+                [],
                 [Machine(), Renewable(0)],
                 [Task(), Task()],
                 [Mode(0, [0], 1), Mode(1, [0], 2)],
                 constraints,
             )
+
+
+@pytest.mark.parametrize(
+    "same_sequence",
+    [
+        SameSequence(0, 1, [0, 2], [2, 3]),  # tasks1 invalid
+        SameSequence(0, 1, [0, 1], [0, 3]),  # tasks2 invalid
+        SameSequence(0, 1, [0], [2]),  # incomplete
+        SameSequence(0, 1, [0, 1, 4], [2, 3, 4]),  # incomplete
+    ],
+)
+def test_problem_data_raises_same_sequence_invalid_tasks(same_sequence):
+    """
+    Tests that the ProblemData class raises an error when the tasks in a
+    SameSequence constraint are not valid.
+    """
+    with pytest.raises(ValueError, match="tasks"):
+        ProblemData(
+            [],
+            [Machine(), Machine(), Machine()],
+            [Task(), Task(), Task(), Task(), Task()],
+            [
+                Mode(0, [0], 1),
+                Mode(1, [0], 1),
+                Mode(2, [1], 1),
+                Mode(3, [1], 1),
+                Mode(4, [2], 1),
+            ],
+            Constraints(same_sequence=[same_sequence]),
+        )
 
 
 @pytest.mark.parametrize(
@@ -691,7 +721,7 @@ def test_problem_data_raises_capacitated_resources_and_setup_times(resource):
     """
     with assert_raises(ValueError):
         ProblemData(
-            [Job(tasks=[0])],
+            [],
             [resource],
             [Task(), Task()],
             [Mode(0, [0], 0), Mode(1, [0], 0)],
@@ -706,7 +736,7 @@ def test_problem_data_raises_mode_dependency_same_task():
     """
     with assert_raises(ValueError):
         ProblemData(
-            [Job(tasks=[0])],
+            [],
             [Renewable(0)],
             [Task()],
             [Mode(0, [0], 1), Mode(0, [0], 2), Mode(0, [0], 3)],

@@ -67,7 +67,7 @@ def test_model_to_data():
         identical_resources=[IdenticalResources(1, 0)],
         different_resources=[DifferentResources(1, 0)],
         consecutive=[Consecutive(1, 0)],
-        same_sequence=[SameSequence([0], [1])],
+        same_sequence=[SameSequence(0, 1, [0], [1])],
         setup_times=[SetupTime(0, 0, 1, 3), SetupTime(1, 0, 1, 4)],
         mode_dependencies=[ModeDependency(0, [1])],
     )
