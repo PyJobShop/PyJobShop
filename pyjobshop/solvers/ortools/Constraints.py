@@ -209,20 +209,17 @@ class Constraints:
         Creates the same sequence constraints.
         """
         model, data, variables = self._model, self._data, self._variables
-        same_sequence = data.constraints.same_sequence
 
-        for res_idx1, res_idx2 in same_sequence:
+        for res_idx1, res_idx2 in data.constraints.same_sequence:
             seq_var1 = variables.sequence_vars[res_idx1]
             seq_var2 = variables.sequence_vars[res_idx2]
             seq_var1.activate(model)
             seq_var2.activate(model)
 
-            task_idcs1 = sorted(
-                data.modes[mode].task for mode in data.resource2modes(res_idx1)
-            )
-            task_idcs2 = sorted(
-                data.modes[mode].task for mode in data.resource2modes(res_idx2)
-            )
+            mode_idcs1 = data.resource2modes(res_idx1)
+            mode_idcs2 = data.resource2modes(res_idx2)
+            task_idcs1 = sorted(data.modes[idx].task for idx in mode_idcs1)
+            task_idcs2 = sorted(data.modes[idx].task for idx in mode_idcs2)
 
             pairs1 = product(task_idcs1, repeat=2)
             pairs2 = product(task_idcs2, repeat=2)

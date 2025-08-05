@@ -235,33 +235,32 @@ class Constraints:
         Creates the same sequence constraints.
         """
         model, data = self._model, self._data
-        same_sequence = data.constraints.same_sequence
 
         def _find_mode(task_idx: int, res_idx: int) -> int:
+            """
+            Returns the mode index that uses the given task and resource.
+            """
             task_modes = data.task2modes(task_idx)
             res_modes = data.resource2modes(res_idx)
-            incommon = set(task_modes) & set(res_modes)
+            common_modes = set(task_modes) & set(res_modes)
 
-            if len(incommon) != 1:
+            if len(common_modes) != 1:
                 msg = (
-                    f"Multiple modes found that require task {task_idx} "
-                    f"and resource {res_idx}. PyJobShop cannot solve such"
-                    "instances with CP Optimizer."
+                    "Cannot solve instances with multiple modes that require "
+                    f"task {task_idx} and resource {res_idx} with CP Optimzer."
                 )
                 raise ValueError(msg)
 
-            return incommon.pop()
+            return common_modes.pop()
 
-        for res_idx1, res_idx2 in same_sequence:
+        for res_idx1, res_idx2 in data.constraints.same_sequence:
             seq_var1 = self._sequence_vars[res_idx1]
             seq_var2 = self._sequence_vars[res_idx2]
 
-            task_idcs1 = (
-                data.modes[mode].task for mode in data.resource2modes(res_idx1)
-            )
-            task_idcs2 = (
-                data.modes[mode].task for mode in data.resource2modes(res_idx2)
-            )
+            mode_idcs1 = data.resource2modes(res_idx1)
+            mode_idcs2 = data.resource2modes(res_idx2)
+            task_idcs1 = sorted(data.modes[idx].task for idx in mode_idcs1)
+            task_idcs2 = sorted(data.modes[idx].task for idx in mode_idcs2)
 
             mode_vars1 = [
                 self._mode_vars[_find_mode(task_idx, res_idx1)]
