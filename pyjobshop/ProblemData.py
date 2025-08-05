@@ -599,9 +599,13 @@ class Consecutive(IterableMixin):
 @dataclass
 class SameSequence(IterableMixin):
     """
-    Sequence all tasks on machine 1 and machine 2 in the same order.
-    Assumes that the task order on both machines is given by the
-    order in which modes are defined for each task and machine pair.
+    Ensures that two machines process their assigned tasks in the same relative
+    order. The task ordering for each machine is determined by the order in
+    which tasks are defined in the problem data.
+
+    For example, if machine 1 has tasks [1, 3] and machine 2 has tasks [2, 4],
+    then both machines must process their tasks in the same order: 1 before 3
+    on machine 1, and 2 before 4 on machine 2.
 
     Parameters
     ----------
@@ -980,8 +984,10 @@ class ProblemData:
             res_tasks2 = res2tasks[res_idx2]
 
             if len(res_tasks1) != len(res_tasks2):
-                msg = "Both machines must handle the same number of tasks"
-                msg += " in same_sequence."
+                msg = (
+                    "Machines in same_sequence constraint must handle"
+                    " the same number of tasks."
+                )
                 raise ValueError(msg)
 
         for res_idx, task_idx1, task_idx2, _ in self.constraints.setup_times:

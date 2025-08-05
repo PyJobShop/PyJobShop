@@ -1630,41 +1630,6 @@ def test_same_sequence(solver: str):
     assert_equal(result.objective, 13)
 
 
-def test_same_sequence_(solver: str):
-    """
-    Tests that the same sequence constraint is respected for a simple
-    permutation flow shop problem.
-    """
-    model = Model()
-
-    machine1 = model.add_machine()
-    machine2 = model.add_machine()
-
-    tasks1 = [model.add_task() for _ in range(2)]
-    tasks2 = [model.add_task() for _ in range(2)]
-
-    for task in tasks1:
-        model.add_mode(task, machine1, duration=1)
-
-    for task in tasks2:
-        model.add_mode(task, machine2, duration=1)
-
-    for task1, task2 in zip(tasks1, tasks2):
-        model.add_end_before_start(task1, task2)
-
-    model.add_consecutive(tasks1[0], tasks1[1])
-    model.add_setup_time(machine2, tasks2[0], tasks2[1], 10)
-    model.add_same_sequence(machine1, machine2)
-
-    # Tasks1 and tasks2 must be scheduled in the same sequence on both
-    # machines. Because of the consecutive constraint, the first task
-    # must be scheduled before the second task on both machines. This
-    # incurs a setup time of 10.
-    result = model.solve(solver=solver)
-    assert_equal(result.status.value, "Optimal")
-    assert_equal(result.objective, 13)
-
-
 # def test_same_sequence_custom_ordering(solver: str):
 #     """
 #     Tests that the same sequence constraint with custom ordering of tasks is

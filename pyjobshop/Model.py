@@ -169,8 +169,7 @@ class Model:
         for idx1, idx2 in data.constraints.consecutive:
             model.add_consecutive(tasks[idx1], tasks[idx2])
 
-        same_sequence = data.constraints.same_sequence
-        for res_idx1, res_idx2 in same_sequence:
+        for res_idx1, res_idx2 in data.constraints.same_sequence:
             model.add_same_sequence(resources[res_idx1], resources[res_idx2])
 
         for res_idx, idx1, idx2, duration in data.constraints.setup_times:
