@@ -41,8 +41,9 @@ Contents
    :caption: Examples
 
    examples/simple_example
-   examples/hybrid_flow_shop
    examples/flexible_job_shop
+   examples/hybrid_flow_shop
+   examples/permutation_flow_shop
    examples/project_scheduling
    examples/quick_examples
    examples/objectives_examples
