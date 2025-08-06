@@ -122,8 +122,8 @@ def complete_sol():
             TaskData(4, [2], 0, 1),
             TaskData(5, [3], 0, 1),
             TaskData(6, [3], 2, 3),
-            TaskData(7, [4], 0, 100),
-            TaskData(0, [], 0, 0, present=False),
+            # TODO how to warmstart absent tasks? i think durations is wrong
+            TaskData(-1, [], 0, 1),
         ]
     )
 

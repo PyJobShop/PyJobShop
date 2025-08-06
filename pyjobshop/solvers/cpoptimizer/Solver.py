@@ -62,7 +62,9 @@ class Solver:
 
         for idx in range(self._data.num_tasks):
             if idx not in tasks:
-                tasks[idx] = TaskData(idx, [], 0, 0, present=False)
+                tasks[idx] = TaskData(
+                    self._data.num_modes, [], 0, 0, present=False
+                )
 
         return Solution([tasks[idx] for idx in range(self._data.num_tasks)])
 
