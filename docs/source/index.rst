@@ -45,7 +45,7 @@ Contents
    examples/flexible_job_shop
    examples/project_scheduling
    examples/quick_examples
-   examples/objectives_examples
+   examples/objectives
 
 .. toctree::
    :maxdepth: 1
