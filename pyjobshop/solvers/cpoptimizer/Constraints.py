@@ -253,14 +253,19 @@ class Constraints:
 
             return common_modes.pop()
 
-        for res_idx1, res_idx2 in data.constraints.same_sequence:
+        for idcs in data.constraints.same_sequence:
+            res_idx1, res_idx2, task_idcs1, task_idcs2 = idcs
+
             seq_var1 = self._sequence_vars[res_idx1]
             seq_var2 = self._sequence_vars[res_idx2]
 
-            mode_idcs1 = data.resource2modes(res_idx1)
-            mode_idcs2 = data.resource2modes(res_idx2)
-            task_idcs1 = sorted(data.modes[idx].task for idx in mode_idcs1)
-            task_idcs2 = sorted(data.modes[idx].task for idx in mode_idcs2)
+            if task_idcs1 is None:
+                mode_idcs1 = data.resource2modes(res_idx1)
+                task_idcs1 = sorted(data.modes[idx].task for idx in mode_idcs1)
+
+            if task_idcs2 is None:
+                mode_idcs2 = data.resource2modes(res_idx2)
+                task_idcs2 = sorted(data.modes[idx].task for idx in mode_idcs2)
 
             mode_vars1 = [
                 self._mode_vars[_find_mode(task_idx, res_idx1)]

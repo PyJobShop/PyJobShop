@@ -210,21 +210,28 @@ class Constraints:
         """
         model, data, variables = self._model, self._data, self._variables
 
-        for res_idx1, res_idx2 in data.constraints.same_sequence:
+        for idcs in data.constraints.same_sequence:
+            res_idx1, res_idx2, task_idcs1, task_idcs2 = idcs
+
             seq_var1 = variables.sequence_vars[res_idx1]
             seq_var2 = variables.sequence_vars[res_idx2]
             seq_var1.activate(model)
             seq_var2.activate(model)
 
-            mode_idcs1 = data.resource2modes(res_idx1)
-            mode_idcs2 = data.resource2modes(res_idx2)
-            task_idcs1 = sorted(data.modes[idx].task for idx in mode_idcs1)
-            task_idcs2 = sorted(data.modes[idx].task for idx in mode_idcs2)
+            if task_idcs1 is None:
+                mode_idcs1 = data.resource2modes(res_idx1)
+                task_idcs1 = sorted(data.modes[idx].task for idx in mode_idcs1)
+
+            if task_idcs2 is None:
+                mode_idcs2 = data.resource2modes(res_idx2)
+                task_idcs2 = sorted(data.modes[idx].task for idx in mode_idcs2)
 
             pairs1 = product(task_idcs1, repeat=2)
             pairs2 = product(task_idcs2, repeat=2)
 
             for (i, j), (u, v) in zip(pairs1, pairs2):
+                # This ensures that task i -> j on machine 1 if and only if
+                # u -> v on machine 2.
                 arc1 = seq_var1.arcs[i, j]
                 arc2 = seq_var2.arcs[u, v]
                 model.add(arc1 == arc2)

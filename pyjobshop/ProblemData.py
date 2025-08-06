@@ -600,12 +600,15 @@ class Consecutive(IterableMixin):
 class SameSequence(IterableMixin):
     """
     Ensures that two machines process their assigned tasks in the same relative
-    order. The task ordering for each machine is determined by the order in
-    which tasks are defined in the problem data.
+    order. By default, the task ordering for each machine is determined by the
+    order in which tasks are defined in the problem data.
 
     For example, if machine 1 has tasks [1, 3] and machine 2 has tasks [2, 4],
     then both machines must process their tasks in the same order: 1 before 3
     on machine 1, and 2 before 4 on machine 2.
+
+    If a custom ordering of tasks is required, use the `tasks1` and `tasks2`
+    parameters to specify the order explicitly.
 
     Parameters
     ----------
@@ -613,10 +616,34 @@ class SameSequence(IterableMixin):
         The first machine.
     machine2
         The second machine.
+    tasks1
+        Order of tasks on the first machine. Must exactly match the set of
+        tasks that may be scheduled on the first machine. If not passed,
+        assumes that the order is given by the order of task indices of
+        tasks that may be assigned to this machine.
+    tasks2
+        Order of tasks on the second machine. Must exactly match the set of
+        tasks that may be scheduled on the second machine. If not passed,
+        assumes that the order is given by the order of task indices of
+        tasks that may be assigned to this machine.
     """
 
     machine1: int
     machine2: int
+    tasks1: list[int] | None = None
+    tasks2: list[int] | None = None
+
+    def __post_init__(self):
+        if self.tasks1 is not None and self.tasks2 is not None:
+            if len(self.tasks1) != len(self.tasks2):
+                msg = "tasks1 and tasks2 must be same length."
+                raise ValueError(msg)
+
+            if len(set(self.tasks1)) != len(self.tasks1):
+                raise ValueError("tasks1 contains duplicate values.")
+
+            if len(set(self.tasks2)) != len(self.tasks2):
+                raise ValueError("tasks2 contains duplicate values.")
 
 
 @dataclass
@@ -963,7 +990,8 @@ class ProblemData:
             for res_idx in mode.resources:
                 res2tasks[res_idx].add(mode.task)
 
-        for res_idx1, res_idx2 in self.constraints.same_sequence:
+        same_sequence = self.constraints.same_sequence
+        for res_idx1, res_idx2, task_idcs1, task_idcs2 in same_sequence:
             if not (0 <= res_idx1 < self.num_resources):
                 msg = f"Invalid resource index {res_idx1} in same_sequence."
                 raise ValueError(msg)
@@ -988,6 +1016,26 @@ class ProblemData:
                     "Machines in same_sequence constraint must handle"
                     " the same number of tasks."
                 )
+
+            if task_idcs1 is None and task_idcs2 is None:
+                continue
+
+            for task_idx in task_idcs1:
+                if not (0 <= task_idx < self.num_tasks):
+                    msg = f"Invalid task index {task_idx} in same_sequence."
+                    raise ValueError(msg)
+
+            for task_idx in task_idcs2:
+                if not (0 <= task_idx < self.num_tasks):
+                    msg = f"Invalid task index {task_idx} in same_sequence."
+                    raise ValueError(msg)
+
+            if res_tasks1 != set(task_idcs1):
+                msg = "tasks1 must exactly match tasks that require machine1."
+                raise ValueError(msg)
+
+            if res_tasks2 != set(task_idcs2):
+                msg = "tasks2 must exactly match tasks that require machine2."
                 raise ValueError(msg)
 
         for res_idx, task_idx1, task_idx2, _ in self.constraints.setup_times:
