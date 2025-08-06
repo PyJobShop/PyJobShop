@@ -230,6 +230,55 @@ class Constraints:
 
                     model.add(cpo.previous(seq_var, var1, var2))
 
+    def _same_sequence_constraints(self):
+        """
+        Creates the same sequence constraints.
+        """
+        model, data = self._model, self._data
+
+        def _find_mode(task_idx: int, res_idx: int) -> int:
+            """
+            Returns the mode index that uses the given task and resource.
+            """
+            task_modes = data.task2modes(task_idx)
+            res_modes = data.resource2modes(res_idx)
+            common_modes = set(task_modes) & set(res_modes)
+
+            if len(common_modes) != 1:
+                msg = (
+                    "Cannot solve instances with multiple modes that require "
+                    f"task {task_idx} and resource {res_idx} with CP Optimzer."
+                )
+                raise ValueError(msg)
+
+            return common_modes.pop()
+
+        for idcs in data.constraints.same_sequence:
+            res_idx1, res_idx2, task_idcs1, task_idcs2 = idcs
+
+            seq_var1 = self._sequence_vars[res_idx1]
+            seq_var2 = self._sequence_vars[res_idx2]
+
+            if task_idcs1 is None:
+                mode_idcs1 = data.resource2modes(res_idx1)
+                task_idcs1 = sorted(data.modes[idx].task for idx in mode_idcs1)
+
+            if task_idcs2 is None:
+                mode_idcs2 = data.resource2modes(res_idx2)
+                task_idcs2 = sorted(data.modes[idx].task for idx in mode_idcs2)
+
+            mode_vars1 = [
+                self._mode_vars[_find_mode(task_idx, res_idx1)]
+                for task_idx in task_idcs1
+            ]
+            mode_vars2 = [
+                self._mode_vars[_find_mode(task_idx, res_idx2)]
+                for task_idx in task_idcs2
+            ]
+            model.add(
+                cpo.same_sequence(seq_var1, seq_var2, mode_vars1, mode_vars2)
+            )
+
     def _mode_dependencies(self):
         """
         Implements the mode dependency constraints.
@@ -257,4 +306,5 @@ class Constraints:
         self._timing_constraints()
         self._identical_and_different_resource_constraints()
         self._consecutive_constraints()
+        self._same_sequence_constraints()
         self._mode_dependencies()
