@@ -8,4 +8,4 @@ def presence_of(var: CpoIntervalVar) -> CpoExpr:
     interval variable's presence status. If the variable is always present,
     calling ``presence_of()`` emits warnings, so instead we return 1.
     """
-    return cpo.presence_of(var) if var.is_optional() else 1
+    return cpo.presence_of(var) if var.is_optional() else 1  # type: ignore
