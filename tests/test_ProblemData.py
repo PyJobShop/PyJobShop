@@ -315,13 +315,20 @@ def test_mode_dependency_must_have_at_least_one_succesor_mode():
         ModeDependency(0, [])
 
 
-def test_same_sequence_raises_unequal_length_tasks():
+@pytest.mark.parametrize(
+    "tasks1, tasks2",
+    [
+        ([0], [1, 2]),  # not same length
+        ([0, 0], [1, 2]),  # tasks1 duplicate values
+        ([0, 1], [2, 2]),  # tasks2 duplicate values
+    ],
+)
+def test_same_sequence_raises(tasks1: list[int], tasks2: list[int]):
     """
-    Tests that SameSequence raises an error when the tasks are not of equal
-    length.
+    Tests that SameSequence raises an error when the tasks are invalid.
     """
     with assert_raises(ValueError):
-        SameSequence(0, 1, [0], [1, 2])
+        SameSequence(0, 1, tasks1, tasks2)
 
 
 def test_negative_setup_times_not_allowed():
