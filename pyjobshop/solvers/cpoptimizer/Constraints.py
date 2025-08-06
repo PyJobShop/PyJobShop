@@ -220,40 +220,35 @@ class Constraints:
         """
         model, data = self._model, self._data
 
-        for idcs, trigger_idx in data.constraints.select_all_or_none:
-            if trigger_idx is None:
-                # This works better with presolve.
-                for idx1, idx2 in pairwise(idcs):
-                    var1 = self._task_vars[idx1]
-                    var2 = self._task_vars[idx2]
-                    expr = presence_of(var1) == presence_of(var2)
-                    model.add(expr)
-            else:
-                triggered = presence_of(self._task_vars[trigger_idx]) == 1
-                bools = [presence_of(self._task_vars[idx]) for idx in idcs]
-                select_all = cpo.logical_and(var == 1 for var in bools)
-                select_none = cpo.logical_and(var == 0 for var in bools)
-                all_or_none = cpo.logical_or(select_all, select_none)
-
-                model.add(cpo.if_then(triggered, all_or_none))
-
-        for idcs, trigger_idx in data.constraints.select_at_least_one:
-            trigger = (
+        def bool_var_or_true(trigger_idx: int | None):
+            """
+            Returns the Boolean presence variable of the trigger task if a
+            valid index is passed, otherwise returns a constant True value.
+            """
+            return (
                 presence_of(self._task_vars[trigger_idx])
                 if trigger_idx is not None
                 else 1
             )
-            presences = sum(presence_of(self._task_vars[idx]) for idx in idcs)
-            model.add(trigger <= presences)
+
+        for idcs, trigger_idx in data.constraints.select_all_or_none:
+            condition = bool_var_or_true(trigger_idx) == 1
+
+            for idx1, idx2 in pairwise(idcs):
+                var1 = self._task_vars[idx1]
+                var2 = self._task_vars[idx2]
+                expr = presence_of(var1) == presence_of(var2)
+                model.add(cpo.if_then(condition, expr))
+
+        for idcs, trigger_idx in data.constraints.select_at_least_one:
+            condition = bool_var_or_true(trigger_idx) == 1
+            presences = [presence_of(self._task_vars[idx]) for idx in idcs]
+            model.add(condition <= sum(presences))
 
         for idcs, trigger_idx in data.constraints.select_exactly_one:
-            bools = [presence_of(self._task_vars[idx]) for idx in idcs]
-            exactly_one = sum(bools) == 1
-            if trigger_idx is None:
-                model.add(exactly_one)
-            else:
-                triggered = presence_of(self._task_vars[trigger_idx]) == 1
-                model.add(cpo.if_then(triggered, exactly_one))
+            condition = bool_var_or_true(trigger_idx) == 1
+            presences = [presence_of(self._task_vars[idx]) for idx in idcs]
+            model.add(cpo.if_then(condition, sum(presences) == 1))
 
     def _consecutive_constraints(self):
         """

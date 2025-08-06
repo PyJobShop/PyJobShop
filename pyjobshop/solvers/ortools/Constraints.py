@@ -209,10 +209,10 @@ class Constraints:
         """
         model, data, variables = self._model, self._data, self._variables
 
-        def bool_var_or_constant(trigger_idx: int | None) -> BoolVarT:
+        def bool_var_or_true(trigger_idx: int | None) -> BoolVarT:
             """
-            Returns the Boolean variable of the trigget task if a valid index
-            is passed, otherwise returns a constant True value.
+            Returns the Boolean presence variable of the trigger task if a
+            valid index is passed, otherwise returns a constant True value.
             """
             return (
                 variables.task_vars[trigger_idx].present
@@ -221,7 +221,7 @@ class Constraints:
             )
 
         for idcs, trigger_idx in data.constraints.select_all_or_none:
-            condition = bool_var_or_constant(trigger_idx)
+            condition = bool_var_or_true(trigger_idx)
 
             for idx1, idx2 in pairwise(idcs):
                 var1 = variables.task_vars[idx1]
@@ -230,12 +230,12 @@ class Constraints:
                 model.add(expr).only_enforce_if(condition)
 
         for idcs, trigger_idx in data.constraints.select_at_least_one:
-            condition = bool_var_or_constant(trigger_idx)
+            condition = bool_var_or_true(trigger_idx)
             presences = [variables.task_vars[idx].present for idx in idcs]
             model.add(condition <= sum(presences))
 
         for idcs, trigger_idx in data.constraints.select_exactly_one:
-            condition = bool_var_or_constant(trigger_idx)
+            condition = bool_var_or_true(trigger_idx)
             presences = [variables.task_vars[idx].present for idx in idcs]
             model.add(sum(presences) == 1).only_enforce_if(condition)
 
