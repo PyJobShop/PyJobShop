@@ -47,6 +47,9 @@ PyJobShop
 
     .. autoclass:: Consecutive
 
+    .. autoclass:: SameSequence
+       :exclude-members: tasks1, tasks2
+
     .. autoclass:: SetupTime
 
     .. autoclass:: ModeDependency

@@ -9,10 +9,13 @@ from .ProblemData import IdenticalResources as IdenticalResources
 from .ProblemData import Job as Job
 from .ProblemData import Machine as Machine
 from .ProblemData import Mode as Mode
+from .ProblemData import ModeDependency as ModeDependency
 from .ProblemData import NonRenewable as NonRenewable
 from .ProblemData import Objective as Objective
 from .ProblemData import ProblemData as ProblemData
 from .ProblemData import Renewable as Renewable
+from .ProblemData import SameSequence as SameSequence
+from .ProblemData import SetupTime as SetupTime
 from .ProblemData import StartBeforeEnd as StartBeforeEnd
 from .ProblemData import StartBeforeStart as StartBeforeStart
 from .ProblemData import Task as Task

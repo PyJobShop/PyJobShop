@@ -2,7 +2,7 @@ import docplex.cp.modeler as cpo
 from docplex.cp.model import CpoExpr, CpoModel
 
 import pyjobshop.solvers.utils as utils
-from pyjobshop.ProblemData import Objective as DataObjective
+from pyjobshop.ProblemData import Objective as ObjectiveData
 from pyjobshop.ProblemData import ProblemData
 
 from .Variables import Variables
@@ -119,7 +119,7 @@ class Objective:
 
         return cpo.sum(total)  # type: ignore
 
-    def _objective_expr(self, objective: DataObjective) -> CpoExpr:
+    def _objective_expr(self, objective: ObjectiveData) -> CpoExpr:
         """
         Returns the expression corresponding to the given objective.
         """
