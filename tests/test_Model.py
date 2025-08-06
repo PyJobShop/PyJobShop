@@ -11,6 +11,7 @@ from pyjobshop.ProblemData import (
     Mode,
     ModeDependency,
     Objective,
+    SameSequence,
     SelectAllOrNone,
     SelectAtLeastOne,
     SelectExactlyOne,
@@ -45,7 +46,7 @@ def test_model_to_data():
     model.add_select_exactly_one([task1, task2])
     model.add_consecutive(task2, task1)
     model.add_mode_dependency(mode1, [mode2])
-
+    model.add_same_sequence(machine1, machine2, [task1], [task2])
     model.add_setup_time(machine1, task1, task2, 3)
     model.add_setup_time(machine2, task1, task2, 4)
 
@@ -75,6 +76,7 @@ def test_model_to_data():
         select_at_least_one=[SelectAtLeastOne([0, 1], None)],
         select_exactly_one=[SelectExactlyOne([0, 1], None)],
         consecutive=[Consecutive(1, 0)],
+        same_sequence=[SameSequence(0, 1, [0], [1])],
         setup_times=[SetupTime(0, 0, 1, 3), SetupTime(1, 0, 1, 4)],
         mode_dependencies=[ModeDependency(0, [1])],
     )
@@ -82,21 +84,22 @@ def test_model_to_data():
     assert_equal(data.objective, Objective(weight_total_flow_time=1))
 
 
-def test_from_data(complete):
+def test_from_data(complete_data):
     """
     Tests that initializing from a data instance returns a valid model
     representation of that instance.
     """
-    model = Model.from_data(complete)
+    data = complete_data
+    model = Model.from_data(data)
     m_data = model.data()
 
-    assert_equal(m_data.num_jobs, complete.num_jobs)
-    assert_equal(m_data.num_resources, complete.num_resources)
-    assert_equal(m_data.num_tasks, complete.num_tasks)
-    assert_equal(m_data.num_modes, complete.num_modes)
-    assert_equal(m_data.modes, complete.modes)
-    assert_equal(m_data.constraints, complete.constraints)
-    assert_equal(m_data.objective, complete.objective)
+    assert_equal(m_data.num_jobs, data.num_jobs)
+    assert_equal(m_data.num_resources, data.num_resources)
+    assert_equal(m_data.num_tasks, data.num_tasks)
+    assert_equal(m_data.num_modes, data.num_modes)
+    assert_equal(m_data.modes, data.modes)
+    assert_equal(m_data.constraints, data.constraints)
+    assert_equal(m_data.objective, data.objective)
 
 
 def test_model_to_data_default_values():

@@ -1,3 +1,5 @@
+from itertools import pairwise
+
 import numpy as np
 import pytest
 from numpy.testing import assert_equal
@@ -126,6 +128,120 @@ def test_tsp(benchmark, solver):
 
     result = benchmark(model.solve, solver=solver, time_limit=10)
     assert_equal(result.objective, 7293)
+
+
+def test_pfsp(benchmark, solver: str):
+    """
+    Benchmark a small permutation flow shop problem instance.
+    """
+    DURATIONS = np.array(
+        [
+            [54, 79, 16, 66, 58],
+            [83, 3, 89, 58, 56],
+            [15, 11, 49, 31, 20],
+            [71, 99, 15, 68, 85],
+            [77, 56, 89, 78, 53],
+            [36, 70, 45, 91, 35],
+            [53, 99, 60, 13, 53],
+            [38, 60, 23, 59, 41],
+            [27, 5, 57, 49, 69],
+            [87, 56, 64, 85, 13],
+        ]
+    )
+    num_jobs, num_machines = DURATIONS.shape
+
+    model = Model()
+    machines = [model.add_machine() for _ in range(num_machines)]
+
+    # Create tasks for each job and machine, and add modes with durations.
+    tasks = np.empty((num_jobs, num_machines), dtype=object)
+    for job_idx in range(num_jobs):
+        for machine_idx, machine in enumerate(machines):
+            task = model.add_task()
+            tasks[job_idx, machine_idx] = task
+
+            duration = DURATIONS[job_idx, machine_idx]
+            model.add_mode(task, machine, duration=duration)
+
+    # Precedence constraints between tasks of the same job.
+    for job_tasks in tasks:
+        for task1, task2 in pairwise(job_tasks):
+            model.add_end_before_start(task1, task2)
+
+    # Permutation constraints between tasks of different machines.
+    for idx1, idx2 in pairwise(range(num_machines)):
+        model.add_same_sequence(machines[idx1], machines[idx2])
+
+    result = benchmark(model.solve, solver=solver, time_limit=10)
+    assert_equal(result.objective, 769)
+
+
+def test_dpfsp(benchmark, solver: str):
+    """
+    Benchmark a small distributed permutation flow shop problem instance.
+    """
+    DURATIONS = np.array(
+        [
+            [15, 28, 77, 1, 45],
+            [64, 4, 36, 59, 73],
+            [64, 43, 57, 95, 59],
+            [48, 93, 15, 49, 63],
+            [9, 1, 81, 90, 54],
+            [91, 81, 82, 78, 98],
+            [27, 77, 98, 3, 39],
+            [34, 69, 97, 69, 75],
+            [42, 52, 12, 99, 33],
+            [3, 28, 35, 41, 8],
+        ]
+    )
+    num_jobs, num_machines = DURATIONS.shape
+    num_factories = 4  # from instance data
+
+    model = Model()
+    jobs = [model.add_job() for _ in range(num_jobs)]
+    machines = [
+        [model.add_machine() for _ in range(num_machines)]
+        for _ in range(num_factories)
+    ]
+
+    # Create tasks for each job and machine.
+    tasks = np.empty((num_jobs, num_machines), dtype=object)
+    for job_idx in range(num_jobs):
+        for machine_idx in range(num_machines):
+            task = model.add_task(job=jobs[job_idx])
+            tasks[job_idx, machine_idx] = task
+
+    # Create a mode for each (task, machine) pair in each factory.
+    modes = np.empty((num_factories, num_jobs, num_machines), dtype=object)
+    for factory_idx in range(num_factories):
+        for machine_idx in range(num_machines):
+            for job_idx in range(num_jobs):
+                task = tasks[job_idx, machine_idx]
+                machine = machines[factory_idx][machine_idx]
+                duration = DURATIONS[job_idx, machine_idx]
+                mode = model.add_mode(task, machine, duration=duration)
+                modes[factory_idx, job_idx, machine_idx] = mode
+
+    # Modes can only be select if the task is selected in that factory.
+    for factory_idx in range(num_factories):
+        for job_idx in range(num_jobs):
+            for mode1, mode2 in pairwise(modes[factory_idx, job_idx, :]):
+                model.add_mode_dependency(mode1, [mode2])
+
+    # Precedence constraints between tasks of the same job.
+    for job_tasks in tasks:
+        for task1, task2 in pairwise(job_tasks):
+            model.add_end_before_start(task1, task2)
+
+    # Permutation constraints between tasks of different machines.
+    for factory_idx in range(num_factories):
+        for idx1, idx2 in pairwise(range(num_machines)):
+            model.add_same_sequence(
+                machines[factory_idx][idx1], machines[factory_idx][idx2]
+            )
+
+    result = benchmark(model.solve, solver, time_limit=10)
+    assert_equal(result.objective, 430)
 
 
 def test_aslib(benchmark, solver):

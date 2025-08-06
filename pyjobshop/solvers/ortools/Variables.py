@@ -622,8 +622,16 @@ class Variables:
             }
 
             # Identify the first and last task in the sequence.
-            first = min(present_tasks, key=lambda idx: sol_tasks[idx].start)
-            last = max(present_tasks, key=lambda idx: sol_tasks[idx].start)
+            first = min(
+                present_tasks,
+                key=lambda idx: sol_tasks[idx].start,
+                default=None,
+            )
+            last = max(
+                present_tasks,
+                key=lambda idx: sol_tasks[idx].start,
+                default=None,
+            )
 
             for (idx1, idx2), arc in seq_var.arcs.items():
                 if idx1 == seq_var.DUMMY and idx2 == seq_var.DUMMY:

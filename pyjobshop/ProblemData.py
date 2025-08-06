@@ -1,4 +1,4 @@
-from collections import Counter
+from collections import Counter, defaultdict
 from copy import deepcopy
 from dataclasses import dataclass, field, fields
 from itertools import pairwise
@@ -647,6 +647,50 @@ class Consecutive(IterableMixin):
 
 
 @dataclass
+class SameSequence(IterableMixin):
+    """
+    Ensures that two machines process their assigned tasks in the same relative
+    order. Both machines must have the same number of assigned tasks for this
+    constraint to be valid.
+
+    When ``tasks1`` and ``tasks2`` are not specified, the constraint applies to
+    all tasks assigned to each machine, with ordering determined by their task
+    indices in ascending order. For explicit control over the task sequence,
+    use the ``tasks1`` and ``tasks2`` parameters.
+
+    Example
+    -------
+    Assume that machine 1 can process tasks [1, 3] and machine 2 can process
+    tasks [2, 4]. The default (by task indices) allows the following valid
+    sequences:
+
+    * (1→3, 2→4) or (3→1, 4→2)
+
+    If passing arguments ``tasks1=[1, 3]`` and ``tasks2=[4, 2]``, then the
+    following sequences are valid:
+
+    * (1→3, 4→2) or (3→1, 2→4)
+    """
+
+    machine1: int
+    machine2: int
+    tasks1: list[int] | None = None
+    tasks2: list[int] | None = None
+
+    def __post_init__(self):
+        if self.tasks1 is not None and self.tasks2 is not None:
+            if len(self.tasks1) != len(self.tasks2):
+                msg = "tasks1 and tasks2 must be same length."
+                raise ValueError(msg)
+
+            if len(set(self.tasks1)) != len(self.tasks1):
+                raise ValueError("tasks1 contains duplicate values.")
+
+            if len(set(self.tasks2)) != len(self.tasks2):
+                raise ValueError("tasks2 contains duplicate values.")
+
+
+@dataclass
 class SetupTime(IterableMixin):
     """
     Sequence-dependent setup time between task 1 and task 2 on the given
@@ -716,6 +760,7 @@ class Constraints:
     select_at_least_one: list[SelectAtLeastOne] = field(default_factory=list)
     select_exactly_one: list[SelectExactlyOne] = field(default_factory=list)
     consecutive: list[Consecutive] = field(default_factory=list)
+    same_sequence: list[SameSequence] = field(default_factory=list)
     setup_times: list[SetupTime] = field(default_factory=list)
     mode_dependencies: list[ModeDependency] = field(default_factory=list)
 
@@ -986,6 +1031,60 @@ class ProblemData:
 
                 if not (0 <= idx2 < self.num_tasks):
                     raise ValueError(f"Invalid task index {idx2} in {name}.")
+
+        res2tasks = defaultdict(set)
+        for mode in self.modes:
+            for res_idx in mode.resources:
+                res2tasks[res_idx].add(mode.task)
+
+        same_sequence = self.constraints.same_sequence
+        for res_idx1, res_idx2, task_idcs1, task_idcs2 in same_sequence:
+            if not (0 <= res_idx1 < self.num_resources):
+                msg = f"Invalid resource index {res_idx1} in same_sequence."
+                raise ValueError(msg)
+
+            if not (0 <= res_idx2 < self.num_resources):
+                msg = f"Invalid resource index {res_idx2} in same_sequence."
+                raise ValueError(msg)
+
+            if not isinstance(self.resources[res_idx1], Machine):
+                msg = f"Resource {res_idx1} is not a machine in same_sequence."
+                raise ValueError(msg)
+
+            if not isinstance(self.resources[res_idx2], Machine):
+                msg = f"Resource {res_idx2} is not a machine in same_sequence."
+                raise ValueError(msg)
+
+            res_tasks1 = res2tasks[res_idx1]
+            res_tasks2 = res2tasks[res_idx2]
+
+            if len(res_tasks1) != len(res_tasks2):
+                msg = (
+                    "Machines in same_sequence constraint must handle"
+                    " the same number of tasks."
+                )
+                raise ValueError(msg)
+
+            if task_idcs1 is None and task_idcs2 is None:
+                continue
+
+            for task_idx in task_idcs1:
+                if not (0 <= task_idx < self.num_tasks):
+                    msg = f"Invalid task index {task_idx} in same_sequence."
+                    raise ValueError(msg)
+
+            for task_idx in task_idcs2:
+                if not (0 <= task_idx < self.num_tasks):
+                    msg = f"Invalid task index {task_idx} in same_sequence."
+                    raise ValueError(msg)
+
+            if res_tasks1 != set(task_idcs1):
+                msg = "tasks1 must exactly match tasks that require machine1."
+                raise ValueError(msg)
+
+            if res_tasks2 != set(task_idcs2):
+                msg = "tasks2 must exactly match tasks that require machine2."
+                raise ValueError(msg)
 
         for res_idx, task_idx1, task_idx2, _ in self.constraints.setup_times:
             if not (0 <= res_idx < self.num_resources):

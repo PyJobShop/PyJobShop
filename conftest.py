@@ -16,6 +16,7 @@ from pyjobshop.ProblemData import (
     Objective,
     ProblemData,
     Renewable,
+    SameSequence,
     SelectAllOrNone,
     SelectAtLeastOne,
     SelectExactlyOne,
@@ -24,6 +25,7 @@ from pyjobshop.ProblemData import (
     StartBeforeStart,
     Task,
 )
+from pyjobshop.Solution import Solution, TaskData
 
 
 @pytest.fixture(scope="session")
@@ -41,7 +43,7 @@ def small():
 
 
 @pytest.fixture(scope="session")
-def complete():
+def complete_data():
     """
     A ProblemData object with almost all features of the library.
     """
@@ -51,14 +53,16 @@ def complete():
         Renewable(1, breaks=[(0, 1)]),
         NonRenewable(1),
         Machine(),
+        Machine(),
     ]
     tasks = [
         Task(),
         Task(),
         Task(job=0),
         Task(),
-        Task(optional=True),  # needs to be scheduled
-        Task(optional=True),  # does not need to be scheduled
+        Task(),
+        Task(),
+        Task(optional=True),
     ]
     modes = [
         Mode(0, [0], 1),
@@ -67,7 +71,8 @@ def complete():
         Mode(3, [1], 1, [1]),
         Mode(3, [2], 1, [1]),
         Mode(4, [3], 1),
-        Mode(5, [3], 100),
+        Mode(5, [3], 1),
+        Mode(6, [4], 1),
     ]
     constraints = Constraints(
         start_before_start=[StartBeforeStart(0, 1)],
@@ -77,9 +82,10 @@ def complete():
         identical_resources=[IdenticalResources(0, 1)],
         different_resources=[DifferentResources(0, 2)],
         select_all_or_none=[SelectAllOrNone([4])],
-        select_at_least_one=[SelectAtLeastOne([4])],
-        select_exactly_one=[SelectExactlyOne([4])],
+        select_at_least_one=[SelectAtLeastOne([0])],
+        select_exactly_one=[SelectExactlyOne([0])],
         consecutive=[Consecutive(0, 1)],
+        same_sequence=[SameSequence(0, 3)],
         setup_times=[
             SetupTime(0, 0, 1, 1),
             SetupTime(0, 1, 1, 1),
@@ -103,6 +109,22 @@ def complete():
         modes,
         constraints,
         objective,
+    )
+
+
+@pytest.fixture(scope="session")
+def complete_sol():
+    return Solution(
+        [
+            TaskData(0, [0], 0, 1),
+            TaskData(1, [0], 2, 3),
+            TaskData(2, [1], 1, 2),
+            TaskData(4, [2], 0, 1),
+            TaskData(5, [3], 0, 1),
+            TaskData(6, [3], 2, 3),
+            TaskData(7, [4], 0, 100),
+            TaskData(0, [], 0, 0, present=False),
+        ]
     )
 
 
