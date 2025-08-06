@@ -5,21 +5,13 @@ from pyjobshop.Solution import Solution, TaskData
 from pyjobshop.solvers.ortools.Solver import Solver
 
 
-def test_solve_initial_solution(complete, capfd):
+def test_solve_initial_solution(complete_data, complete_sol, capfd):
     """
     Tests that the solver correctly hints the solution by checking that the
     display log is correct when an initial solution is provided.
     """
-    solver = Solver(complete)
-    init = Solution(
-        [
-            TaskData(0, [0], 0, 1),
-            TaskData(1, [0], 2, 3),
-            TaskData(2, [1], 1, 2),
-            TaskData(4, [2], 0, 1),
-        ]
-    )
-    solver.solve(display=True, initial_solution=init)
+    solver = Solver(complete_data)
+    solver.solve(display=True, initial_solution=complete_sol)
 
     msg = "The solution hint is complete and is feasible."
     printed = capfd.readouterr().out
