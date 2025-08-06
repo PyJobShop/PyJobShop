@@ -358,6 +358,7 @@ def test_constraints_len():
         select_at_least_one=[SelectAtLeastOne([1, 0])],
         select_exactly_one=[SelectAtLeastOne([1, 0])],
         consecutive=[Consecutive(1, 2)],
+        same_sequence=[SameSequence(0, 1)],
         setup_times=[
             SetupTime(0, 0, 1, 1),  # machine
             SetupTime(1, 0, 1, 0),  # renewable
@@ -366,7 +367,7 @@ def test_constraints_len():
         mode_dependencies=[ModeDependency(0, [1])],
     )
 
-    assert_equal(len(constraints), 14)
+    assert_equal(len(constraints), 15)
 
 
 def test_constraints_str():
