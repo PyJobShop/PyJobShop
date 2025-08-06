@@ -2,7 +2,7 @@ from collections import defaultdict
 from itertools import pairwise, product
 
 import numpy as np
-from ortools.sat.python.cp_model import CpModel, LinearExpr
+from ortools.sat.python.cp_model import BoolVarT, CpModel, LinearExpr
 
 import pyjobshop.solvers.utils as utils
 from pyjobshop.ProblemData import ProblemData
@@ -209,40 +209,35 @@ class Constraints:
         """
         model, data, variables = self._model, self._data, self._variables
 
-        for idcs, trigger_idx in data.constraints.select_all_or_none:
-            trigger = (
+        def bool_var_or_constant(trigger_idx: int | None) -> BoolVarT:
+            """
+            Returns the Boolean variable of the trigget task if a valid index
+            is passed, otherwise returns a constant True value.
+            """
+            return (
                 variables.task_vars[trigger_idx].present
                 if trigger_idx is not None
-                else None
+                else model.new_constant(1)
             )
+
+        for idcs, trigger_idx in data.constraints.select_all_or_none:
+            condition = bool_var_or_constant(trigger_idx)
 
             for idx1, idx2 in pairwise(idcs):
                 var1 = variables.task_vars[idx1]
                 var2 = variables.task_vars[idx2]
                 expr = var1.present == var2.present
-
-                if trigger is not None:
-                    model.add(expr).only_enforce_if(trigger)
-                else:
-                    model.add(expr)
+                model.add(expr).only_enforce_if(condition)
 
         for idcs, trigger_idx in data.constraints.select_at_least_one:
-            trigger = (
-                variables.task_vars[trigger_idx].present
-                if trigger_idx is not None
-                else 1
-            )
+            condition = bool_var_or_constant(trigger_idx)
             presences = [variables.task_vars[idx].present for idx in idcs]
-            model.add(trigger <= sum(presences))
+            model.add(condition <= sum(presences))
 
         for idcs, trigger_idx in data.constraints.select_exactly_one:
-            trigger = (
-                variables.task_vars[trigger_idx].present
-                if trigger_idx is not None
-                else 1
-            )
+            condition = bool_var_or_constant(trigger_idx)
             presences = [variables.task_vars[idx].present for idx in idcs]
-            model.add(sum(presences) == 1).only_enforce_if(trigger)
+            model.add(sum(presences) == 1).only_enforce_if(condition)
 
     def _consecutive_constraints(self):
         """
