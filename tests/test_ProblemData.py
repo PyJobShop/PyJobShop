@@ -686,12 +686,11 @@ def test_problem_data_raises_invalid_indices(name, cls, idcs_list):
 
 def test_problem_data_raises_same_sequence_invalid_machine_assigned_tasks():
     """
-    Tests that the ProblemData class raises an error when the tasks assigned
-    to both machines is not the same.
+    Tests that the ProblemData class raises an error when the number of tasks
+    assigned to the machines is not the same.
     """
     with pytest.raises(ValueError):
-        # Machine 1 can process the first two tasks, but Machine 2 can only
-        # the last task.
+        # Machine 1 can process two tasks, but Machine 2 can only process one.
         ProblemData(
             [],
             [Machine(), Machine()],
