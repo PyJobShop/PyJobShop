@@ -600,32 +600,26 @@ class Consecutive(IterableMixin):
 class SameSequence(IterableMixin):
     """
     Ensures that two machines process their assigned tasks in the same relative
-    order. By default, the task ordering for each machine is determined by the
-    order in which tasks are defined in the problem data.
+    order. Both machines must have the same number of assigned tasks for this
+    constraint to be valid.
 
-    For example, if machine 1 has tasks [1, 3] and machine 2 has tasks [2, 4],
-    then both machines must process their tasks in the same order: 1 before 3
-    on machine 1, and 2 before 4 on machine 2.
+    When ``tasks1`` and ``tasks2`` are not specified, the constraint applies to
+    all tasks assigned to each machine, with ordering determined by their task
+    indices in ascending order. For explicit control over the task sequence,
+    use the ``tasks1`` and ``tasks2`` parameters.
 
-    If a custom ordering of tasks is required, use the `tasks1` and `tasks2`
-    parameters to specify the order explicitly.
+    Example
+    -------
+    Assume that machine 1 can process tasks [1, 3] and machine 2 can process
+    tasks [2, 4]. The default (by task indices) allows the following valid
+    sequences:
 
-    Parameters
-    ----------
-    machine1
-        The first machine.
-    machine2
-        The second machine.
-    tasks1
-        Order of tasks on the first machine. Must exactly match the set of
-        tasks that may be scheduled on the first machine. If not passed,
-        assumes that the order is given by the order of task indices of
-        tasks that may be assigned to this machine.
-    tasks2
-        Order of tasks on the second machine. Must exactly match the set of
-        tasks that may be scheduled on the second machine. If not passed,
-        assumes that the order is given by the order of task indices of
-        tasks that may be assigned to this machine.
+    * (1→3, 2→4) or (3→1, 4→2)
+
+    If passing arguments ``tasks1=[1, 3]`` and ``tasks2=[4, 2]``, then the
+    following sequences are valid:
+
+    * (1→3, 4→2) or (3→1, 2→4)
     """
 
     machine1: int
