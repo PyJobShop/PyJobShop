@@ -343,14 +343,13 @@ def test_constraints_str():
 @pytest.mark.parametrize(
     "weights",
     [
-        [-1, 0, 0, 0, 0, 0, 0, 0],  # weight_makespan < 0,
-        [0, -1, 0, 0, 0, 0, 0, 0],  # weight_tardy_jobs < 0
-        [0, 0, -1, 0, 0, 0, 0, 0],  # weight_total_flow_time < 0
-        [0, 0, 0, -1, 0, 0, 0, 0],  # weight_total_tardiness < 0
-        [0, 0, 0, 0, -1, 0, 0, 0],  # weight_total_earliness < 0
-        [0, 0, 0, 0, 0, -1, 0, 0],  # weight_max_tardiness < 0
-        [0, 0, 0, 0, 0, 0, -1, 0],  # weight_max_lateness < 0
-        [0, 0, 0, 0, 0, 0, 0, -1],  # weight_total_setup_time < 0
+        [-1, 0, 0, 0, 0, 0, 0],  # weight_makespan < 0,
+        [0, -1, 0, 0, 0, 0, 0],  # weight_tardy_jobs < 0
+        [0, 0, -1, 0, 0, 0, 0],  # weight_total_flow_time < 0
+        [0, 0, 0, -1, 0, 0, 0],  # weight_total_tardiness < 0
+        [0, 0, 0, 0, -1, 0, 0],  # weight_total_earliness < 0
+        [0, 0, 0, 0, 0, -1, 0],  # weight_max_tardiness < 0
+        [0, 0, 0, 0, 0, 0, -1],  # weight_total_setup_time < 0
     ],
 )
 def test_objective_valid_values(weights: list[int]):
@@ -385,7 +384,7 @@ def test_problem_data_input_parameter_attributes():
     """
     jobs = [Job(tasks=[idx]) for idx in range(5)]
     resources = [Machine() for _ in range(5)]
-    tasks = [Task() for _ in range(5)]
+    tasks = [Task(job=idx) for idx in range(5)]
     modes = [
         Mode(task=task, resources=[resource], duration=1)
         for task in range(5)
@@ -424,7 +423,7 @@ def test_problem_data_non_input_parameter_attributes():
     """
     jobs = [Job(tasks=[0, 1, 2])]
     resources = [Machine(), Renewable(1), NonRenewable(2)]
-    tasks = [Task() for _ in range(3)]
+    tasks = [Task(job=0) for _ in range(3)]
     modes = [
         Mode(task=2, resources=[1], duration=1),
         Mode(task=1, resources=[2], duration=1),
@@ -456,7 +455,7 @@ def test_problem_data_default_values():
     """
     jobs = [Job(tasks=[0])]
     resources = [Renewable(0)]
-    tasks = [Task()]
+    tasks = [Task(job=0)]
     modes = [Mode(task=0, resources=[0], duration=1)]
     data = ProblemData(jobs, resources, tasks, modes)
 
@@ -470,7 +469,7 @@ def test_problem_data_str():
     """
     jobs = [Job(tasks=[idx]) for idx in range(5)]
     resources = [Machine() for _ in range(5)] + [Renewable(1), NonRenewable(1)]
-    tasks = [Task() for _ in range(5)]
+    tasks = [Task(job=idx) for idx in range(5)]
     modes = [
         Mode(task=task, resources=[resource], duration=1)
         for task in range(5)
@@ -529,6 +528,20 @@ def test_problem_data_job_references_unknown_task():
         )
 
 
+def test_problem_data_job_task_reference_mismatch():
+    """
+    Tests that an error is raised when a job references a task that does
+    not reference the job.
+    """
+    with assert_raises(ValueError):
+        ProblemData(
+            [Job(tasks=[0])],
+            [Renewable(0)],
+            [Task()],
+            [Mode(0, [0], 1)],
+        )
+
+
 def test_problem_data_task_references_unknown_job():
     """
     Tests that an error is raised when a task references an unknown job.
@@ -537,7 +550,7 @@ def test_problem_data_task_references_unknown_job():
         ProblemData(
             [Job(tasks=[0])],
             [Renewable(0)],
-            [Task(job=42)],
+            [Task(job=0), Task(job=42)],
             [Mode(0, [0], 1)],
         )
 
@@ -555,7 +568,7 @@ def test_problem_data_mode_references_unknown_data(mode):
     """
     with assert_raises(ValueError):
         ProblemData(
-            [Job(tasks=[0])],
+            [],
             [Renewable(0)],
             [Task()],
             [mode],
@@ -567,7 +580,7 @@ def test_problem_data_task_without_modes():
     Tests that an error is raised when a task has no processing modes.
     """
     with assert_raises(ValueError):
-        ProblemData([Job(tasks=[0])], [Renewable(0)], [Task()], [])
+        ProblemData([], [Renewable(0)], [Task()], [])
 
 
 def test_problem_data_all_modes_demand_infeasible():
@@ -578,7 +591,7 @@ def test_problem_data_all_modes_demand_infeasible():
 
     # This is OK: at least one mode is feasible.
     ProblemData(
-        [Job(tasks=[0])],
+        [],
         [Renewable(capacity=1)],
         [Task()],
         [
@@ -685,7 +698,6 @@ def test_problem_data_raises_mode_dependency_same_task():
         Objective(weight_total_tardiness=1),
         Objective(weight_total_earliness=1),
         Objective(weight_max_tardiness=1),
-        Objective(weight_max_lateness=1),
     ],
 )
 def test_problem_data_tardy_objective_without_job_due_dates(
@@ -729,7 +741,7 @@ def make_replace_data():
         Renewable(capacity=0, name="resource"),
         NonRenewable(capacity=0, name="resource"),
     ]
-    tasks = [Task(earliest_start=1), Task(earliest_start=1)]
+    tasks = [Task(job=0, earliest_start=1), Task(job=1, earliest_start=1)]
     modes = [
         Mode(task=0, resources=[0], duration=1),
         Mode(task=1, resources=[1], duration=2),
@@ -795,14 +807,14 @@ def test_problem_data_replace_with_changes():
             Job(tasks=[0], due_date=1, deadline=1),
         ],
         resources=[Renewable(capacity=0, name="new"), Machine(name="new")],
-        tasks=[Task(earliest_start=2), Task(earliest_start=2)],
+        tasks=[Task(job=1, earliest_start=2), Task(job=0, earliest_start=2)],
         modes=[
             Mode(task=0, resources=[0], duration=20),
             Mode(task=1, resources=[1], duration=10),
         ],
         constraints=Constraints(
             end_before_start=[EndBeforeStart(1, 0)],
-            setup_times=[SetupTime(0, 0, 1, 0), SetupTime(1, 0, 1, 10)],
+            setup_times=[SetupTime(1, 0, 1, 0), SetupTime(1, 1, 0, 10)],
         ),
         objective=Objective(weight_total_tardiness=1),
     )
@@ -837,7 +849,7 @@ def test_problem_data_resource2modes():
     computed.
     """
     data = ProblemData(
-        [Job(tasks=[0])],
+        [],
         [Renewable(0), Renewable(0)],
         [Task(), Task()],
         modes=[Mode(0, [0], 1), Mode(0, [1], 10), Mode(1, [1], 0)],
@@ -861,7 +873,7 @@ def test_problem_data_task2modes():
     computed.
     """
     data = ProblemData(
-        [Job(tasks=[0])],
+        [],
         [Renewable(0), Renewable(0)],
         [Task(), Task()],
         modes=[Mode(0, [0], 1), Mode(0, [1], 10), Mode(1, [1], 0)],
@@ -1795,31 +1807,6 @@ def test_max_tardiness(solver: str):
     # has weight 1. So the maximum tardiness is 2 * 2 = 4. Multiplied with the
     # ``weight_max_tardiness`` of 2, the objective value is 8.
     assert_equal(result.objective, 8)
-    assert_equal(result.best.tasks[0].end, 2)
-    assert_equal(result.best.tasks[1].end, 2)
-
-
-def test_max_lateness(solver: str):
-    """
-    Tests that the maximum lateness objective function is correctly optimized.
-    Specifically, we also check that lateness can be negative.
-    """
-    model = Model()
-
-    for idx in range(2):
-        machine = model.add_machine()
-        job = model.add_job(weight=idx + 1, due_date=4)
-        task = model.add_task(job=job)
-        model.add_mode(task, machine, duration=2)
-
-    model.set_objective(weight_max_lateness=2)
-
-    result = model.solve(solver=solver)
-
-    # Both jobs are "late" by -2 time units, but job 1 has weight 2 and job 2
-    # has weight 1. So the maximum lateness is -2 * 1 = -2. Multiplied with the
-    # ``weight_max_lateness`` of 2, the objective value is -4.
-    assert_equal(result.objective, -4)
     assert_equal(result.best.tasks[0].end, 2)
     assert_equal(result.best.tasks[1].end, 2)
 
