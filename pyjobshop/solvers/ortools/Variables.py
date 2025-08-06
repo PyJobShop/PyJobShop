@@ -616,38 +616,34 @@ class Variables:
             if not seq_var.is_active:
                 continue
 
+            # Identify the tasks assigned to this machine.
             tasks = {data.modes[m].task for m in data.resource2modes(res_idx)}
-            present_tasks = {
+            assigned = {
                 idx for idx in tasks if res_idx in sol_tasks[idx].resources
             }
 
             # Identify the first and last task in the sequence.
-            first = min(
-                present_tasks,
-                key=lambda idx: sol_tasks[idx].start,
-                default=None,
-            )
-            last = max(
-                present_tasks,
-                key=lambda idx: sol_tasks[idx].start,
-                default=None,
-            )
+            def task_start(idx):
+                return sol_tasks[idx].start
+
+            first = min(assigned, default=None, key=task_start)
+            last = max(assigned, default=None, key=task_start)
 
             for (idx1, idx2), arc in seq_var.arcs.items():
                 if idx1 == seq_var.DUMMY and idx2 == seq_var.DUMMY:
-                    hint = not present_tasks
+                    hint = not assigned
                 elif idx1 == seq_var.DUMMY:
                     hint = idx2 == first
                 elif idx2 == seq_var.DUMMY:
                     hint = idx1 == last
                 elif idx1 == idx2:
-                    hint = idx1 not in present_tasks
+                    hint = idx1 not in assigned
                 else:
                     # TODO There's an edge case when the task duration is 0.
                     # Revisit after #257.
                     hint = (
-                        idx1 in present_tasks
-                        and idx2 in present_tasks
+                        idx1 in assigned
+                        and idx2 in assigned
                         and sol_tasks[idx1].start < sol_tasks[idx2].start
                     )
 
