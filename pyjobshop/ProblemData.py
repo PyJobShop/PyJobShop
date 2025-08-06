@@ -1010,6 +1010,7 @@ class ProblemData:
                     "Machines in same_sequence constraint must handle"
                     " the same number of tasks."
                 )
+                raise ValueError(msg)
 
             if task_idcs1 is None and task_idcs2 is None:
                 continue

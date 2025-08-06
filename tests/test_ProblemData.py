@@ -684,6 +684,23 @@ def test_problem_data_raises_invalid_indices(name, cls, idcs_list):
             )
 
 
+def test_problem_data_raises_same_sequence_invalid_machine_assigned_tasks():
+    """
+    Tests that the ProblemData class raises an error when the tasks assigned
+    to both machines is not the same.
+    """
+    with pytest.raises(ValueError):
+        # Machine 1 can process the first two tasks, but Machine 2 can only
+        # the last task.
+        ProblemData(
+            [],
+            [Machine(), Machine()],
+            [Task(), Task(), Task()],
+            [Mode(0, [0], 1), Mode(1, [0], 1), Mode(2, [1], 1)],
+            Constraints(same_sequence=[SameSequence(0, 1)]),
+        )
+
+
 @pytest.mark.parametrize(
     "same_sequence",
     [
