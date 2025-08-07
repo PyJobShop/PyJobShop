@@ -170,22 +170,22 @@ class Model:
         for idx1, idx2 in data.constraints.different_resources:
             model.add_different_resources(tasks[idx1], tasks[idx2])
 
-        for idcs1, idx2 in data.constraints.select_all_or_none:
+        for idcs, condition_idx in data.constraints.select_all_or_none:
             model.add_select_all_or_none(
-                [tasks[idx] for idx in idcs1],
-                tasks[idx2] if idx2 is not None else None,
+                [tasks[idx] for idx in idcs],
+                tasks[condition_idx] if condition_idx is not None else None,
             )
 
-        for idcs1, idx2 in data.constraints.select_at_least_one:
+        for idcs, condition_idx in data.constraints.select_at_least_one:
             model.add_select_at_least_one(
-                [tasks[idx] for idx in idcs1],
-                tasks[idx2] if idx2 is not None else None,
+                [tasks[idx] for idx in idcs],
+                tasks[condition_idx] if condition_idx is not None else None,
             )
 
-        for idcs1, idx2 in data.constraints.select_exactly_one:
+        for idcs, condition_idx in data.constraints.select_exactly_one:
             model.add_select_exactly_one(
-                [tasks[idx] for idx in idcs1],
-                tasks[idx2] if idx2 is not None else None,
+                [tasks[idx] for idx in idcs],
+                tasks[condition_idx] if condition_idx is not None else None,
             )
 
         for idx1, idx2 in data.constraints.consecutive:
