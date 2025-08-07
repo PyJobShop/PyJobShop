@@ -47,6 +47,7 @@ Contents
    examples/project_scheduling
    examples/quick_examples
    examples/objectives_examples
+   examples/optional_tasks
 
 .. toctree::
    :maxdepth: 1
