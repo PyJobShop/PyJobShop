@@ -446,46 +446,52 @@ class Model:
         return constraint
 
     def add_select_all_or_none(
-        self, tasks: list[Task], trigger_task: Task | None = None
+        self, tasks: list[Task], condition_task: Task | None = None
     ) -> SelectAllOrNone:
         """
         Adds a constraint that all tasks from the given list are selected,
-        or none are. If ``trigger_task`` is provided, this rule only applies
-        when that task is selected.
+        or none are. If ``condition_task`` is provided, this rule only
+        applies when that task is selected.
         """
         idcs = [self._id2task[id(task)] for task in tasks]
-        trigger_idx = self._id2task[id(trigger_task)] if trigger_task else None
-        constraint = SelectAllOrNone(idcs, trigger_idx)
+        condition_idx = (
+            self._id2task[id(condition_task)] if condition_task else None
+        )
+        constraint = SelectAllOrNone(idcs, condition_idx)
         self._constraints.select_all_or_none.append(constraint)
 
         return constraint
 
     def add_select_at_least_one(
-        self, tasks: list[Task], trigger_task: Task | None = None
+        self, tasks: list[Task], condition_task: Task | None = None
     ) -> SelectAtLeastOne:
         """
         Adds a constraint that at least one task from the given list is
-        selected. If ``trigger_task`` is provided, this rule only applies when
-        that task is selected.
+        selected. If ``condition_task`` is provided, this rule only applies
+        when that task is selected.
         """
         idcs = [self._id2task[id(task)] for task in tasks]
-        trigger_idx = self._id2task[id(trigger_task)] if trigger_task else None
-        constraint = SelectAtLeastOne(idcs, trigger_idx)
+        condition_idx = (
+            self._id2task[id(condition_task)] if condition_task else None
+        )
+        constraint = SelectAtLeastOne(idcs, condition_idx)
         self._constraints.select_at_least_one.append(constraint)
 
         return constraint
 
     def add_select_exactly_one(
-        self, tasks: list[Task], trigger_task: Task | None = None
+        self, tasks: list[Task], condition_task: Task | None = None
     ) -> SelectExactlyOne:
         """
         Adds a constraint that exactly one task from the given list is
-        selected. If ``trigger_task`` is provided, this rule only applies when
-        that task is selected.
+        selected. If ``condition_task`` is provided, this rule only applies
+        when that task is selected.
         """
         idcs = [self._id2task[id(task)] for task in tasks]
-        trigger_idx = self._id2task[id(trigger_task)] if trigger_task else None
-        constraint = SelectExactlyOne(idcs, trigger_idx)
+        condition_idx = (
+            self._id2task[id(condition_task)] if condition_task else None
+        )
+        constraint = SelectExactlyOne(idcs, condition_idx)
         self._constraints.select_exactly_one.append(constraint)
 
         return constraint

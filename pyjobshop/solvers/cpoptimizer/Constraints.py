@@ -220,19 +220,15 @@ class Constraints:
         """
         model, data = self._model, self._data
 
-        def bool_var_or_true(trigger_idx: int | None):
+        def presence_var_or_true(idx: int | None):
             """
-            Returns the Boolean presence variable of the trigger task if a
-            valid index is passed, otherwise returns a constant True value.
+            Returns the Boolean presence variable of the task if a valid index
+            is passed, otherwise returns a constant True value.
             """
-            return (
-                presence_of(self._task_vars[trigger_idx])
-                if trigger_idx is not None
-                else 1
-            )
+            return presence_of(self._task_vars[idx]) if idx is not None else 1
 
-        for idcs, trigger_idx in data.constraints.select_all_or_none:
-            condition = bool_var_or_true(trigger_idx) == 1
+        for idcs, condition_idx in data.constraints.select_all_or_none:
+            condition = presence_var_or_true(condition_idx) == 1
 
             for idx1, idx2 in pairwise(idcs):
                 var1 = self._task_vars[idx1]
@@ -240,13 +236,13 @@ class Constraints:
                 expr = presence_of(var1) == presence_of(var2)
                 model.add(cpo.if_then(condition, expr))
 
-        for idcs, trigger_idx in data.constraints.select_at_least_one:
-            condition = bool_var_or_true(trigger_idx) == 1
+        for idcs, condition_idx in data.constraints.select_at_least_one:
+            condition = presence_var_or_true(condition_idx) == 1
             presences = [presence_of(self._task_vars[idx]) for idx in idcs]
             model.add(condition <= sum(presences))
 
-        for idcs, trigger_idx in data.constraints.select_exactly_one:
-            condition = bool_var_or_true(trigger_idx) == 1
+        for idcs, condition_idx in data.constraints.select_exactly_one:
+            condition = presence_var_or_true(condition_idx) == 1
             presences = [presence_of(self._task_vars[idx]) for idx in idcs]
             model.add(cpo.if_then(condition, sum(presences) == 1))
 
