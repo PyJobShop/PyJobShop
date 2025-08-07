@@ -28,7 +28,7 @@ requires-python = ">=3.10"
 dependencies = [
     "ortools>=9.12.4544",
     "matplotlib>=3.9.2",
-    "fjsplib",
+    "fjsplib>=0.0.1",
     "psplib>=0.2.0",
     "tqdm>=4.66.5",
     "tomli>=2.0.1",
@@ -77,10 +77,6 @@ examples = [
 
 [tool.uv]
 default-groups = ["dev"]
-
-
-[tool.uv.sources]
-fjsplib = { git = "https://github.com/PyJobShop/FJSPLIB.git", rev = "75b2d18" }
 
 
 [tool.mypy]
