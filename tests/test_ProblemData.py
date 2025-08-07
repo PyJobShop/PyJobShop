@@ -1602,7 +1602,7 @@ def test_select_all_or_none(selection_model: Model, solver: str):
     assert_equal(result.objective, 0)
 
     for sol_task in result.best.tasks:
-        assert_(sol_task.present)
+        assert_(not sol_task.present)
 
     # Now let's add a task that is required, and add a constraint so that all
     # or none of the tasks must be selected.
