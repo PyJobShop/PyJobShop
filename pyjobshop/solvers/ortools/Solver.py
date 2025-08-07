@@ -51,9 +51,8 @@ class Solver:
             task_var = self._variables.task_vars[task_idx]
 
             if not cp_solver.value(task_var.present):
-                tasks.append(
-                    TaskData(self._data.num_modes, [], 0, 0, present=False)
-                )
+                task = TaskData(self._data.num_modes, [], 0, 0, False)
+                tasks.append(task)
                 continue
 
             for mode_idx in self._data.task2modes(task_idx):
@@ -64,9 +63,8 @@ class Solver:
                     start = cp_solver.value(task_var.start)
                     end = cp_solver.value(task_var.end)
                     mode = self._data.modes[mode_idx]
-                    tasks.append(
-                        TaskData(mode_idx, mode.resources, start, end)
-                    )
+                    task = TaskData(mode_idx, mode.resources, start, end)
+                    tasks.append(task)
 
         return Solution(tasks)
 

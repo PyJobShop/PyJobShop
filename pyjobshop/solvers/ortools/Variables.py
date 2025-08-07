@@ -369,6 +369,8 @@ class Variables:
             model.add(end <= task.latest_end).only_enforce_if(present)
 
             if task.fixed_duration and not task.optional:
+                # If an optional task is absent, the duration is a free
+                # variable, so we cannot force it to be within a given domain.
                 domain = Domain.from_values(task_durations[idx])
                 duration = model.new_int_var_from_domain(
                     domain, f"{name}_duration"
