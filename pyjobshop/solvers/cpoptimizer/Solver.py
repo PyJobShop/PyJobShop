@@ -107,14 +107,16 @@ class Solver:
         if status in ["Optimal", "Feasible"]:
             solution = self._convert_to_solution(cp_result)
             objective: float = cp_result.get_objective_value()  # type: ignore
+            lower_bound: float = cp_result.get_objective_bound()  # type: ignore
         else:
             # No feasible solution due to infeasible instance or time limit.
             solution = Solution([])
             objective = float("inf")
+            lower_bound = float("-inf")
 
         return Result(
             objective=objective,
-            lower_bound=cp_result.get_objective_bound(),
+            lower_bound=lower_bound,
             status=self._get_solve_status(status),
             runtime=cp_result.get_solve_time(),
             best=solution,
