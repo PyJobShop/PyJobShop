@@ -15,4 +15,4 @@ What is the meaning behind a connected component? One components defines all mac
 - cumulative(tasks, 1) <= len(components)
 
 
-- In Naderi 2023, they only use cumulative constraints for HFSP with identical machines.
+- In Naderi 2023, they only use cumulative constraints for HFSP with identical machines. In that case, you don't need to add noOverlap constraints, because the pulse constraints always allow for a perfect 1-to-1 mapping between task and mode variables (each mode variable has the same duration). When the machines are not identical, then this no longer works because this 1-to-1 mapping no longer holds -- we need to add no overlap per machine as well.
