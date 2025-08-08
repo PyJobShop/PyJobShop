@@ -1,4 +1,5 @@
 from collections import defaultdict
+from dataclasses import dataclass
 from itertools import product
 
 import numpy as np
@@ -160,9 +161,17 @@ def setup_times_matrix(data: ProblemData) -> np.ndarray | None:
     return setup
 
 
-def connected_resource_components(data: ProblemData) -> list[set[int]]:
+@dataclass
+class Component:
+    machines: set[int]
+    tasks: set[int]
+
+
+def redundant_cumulative(data: ProblemData) -> list[Component]:
     """
-    Find connected components in an undirected graph.
+    Find connected components in an undirected graph formed by machines.
+    An edge (u, v) exists if there is a task that has two modes
+    resources u and v. This is used to determine which resources are
 
     Parameters
     ----------
@@ -171,12 +180,24 @@ def connected_resource_components(data: ProblemData) -> list[set[int]]:
 
     Returns
     -------
-    List of sets, each set representing the nodes in a component.
+    A tuple consisting of two lists, where the first list contains sets of
+    machine indices representing connected components, and the second list
+    contains the set of task indices that could be assigned to the
+    machines of the corresponding component.
     """
     graph = defaultdict(set)
 
     for task_idx in range(data.num_tasks):
         mode_idcs = data.task2modes(task_idx)
+        resource_idcs = {
+            res_idx
+            for mode_idx in mode_idcs
+            for res_idx in data.modes[mode_idx].resources
+        }
+        machine_idcs = resource_idcs & set(data.machine_idcs)
+
+        for idx1, idx2 in product(machine_idcs, repeat=2):
+            graph[idx1].add(idx2)
 
         for mode_idx1, mode_idx2 in product(mode_idcs, repeat=2):
             resources1 = data.modes[mode_idx1].resources
@@ -203,4 +224,16 @@ def connected_resource_components(data: ProblemData) -> list[set[int]]:
             dfs(node, component)
             components.append(component)
 
-    return components
+    tasks: list[set[int]] = [set() for _ in components]
+
+    for task_idx in range(data.num_tasks):
+        task_modes = data.task2modes(task_idx)
+        task_resources = {
+            res for mode in task_modes for res in data.modes[mode].resources
+        }
+
+        for comp_idx, component in enumerate(components):
+            if component & task_resources:
+                tasks[comp_idx].add(task_idx)
+
+    return [Component(x, y) for x, y in zip(components, tasks)]

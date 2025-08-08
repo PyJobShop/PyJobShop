@@ -300,27 +300,16 @@ class Constraints:
         """
         model, data = self._model, self._data
 
-        for component in utils.connected_resource_components(data):
-            if len(component) < 1 or len(component) == data.num_resources:
+        for component in utils.redundant_cumulative(data):
+            if not (1 <= len(component.machines) < data.num_machines):
                 continue
 
-            intervals = []
-            for task_idx, task_var in enumerate(self._task_vars):
-                task_resources = {
-                    res
-                    for mode in data.task2modes(task_idx)
-                    for res in data.modes[mode].resources
-                }
-                if component & task_resources:
-                    # Collect intervals for tasks that are assigned to
-                    # resource in the component.
-                    intervals.append(task_var)
-
-            if len(intervals) <= 1 or len(intervals) == data.num_tasks:
+            if not (1 <= len(component.tasks) < data.num_tasks):
                 continue
 
+            intervals = [self._task_vars[idx] for idx in component.tasks]
             pulses = [cpo.pulse(interval, 1) for interval in intervals]
-            model.add(sum(pulses) <= len(component))
+            model.add(sum(pulses) <= len(component.machines))
 
     def add_constraints(self):
         """

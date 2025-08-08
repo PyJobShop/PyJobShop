@@ -315,32 +315,22 @@ class Constraints:
     def _redundant_cumulative_constraints(self):
         """
         Adds redundant cumulative constraints for connected components of
-        resources.
+        machines.
         """
         model, data, variables = self._model, self._data, self._variables
 
-        for component in utils.connected_resource_components(data):
-            if len(component) < 1 or len(component) == data.num_resources:
+        for component in utils.redundant_cumulative(data):
+            if not (1 <= len(component.machines) < data.num_machines):
                 continue
 
-            intervals = []
-            for task_idx, task_var in enumerate(variables.task_vars):
-                task_resources = {
-                    res
-                    for mode in data.task2modes(task_idx)
-                    for res in data.modes[mode].resources
-                }
-                if component & task_resources:
-                    # Collect intervals for tasks that are assigned to
-                    # resource in the component.
-                    intervals.append(task_var.interval)
-
-            if len(intervals) <= 1 or len(intervals) == data.num_tasks:
+            if not (1 <= len(component.tasks) < data.num_tasks):
                 continue
 
-            # Create a cumulative constraint for the component.
+            intervals = [
+                variables.task_vars[idx].interval for idx in component.tasks
+            ]
             demands = [1] * len(intervals)
-            capacity = len(component)
+            capacity = len(component.machines)
             model.add_cumulative(intervals, demands, capacity)
 
     def add_constraints(self):
