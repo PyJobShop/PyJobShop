@@ -242,3 +242,15 @@ def test_dpfsp(benchmark, solver: str):
 
     result = benchmark(model.solve, solver, time_limit=10)
     assert_equal(result.objective, 430)
+
+
+def test_aslib(benchmark, solver):
+    """
+    Benchmark ASLIB instance from
+    https://www.projectmanagement.ugent.be/research/project_scheduling/rcpspas.
+    """
+    loc = "data/aslib0_0.rcp"
+    data = read(loc, instance_format="aslib")
+
+    result = benchmark(solve, data, solver=solver, time_limit=10)
+    assert_equal(result.objective, 100)

@@ -18,6 +18,7 @@ class InstanceFormat(str, Enum):
     MPLIB = "mplib"
     PATTERSON = "patterson"
     RCPSP_MAX = "rcpsp_max"
+    ASLIB = "aslib"
 
 
 def read(
@@ -34,6 +35,7 @@ def read(
         InstanceFormat.MPLIB,
         InstanceFormat.PATTERSON,
         InstanceFormat.RCPSP_MAX,
+        InstanceFormat.ASLIB,
     ]:
         instance = psplib.parse(loc, instance_format)
         return _project_instance_to_data(instance)
@@ -80,8 +82,9 @@ def _project_instance_to_data(instance: psplib.ProjectInstance) -> ProblemData:
     for project in instance.projects:
         job = model.add_job(release_date=project.release_date)
 
-        for _ in project.activities:
-            model.add_task(job=job)
+        for activity_idx in project.activities:
+            activity = instance.activities[activity_idx]
+            model.add_task(job=job, optional=activity.optional)
 
     for idx, activity in enumerate(instance.activities):
         for mode in activity.modes:
@@ -103,5 +106,9 @@ def _project_instance_to_data(instance: psplib.ProjectInstance) -> ProblemData:
                 # RCPSP/max precedence type.
                 delay = activity.delays[succ_idx]
                 model.add_start_before_start(pred, succ, delay)
+
+        for group in activity.selection_groups:
+            task_group = [model.tasks[idx] for idx in group]
+            model.add_select_at_least_one(task_group, model.tasks[idx])
 
     return model.data()
