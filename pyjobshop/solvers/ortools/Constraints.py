@@ -319,11 +319,11 @@ class Constraints:
         """
         model, data, variables = self._model, self._data, self._variables
 
-        for component in utils.redundant_cumulative(data):
-            if not (1 <= len(component.machines) < data.num_machines):
+        for component in utils.redundant_cumulative_components(data):
+            if not (0 < len(component.machines) < data.num_machines):
                 continue
 
-            if not (1 <= len(component.tasks) < data.num_tasks):
+            if not (0 < len(component.tasks) < data.num_tasks):
                 continue
 
             intervals = [

@@ -167,48 +167,47 @@ class Component:
     tasks: set[int]
 
 
-def redundant_cumulative(data: ProblemData) -> list[Component]:
+def redundant_cumulative_components(data: ProblemData) -> list[Component]:
     """
-    Find connected components in an undirected graph formed by machines.
-    An edge (u, v) exists if there is a task that has two modes
-    resources u and v. This is used to determine which resources are
+    Returns a list of components, consisting of a group of machines and
+    tasks, which can be used to add redundant cumulative constraints to
+    enhance constraint propagation.
+
+    First, a graph is built where nodes are machines, and an edge between
+    two machines is added if they appear together in the machine assignments
+    of any task. Then, connected components are found using depth-first search
+    on this graph. Finally, for each component, we find the set of tasks that
+    can be assigned to any of the machines in that component.
 
     Parameters
     ----------
-    adj_list:
-        Dict where keys are nodes and values are sets of neighbors.
+    data
+        The problem data instance.
 
     Returns
     -------
-    A tuple consisting of two lists, where the first list contains sets of
-    machine indices representing connected components, and the second list
-    contains the set of task indices that could be assigned to the
-    machines of the corresponding component.
+    list[Component]
+        A list of components, each containing a set of machine indices and
+        a set of task indices that can be assigned to any of the machines in
+        the component.
     """
-    graph = defaultdict(set)
-
+    task2machines = defaultdict(set)
     for task_idx in range(data.num_tasks):
-        mode_idcs = data.task2modes(task_idx)
-        resource_idcs = {
-            res_idx
-            for mode_idx in mode_idcs
-            for res_idx in data.modes[mode_idx].resources
-        }
-        machine_idcs = resource_idcs & set(data.machine_idcs)
+        for mode_idx in data.task2modes(task_idx):
+            mode = data.modes[mode_idx]
+            machines = set(mode.resources) & set(data.machine_idcs)
+            task2machines[task_idx].update(machines)
 
-        for idx1, idx2 in product(machine_idcs, repeat=2):
+    # Build the machines graph.
+    graph = defaultdict(set)
+    for task_idx in range(data.num_tasks):
+        for idx1, idx2 in product(task2machines[task_idx], repeat=2):
             graph[idx1].add(idx2)
 
-        for mode_idx1, mode_idx2 in product(mode_idcs, repeat=2):
-            resources1 = data.modes[mode_idx1].resources
-            resources2 = data.modes[mode_idx2].resources
-
-            for res1 in resources1:
-                graph[res1].update(resources2)
-
+    # Find the components using depth-first search.
     nodes = set(graph.keys())
     visited = set()
-    components: list[set[int]] = []
+    machine_components: list[set[int]] = []
 
     def dfs(node, component):
         visited.add(node)
@@ -222,18 +221,16 @@ def redundant_cumulative(data: ProblemData) -> list[Component]:
         if node not in visited:
             component: set[int] = set()
             dfs(node, component)
-            components.append(component)
+            machine_components.append(component)
 
-    tasks: list[set[int]] = [set() for _ in components]
-
-    for task_idx in range(data.num_tasks):
-        task_modes = data.task2modes(task_idx)
-        task_resources = {
-            res for mode in task_modes for res in data.modes[mode].resources
+    # Find the tasks belonging to each component.
+    result = []
+    for machines in machine_components:
+        tasks = {
+            task
+            for task, task_machines in task2machines.items()
+            if task_machines & machines
         }
+        result.append(Component(machines, tasks))
 
-        for comp_idx, component in enumerate(components):
-            if component & task_resources:
-                tasks[comp_idx].add(task_idx)
-
-    return [Component(x, y) for x, y in zip(components, tasks)]
+    return result
