@@ -184,7 +184,7 @@ def benchmark(instances: list[Path], num_parallel_instances: int, **kwargs):
     func = partial(_solve, **kwargs)
 
     if len(instances) == 1:
-        results = [func(args[0])]
+        results = [func(args[0])]  # type: ignore
     else:
         results = process_map(
             func, args, max_workers=num_parallel_instances, unit="instance"
