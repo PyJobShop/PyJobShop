@@ -1725,7 +1725,9 @@ def test_same_sequence_custom_ordering(solver: str):
     assert_equal(result.objective, 13)
 
 
-def test_same_sequence_invalid_multiple_modes_cpoptimizer():
+def test_same_sequence_invalid_multiple_modes_cpoptimizer(
+    requires_cpoptimizer,
+):
     """
     Tests that a ValueError is raised when the same sequence constraint is
     imposed on tasks that have multiple modes using the same resource, and
