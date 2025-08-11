@@ -1726,7 +1726,7 @@ def test_same_sequence_custom_ordering(solver: str):
 
 
 def test_same_sequence_invalid_multiple_modes_cpoptimizer(
-    requires_cpoptimizer,
+    require_cpoptimizer,
 ):
     """
     Tests that a ValueError is raised when the same sequence constraint is
