@@ -163,6 +163,18 @@ def setup_times_matrix(data: ProblemData) -> np.ndarray | None:
 
 @dataclass
 class Component:
+    """
+    A simple dataclass to represent a redundant cumulative component.
+
+    Parameters
+    ----------
+    machines
+        Set of machine indices that belong to this component.
+    tasks
+        Set of task indices that can be assigned to any of the machines
+        in this component.
+    """
+
     machines: set[int]
     tasks: set[int]
 
@@ -204,7 +216,7 @@ def redundant_cumulative_components(data: ProblemData) -> list[Component]:
         for idx1, idx2 in product(task2machines[task_idx], repeat=2):
             graph[idx1].add(idx2)
 
-    # Find the components using depth-first search.
+    # Find the machine components.
     nodes = set(graph.keys())
     visited = set()
     machine_components: list[set[int]] = []
