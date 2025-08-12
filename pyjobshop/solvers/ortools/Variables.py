@@ -166,7 +166,7 @@ class SequenceVar:
 
         self._is_active = True
 
-        nodes = self._tasks + [self.DUMMY]
+        nodes = [*self._tasks, self.DUMMY]
         self._arcs = {
             (i, j): model.new_bool_var(f"{i}->{j}")
             for i in nodes

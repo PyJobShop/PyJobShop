@@ -1072,10 +1072,9 @@ class ProblemData:
             or self.objective.weight_total_tardiness > 0
             or self.objective.weight_total_earliness > 0
             or self.objective.weight_max_tardiness > 0
-        ):
-            if any(job.due_date is None for job in self.jobs):
-                msg = "Job due dates required for due date-based objectives."
-                raise ValueError(msg)
+        ) and any(job.due_date is None for job in self.jobs):
+            msg = "Job due dates required for due date-based objectives."
+            raise ValueError(msg)
 
         if (
             self.objective.weight_total_setup_time > 0
