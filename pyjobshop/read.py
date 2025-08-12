@@ -29,7 +29,8 @@ def read(
     """
     if instance_format == InstanceFormat.FJSPLIB:
         return _read_fjslib(loc)
-    elif instance_format in [
+
+    if instance_format in [
         InstanceFormat.PSPLIB,
         InstanceFormat.MPLIB,
         InstanceFormat.PATTERSON,

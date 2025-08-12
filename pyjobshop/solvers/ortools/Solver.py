@@ -33,14 +33,17 @@ class Solver:
     def _get_solve_status(self, status: str):
         if status == "OPTIMAL":
             return SolveStatus.OPTIMAL
-        elif status == "FEASIBLE":
+
+        if status == "FEASIBLE":
             return SolveStatus.FEASIBLE
-        elif status == "INFEASIBLE":
+
+        if status == "INFEASIBLE":
             return SolveStatus.INFEASIBLE
-        elif status == "MODEL_INVALID":
+
+        if status == "MODEL_INVALID":
             return SolveStatus.UNKNOWN
-        else:
-            return SolveStatus.TIME_LIMIT
+
+        return SolveStatus.TIME_LIMIT
 
     def _convert_to_solution(self, cp_solver: CpSolver) -> Solution:
         """
