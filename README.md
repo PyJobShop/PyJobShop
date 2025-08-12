@@ -10,7 +10,7 @@ PyJobShop is a Python library for solving scheduling problems with constraint pr
 It currently supports the following scheduling problems:
 
 - **Resource environments:** single machines, parallel machines, hybrid flow shops, open shops, job shops, flexible job shops, renewable resources and non-renewable resources.
-- **Constraints:** release dates, deadlines, due dates, multiple modes, permutations, sequence-dependent setup times, no-wait, no-idle, blocking, and arbitrary precedence constraints.
+- **Constraints:** release dates, deadlines, due dates, multiple modes, permutations, sequence-dependent setup times, no-wait, no-idle, blocking, breaks, and arbitrary precedence constraints.
 - **Objective functions:** minimizing makespan, total flow time, number of tardy jobs, total tardiness, total earliness, maximum tardiness, and total setup times.
 
 You can find PyJobShop on the Python Package Index under the name `pyjobshop`. 
@@ -36,8 +36,9 @@ See [our documentation](https://pyjobshop.org/stable/setup/installation.html) fo
 We provide example notebooks that show how PyJobShop may be used to solve scheduling problems.
 
 - A short tutorial and introduction to PyJobShop's modeling interface, available [here](https://pyjobshop.org/stable/examples/simple_example.html). This is a great way to get started with PyJobShop.
-- Notebooks solving the classical machine scheduling problems such as the hybrid flow shop ([here](https://pyjobshop.org/stable/examples/hybrid_flow_shop.html)) and the flexible job shop problem ([here](https://pyjobshop.org/stable/examples/flexible_job_shop.html)).
+- Notebooks solving the classical machine scheduling problems such as the flexible job shop problem ([here](https://pyjobshop.org/stable/examples/flexible_job_shop.html)), the hybrid flow shop ([here](https://pyjobshop.org/stable/examples/hybrid_flow_shop.html)), and the permutation flow shop ([here](https://pyjobshop.org/stable/examples/permutation_flow_shop.html)).
 - A notebook showing how to solve different project scheduling problems, [here](https://pyjobshop.org/stable/examples/project_scheduling.html).
+- An overview of supported objective functions, [here](https://pyjobshop.org/stable/examples/objectives_examples.html).
 
 ## Contributing
 

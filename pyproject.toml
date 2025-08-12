@@ -75,16 +75,8 @@ examples = [
 ]
 
 
-[tool.uv]
-default-groups = ["dev"]
-
-
 [tool.mypy]
 ignore_missing_imports = true
-
-
-[tool.black]
-line-length = 79
 
 
 [tool.ruff]

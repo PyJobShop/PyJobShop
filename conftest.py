@@ -191,3 +191,10 @@ def pytest_addoption(parser):
 def pytest_generate_tests(metafunc):
     if "solver" in metafunc.fixturenames:
         metafunc.parametrize("solver", metafunc.config.getoption("solvers"))
+
+
+@pytest.fixture
+def require_cpoptimizer(request):
+    solvers = request.config.getoption("--solvers")
+    if "cpoptimizer" not in solvers:
+        pytest.skip("cpoptimizer not requested via --solvers")
