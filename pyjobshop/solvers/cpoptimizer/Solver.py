@@ -34,12 +34,14 @@ class Solver:
     def _get_solve_status(self, status: str) -> SolveStatus:
         if status == "Optimal":
             return SolveStatus.OPTIMAL
-        elif status == "Feasible":
+
+        if status == "Feasible":
             return SolveStatus.FEASIBLE
-        elif status == "Infeasible":
+
+        if status == "Infeasible":
             return SolveStatus.INFEASIBLE
-        else:
-            return SolveStatus.TIME_LIMIT
+
+        return SolveStatus.TIME_LIMIT
 
     def _convert_to_solution(self, result: CpoSolveResult) -> Solution:
         """

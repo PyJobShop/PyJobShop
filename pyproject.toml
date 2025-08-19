@@ -86,17 +86,7 @@ extend-include = ["*.ipynb"]
 
 [tool.ruff.lint]
 select = [
-    "E",  # pycodestyle errors
-    "W",  # pycodestyle warnings
-    "F",  # pyflakes
-    "I",  # isort
-    "C",  # flake8-comprehensions
-    "B",  # flake8-bugbear
-]
-ignore = [
-    "E741",  # ambiguous variable name, needed for indexing
-    "C901",  # too complex
-    "B905",  # allow zip without strict for conciseness
+    "E", "F", "I", "NPY", "PYI", "Q", "RET", "RSE", "RUF", "SLF", "SIM", "TC"
 ]
 
 
