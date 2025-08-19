@@ -203,42 +203,6 @@ class Constraints:
 
                 model.add(presence2 == 0).only_enforce_if(presence1)
 
-    def _task_selection_constraints(self):
-        """
-        Creates the task selection constraints.
-        """
-        model, data, variables = self._model, self._data, self._variables
-
-        def presence_var_or_true(idx: int | None) -> BoolVarT:
-            """
-            Returns the Boolean presence variable of the task if a valid index
-            is passed, otherwise returns a constant True value.
-            """
-            return (
-                variables.task_vars[idx].present
-                if idx is not None
-                else model.new_constant(1)
-            )
-
-        for idcs, condition_idx in data.constraints.select_all_or_none:
-            condition = presence_var_or_true(condition_idx)
-
-            for idx1, idx2 in pairwise(idcs):
-                var1 = variables.task_vars[idx1]
-                var2 = variables.task_vars[idx2]
-                expr = var1.present == var2.present
-                model.add(expr).only_enforce_if(condition)
-
-        for idcs, condition_idx in data.constraints.select_at_least_one:
-            condition = presence_var_or_true(condition_idx)
-            presences = [variables.task_vars[idx].present for idx in idcs]
-            model.add(condition <= sum(presences))
-
-        for idcs, condition_idx in data.constraints.select_exactly_one:
-            condition = presence_var_or_true(condition_idx)
-            presences = [variables.task_vars[idx].present for idx in idcs]
-            model.add(sum(presences) == 1).only_enforce_if(condition)
-
     def _consecutive_constraints(self):
         """
         Creates the consecutive constraints.
@@ -369,6 +333,42 @@ class Constraints:
             expr2 = sum(variables.mode_vars[idx] for idx in idcs2)
             model.add(expr1 <= expr2)
 
+    def _task_selection_constraints(self):
+        """
+        Creates the task selection constraints.
+        """
+        model, data, variables = self._model, self._data, self._variables
+
+        def presence_var_or_true(idx: int | None) -> BoolVarT:
+            """
+            Returns the Boolean presence variable of the task if a valid index
+            is passed, otherwise returns a constant True value.
+            """
+            return (
+                variables.task_vars[idx].present
+                if idx is not None
+                else model.new_constant(1)
+            )
+
+        for idcs, condition_idx in data.constraints.select_all_or_none:
+            condition = presence_var_or_true(condition_idx)
+
+            for idx1, idx2 in pairwise(idcs):
+                var1 = variables.task_vars[idx1]
+                var2 = variables.task_vars[idx2]
+                expr = var1.present == var2.present
+                model.add(expr).only_enforce_if(condition)
+
+        for idcs, condition_idx in data.constraints.select_at_least_one:
+            condition = presence_var_or_true(condition_idx)
+            presences = [variables.task_vars[idx].present for idx in idcs]
+            model.add(condition <= sum(presences))
+
+        for idcs, condition_idx in data.constraints.select_exactly_one:
+            condition = presence_var_or_true(condition_idx)
+            presences = [variables.task_vars[idx].present for idx in idcs]
+            model.add(sum(presences) == 1).only_enforce_if(condition)
+
     def add_constraints(self):
         """
         Adds all the constraints to the CP model.
@@ -381,10 +381,8 @@ class Constraints:
         self._renewable_resource_breaks_constraints()
         self._timing_constraints()
         self._identical_and_different_resource_constraints()
-        self._task_selection_constraints()
         self._consecutive_constraints()
         self._same_sequence_constraints()
+        self._circuit_constraints()  # must be after sequencing constraints!
         self._mode_dependencies()
-
-        # From here onwards we know which sequence constraints are active.
-        self._circuit_constraints()
+        self._task_selection_constraints()

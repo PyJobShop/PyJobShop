@@ -81,9 +81,6 @@ def complete_data():
         end_before_end=[EndBeforeEnd(0, 1)],
         identical_resources=[IdenticalResources(0, 1)],
         different_resources=[DifferentResources(0, 2)],
-        select_all_or_none=[SelectAllOrNone([4])],
-        select_at_least_one=[SelectAtLeastOne([0])],
-        select_exactly_one=[SelectExactlyOne([0])],
         consecutive=[Consecutive(0, 1)],
         same_sequence=[SameSequence(0, 3)],
         setup_times=[
@@ -92,6 +89,9 @@ def complete_data():
             SetupTime(0, 1, 0, 1),
         ],
         mode_dependencies=[ModeDependency(0, [1])],
+        select_all_or_none=[SelectAllOrNone([4])],
+        select_at_least_one=[SelectAtLeastOne([0])],
+        select_exactly_one=[SelectExactlyOne([0])],
     )
     objective = Objective(
         weight_makespan=2,

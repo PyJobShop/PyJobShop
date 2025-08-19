@@ -586,45 +586,6 @@ class DifferentResources(IterableMixin):
 
 
 @dataclass
-class SelectAllOrNone(IterableMixin):
-    """
-    Enforces that all tasks from the given list are selected, or none are.
-
-    If ``condition_task`` is provided, this rule only applies when that task
-    is selected; otherwise, it has no effect.
-    """
-
-    tasks: list[int]
-    condition_task: int | None = None
-
-
-@dataclass
-class SelectAtLeastOne(IterableMixin):
-    """
-    Enforces that at least one task from the given list is selected.
-
-    If ``condition_task`` is provided, this rule only applies when that task
-    is selected; otherwise, it has no effect.
-    """
-
-    tasks: list[int]
-    condition_task: int | None = None
-
-
-@dataclass
-class SelectExactlyOne(IterableMixin):
-    """
-    Enforces that exactly one task from the given list is selected.
-
-    If ``condition_task`` is provided, this rule only applies when that task
-    is selected; otherwise, it has no effect.
-    """
-
-    tasks: list[int]
-    condition_task: int | None = None
-
-
-@dataclass
 class Consecutive(IterableMixin):
     """
     Sequence task 1 and task 2 consecutively on the machines they are both
@@ -745,6 +706,45 @@ class ModeDependency(IterableMixin):
 
 
 @dataclass
+class SelectAllOrNone(IterableMixin):
+    """
+    Enforces that all tasks from the given list are selected, or none are.
+
+    If ``condition_task`` is provided, this rule only applies when that task
+    is selected; otherwise, it has no effect.
+    """
+
+    tasks: list[int]
+    condition_task: int | None = None
+
+
+@dataclass
+class SelectAtLeastOne(IterableMixin):
+    """
+    Enforces that at least one task from the given list is selected.
+
+    If ``condition_task`` is provided, this rule only applies when that task
+    is selected; otherwise, it has no effect.
+    """
+
+    tasks: list[int]
+    condition_task: int | None = None
+
+
+@dataclass
+class SelectExactlyOne(IterableMixin):
+    """
+    Enforces that exactly one task from the given list is selected.
+
+    If ``condition_task`` is provided, this rule only applies when that task
+    is selected; otherwise, it has no effect.
+    """
+
+    tasks: list[int]
+    condition_task: int | None = None
+
+
+@dataclass
 class Constraints:
     """
     Simple container class for storing all constraints.
@@ -756,13 +756,13 @@ class Constraints:
     end_before_end: list[EndBeforeEnd] = field(default_factory=list)
     identical_resources: list[IdenticalResources] = field(default_factory=list)
     different_resources: list[DifferentResources] = field(default_factory=list)
-    select_all_or_none: list[SelectAllOrNone] = field(default_factory=list)
-    select_at_least_one: list[SelectAtLeastOne] = field(default_factory=list)
-    select_exactly_one: list[SelectExactlyOne] = field(default_factory=list)
     consecutive: list[Consecutive] = field(default_factory=list)
     same_sequence: list[SameSequence] = field(default_factory=list)
     setup_times: list[SetupTime] = field(default_factory=list)
     mode_dependencies: list[ModeDependency] = field(default_factory=list)
+    select_all_or_none: list[SelectAllOrNone] = field(default_factory=list)
+    select_at_least_one: list[SelectAtLeastOne] = field(default_factory=list)
+    select_exactly_one: list[SelectExactlyOne] = field(default_factory=list)
 
     def __len__(self) -> int:
         """

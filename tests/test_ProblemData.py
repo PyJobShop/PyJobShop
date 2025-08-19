@@ -354,9 +354,6 @@ def test_constraints_len():
         end_before_end=[EndBeforeEnd(0, 1)],
         identical_resources=[IdenticalResources(0, 1)],
         different_resources=[DifferentResources(0, 1)],
-        select_all_or_none=[SelectAllOrNone([1, 2], 3)],
-        select_at_least_one=[SelectAtLeastOne([1, 0])],
-        select_exactly_one=[SelectAtLeastOne([1, 0])],
         consecutive=[Consecutive(1, 2)],
         same_sequence=[SameSequence(0, 1)],
         setup_times=[
@@ -365,6 +362,9 @@ def test_constraints_len():
             SetupTime(2, 0, 1, 0),  # non-renewable
         ],
         mode_dependencies=[ModeDependency(0, [1])],
+        select_all_or_none=[SelectAllOrNone([1, 2], 3)],
+        select_at_least_one=[SelectAtLeastOne([1, 0])],
+        select_exactly_one=[SelectAtLeastOne([1, 0])],
     )
 
     assert_equal(len(constraints), 15)
@@ -1572,181 +1572,6 @@ def test_identical_resources_with_modes_and_multiple_resources(solver: str):
     assert_equal(result.best.tasks[1].mode, 3)
 
 
-@pytest.fixture
-def selection_model() -> Model:
-    """
-    Returns a pre-built Model instance with optional tasks, used for testing
-    selection constraints.
-    """
-    model = Model()
-    machine = model.add_machine()
-
-    # Three optional tasks with durations (1, 2, 3).
-    tasks = [model.add_task(optional=True) for _ in range(3)]
-    [model.add_mode(tasks[idx], machine, idx + 1) for idx in range(3)]
-
-    return model
-
-
-def test_select_all_or_none(selection_model: Model, solver: str):
-    """
-    Tests that the select-all-or-none constraint works correctly.
-    """
-    model = selection_model
-    model.add_select_all_or_none(model.tasks)
-
-    # All tasks are optional and have positive duration, so it's optimal
-    # not to schedule any task.
-    result = model.solve(solver=solver)
-    assert_equal(result.status.value, "Optimal")
-    assert_equal(result.objective, 0)
-
-    for sol_task in result.best.tasks:
-        assert_(not sol_task.present)
-
-    # Now let's add a task that is required, and add a constraint so that all
-    # or none of the tasks must be selected.
-    task = model.add_task()
-    model.add_mode(task, model.resources[0], duration=4)
-    model.add_select_all_or_none(model.tasks)
-
-    result = model.solve(solver=solver)
-    assert_equal(result.status.value, "Optimal")
-    assert_equal(result.objective, 10)
-
-    for sol_task in result.best.tasks:
-        assert_(sol_task.present)
-
-
-def test_select_at_least_one(selection_model: Model, solver: str):
-    """
-    Tests that the select-at-least-one constraint works correctly.
-    """
-    model = selection_model
-    model.add_select_at_least_one(model.tasks)
-
-    # One task should be selected, which is the first one with duration 1.
-    result = model.solve(solver=solver)
-    assert_equal(result.status.value, "Optimal")
-    assert_equal(result.objective, 1)
-
-    for idx, task in enumerate(result.best.tasks):
-        assert_equal(task.present, idx == 0)
-
-
-def test_select_exactly_one(selection_model: Model, solver: str):
-    """
-    Tests that the select-exactly-one constraint works correctly.
-    """
-    model = selection_model
-    model.add_select_exactly_one(model.tasks)
-
-    # One task should be selected, which is the first one with duration 1.
-    result = model.solve(solver=solver)
-    assert_equal(result.status.value, "Optimal")
-    assert_equal(result.objective, 1)
-
-    for idx, task in enumerate(result.best.tasks):
-        assert_equal(task.present, idx == 0)
-
-
-@pytest.fixture
-def selection_with_condition_model() -> Model:
-    """
-    Returns a pre-built Model instance with optional tasks, used for testing
-    selection constraints with conditions.
-    """
-    model = Model()
-    machine = model.add_machine()
-
-    # Three optional tasks with durations (1, 2, 3).
-    tasks = [model.add_task(optional=True) for _ in range(3)]
-    [model.add_mode(tasks[idx], machine, idx + 1) for idx in range(3)]
-
-    # One required task with duration 0.
-    required = model.add_task()
-    model.add_mode(required, machine, 0)
-
-    return model
-
-
-def test_select_all_or_none_with_condition(
-    selection_with_condition_model: Model, solver: str
-):
-    """
-    Tests that the select-all-or-none constraint works correctly with a
-    condition task.
-    """
-    model = selection_with_condition_model
-    *_, optional, required = model.tasks
-
-    # The condition task is optional, so this constraint is not enforced.
-    model.add_select_all_or_none(model.tasks, optional)
-
-    result = model.solve(solver=solver)
-    assert_equal(result.status.value, "Optimal")
-    assert_equal(result.objective, 0)
-
-    # If we use a required task as condition, the constraint will be enforced.
-    model.add_select_all_or_none(model.tasks, required)
-
-    result = model.solve(solver=solver)
-    assert_equal(result.status.value, "Optimal")
-    assert_equal(result.objective, 6)
-
-
-def test_select_at_least_one_with_condition(
-    selection_with_condition_model: Model, solver: str
-):
-    """
-    Tests that the select at least one constraint works correctly with a
-    condition task.
-    """
-    model = selection_with_condition_model
-    task1, task2, optional, required = model.tasks
-
-    # The condition task is optional, so this constraint is not enforced.
-    model.add_select_at_least_one([task1, task2], optional)
-
-    result = model.solve(solver=solver)
-    assert_equal(result.status.value, "Optimal")
-    assert_equal(result.objective, 0)
-
-    # If we use a required task as condition, the constraint will be enforced.
-    # Task 1 will be selected with duration 1.
-    model.add_select_at_least_one([task1, task2], required)
-
-    result = model.solve(solver=solver)
-    assert_equal(result.status.value, "Optimal")
-    assert_equal(result.objective, 1)
-
-
-def test_select_exactly_one_with_condition(
-    selection_with_condition_model: Model, solver: str
-):
-    """
-    Tests that the select exactly one constraint works correctly with a
-    condition task.
-    """
-    model = selection_with_condition_model
-    task1, task2, optional, required = model.tasks
-
-    # The condition task is optional, so this constraint is not enforced.
-    model.add_select_exactly_one([task1, task2], optional)
-
-    result = model.solve(solver=solver)
-    assert_equal(result.status.value, "Optimal")
-    assert_equal(result.objective, 0)
-
-    # If we use a required task as condition, the constraint will be enforced.
-    # Task 1 will be selected with duration 1.
-    model.add_select_exactly_one([task1, task2], required)
-
-    result = model.solve(solver=solver)
-    assert_equal(result.status.value, "Optimal")
-    assert_equal(result.objective, 1)
-
-
 def test_different_resources(solver: str):
     """
     Tests that the different resources constraint is respected.
@@ -2016,6 +1841,181 @@ def test_mode_dependencies(solver: str):
     model.add_mode_dependency(mode1, [mode3, mode4])
     result = model.solve()
     assert_equal(result.objective, 15)
+
+
+@pytest.fixture
+def selection_model() -> Model:
+    """
+    Returns a pre-built Model instance with optional tasks, used for testing
+    selection constraints.
+    """
+    model = Model()
+    machine = model.add_machine()
+
+    # Three optional tasks with durations (1, 2, 3).
+    tasks = [model.add_task(optional=True) for _ in range(3)]
+    [model.add_mode(tasks[idx], machine, idx + 1) for idx in range(3)]
+
+    return model
+
+
+def test_select_all_or_none(selection_model: Model, solver: str):
+    """
+    Tests that the select-all-or-none constraint works correctly.
+    """
+    model = selection_model
+    model.add_select_all_or_none(model.tasks)
+
+    # All tasks are optional and have positive duration, so it's optimal
+    # not to schedule any task.
+    result = model.solve(solver=solver)
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.objective, 0)
+
+    for sol_task in result.best.tasks:
+        assert_(not sol_task.present)
+
+    # Now let's add a task that is required, and add a constraint so that all
+    # or none of the tasks must be selected.
+    task = model.add_task()
+    model.add_mode(task, model.resources[0], duration=4)
+    model.add_select_all_or_none(model.tasks)
+
+    result = model.solve(solver=solver)
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.objective, 10)
+
+    for sol_task in result.best.tasks:
+        assert_(sol_task.present)
+
+
+def test_select_at_least_one(selection_model: Model, solver: str):
+    """
+    Tests that the select-at-least-one constraint works correctly.
+    """
+    model = selection_model
+    model.add_select_at_least_one(model.tasks)
+
+    # One task should be selected, which is the first one with duration 1.
+    result = model.solve(solver=solver)
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.objective, 1)
+
+    for idx, task in enumerate(result.best.tasks):
+        assert_equal(task.present, idx == 0)
+
+
+def test_select_exactly_one(selection_model: Model, solver: str):
+    """
+    Tests that the select-exactly-one constraint works correctly.
+    """
+    model = selection_model
+    model.add_select_exactly_one(model.tasks)
+
+    # One task should be selected, which is the first one with duration 1.
+    result = model.solve(solver=solver)
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.objective, 1)
+
+    for idx, task in enumerate(result.best.tasks):
+        assert_equal(task.present, idx == 0)
+
+
+@pytest.fixture
+def selection_with_condition_model() -> Model:
+    """
+    Returns a pre-built Model instance with optional tasks, used for testing
+    selection constraints with conditions.
+    """
+    model = Model()
+    machine = model.add_machine()
+
+    # Three optional tasks with durations (1, 2, 3).
+    tasks = [model.add_task(optional=True) for _ in range(3)]
+    [model.add_mode(tasks[idx], machine, idx + 1) for idx in range(3)]
+
+    # One required task with duration 0.
+    required = model.add_task()
+    model.add_mode(required, machine, 0)
+
+    return model
+
+
+def test_select_all_or_none_with_condition(
+    selection_with_condition_model: Model, solver: str
+):
+    """
+    Tests that the select-all-or-none constraint works correctly with a
+    condition task.
+    """
+    model = selection_with_condition_model
+    *_, optional, required = model.tasks
+
+    # The condition task is optional, so this constraint is not enforced.
+    model.add_select_all_or_none(model.tasks, optional)
+
+    result = model.solve(solver=solver)
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.objective, 0)
+
+    # If we use a required task as condition, the constraint will be enforced.
+    model.add_select_all_or_none(model.tasks, required)
+
+    result = model.solve(solver=solver)
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.objective, 6)
+
+
+def test_select_at_least_one_with_condition(
+    selection_with_condition_model: Model, solver: str
+):
+    """
+    Tests that the select at least one constraint works correctly with a
+    condition task.
+    """
+    model = selection_with_condition_model
+    task1, task2, optional, required = model.tasks
+
+    # The condition task is optional, so this constraint is not enforced.
+    model.add_select_at_least_one([task1, task2], optional)
+
+    result = model.solve(solver=solver)
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.objective, 0)
+
+    # If we use a required task as condition, the constraint will be enforced.
+    # Task 1 will be selected with duration 1.
+    model.add_select_at_least_one([task1, task2], required)
+
+    result = model.solve(solver=solver)
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.objective, 1)
+
+
+def test_select_exactly_one_with_condition(
+    selection_with_condition_model: Model, solver: str
+):
+    """
+    Tests that the select exactly one constraint works correctly with a
+    condition task.
+    """
+    model = selection_with_condition_model
+    task1, task2, optional, required = model.tasks
+
+    # The condition task is optional, so this constraint is not enforced.
+    model.add_select_exactly_one([task1, task2], optional)
+
+    result = model.solve(solver=solver)
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.objective, 0)
+
+    # If we use a required task as condition, the constraint will be enforced.
+    # Task 1 will be selected with duration 1.
+    model.add_select_exactly_one([task1, task2], required)
+
+    result = model.solve(solver=solver)
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.objective, 1)
 
 
 def test_empty_objective(solver: str):

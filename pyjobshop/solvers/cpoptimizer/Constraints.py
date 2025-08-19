@@ -214,38 +214,6 @@ class Constraints:
                 )
                 model.add(expr1 <= expr2)
 
-    def _task_selection_constraints(self):
-        """
-        Creates constraints for task selection constraints.
-        """
-        model, data = self._model, self._data
-
-        def presence_var_or_true(idx: int | None):
-            """
-            Returns the Boolean presence variable of the task if a valid index
-            is passed, otherwise returns a constant True value.
-            """
-            return presence_of(self._task_vars[idx]) if idx is not None else 1
-
-        for idcs, condition_idx in data.constraints.select_all_or_none:
-            condition = presence_var_or_true(condition_idx) == 1
-
-            for idx1, idx2 in pairwise(idcs):
-                var1 = self._task_vars[idx1]
-                var2 = self._task_vars[idx2]
-                expr = presence_of(var1) == presence_of(var2)
-                model.add(cpo.if_then(condition, expr))
-
-        for idcs, condition_idx in data.constraints.select_at_least_one:
-            condition = presence_var_or_true(condition_idx) == 1
-            presences = [presence_of(self._task_vars[idx]) for idx in idcs]
-            model.add(condition <= sum(presences))
-
-        for idcs, condition_idx in data.constraints.select_exactly_one:
-            condition = presence_var_or_true(condition_idx) == 1
-            presences = [presence_of(self._task_vars[idx]) for idx in idcs]
-            model.add(cpo.if_then(condition, sum(presences) == 1))
-
     def _consecutive_constraints(self):
         """
         Creates the consecutive constraints.
@@ -328,6 +296,38 @@ class Constraints:
 
             model.add(expr1 <= expr2)
 
+    def _task_selection_constraints(self):
+        """
+        Creates constraints for task selection constraints.
+        """
+        model, data = self._model, self._data
+
+        def presence_var_or_true(idx: int | None):
+            """
+            Returns the Boolean presence variable of the task if a valid index
+            is passed, otherwise returns a constant True value.
+            """
+            return presence_of(self._task_vars[idx]) if idx is not None else 1
+
+        for idcs, condition_idx in data.constraints.select_all_or_none:
+            condition = presence_var_or_true(condition_idx) == 1
+
+            for idx1, idx2 in pairwise(idcs):
+                var1 = self._task_vars[idx1]
+                var2 = self._task_vars[idx2]
+                expr = presence_of(var1) == presence_of(var2)
+                model.add(cpo.if_then(condition, expr))
+
+        for idcs, condition_idx in data.constraints.select_at_least_one:
+            condition = presence_var_or_true(condition_idx) == 1
+            presences = [presence_of(self._task_vars[idx]) for idx in idcs]
+            model.add(condition <= sum(presences))
+
+        for idcs, condition_idx in data.constraints.select_exactly_one:
+            condition = presence_var_or_true(condition_idx) == 1
+            presences = [presence_of(self._task_vars[idx]) for idx in idcs]
+            model.add(cpo.if_then(condition, sum(presences) == 1))
+
     def add_constraints(self):
         """
         Adds all the constraints to the CP model.
@@ -340,7 +340,7 @@ class Constraints:
         self._resource_breaks_constraints()
         self._timing_constraints()
         self._identical_and_different_resource_constraints()
-        self._task_selection_constraints()
         self._consecutive_constraints()
         self._same_sequence_constraints()
         self._mode_dependencies()
+        self._task_selection_constraints()
