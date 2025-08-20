@@ -510,6 +510,13 @@ class Model:
         )
         return self._objective
 
+    def summary(self) -> str:
+        """
+        Returns a summary of the model, which is the string representation of
+        the ProblemData instance created by the model.
+        """
+        return str(self.data())
+
     def solve(
         self,
         solver: str = "ortools",
