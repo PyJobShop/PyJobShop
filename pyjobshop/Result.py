@@ -49,7 +49,7 @@ class Result:
             "================",
             f"  objective: {self.objective:.2f}",
             f"lower bound: {self.lower_bound:.2f}",
-            f"     status: {self.status}",
+            f"     status: {self.status.value}",
             f"    runtime: {self.runtime:.2f} seconds",
         ]
         return "\n".join(content)
