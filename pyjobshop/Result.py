@@ -4,7 +4,7 @@ from enum import Enum
 from .Solution import Solution
 
 
-class SolveStatus(Enum):
+class SolveStatus(str, Enum):
     """
     Enum representing the termination status of the solver run.
     """
@@ -49,7 +49,7 @@ class Result:
             "================",
             f"  objective: {self.objective:.2f}",
             f"lower bound: {self.lower_bound:.2f}",
-            f"     status: {self.status.value}",
+            f"     status: {self.status}",
             f"    runtime: {self.runtime:.2f} seconds",
         ]
         return "\n".join(content)
