@@ -70,8 +70,34 @@ PyJobShop
 
    .. autoclass:: Result
 
-   .. autoclass:: SolveStatus
-      :members:
+   .. class:: SolveStatus
+
+      Enum representing the termination status of the solver run.
+
+      .. attribute:: OPTIMAL
+         :value: "Optimal"
+
+         Solution is proven optimal.
+
+      .. attribute:: FEASIBLE
+         :value: "Feasible"
+
+         A feasible solution was found.
+
+      .. attribute:: INFEASIBLE
+         :value: "Infeasible"
+
+         Problem is proven infeasible.
+
+      .. attribute:: TIME_LIMIT
+         :value: "Time-limit"
+
+         Solver terminated due to time limit.
+
+      .. attribute:: UNKNOWN
+         :value: "Unknown"
+
+         Solver terminated with unknown status.
 
 .. automodule:: pyjobshop.solve
    :members:

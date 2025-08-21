@@ -9,11 +9,11 @@ class SolveStatus(str, Enum):
     Enum representing the termination status of the solver run.
     """
 
-    OPTIMAL = "Optimal"  #: Solution is proven optimal.
-    FEASIBLE = "Feasible"  #: A feasible solution was found.
-    INFEASIBLE = "Infeasible"  #: Problem is proven infeasible.
-    TIME_LIMIT = "Time-limit"  #: Solver terminated due to time limit.
-    UNKNOWN = "Unknown"  #: Solver terminated with unknown status.
+    OPTIMAL = "Optimal"
+    FEASIBLE = "Feasible"
+    INFEASIBLE = "Infeasible"
+    TIME_LIMIT = "Time-limit"
+    UNKNOWN = "Unknown"
 
 
 @dataclass
