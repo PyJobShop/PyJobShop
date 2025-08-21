@@ -312,6 +312,49 @@ class Constraints:
             expr2 = sum(variables.mode_vars[idx] for idx in idcs2)
             model.add(expr1 <= expr2)
 
+    def _mode_precedence_constraints(self):
+        """
+        Implements the mode-based precedence constraints.
+        """
+        model, data, variables = self._model, self._data, self._variables
+        mode_vars, task_vars = variables.mode_vars, variables.task_vars
+
+        for idx1, idx2, delay in data.constraints.mode_start_before_start:
+            mode1 = data.modes[idx1]
+            mode2 = data.modes[idx2]
+            task_var1 = task_vars[mode1.task]
+            task_var2 = task_vars[mode2.task]
+            expr = task_var1.start + delay <= task_var2.start
+            both_present = [mode_vars[idx1], mode_vars[idx2]]
+            model.add(expr).only_enforce_if(both_present)
+
+        for idx1, idx2, delay in data.constraints.mode_start_before_end:
+            mode1 = data.modes[idx1]
+            mode2 = data.modes[idx2]
+            task_var1 = task_vars[mode1.task]
+            task_var2 = task_vars[mode2.task]
+            expr = task_var1.start + delay <= task_var2.end
+            both_present = [mode_vars[idx1], mode_vars[idx2]]
+            model.add(expr).only_enforce_if(both_present)
+
+        for idx1, idx2, delay in data.constraints.mode_end_before_start:
+            mode1 = data.modes[idx1]
+            mode2 = data.modes[idx2]
+            task_var1 = task_vars[mode1.task]
+            task_var2 = task_vars[mode2.task]
+            expr = task_var1.end + delay <= task_var2.start
+            both_present = [mode_vars[idx1], mode_vars[idx2]]
+            model.add(expr).only_enforce_if(both_present)
+
+        for idx1, idx2, delay in data.constraints.mode_end_before_end:
+            mode1 = data.modes[idx1]
+            mode2 = data.modes[idx2]
+            task_var1 = task_vars[mode1.task]
+            task_var2 = task_vars[mode2.task]
+            expr = task_var1.end + delay <= task_var2.end
+            both_present = [mode_vars[idx1], mode_vars[idx2]]
+            model.add(expr).only_enforce_if(both_present)
+
     def add_constraints(self):
         """
         Adds all the constraints to the CP model.
@@ -327,6 +370,7 @@ class Constraints:
         self._consecutive_constraints()
         self._same_sequence_constraints()
         self._mode_dependencies()
+        self._mode_precedence_constraints()
 
         # From here onwards we know which sequence constraints are active.
         self._circuit_constraints()

@@ -12,6 +12,10 @@ from pyjobshop.ProblemData import (
     Machine,
     Mode,
     ModeDependency,
+    ModeEndBeforeEnd,
+    ModeEndBeforeStart,
+    ModeStartBeforeEnd,
+    ModeStartBeforeStart,
     NonRenewable,
     Objective,
     ProblemData,
@@ -189,6 +193,26 @@ class Model:
         for mode1, modes2 in data.constraints.mode_dependencies:
             model.add_mode_dependency(
                 model.modes[mode1], [model.modes[m] for m in modes2]
+            )
+
+        for idx1, idx2, delay in data.constraints.mode_start_before_start:
+            model.add_mode_start_before_start(
+                model.modes[idx1], model.modes[idx2], delay
+            )
+
+        for idx1, idx2, delay in data.constraints.mode_start_before_end:
+            model.add_mode_start_before_end(
+                model.modes[idx1], model.modes[idx2], delay
+            )
+
+        for idx1, idx2, delay in data.constraints.mode_end_before_start:
+            model.add_mode_end_before_start(
+                model.modes[idx1], model.modes[idx2], delay
+            )
+
+        for idx1, idx2, delay in data.constraints.mode_end_before_end:
+            model.add_mode_end_before_end(
+                model.modes[idx1], model.modes[idx2], delay
             )
 
         model.set_objective(
@@ -483,6 +507,62 @@ class Model:
         idcs2 = [self._id2mode[id(mode2)] for mode2 in modes2]
         constraint = ModeDependency(idx1, idcs2)
         self.constraints.mode_dependencies.append(constraint)
+
+        return constraint
+
+    def add_mode_start_before_start(
+        self, mode1: Mode, mode2: Mode, delay: int = 0
+    ) -> ModeStartBeforeStart:
+        """
+        Adds a constraint that if mode 1 is selected, the task of mode 1
+        must start before the task of mode 2 starts, with an optional delay.
+        """
+        idx1 = self._id2mode[id(mode1)]
+        idx2 = self._id2mode[id(mode2)]
+        constraint = ModeStartBeforeStart(idx1, idx2, delay)
+        self.constraints.mode_start_before_start.append(constraint)
+
+        return constraint
+
+    def add_mode_start_before_end(
+        self, mode1: Mode, mode2: Mode, delay: int = 0
+    ) -> ModeStartBeforeEnd:
+        """
+        Adds a constraint that if mode 1 is selected, the task of mode 1
+        must start before the task of mode 2 ends, with an optional delay.
+        """
+        idx1 = self._id2mode[id(mode1)]
+        idx2 = self._id2mode[id(mode2)]
+        constraint = ModeStartBeforeEnd(idx1, idx2, delay)
+        self.constraints.mode_start_before_end.append(constraint)
+
+        return constraint
+
+    def add_mode_end_before_start(
+        self, mode1: Mode, mode2: Mode, delay: int = 0
+    ) -> ModeEndBeforeStart:
+        """
+        Adds a constraint that if mode 1 is selected, the task of mode 1
+        must end before the task of mode 2 starts, with an optional delay.
+        """
+        idx1 = self._id2mode[id(mode1)]
+        idx2 = self._id2mode[id(mode2)]
+        constraint = ModeEndBeforeStart(idx1, idx2, delay)
+        self.constraints.mode_end_before_start.append(constraint)
+
+        return constraint
+
+    def add_mode_end_before_end(
+        self, mode1: Mode, mode2: Mode, delay: int = 0
+    ) -> ModeEndBeforeEnd:
+        """
+        Adds a constraint that if mode 1 is selected, the task of mode 1
+        must end before the task of mode 2 ends, with an optional delay.
+        """
+        idx1 = self._id2mode[id(mode1)]
+        idx2 = self._id2mode[id(mode2)]
+        constraint = ModeEndBeforeEnd(idx1, idx2, delay)
+        self.constraints.mode_end_before_end.append(constraint)
 
         return constraint
 

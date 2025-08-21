@@ -14,6 +14,10 @@ from pyjobshop.ProblemData import (
     Machine,
     Mode,
     ModeDependency,
+    ModeEndBeforeEnd,
+    ModeEndBeforeStart,
+    ModeStartBeforeEnd,
+    ModeStartBeforeStart,
     NonRenewable,
     Objective,
     ProblemData,
@@ -313,6 +317,49 @@ def test_mode_dependency_must_have_at_least_one_succesor_mode():
     """
     with assert_raises(ValueError):
         ModeDependency(0, [])
+
+
+def test_mode_precedence_constraints_validation():
+    """
+    Tests that mode-based precedence constraints are validated correctly.
+    """
+    # Test invalid mode indices in mode_start_before_start
+    with assert_raises(ValueError):
+        ProblemData(
+            [Job(tasks=[0])],
+            [Machine()],
+            [Task()],
+            [Mode(0, [0], 1)],
+            Constraints(mode_start_before_start=[ModeStartBeforeStart(1, 0)]),
+        )
+
+    # Test invalid mode indices in mode_end_before_start
+    with assert_raises(ValueError):
+        ProblemData(
+            [Job(tasks=[0])],
+            [Machine()],
+            [Task()],
+            [Mode(0, [0], 1)],
+            Constraints(mode_end_before_start=[ModeEndBeforeStart(0, 1)]),
+        )
+
+    # Valid case should not raise
+    data = ProblemData(
+        [Job(tasks=[0, 1])],
+        [Machine()],
+        [Task(job=0), Task(job=0)],
+        [Mode(0, [0], 1), Mode(1, [0], 1)],
+        Constraints(
+            mode_start_before_start=[ModeStartBeforeStart(0, 1, 2)],
+            mode_start_before_end=[ModeStartBeforeEnd(0, 1, 3)],
+            mode_end_before_start=[ModeEndBeforeStart(0, 1, 4)],
+            mode_end_before_end=[ModeEndBeforeEnd(0, 1, 5)],
+        ),
+    )
+    assert_equal(len(data.constraints.mode_start_before_start), 1)
+    assert_equal(len(data.constraints.mode_start_before_end), 1)
+    assert_equal(len(data.constraints.mode_end_before_start), 1)
+    assert_equal(len(data.constraints.mode_end_before_end), 1)
 
 
 @pytest.mark.parametrize(

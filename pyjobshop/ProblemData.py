@@ -695,6 +695,66 @@ class ModeDependency(IterableMixin):
 
 
 @dataclass
+class ModeStartBeforeStart(IterableMixin):
+    """
+    If mode 1 is selected, start task 1 (:math:`s_1`) before task 2 starts
+    (:math:`s_2`), with an optional delay :math:`d`. That is,
+
+    .. math::
+        \\text{if mode 1 is selected: } s_1 + d \\leq s_2.
+    """
+
+    mode1: int
+    mode2: int
+    delay: int = 0
+
+
+@dataclass
+class ModeStartBeforeEnd(IterableMixin):
+    """
+    If mode 1 is selected, start task 1 (:math:`s_1`) before task 2 ends
+    (:math:`e_2`), with an optional delay :math:`d`. That is,
+
+    .. math::
+        \\text{if mode 1 is selected: } s_1 + d \\leq e_2.
+    """
+
+    mode1: int
+    mode2: int
+    delay: int = 0
+
+
+@dataclass
+class ModeEndBeforeStart(IterableMixin):
+    """
+    If mode 1 is selected, end task 1 (:math:`e_1`) before task 2 starts
+    (:math:`s_2`), with an optional delay :math:`d`. That is,
+
+    .. math::
+        \\text{if mode 1 is selected: } e_1 + d \\leq s_2.
+    """
+
+    mode1: int
+    mode2: int
+    delay: int = 0
+
+
+@dataclass
+class ModeEndBeforeEnd(IterableMixin):
+    """
+    If mode 1 is selected, end task 1 (:math:`e_1`) before task 2 ends
+    (:math:`e_2`), with an optional delay :math:`d`. That is,
+
+    .. math::
+        \\text{if mode 1 is selected: } e_1 + d \\leq e_2.
+    """
+
+    mode1: int
+    mode2: int
+    delay: int = 0
+
+
+@dataclass
 class Constraints:
     """
     Simple container class for storing all constraints.
@@ -710,6 +770,16 @@ class Constraints:
     same_sequence: list[SameSequence] = field(default_factory=list)
     setup_times: list[SetupTime] = field(default_factory=list)
     mode_dependencies: list[ModeDependency] = field(default_factory=list)
+    mode_start_before_start: list[ModeStartBeforeStart] = field(
+        default_factory=list
+    )
+    mode_start_before_end: list[ModeStartBeforeEnd] = field(
+        default_factory=list
+    )
+    mode_end_before_start: list[ModeEndBeforeStart] = field(
+        default_factory=list
+    )
+    mode_end_before_end: list[ModeEndBeforeEnd] = field(default_factory=list)
 
     def __len__(self) -> int:
         """
@@ -1066,6 +1136,24 @@ class ProblemData:
                     " refer to the same task."
                 )
                 raise ValueError(msg)
+
+        mode_precedence_constraints = [
+            (
+                self.constraints.mode_start_before_start,
+                "mode_start_before_start",
+            ),
+            (self.constraints.mode_start_before_end, "mode_start_before_end"),
+            (self.constraints.mode_end_before_start, "mode_end_before_start"),
+            (self.constraints.mode_end_before_end, "mode_end_before_end"),
+        ]
+
+        for constraints, name in mode_precedence_constraints:
+            for idx1, idx2, *_ in constraints:
+                if not (0 <= idx1 < self.num_modes):
+                    raise ValueError(f"Invalid mode index {idx1} in {name}.")
+
+                if not (0 <= idx2 < self.num_modes):
+                    raise ValueError(f"Invalid mode index {idx2} in {name}.")
 
         if (
             self.objective.weight_tardy_jobs > 0
