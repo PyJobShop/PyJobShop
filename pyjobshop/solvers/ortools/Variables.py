@@ -308,12 +308,19 @@ class Variables:
         self._max_tardiness_var = self._make_max_tardiness_variable()
         return self._max_tardiness_var
 
-    def res2tasks(self, idx: int) -> list[int]:
+    def res2assign(self, idx: int) -> list[AssignVar]:
         """
-        Returns task variables for the given resource.
+        Returns all assignment variables for the given resource.
         """
-        idcs = self.assign_vars
-        return [task_idx for (task_idx, res_idx) in idcs if res_idx == idx]
+        items = self.assign_vars.items()
+        return [var for (_, res_idx), var in items if res_idx == idx]
+
+    def res2demand(self, idx: int) -> list[AssignVar]:
+        """
+        Returns all demand variables for the given resource.
+        """
+        items = self.assign_vars.items()
+        return [var for (_, res_idx), var in items if res_idx == idx]
 
     def _make_job_variables(self) -> list[JobVar]:
         """
@@ -412,8 +419,7 @@ class Variables:
                     present,
                     f"{name}_interval",
                 )
-                var = AssignVar(interval, present)
-                variables[task_idx, res_idx] = var
+                variables[task_idx, res_idx] = AssignVar(interval, present)
 
         return variables
 

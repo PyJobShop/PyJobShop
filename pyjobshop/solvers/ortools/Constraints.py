@@ -83,10 +83,7 @@ class Constraints:
         model, data, variables = self._model, self._data, self._variables
 
         for res_idx in data.machine_idcs:
-            intervals = [
-                variables.assign_vars[task_idx, res_idx].interval
-                for task_idx in variables.res2tasks(res_idx)
-            ]
+            intervals = [var.interval for var in variables.res2assign(res_idx)]
             model.add_no_overlap(intervals)
 
     def _renewable_capacity(self):
@@ -96,14 +93,8 @@ class Constraints:
         model, data, variables = self._model, self._data, self._variables
 
         for res_idx in data.renewable_idcs:
-            intervals = [
-                variables.assign_vars[task_idx, res_idx].interval
-                for task_idx in variables.res2tasks(res_idx)
-            ]
-            demands = [
-                variables.demand_vars[task_idx, res_idx]
-                for task_idx in variables.res2tasks(res_idx)
-            ]
+            intervals = [var.interval for var in variables.res2assign(res_idx)]
+            demands = [var for var in variables.res2demand(res_idx)]
             capacity = data.resources[res_idx].capacity
             model.add_cumulative(intervals, demands, capacity)
 
@@ -114,10 +105,7 @@ class Constraints:
         model, data, variables = self._model, self._data, self._variables
 
         for res_idx in data.non_renewable_idcs:
-            demands = [
-                variables.demand_vars[task_idx, res_idx]
-                for task_idx in variables.res2tasks(res_idx)
-            ]
+            demands = [var for var in variables.res2demand(res_idx)]
             total = LinearExpr.sum(demands)
             capacity = data.resources[res_idx].capacity
             model.add(total <= capacity)
@@ -136,12 +124,8 @@ class Constraints:
                 model.new_fixed_size_interval_var(start, end - start, "")
                 for start, end in breaks
             ]
-            assign_intervals = [
-                variables.assign_vars[task_idx, res_idx].interval
-                for task_idx in variables.res2tasks(res_idx)
-            ]
-            for interval in assign_intervals:
-                model.add_no_overlap([interval, *break_intervals])
+            for var in variables.res2assign(res_idx):
+                model.add_no_overlap([var.interval, *break_intervals])
 
     def _timing_constraints(self):
         """
