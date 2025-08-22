@@ -73,7 +73,7 @@ class Constraints:
 
                 for res_idx, demand in zip(mode.resources, mode.demands):
                     # Set demands based on selected mode's demands.
-                    dem_var = variables.assign_vars[task_idx, res_idx].demand
+                    dem_var = variables.demand_vars[task_idx, res_idx]
                     model.add(dem_var == demand).only_enforce_if(mode_var)
 
     def _machines_no_overlap(self):
@@ -82,8 +82,12 @@ class Constraints:
         """
         model, data, variables = self._model, self._data, self._variables
 
-        for idx in data.machine_idcs:
-            intervals = [var.interval for var in variables.res2assign(idx)]
+        for res_idx in data.machine_idcs:
+            task_idcs = variables.res2tasks(res_idx)
+            intervals = [
+                variables.assign_vars[task_idx, res_idx]
+                for task_idx in task_idcs
+            ]
             model.add_no_overlap(intervals)
 
     def _renewable_capacity(self):
@@ -92,10 +96,17 @@ class Constraints:
         """
         model, data, variables = self._model, self._data, self._variables
 
-        for idx in data.renewable_idcs:
-            intervals = [var.interval for var in variables.res2assign(idx)]
-            demands = [var.demand for var in variables.res2assign(idx)]
-            capacity = data.resources[idx].capacity
+        for res_idx in data.renewable_idcs:
+            task_idcs = variables.res2tasks(res_idx)
+            intervals = [
+                variables.assign_vars[task_idx, res_idx].interval
+                for task_idx in task_idcs
+            ]
+            demands = [
+                variables.demand_vars[task_idx, res_idx]
+                for task_idx in task_idcs
+            ]
+            capacity = data.resources[res_idx].capacity
             model.add_cumulative(intervals, demands, capacity)
 
     def _non_renewable_capacity(self):
@@ -104,10 +115,14 @@ class Constraints:
         """
         model, data, variables = self._model, self._data, self._variables
 
-        for idx in data.non_renewable_idcs:
-            demands = [var.demand for var in variables.res2assign(idx)]
+        for res_idx in data.non_renewable_idcs:
+            task_idcs = variables.res2tasks(res_idx)
+            demands = [
+                variables.demand_vars[task_idx, res_idx]
+                for task_idx in task_idcs
+            ]
             total = LinearExpr.sum(demands)
-            capacity = data.resources[idx].capacity
+            capacity = data.resources[res_idx].capacity
             model.add(total <= capacity)
 
     def _resource_breaks_constraints(self):
@@ -117,13 +132,20 @@ class Constraints:
         model, data, variables = self._model, self._data, self._variables
 
         for res_idx in data.machine_idcs + data.renewable_idcs:
-            if breaks := data.resources[res_idx].breaks:
-                break_intervals = [
-                    model.new_fixed_size_interval_var(start, end - start, "")
-                    for start, end in breaks
-                ]
-                for var in variables.res2assign(res_idx):
-                    model.add_no_overlap([var.interval, *break_intervals])
+            if not (breaks := data.resources[res_idx].breaks):
+                continue
+
+            break_intervals = [
+                model.new_fixed_size_interval_var(start, end - start, "")
+                for start, end in breaks
+            ]
+            task_idcs = variables.res2tasks(res_idx)
+            assign_intervals = [
+                variables.assign_vars[task_idx, res_idx].interval
+                for task_idx in task_idcs
+            ]
+            for interval in assign_intervals:
+                model.add_no_overlap([interval, *break_intervals])
 
     def _timing_constraints(self):
         """
