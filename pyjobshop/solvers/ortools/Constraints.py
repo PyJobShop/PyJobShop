@@ -85,7 +85,7 @@ class Constraints:
         for res_idx in data.machine_idcs:
             task_idcs = variables.res2tasks(res_idx)
             intervals = [
-                variables.assign_vars[task_idx, res_idx]
+                variables.assign_vars[task_idx, res_idx].interval
                 for task_idx in task_idcs
             ]
             model.add_no_overlap(intervals)
