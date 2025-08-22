@@ -638,7 +638,7 @@ class Variables:
                 model.add_hint(assign_var.present, is_present)
 
                 demand_var = self.demand_vars[task_idx, res_idx]
-                model.add_hint(demand_var, res2demands.get(res_idx, 0))  # type: ignore
+                model.add_hint(demand_var, res2demands.get(res_idx, 0))
 
         # Sequencing related variables.
         for res_idx in data.machine_idcs:
