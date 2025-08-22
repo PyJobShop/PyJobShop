@@ -117,13 +117,15 @@ class Constraints:
         model, data, variables = self._model, self._data, self._variables
 
         for idx in data.machine_idcs + data.renewable_idcs:
-            if not (breaks := data.resources[idx].breaks):
+            breaks = data.resources[idx].breaks
+            if not breaks:
                 continue
 
             break_intervals = [
                 model.new_fixed_size_interval_var(start, end - start, "")
                 for start, end in breaks
             ]
+
             for var in variables.res2assign(idx):
                 model.add_no_overlap([var.interval, *break_intervals])
 
