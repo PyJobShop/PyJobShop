@@ -82,8 +82,8 @@ class Constraints:
         """
         model, data, variables = self._model, self._data, self._variables
 
-        for res_idx in data.machine_idcs:
-            intervals = [var.interval for var in variables.res2assign(res_idx)]
+        for idx in data.machine_idcs:
+            intervals = [var.interval for var in variables.res2assign(idx)]
             model.add_no_overlap(intervals)
 
     def _renewable_capacity(self):
@@ -92,10 +92,10 @@ class Constraints:
         """
         model, data, variables = self._model, self._data, self._variables
 
-        for res_idx in data.renewable_idcs:
-            intervals = [var.interval for var in variables.res2assign(res_idx)]
-            demands = [var for var in variables.res2demand(res_idx)]
-            capacity = data.resources[res_idx].capacity
+        for idx in data.renewable_idcs:
+            intervals = [var.interval for var in variables.res2assign(idx)]
+            demands = [var for var in variables.res2demand(idx)]
+            capacity = data.resources[idx].capacity
             model.add_cumulative(intervals, demands, capacity)
 
     def _non_renewable_capacity(self):
@@ -104,10 +104,10 @@ class Constraints:
         """
         model, data, variables = self._model, self._data, self._variables
 
-        for res_idx in data.non_renewable_idcs:
-            demands = [var for var in variables.res2demand(res_idx)]
+        for idx in data.non_renewable_idcs:
+            demands = [var for var in variables.res2demand(idx)]
             total = LinearExpr.sum(demands)
-            capacity = data.resources[res_idx].capacity
+            capacity = data.resources[idx].capacity
             model.add(total <= capacity)
 
     def _resource_breaks_constraints(self):
@@ -116,15 +116,15 @@ class Constraints:
         """
         model, data, variables = self._model, self._data, self._variables
 
-        for res_idx in data.machine_idcs + data.renewable_idcs:
-            if not (breaks := data.resources[res_idx].breaks):
+        for idx in data.machine_idcs + data.renewable_idcs:
+            if not (breaks := data.resources[idx].breaks):
                 continue
 
             break_intervals = [
                 model.new_fixed_size_interval_var(start, end - start, "")
                 for start, end in breaks
             ]
-            for var in variables.res2assign(res_idx):
+            for var in variables.res2assign(idx):
                 model.add_no_overlap([var.interval, *break_intervals])
 
     def _timing_constraints(self):
