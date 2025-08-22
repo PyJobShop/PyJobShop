@@ -431,7 +431,7 @@ class Variables:
         self,
     ) -> dict[tuple[TaskIdx, ResourceIdx], IntVar]:
         """
-        Creates an demand integer variable for each task-resource pair.
+        Creates a integer demand variable for each task-resource pair.
         """
         model, data = self._model, self._data
         variables = {}
