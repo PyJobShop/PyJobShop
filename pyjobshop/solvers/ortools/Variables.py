@@ -73,14 +73,15 @@ class TaskVar:
 
 
 @dataclass
-class AssignVar:
+class OptionalIntervalVar:
     """
-    Variables that represent a task-resource assignment in the problem.
+    Wrapper around the OR-Tools interval variable, which does not expose
+    the ``present`` vaiable.
 
     Parameters
     ----------
     interval
-        The interval variable representing the task-resource assignment.
+        The interval variable to be represented.
     present
         The Boolean variable indicating whether the interval is present.
     """
@@ -217,7 +218,9 @@ class Variables:
         return self._mode_vars
 
     @property
-    def assign_vars(self) -> dict[tuple[TaskIdx, ResourceIdx], AssignVar]:
+    def assign_vars(
+        self,
+    ) -> dict[tuple[TaskIdx, ResourceIdx], OptionalIntervalVar]:
         """
         Retruns the assignment variables.
         """
@@ -308,18 +311,18 @@ class Variables:
         self._max_tardiness_var = self._make_max_tardiness_variable()
         return self._max_tardiness_var
 
-    def res2assign(self, idx: int) -> list[AssignVar]:
+    def res2assign(self, idx: int) -> list[OptionalIntervalVar]:
         """
         Returns all assignment variables for the given resource.
         """
         items = self.assign_vars.items()
         return [var for (_, res_idx), var in items if res_idx == idx]
 
-    def res2demand(self, idx: int) -> list[AssignVar]:
+    def res2demand(self, idx: int) -> list[IntVar]:
         """
         Returns all demand variables for the given resource.
         """
-        items = self.assign_vars.items()
+        items = self.demand_vars.items()
         return [var for (_, res_idx), var in items if res_idx == idx]
 
     def _make_job_variables(self) -> list[JobVar]:
@@ -392,7 +395,7 @@ class Variables:
 
     def _make_assign_variables(
         self, task_vars: list[TaskVar]
-    ) -> dict[tuple[TaskIdx, ResourceIdx], AssignVar]:
+    ) -> dict[tuple[TaskIdx, ResourceIdx], OptionalIntervalVar]:
         """
         Creates an optional interval variable for each task-resource pair.
         """
@@ -419,7 +422,8 @@ class Variables:
                     present,
                     f"{name}_interval",
                 )
-                variables[task_idx, res_idx] = AssignVar(interval, present)
+                var = OptionalIntervalVar(interval, present)
+                variables[task_idx, res_idx] = var
 
         return variables
 
