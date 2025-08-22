@@ -427,7 +427,7 @@ class Variables:
         variables = {}
 
         for task_idx in range(data.num_tasks):
-            # Only create assignment variables for (task, resource) pairs
+            # Only create demand variables for (task, resource) pairs
             # that are actually used in the problem.
             resources = {
                 res
