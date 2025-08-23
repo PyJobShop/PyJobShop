@@ -2,7 +2,7 @@ from numpy.testing import assert_, assert_equal
 
 from pyjobshop.Model import Model
 from pyjobshop.Solution import Solution, TaskData
-from pyjobshop.solvers.ortools.Solver import Solver
+from pyjobshop.solvers.ortools.CPModel import CPModel
 
 
 def test_solve_initial_solution(complete_data, complete_sol, capfd):
@@ -10,7 +10,7 @@ def test_solve_initial_solution(complete_data, complete_sol, capfd):
     Tests that the solver correctly hints the solution by checking that the
     display log is correct when an initial solution is provided.
     """
-    solver = Solver(complete_data)
+    solver = CPModel(complete_data)
     solver.solve(display=True, initial_solution=complete_sol)
 
     msg = "The solution hint is complete and is feasible."
@@ -22,7 +22,7 @@ def test_subsequent_solve_clears_hint(small):
     """
     Tests that subsequent solve calls clear the previous hint.
     """
-    solver = Solver(small)
+    solver = CPModel(small)
 
     # We first solve the model with init1 as initial solution.
     init1 = Solution([TaskData(0, [0], 0, 1), TaskData(0, [0], 1, 3)])
@@ -56,7 +56,7 @@ def test_empty_circuit_not_allowed_bug():
 
     model.add_consecutive(*tasks)  # this activates the circuit constraints
 
-    solver = Solver(model.data())
+    solver = CPModel(model.data())
     result = solver.solve()
 
     # Optimal solution is to schedule both tasks on resource 1, achieving
