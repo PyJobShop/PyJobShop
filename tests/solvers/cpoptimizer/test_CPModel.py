@@ -13,8 +13,8 @@ def test_solve_initial_solution(
     """
     from pyjobshop.solvers.cpoptimizer.CPModel import CPModel
 
-    solver = CPModel(complete_data)
-    solver.solve(display=True, initial_solution=complete_sol)
+    cp_model = CPModel(complete_data)
+    cp_model.solve(display=True, initial_solution=complete_sol)
 
     msg = "Starting point is complete and consistent with constraints."
     printed = capfd.readouterr().out

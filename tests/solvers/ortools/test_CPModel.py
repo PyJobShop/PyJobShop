@@ -10,8 +10,8 @@ def test_solve_initial_solution(complete_data, complete_sol, capfd):
     Tests that the solver correctly hints the solution by checking that the
     display log is correct when an initial solution is provided.
     """
-    solver = CPModel(complete_data)
-    solver.solve(display=True, initial_solution=complete_sol)
+    cp_model = CPModel(complete_data)
+    cp_model.solve(display=True, initial_solution=complete_sol)
 
     msg = "The solution hint is complete and is feasible."
     printed = capfd.readouterr().out
@@ -22,18 +22,18 @@ def test_subsequent_solve_clears_hint(small):
     """
     Tests that subsequent solve calls clear the previous hint.
     """
-    solver = CPModel(small)
+    cp_model = CPModel(small)
 
     # We first solve the model with init1 as initial solution.
     init1 = Solution([TaskData(0, [0], 0, 1), TaskData(0, [0], 1, 3)])
-    result = solver.solve(initial_solution=init1)
+    result = cp_model.solve(initial_solution=init1)
     assert_equal(result.status.value, "Optimal")
 
     # Next we solve the model with a different initial solution. If
     # the hint was not cleared, OR-Tools will throw a ``MODEL_INVALID``
     # error because the model contains duplicate hints.
     init2 = Solution([TaskData(0, [1], 0, 1), TaskData(0, [1], 1, 3)])
-    result = solver.solve(initial_solution=init2)
+    result = cp_model.solve(initial_solution=init2)
     assert_equal(result.status.value, "Optimal")
 
 
@@ -56,8 +56,8 @@ def test_empty_circuit_not_allowed_bug():
 
     model.add_consecutive(*tasks)  # this activates the circuit constraints
 
-    solver = CPModel(model.data())
-    result = solver.solve()
+    cp_model = CPModel(model.data())
+    result = cp_model.solve()
 
     # Optimal solution is to schedule both tasks on resource 1, achieving
     # makespan 4. Before the fix, empty circuits weren't allowed, forcing
