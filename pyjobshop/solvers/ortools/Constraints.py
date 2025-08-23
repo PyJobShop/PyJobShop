@@ -1,3 +1,4 @@
+from collections import Counter
 from itertools import product
 
 import numpy as np
@@ -46,11 +47,12 @@ class Constraints:
             task_var = variables.task_vars[task_idx]
             mode_idcs = data.task2modes(task_idx)
             mode_vars = [variables.mode_vars[idx] for idx in mode_idcs]
+            modes = [data.modes[idx] for idx in mode_idcs]
+            res_counts = Counter(res for m in modes for res in m.resources)
+
             model.add_exactly_one(mode_vars)
 
-            for mode_idx, mode_var in zip(mode_idcs, mode_vars):
-                mode = data.modes[mode_idx]
-
+            for mode, mode_var in zip(modes, mode_vars):
                 # Set task duration to the selected mode's duration.
                 fixed = data.tasks[task_idx].fixed_duration
                 expr = (
@@ -70,6 +72,12 @@ class Constraints:
                     presence = variables.assign_vars[task_idx, res_idx].present
                     required = res_idx in mode.resources
                     model.add(presence == required).only_enforce_if(mode_var)
+
+                    # If a resource appears only in one mode, then we can make
+                    # a stronger inference by setting the mode variable equal
+                    # to the presence variable of the resource.
+                    if required and res_counts[res_idx] == 1:
+                        model.add(mode_var == presence)
 
                 for res_idx, demand in zip(mode.resources, mode.demands):
                     # Set demands based on selected mode's demands.
