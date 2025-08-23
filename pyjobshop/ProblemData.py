@@ -27,7 +27,8 @@ class Job:
         Default :const:`~pyjobshop.constants.MAX_VALUE`.
     due_date
         The latest time that the job should be completed before incurring
-        penalties. Default ``None``, meaning that there is no due date.
+        penalties. Can be negative to represent past due dates. Default
+        ``None``, meaning that there is no due date.
     tasks
         List of task indices that belong to this job. Default ``None``,
         which initializes an empty list.
@@ -56,9 +57,6 @@ class Job:
 
         if release_date > deadline:
             raise ValueError("Must have release_date <= deadline.")
-
-        if due_date is not None and due_date < 0:
-            raise ValueError("Due date must be non-negative.")
 
         self._weight = weight
         self._release_date = release_date

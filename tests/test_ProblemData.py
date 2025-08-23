@@ -64,13 +64,12 @@ def test_job_default_attributes():
 
 
 @pytest.mark.parametrize(
-    "weight, release_date, due_date, deadline, tasks, name",
+    "weight, release_date, deadline, due_date",
     [
-        (-1, 0, 0, 0, [], ""),  # weight < 0
-        (0, -1, 0, 0, [], ""),  # release_date < 0
-        (0, 0, -1, 0, [], ""),  # deadline < 0
-        (0, 10, 0, 0, [], ""),  # release_date > deadline
-        (0, 0, 0, -1, [], ""),  # due_date < 0
+        (-1, 0, 0, 0),  # weight < 0
+        (0, -1, 0, 0),  # release_date < 0
+        (0, 0, -1, 0),  # deadline < 0
+        (0, 10, 0, 0),  # release_date > deadline
     ],
 )
 def test_job_attributes_raises_invalid_parameters(
@@ -78,8 +77,6 @@ def test_job_attributes_raises_invalid_parameters(
     release_date: int,
     deadline: int,
     due_date: int,
-    tasks: list[int],
-    name: str,
 ):
     """
     Tests that a ValueError is raised when invalid parameters are passed to
@@ -91,8 +88,7 @@ def test_job_attributes_raises_invalid_parameters(
             release_date=release_date,
             deadline=deadline,
             due_date=due_date,
-            tasks=tasks,
-            name=name,
+            tasks=[],
         )
 
 
@@ -1866,6 +1862,26 @@ def test_tardy_jobs(solver: str):
     assert_equal(result.status.value, "Optimal")
 
 
+def test_tardy_jobs_negative_due_date(solver: str):
+    """
+    Tests that all jobs are tardy when due dates are negative.
+    """
+    model = Model()
+    machine = model.add_machine()
+
+    for _ in range(3):
+        job = model.add_job(due_date=-1)
+        task = model.add_task(job=job)
+        model.add_mode(task, machine, duration=3)
+
+    model.set_objective(weight_tardy_jobs=1)
+
+    # All jobs are tardy, so the objective value is 3.
+    result = model.solve(solver=solver)
+    assert_equal(result.objective, 3)
+    assert_equal(result.status.value, "Optimal")
+
+
 def test_total_flow_time(solver: str):
     """
     Tests that the total flow time objective is correctly optimized.
@@ -1918,6 +1934,28 @@ def test_total_tardiness(solver: str):
     # weights, it's optimal to schedule B before A resulting in completion
     # times (6, 4) and thus a total tardiness of 2 * 4 + 10 * 2 = 28.
     assert_equal(result.objective, 28)
+    assert_equal(result.status.value, "Optimal")
+
+
+def test_total_tardiness_negative_due_date(solver: str):
+    """
+    Tests that total tardiness correctly accounts for negative due dates.
+    """
+    model = Model()
+    machine = model.add_machine()
+
+    for _ in range(3):
+        job = model.add_job(due_date=-5)
+        task = model.add_task(job=job)
+        model.add_mode(task, machine, duration=1)
+
+    model.set_objective(weight_total_tardiness=1)
+
+    result = model.solve(solver=solver)
+
+    # Job completion times are 1, 2 and 3, so the tardiness is 6, 7 and 8,
+    # respectively. The total tardiness is 6 + 7 + 8 = 21.
+    assert_equal(result.objective, 21)
     assert_equal(result.status.value, "Optimal")
 
 
