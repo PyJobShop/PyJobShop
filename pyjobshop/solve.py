@@ -4,7 +4,7 @@ from importlib.metadata import version
 from pyjobshop.ProblemData import ProblemData
 from pyjobshop.Result import Result
 from pyjobshop.Solution import Solution
-from pyjobshop.solvers.ortools.CPModel import CPModel as ORToolsModel
+from pyjobshop.solvers.ortools import CPModel as ORToolsModel
 
 
 def solve(
@@ -59,27 +59,21 @@ def solve(
         print(" START SOLVER LOG ".center(79, "="))
 
     if solver == "ortools":
-        ortools = ORToolsModel(data)
-        result = ortools.solve(
-            time_limit,
-            display,
-            num_workers,
-            initial_solution,
-            **kwargs,
-        )
+        cp_model = ORToolsModel(data)
     else:
-        from pyjobshop.solvers.cpoptimizer.CPModel import (
+        from pyjobshop.solvers.cpoptimizer import (
             CPModel as CPOptimizerModel,
         )
 
-        cpoptimizer = CPOptimizerModel(data)
-        result = cpoptimizer.solve(
-            time_limit,
-            display,
-            num_workers,
-            initial_solution,
-            **kwargs,
-        )
+        cp_model = CPOptimizerModel(data)  # type: ignore
+
+    result = cp_model.solve(
+        time_limit,
+        display,
+        num_workers,
+        initial_solution,
+        **kwargs,
+    )
 
     if display:
         print(" END SOLVER LOG ".center(79, "="))
