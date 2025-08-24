@@ -1,6 +1,6 @@
 from matplotlib.testing.decorators import image_comparison as img_comp
 
-from pyjobshop import Model
+from pyjobshop import Model, Solution, TaskData
 from pyjobshop import solve as _solve
 from pyjobshop.plot import (
     plot_machine_gantt,
@@ -24,6 +24,23 @@ def test_plot_machine_gantt():
     sol = result.best
 
     plot_machine_gantt(sol, data)
+
+
+@img_comp(["plot_machine_gantt_breaks"], **IMG_KWARGS)
+def test_plot_machine_gantt_breaks():
+    """
+    Tests that breaks are correctly plotted in the Gantt chart.
+    """
+    model = Model()
+    model.add_machine(breaks=[(0, 2)])
+    model.add_renewable(1, breaks=[(3, 4)])
+    task = model.add_task()
+    model.add_mode(task, model.resources, duration=2, demands=[0, 1])
+
+    # Task overlaps with break, but that's OK.
+    sol = Solution([TaskData(0, [0, 1], 2, 4)])
+
+    plot_machine_gantt(sol, model.data())
 
 
 @img_comp(["plot_resource_usage"], **IMG_KWARGS)
