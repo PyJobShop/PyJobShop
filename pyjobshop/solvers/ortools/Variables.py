@@ -10,7 +10,6 @@ from ortools.sat.python.cp_model import (
     LinearExprT,
 )
 
-import pyjobshop.solvers.utils as utils
 from pyjobshop.constants import MAX_VALUE
 from pyjobshop.ProblemData import ProblemData
 from pyjobshop.Solution import Solution
@@ -362,7 +361,6 @@ class Variables:
         """
         model, data = self._model, self._data
         variables = []
-        task_durations = utils.compute_task_durations(data)
 
         for idx, task in enumerate(data.tasks):
             name = f"T{idx}"
@@ -371,13 +369,17 @@ class Variables:
                 ub=min(task.latest_start, MAX_VALUE),
                 name=f"{name}_start",
             )
+
+            modes = [data.modes[mode_idx] for mode_idx in data.task2modes(idx)]
+            durations = [mode.duration for mode in modes]
+
             if task.fixed_duration:
                 duration = model.new_int_var_from_domain(
-                    Domain.from_values(task_durations[idx]), f"{name}_duration"
+                    Domain.from_values(durations), f"{name}_duration"
                 )
             else:
                 duration = model.new_int_var(
-                    lb=min(task_durations[idx]),
+                    lb=min(durations),
                     ub=MAX_VALUE,
                     name=f"{name}_duration",
                 )
