@@ -369,25 +369,24 @@ class Variables:
                 ub=min(task.latest_start, MAX_VALUE),
                 name=f"{name}_start",
             )
-
-            modes = [data.modes[mode_idx] for mode_idx in data.task2modes(idx)]
-            durations = [mode.duration for mode in modes]
-
-            if task.fixed_duration:
-                duration = model.new_int_var_from_domain(
-                    Domain.from_values(durations), f"{name}_duration"
-                )
-            else:
-                duration = model.new_int_var(
-                    lb=min(durations),
-                    ub=MAX_VALUE,
-                    name=f"{name}_duration",
-                )
             end = model.new_int_var(
                 lb=task.earliest_end,
                 ub=min(task.latest_end, MAX_VALUE),
                 name=f"{name}_end",
             )
+
+            modes = [data.modes[mode_idx] for mode_idx in data.task2modes(idx)]
+            domain = Domain.from_values([mode.duration for mode in modes])
+            duration = model.new_int_var(
+                lb=domain.min(),
+                ub=MAX_VALUE,
+                name=f"{name}_duration",
+            )
+
+            if task.fixed_duration:
+                # Task duration is exactly one of the mode's durations.
+                model.add_linear_expression_in_domain(duration, domain)
+
             interval = model.new_interval_var(
                 start, duration, end, f"interval_{task}"
             )

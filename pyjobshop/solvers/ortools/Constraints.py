@@ -51,13 +51,12 @@ class Constraints:
             for mode_idx, mode_var in zip(mode_idcs, mode_vars):
                 mode = data.modes[mode_idx]
 
-                # Set task duration to the selected mode's duration.
-                fixed = data.tasks[task_idx].fixed_duration
-                expr = (
-                    task_var.duration == mode.duration
-                    if fixed
-                    else task_var.duration >= mode.duration
-                )
+                # Set task duration to at least the selected mode's duration,
+                # or equal if we know its duration is fixed.
+                expr = task_var.duration >= mode.duration
+                if data.tasks[task_idx].fixed_duration:
+                    expr = task_var.duration == mode.duration
+
                 model.add(expr).only_enforce_if(mode_var)
 
                 for res_idx in range(data.num_resources):
