@@ -615,14 +615,20 @@ class Consecutive(IterableMixin):
 @dataclass
 class SameSequence(IterableMixin):
     """
-    Ensures that two machines process their assigned tasks in the same relative
-    order. Both machines must have the same number of assigned tasks for this
-    constraint to be valid.
+    Ensures that two machines sequence their assigned tasks in the same
+    relative order. This constraint is primarily used to model permutation
+    flow shops, see :doc:`examples/permutation_flow_shop`.
 
-    When ``tasks1`` and ``tasks2`` are not specified, the constraint applies to
-    all tasks assigned to each machine, with ordering determined by their task
-    indices in ascending order. For explicit control over the task sequence,
-    use the ``tasks1`` and ``tasks2`` parameters.
+    This constraint only applies to two machines that are assigned the same
+    number of tasks. It links all possible tasks of the two machines in a
+    fixed correspondence, ensuring that each pair of tasks is either scheduled
+    in the same relative order on both machines or not scheduled on either
+    machine.
+
+    By default, the constraint applies to all tasks assigned to each machine,
+    with ordering determined by their task indices in ascending order. For
+    finer control over the task sequence, use the ``tasks1`` and ``tasks2``
+    to determine the ordering of tasks.
 
     Example
     -------
