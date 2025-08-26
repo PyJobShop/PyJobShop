@@ -629,8 +629,8 @@ class SameSequence(IterableMixin):
     finer control over the task sequence, use the ``tasks1`` and ``tasks2``
     to determine the ordering of tasks.
 
-    Example
-    -------
+    Examples
+    --------
     Assume that machine 1 can process tasks [1, 3] and machine 2 can process
     tasks [2, 4]. The default (by task indices) allows the following valid
     sequences:
