@@ -305,8 +305,7 @@ class Constraints:
             Returns the Boolean presence variable of the task if a valid index
             is passed, otherwise returns a constant True value.
             """
-            task_var = variables.task_vars[idx]
-            return presence_of(task_var) if idx is not None else 1
+            return 1 if idx is None else presence_of(variables.task_vars[idx])
 
         for idcs, condition_idx in data.constraints.select_all_or_none:
             condition = presence_var_or_true(condition_idx) == 1
