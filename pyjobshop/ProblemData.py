@@ -616,8 +616,7 @@ class Consecutive(IterableMixin):
 class SameSequence(IterableMixin):
     """
     Ensures that two machines sequence their assigned tasks in the same
-    relative order. This constraint is primarily used to model permutation
-    flow shops, see :doc:`examples/permutation_flow_shop`.
+    relative order.
 
     This constraint only applies to two machines that are assigned the same
     number of tasks. It links all possible tasks of the two machines in a
@@ -642,6 +641,10 @@ class SameSequence(IterableMixin):
     following sequences are valid:
 
     * (1→3, 4→2) or (3→1, 2→4)
+
+    .. hint::
+       This constraint is primarily used to model permutation flow shops.
+       See the :doc:`/examples/permutation_flow_shop` example for more details.
     """
 
     machine1: int
