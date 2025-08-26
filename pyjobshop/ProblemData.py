@@ -323,6 +323,8 @@ class Task:
         resource). If the duration is not fixed, then the task duration
         can take longer than the processing time, e.g., due to blocking.
         Default ``True``.
+    optional
+        Whether the task is optional. Default ``False``.
     name
         Name of the task.
     """
@@ -335,6 +337,7 @@ class Task:
         earliest_end: int = 0,
         latest_end: int = MAX_VALUE,
         fixed_duration: bool = True,
+        optional: bool = False,
         *,
         name: str = "",
     ):
@@ -350,6 +353,7 @@ class Task:
         self._earliest_end = earliest_end
         self._latest_end = latest_end
         self._fixed_duration = fixed_duration
+        self._optional = optional
         self._name = name
 
     @property
@@ -394,6 +398,13 @@ class Task:
         Whether the task has a fixed duration.
         """
         return self._fixed_duration
+
+    @property
+    def optional(self) -> bool:
+        """
+        Whether the task is optional.
+        """
+        return self._optional
 
     @property
     def name(self) -> str:
@@ -711,6 +722,45 @@ class ModeDependency(IterableMixin):
 
 
 @dataclass
+class SelectAllOrNone(IterableMixin):
+    """
+    Enforces that all tasks from the given list are selected, or none are.
+
+    If ``condition_task`` is provided, this rule only applies when that task
+    is selected; otherwise, it has no effect.
+    """
+
+    tasks: list[int]
+    condition_task: int | None = None
+
+
+@dataclass
+class SelectAtLeastOne(IterableMixin):
+    """
+    Enforces that at least one task from the given list is selected.
+
+    If ``condition_task`` is provided, this rule only applies when that task
+    is selected; otherwise, it has no effect.
+    """
+
+    tasks: list[int]
+    condition_task: int | None = None
+
+
+@dataclass
+class SelectExactlyOne(IterableMixin):
+    """
+    Enforces that exactly one task from the given list is selected.
+
+    If ``condition_task`` is provided, this rule only applies when that task
+    is selected; otherwise, it has no effect.
+    """
+
+    tasks: list[int]
+    condition_task: int | None = None
+
+
+@dataclass
 class Constraints:
     """
     Simple container class for storing all constraints.
@@ -726,6 +776,9 @@ class Constraints:
     same_sequence: list[SameSequence] = field(default_factory=list)
     setup_times: list[SetupTime] = field(default_factory=list)
     mode_dependencies: list[ModeDependency] = field(default_factory=list)
+    select_all_or_none: list[SelectAllOrNone] = field(default_factory=list)
+    select_at_least_one: list[SelectAtLeastOne] = field(default_factory=list)
+    select_exactly_one: list[SelectExactlyOne] = field(default_factory=list)
 
     def __len__(self) -> int:
         """
