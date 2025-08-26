@@ -1216,6 +1216,58 @@ def test_task_non_fixed_duration(solver: str):
     assert_equal(result.best.tasks, [TaskData(0, [0], 0, 10)])
 
 
+def test_task_resumable(solver: str):
+    """
+    Tests that a task that can be resumed after breaks.
+    """
+    if solver == "cpoptimizer":
+        return  # TODO
+
+    model = Model()
+
+    resource = model.add_renewable(1, breaks=[(1, 3), (4, 5)])
+    task = model.add_task(fixed_duration=False, resumable=True)
+    model.add_mode(task, resource, duration=3)
+
+    # Task starts at time 0 and runs for 1 time unit. Then the first
+    # break occurs (1-3), and the task is paused. It resumes at time 3
+    # and runs for another time unit. Then the second break occurs (4-5),
+    # and the task is paused again. Finally, it resumes at time 5 and
+    # finishes at time 6.
+    result = model.solve(solver=solver)
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.objective, 6)
+    assert_equal(result.best.tasks[0].start, 0)
+    assert_equal(result.best.tasks[0].end, 6)
+
+
+def test_task_resumable_does_not_end_in_break(solver: str):
+    """
+    Tests that a resumable task will not end during a break.
+    """
+    if solver == "cpoptimizer":
+        return  # TODO
+
+    model = Model()
+
+    # Job with due date (2) in the break (1-4).
+    job = model.add_job(due_date=2)
+    resource = model.add_machine(breaks=[(1, 4)])
+    task = model.add_task(job, fixed_duration=True, resumable=True)
+    model.add_mode(task, resource, duration=1)
+    model.set_objective(weight_total_earliness=1, weight_total_tardiness=1)
+
+    # If a task could end in a break, it would start at time 0 and end at
+    # time 2, minimizing the objective. However, since the task cannot end
+    # in a break, it starts at time 0 and ends at time 1, resulting in
+    # an objective value of 1.
+    result = model.solve(solver=solver)
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.objective, 1)
+    assert_equal(result.best.tasks[0].start, 0)
+    assert_equal(result.best.tasks[0].end, 1)
+
+
 def test_machine_breaks(solver: str):
     """
     Tests that a machine resource respects breaks.
