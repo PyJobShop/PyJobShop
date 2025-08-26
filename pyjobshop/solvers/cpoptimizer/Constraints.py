@@ -29,8 +29,8 @@ class Constraints:
         model, data, variables = self._model, self._data, self._variables
 
         for idx, job in enumerate(data.jobs):
-            job_var = variables.job_vars[idx]
-            task_vars = [variables.task_vars[task] for task in job.tasks]
+            job_var = variables.jobs[idx]
+            task_vars = [variables.tasks[task] for task in job.tasks]
             model.add(cpo.span(job_var, task_vars))
 
     def _select_one_mode(self):
@@ -42,8 +42,8 @@ class Constraints:
 
         for task_idx in range(data.num_tasks):
             mode_idcs = data.task2modes(task_idx)
-            mode_vars = [variables.mode_vars[idx] for idx in mode_idcs]
-            task_var = variables.task_vars[task_idx]
+            mode_vars = [variables.modes[idx] for idx in mode_idcs]
+            task_var = variables.tasks[task_idx]
             model.add(cpo.alternative(task_var, mode_vars))
 
     def _machines_no_overlap_and_setup_times(self):
@@ -59,7 +59,7 @@ class Constraints:
                 continue  # skip because cpo warns if there are no modes
 
             machine = data.resources[idx]
-            seq_var = variables.sequence_vars[idx]
+            seq_var = variables.sequences[idx]
             matrix = None
             setup_times = utils.setup_times_matrix(data)
 
@@ -121,7 +121,7 @@ class Constraints:
         for res_idx in data.renewable_idcs:
             modes = data.resource2modes(res_idx)
             pulses = sum(
-                cpo.pulse(variables.mode_vars[mode_idx], demand)
+                cpo.pulse(variables.modes[mode_idx], demand)
                 for mode_idx in modes
                 # non-positive demand triggers cpo warnings
                 if (demand := self._get_demand(mode_idx, res_idx)) > 0
@@ -138,7 +138,7 @@ class Constraints:
         for res_idx in data.non_renewable_idcs:
             modes = data.resource2modes(res_idx)
             usage = sum(
-                cpo.presence_of(variables.mode_vars[mode_idx])
+                cpo.presence_of(variables.modes[mode_idx])
                 * self._get_demand(mode_idx, res_idx)
                 for mode_idx in modes
             )
@@ -158,7 +158,7 @@ class Constraints:
                     step.set_value(0, MAX_VALUE, 1)
                     step.set_value(start, end, 0)
 
-                    mode_var = variables.mode_vars[mode_idx]
+                    mode_var = variables.modes[mode_idx]
                     model.add(cpo.forbid_extent(mode_var, step))
 
     def _timing_constraints(self):
@@ -168,23 +168,23 @@ class Constraints:
         model, data, variables = self._model, self._data, self._variables
 
         for idx1, idx2, delay in data.constraints.start_before_start:
-            task_var1 = variables.task_vars[idx1]
-            task_var2 = variables.task_vars[idx2]
+            task_var1 = variables.tasks[idx1]
+            task_var2 = variables.tasks[idx2]
             model.add(cpo.start_before_start(task_var1, task_var2, delay))
 
         for idx1, idx2, delay in data.constraints.start_before_end:
-            task_var1 = variables.task_vars[idx1]
-            task_var2 = variables.task_vars[idx2]
+            task_var1 = variables.tasks[idx1]
+            task_var2 = variables.tasks[idx2]
             model.add(cpo.start_before_end(task_var1, task_var2, delay))
 
         for idx1, idx2, delay in data.constraints.end_before_start:
-            task_var1 = variables.task_vars[idx1]
-            task_var2 = variables.task_vars[idx2]
+            task_var1 = variables.tasks[idx1]
+            task_var2 = variables.tasks[idx2]
             model.add(cpo.end_before_start(task_var1, task_var2, delay))
 
         for idx1, idx2, delay in data.constraints.end_before_end:
-            task_var1 = variables.task_vars[idx1]
-            task_var2 = variables.task_vars[idx2]
+            task_var1 = variables.tasks[idx1]
+            task_var2 = variables.tasks[idx2]
             model.add(cpo.end_before_end(task_var1, task_var2, delay))
 
     def _identical_and_different_resource_constraints(self):
@@ -195,19 +195,17 @@ class Constraints:
 
         for idx1, idx2 in data.constraints.identical_resources:
             for mode1, modes2 in utils.identical_modes(data, idx1, idx2):
-                expr1 = cpo.presence_of(variables.mode_vars[mode1])
+                expr1 = cpo.presence_of(variables.modes[mode1])
                 expr2 = sum(
-                    cpo.presence_of(variables.mode_vars[mode2])
-                    for mode2 in modes2
+                    cpo.presence_of(variables.modes[mode2]) for mode2 in modes2
                 )
                 model.add(expr1 <= expr2)
 
         for idx1, idx2 in data.constraints.different_resources:
             for mode1, modes2 in utils.different_modes(data, idx1, idx2):
-                expr1 = cpo.presence_of(variables.mode_vars[mode1])
+                expr1 = cpo.presence_of(variables.modes[mode1])
                 expr2 = sum(
-                    cpo.presence_of(variables.mode_vars[mode2])
-                    for mode2 in modes2
+                    cpo.presence_of(variables.modes[mode2]) for mode2 in modes2
                 )
                 model.add(expr1 <= expr2)
 
@@ -224,9 +222,9 @@ class Constraints:
                 res_idcs = set(resources) & set(data.machine_idcs)
 
                 for res_idx in res_idcs:
-                    seq_var = variables.sequence_vars[res_idx]
-                    var1 = variables.mode_vars[mode1]
-                    var2 = variables.mode_vars[mode2]
+                    seq_var = variables.sequences[res_idx]
+                    var1 = variables.modes[mode1]
+                    var2 = variables.modes[mode2]
 
                     model.add(cpo.previous(seq_var, var1, var2))
 
@@ -256,8 +254,8 @@ class Constraints:
         for idcs in data.constraints.same_sequence:
             res_idx1, res_idx2, task_idcs1, task_idcs2 = idcs
 
-            seq_var1 = variables.sequence_vars[res_idx1]
-            seq_var2 = variables.sequence_vars[res_idx2]
+            seq_var1 = variables.sequences[res_idx1]
+            seq_var2 = variables.sequences[res_idx2]
 
             if task_idcs1 is None:
                 mode_idcs1 = data.resource2modes(res_idx1)
@@ -268,11 +266,11 @@ class Constraints:
                 task_idcs2 = sorted(data.modes[idx].task for idx in mode_idcs2)
 
             mode_vars1 = [
-                variables.mode_vars[_find_mode(task_idx, res_idx1)]
+                variables.modes[_find_mode(task_idx, res_idx1)]
                 for task_idx in task_idcs1
             ]
             mode_vars2 = [
-                variables.mode_vars[_find_mode(task_idx, res_idx2)]
+                variables.modes[_find_mode(task_idx, res_idx2)]
                 for task_idx in task_idcs2
             ]
             model.add(
@@ -286,10 +284,10 @@ class Constraints:
         model, data, variables = self._model, self._data, self._variables
 
         for idx1, idcs2 in data.constraints.mode_dependencies:
-            mode_var1 = variables.mode_vars[idx1]
-            modes_vars2 = [variables.mode_vars[idx] for idx in idcs2]
+            mode_var1 = variables.modes[idx1]
+            modes2 = [variables.modes[idx] for idx in idcs2]
             expr1 = cpo.presence_of(mode_var1)
-            expr2 = sum(cpo.presence_of(mode2) for mode2 in modes_vars2)
+            expr2 = sum(cpo.presence_of(mode2) for mode2 in modes2)
 
             model.add(expr1 <= expr2)
 

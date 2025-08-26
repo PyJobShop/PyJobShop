@@ -18,25 +18,25 @@ class Objective:
     ):
         self._model = model
         self._data = data
-        self._task_vars = variables.task_vars
-        self._job_vars = variables.job_vars
-        self._sequence_vars = variables.sequence_vars
+        self._tasks = variables.tasks
+        self._jobs = variables.jobs
+        self._sequences = variables.sequences
 
     def _makespan_expr(self) -> CpoExpr:
         """
         Returns an expression representing the makespan of the model.
         """
-        if not self._task_vars:
+        if not self._tasks:
             return 0  # type: ignore
 
-        return cpo.max(cpo.end_of(var) for var in self._task_vars)  # type: ignore
+        return cpo.max(cpo.end_of(var) for var in self._tasks)  # type: ignore
 
     def _tardy_jobs_expr(self) -> CpoExpr:
         """
         Returns an expression representing the number of tardy jobs.
         """
         exprs = []
-        for job, var in zip(self._data.jobs, self._job_vars):
+        for job, var in zip(self._data.jobs, self._jobs):
             is_tardy = cpo.greater(cpo.end_of(var) - job.due_date, 0)
             exprs.append(job.weight * is_tardy)
 
@@ -47,7 +47,7 @@ class Objective:
         Returns an expression representing the total flow time of jobs.
         """
         total = []
-        for job, var in zip(self._data.jobs, self._job_vars):
+        for job, var in zip(self._data.jobs, self._jobs):
             flow_time = cpo.max(0, cpo.end_of(var) - job.release_date)
             total.append(job.weight * flow_time)
 
@@ -58,7 +58,7 @@ class Objective:
         Returns an expression representing the total tardiness of jobs.
         """
         total = []
-        for job, var in zip(self._data.jobs, self._job_vars):
+        for job, var in zip(self._data.jobs, self._jobs):
             tardiness = cpo.max(0, cpo.end_of(var) - job.due_date)
             total.append(job.weight * tardiness)
 
@@ -69,7 +69,7 @@ class Objective:
         Returns an expression representing the total earliness of jobs.
         """
         total = []
-        for job, var in zip(self._data.jobs, self._job_vars):
+        for job, var in zip(self._data.jobs, self._jobs):
             earliness = cpo.max(0, job.due_date - cpo.end_of(var))
             total.append(job.weight * earliness)
 
@@ -81,7 +81,7 @@ class Objective:
         """
         tardiness = [
             job.weight * cpo.max(0, cpo.end_of(var) - job.due_date)
-            for job, var in zip(self._data.jobs, self._job_vars)
+            for job, var in zip(self._data.jobs, self._jobs)
         ]
         return cpo.max(tardiness)  # type: ignore
 
@@ -96,7 +96,7 @@ class Objective:
             if (setup_times := utils.setup_times_matrix(data)) is None:
                 continue
 
-            seq_var = self._sequence_vars[res_idx]
+            seq_var = self._sequences[res_idx]
             intervals = seq_var.get_interval_variables()
             resource_modes = data.resource2modes(res_idx)
             task_idcs = [data.modes[m].task for m in resource_modes]

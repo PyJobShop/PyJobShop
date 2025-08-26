@@ -181,64 +181,64 @@ class Variables:
         self._model = model
         self._data = data
 
-        self._job_vars = self._make_job_variables()
-        self._task_vars = self._make_task_variables()
-        self._mode_vars = [model.new_bool_var("") for _ in self._data.modes]
-        self._assign_vars = self._make_assign_variables(self._task_vars)
-        self._demand_vars = self._make_demand_variables()
-        self._sequence_vars = self._make_sequence_variables()
+        self._jobs = self._make_job_variables()
+        self._tasks = self._make_task_variables()
+        self._modes = [model.new_bool_var("") for _ in self._data.modes]
+        self._assignments = self._make_assign_variables(self._tasks)
+        self._demands = self._make_demand_variables()
+        self._sequences = self._make_sequence_variables()
 
         # Variables below are lazily created.
         self._makespan_var: IntVar | None = None
-        self._is_tardy_vars: list[IntVar] | None = None
-        self._flow_time_vars: list[IntVar] | None = None
-        self._tardiness_vars: list[IntVar] | None = None
-        self._earliness_vars: list[IntVar] | None = None
+        self._is_tardy: list[IntVar] | None = None
+        self._flow_times: list[IntVar] | None = None
+        self._tardiness: list[IntVar] | None = None
+        self._earliness: list[IntVar] | None = None
         self._max_tardiness_var: IntVar | None = None
 
     @property
-    def job_vars(self) -> list[JobVar]:
+    def jobs(self) -> list[JobVar]:
         """
         Returns the job variables.
         """
-        return self._job_vars
+        return self._jobs
 
     @property
-    def task_vars(self) -> list[TaskVar]:
+    def tasks(self) -> list[TaskVar]:
         """
         Returns the task variables.
         """
-        return self._task_vars
+        return self._tasks
 
     @property
-    def mode_vars(self) -> list[ModeVar]:
+    def modes(self) -> list[ModeVar]:
         """
         Returns the mode variables.
         """
-        return self._mode_vars
+        return self._modes
 
     @property
-    def assign_vars(
+    def assignments(
         self,
     ) -> dict[tuple[TaskIdx, ResourceIdx], OptionalIntervalVar]:
         """
         Retruns the assignment variables.
         """
-        return self._assign_vars
+        return self._assignments
 
     @property
-    def demand_vars(self) -> dict[tuple[TaskIdx, ResourceIdx], IntVar]:
+    def demands(self) -> dict[tuple[TaskIdx, ResourceIdx], IntVar]:
         """
         Returns the demand variables.
         """
-        return self._demand_vars
+        return self._demands
 
     @property
-    def sequence_vars(self) -> dict[int, SequenceVar]:
+    def sequences(self) -> dict[int, SequenceVar]:
         """
         Returns the sequence variables.
         """
-        return self._sequence_vars
+        return self._sequences
 
     @property
     def makespan_var(self) -> IntVar:
@@ -252,52 +252,52 @@ class Variables:
         return self._makespan_var
 
     @property
-    def is_tardy_vars(self) -> list[IntVar]:
+    def is_tardy(self) -> list[IntVar]:
         """
         Returns the Boolean variables indicating whether each job is tardy,
         creating them if they do not exist.
         """
-        if self._is_tardy_vars is not None:
-            return self._is_tardy_vars
+        if self._is_tardy is not None:
+            return self._is_tardy
 
-        self._is_tardy_vars = self._make_is_tardy_variables()
-        return self._is_tardy_vars
+        self._is_tardy = self._make_is_tardy_variables()
+        return self._is_tardy
 
     @property
-    def flow_time_vars(self) -> list[IntVar]:
+    def flow_times(self) -> list[IntVar]:
         """
         Returns the flow time variables for each job, creating them if they do
         not exist.
         """
-        if self._flow_time_vars is not None:
-            return self._flow_time_vars
+        if self._flow_times is not None:
+            return self._flow_times
 
-        self._flow_time_vars = self._make_flow_time_variables()
-        return self._flow_time_vars
+        self._flow_times = self._make_flow_time_variables()
+        return self._flow_times
 
     @property
-    def tardiness_vars(self) -> list[IntVar]:
+    def tardiness(self) -> list[IntVar]:
         """
         Returns the tardiness variables for each job, creating them if they do
         not exist.
         """
-        if self._tardiness_vars is not None:
-            return self._tardiness_vars
+        if self._tardiness is not None:
+            return self._tardiness
 
-        self._tardiness_vars = self._make_tardiness_variables()
-        return self._tardiness_vars
+        self._tardiness = self._make_tardiness_variables()
+        return self._tardiness
 
     @property
-    def earliness_vars(self) -> list[IntVar]:
+    def earliness(self) -> list[IntVar]:
         """
         Returns the earliness variables for each job, creating them if they do
         not exist.
         """
-        if self._earliness_vars is not None:
-            return self._earliness_vars
+        if self._earliness is not None:
+            return self._earliness
 
-        self._earliness_vars = self._make_earliness_variables()
-        return self._earliness_vars
+        self._earliness = self._make_earliness_variables()
+        return self._earliness
 
     @property
     def max_tardiness_var(self) -> IntVar:
@@ -315,14 +315,14 @@ class Variables:
         """
         Returns all assignment variables for the given resource.
         """
-        items = self.assign_vars.items()
+        items = self.assignments.items()
         return [var for (_, res_idx), var in items if res_idx == idx]
 
     def res2demand(self, idx: int) -> list[IntVar]:
         """
         Returns all demand variables for the given resource.
         """
-        items = self.demand_vars.items()
+        items = self.demands.items()
         return [var for (_, res_idx), var in items if res_idx == idx]
 
     def _make_job_variables(self) -> list[JobVar]:
@@ -394,7 +394,7 @@ class Variables:
         return variables
 
     def _make_assign_variables(
-        self, task_vars: list[TaskVar]
+        self, tasks: list[TaskVar]
     ) -> dict[tuple[TaskIdx, ResourceIdx], OptionalIntervalVar]:
         """
         Creates an optional interval variable for each task-resource pair.
@@ -413,7 +413,7 @@ class Variables:
 
             for res_idx in resources:
                 name = f"A_{task_idx}_{res_idx}"
-                task_var = task_vars[task_idx]
+                task_var = tasks[task_idx]
                 present = model.new_bool_var(f"{name}_present")
                 interval = model.new_optional_interval_var(
                     task_var.start,
@@ -471,9 +471,9 @@ class Variables:
         """
         makespan_var = self._model.new_int_var(0, MAX_VALUE, "makespan")
 
-        if self._task_vars:
+        if self._tasks:
             # Need at least one task to enforce this constraint.
-            completion_times = [var.end for var in self.task_vars]
+            completion_times = [var.end for var in self.tasks]
             self._model.add_max_equality(makespan_var, completion_times)
 
         return makespan_var
@@ -483,60 +483,60 @@ class Variables:
         Creates the Boolean variables indicating whether each job is tardy.
         """
         model, data = self._model, self._data
-        is_tardy_vars = []
+        is_tardy_list = []
 
-        for job, job_var in zip(data.jobs, self._job_vars):
+        for job, job_var in zip(data.jobs, self._jobs):
             assert job.due_date is not None
             is_tardy = model.new_bool_var(f"is_tardy_{job}")
             model.add(job_var.end > job.due_date).only_enforce_if(is_tardy)
             model.add(job_var.end <= job.due_date).only_enforce_if(~is_tardy)
-            is_tardy_vars.append(is_tardy)
+            is_tardy_list.append(is_tardy)
 
-        return is_tardy_vars
+        return is_tardy_list
 
     def _make_flow_time_variables(self) -> list[IntVar]:
         """
         Creates the flow time variables for each job.
         """
         model, data = self._model, self._data
-        flow_time_vars = []
+        flow_times = []
 
-        for job, var in zip(data.jobs, self._job_vars):
+        for job, var in zip(data.jobs, self._jobs):
             flow_time = model.new_int_var(0, MAX_VALUE, f"flow_time_{job}")
             model.add_max_equality(flow_time, [0, var.end - job.release_date])
-            flow_time_vars.append(flow_time)
+            flow_times.append(flow_time)
 
-        return flow_time_vars
+        return flow_times
 
     def _make_tardiness_variables(self) -> list[IntVar]:
         """
         Creates the tardiness variables for each job.
         """
         model, data = self._model, self._data
-        tardiness_vars = []
+        tardiness_list = []
 
-        for job, var in zip(data.jobs, self._job_vars):
+        for job, var in zip(data.jobs, self._jobs):
             assert job.due_date is not None
             tardiness = model.new_int_var(0, MAX_VALUE, f"tardiness_{job}")
             model.add_max_equality(tardiness, [0, var.end - job.due_date])
-            tardiness_vars.append(tardiness)
+            tardiness_list.append(tardiness)
 
-        return tardiness_vars
+        return tardiness_list
 
     def _make_earliness_variables(self) -> list[IntVar]:
         """
         Creates the earliness variables for each job.
         """
         model, data = self._model, self._data
-        earliness_vars = []
+        earliness_list = []
 
-        for job, var in zip(data.jobs, self._job_vars):
+        for job, var in zip(data.jobs, self._jobs):
             assert job.due_date is not None
             earliness = model.new_int_var(0, MAX_VALUE, f"earliness_{job}")
             model.add_max_equality(earliness, [0, job.due_date - var.end])
-            earliness_vars.append(earliness)
+            earliness_list.append(earliness)
 
-        return earliness_vars
+        return earliness_list
 
     def _make_max_tardiness_variable(self) -> IntVar:
         """
@@ -545,13 +545,13 @@ class Variables:
         model = self._model
         max_tardiness_var = model.new_int_var(0, MAX_VALUE, "max_tardiness")
 
-        if self._job_vars:
+        if self._jobs:
             # Need at least one job to enforce this constraint.
-            tardiness_vars = [
+            tardiness_list = [
                 job.weight * var
-                for job, var in zip(self._data.jobs, self.tardiness_vars)
+                for job, var in zip(self._data.jobs, self.tardiness)
             ]
-            model.add_max_equality(max_tardiness_var, tardiness_vars)
+            model.add_max_equality(max_tardiness_var, tardiness_list)
 
         return max_tardiness_var
 
@@ -561,9 +561,9 @@ class Variables:
         """
         model, data = self._model, self._data
         job_vars, task_vars, assign_vars = (
-            self.job_vars,
-            self.task_vars,
-            self.assign_vars,
+            self.jobs,
+            self.tasks,
+            self.assignments,
         )
         sol_tasks = solution.tasks
 
@@ -586,20 +586,20 @@ class Variables:
 
             if data.objective.weight_total_flow_time > 0:
                 flow_time = job_end - job.release_date
-                model.add_hint(self.flow_time_vars[task_idx], flow_time)
+                model.add_hint(self.flow_times[task_idx], flow_time)
 
             if job.due_date is not None:
                 if data.objective.weight_tardy_jobs > 0:
                     is_tardy = job_end > job.due_date
-                    model.add_hint(self.is_tardy_vars[task_idx], is_tardy)
+                    model.add_hint(self.is_tardy[task_idx], is_tardy)
 
                 if data.objective.weight_total_tardiness > 0:
                     tardiness = max(0, job_end - job.due_date)
-                    model.add_hint(self.tardiness_vars[task_idx], tardiness)
+                    model.add_hint(self.tardiness[task_idx], tardiness)
 
                 if data.objective.weight_total_earliness > 0:
                     earliness = max(0, job.due_date - job_end)
-                    model.add_hint(self.earliness_vars[task_idx], earliness)
+                    model.add_hint(self.earliness[task_idx], earliness)
 
                 if data.objective.weight_max_tardiness > 0:
                     tardiness = max(0, job_end - job.due_date)
@@ -622,7 +622,7 @@ class Variables:
             model.add_hint(task_var.end, sol_task.end)  # type: ignore
 
             for mode_idx in data.task2modes(task_idx):
-                mode_var = self.mode_vars[mode_idx]
+                mode_var = self.modes[mode_idx]
                 model.add_hint(mode_var, mode_idx == sol_task.mode)
 
             mode_data = data.modes[sol_task.mode]
@@ -637,12 +637,12 @@ class Variables:
                 is_present = res_idx in sol_task.resources
                 model.add_hint(assign_var.present, is_present)
 
-                demand_var = self.demand_vars[task_idx, res_idx]
+                demand_var = self.demands[task_idx, res_idx]
                 model.add_hint(demand_var, res2demands.get(res_idx, 0))
 
         # Sequencing related variables.
         for res_idx in data.machine_idcs:
-            seq_var = self.sequence_vars[res_idx]
+            seq_var = self.sequences[res_idx]
             if not seq_var.is_active:
                 continue
 

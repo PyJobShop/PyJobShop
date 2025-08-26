@@ -21,38 +21,38 @@ class Variables:
         self._model = model
         self._data = data
 
-        self._job_vars = self._make_job_variables()
-        self._task_vars = self._make_task_variables()
-        self._mode_vars = self._make_mode_variables()
-        self._sequence_vars = self._make_sequence_variables()
+        self._jobs = self._make_job_variables()
+        self._tasks = self._make_task_variables()
+        self._modes = self._make_mode_variables()
+        self._sequences = self._make_sequence_variables()
 
     @property
-    def job_vars(self) -> list[CpoIntervalVar]:
+    def jobs(self) -> list[CpoIntervalVar]:
         """
         Returns the job variables.
         """
-        return self._job_vars
+        return self._jobs
 
     @property
-    def task_vars(self) -> list[CpoIntervalVar]:
+    def tasks(self) -> list[CpoIntervalVar]:
         """
         Returns the task variables.
         """
-        return self._task_vars
+        return self._tasks
 
     @property
-    def mode_vars(self) -> list[CpoIntervalVar]:
+    def modes(self) -> list[CpoIntervalVar]:
         """
         Returns the mode variables.
         """
-        return self._mode_vars
+        return self._modes
 
     @property
-    def sequence_vars(self) -> dict[int, CpoSequenceVar]:
+    def sequences(self) -> dict[int, CpoSequenceVar]:
         """
         Returns the sequence variables.
         """
-        return self._sequence_vars
+        return self._sequences
 
     def _make_job_variables(self) -> list[CpoIntervalVar]:
         """
@@ -135,7 +135,7 @@ class Variables:
 
         for idx in data.machine_idcs:
             modes = data.resource2modes(idx)
-            intervals = [self.mode_vars[mode] for mode in modes]
+            intervals = [self.modes[mode] for mode in modes]
             tasks = [data.modes[mode].task for mode in modes]
             seq_var = sequence_var(
                 name=f"S{idx}",
@@ -156,7 +156,7 @@ class Variables:
 
         for idx in range(data.num_jobs):
             job = data.jobs[idx]
-            job_var = self.job_vars[idx]
+            job_var = self.jobs[idx]
             sol_tasks = [solution.tasks[task] for task in job.tasks]
 
             job_start = min(task.start for task in sol_tasks)
@@ -167,7 +167,7 @@ class Variables:
             )
 
         for idx in range(data.num_tasks):
-            task_var = self.task_vars[idx]
+            task_var = self.tasks[idx]
             sol_task = solution.tasks[idx]
 
             stp.add_interval_var_solution(
@@ -179,7 +179,7 @@ class Variables:
 
         for idx, mode in enumerate(data.modes):
             sol_task = solution.tasks[mode.task]
-            var = self.mode_vars[idx]
+            var = self.modes[idx]
 
             stp.add_interval_var_solution(
                 var,
