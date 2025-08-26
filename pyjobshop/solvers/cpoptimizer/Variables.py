@@ -179,10 +179,10 @@ class Variables:
 
         for idx, mode in enumerate(data.modes):
             sol_task = solution.tasks[mode.task]
-            var = self.modes[idx]
+            mode_var = self.modes[idx]
 
             stp.add_interval_var_solution(
-                var,
+                mode_var,
                 presence=idx == sol_task.mode,
                 start=sol_task.start,
                 end=sol_task.end,
