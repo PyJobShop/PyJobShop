@@ -1,5 +1,5 @@
 try:
-    from .Solver import Solver as Solver
+    from .CPModel import CPModel as CPModel
 except ModuleNotFoundError:
     msg = (
         "CP Optimizer solver requires the 'docplex' package. "

@@ -57,12 +57,12 @@ def plot_machine_gantt(
             "alpha": 0.75,
         }
         duration = task_data.end - task_data.start
-        for resource in task_data.resources:
-            if resource not in resources:
+        for res_idx in task_data.resources:
+            if res_idx not in resources:
                 continue  # skip resources not in the order
 
             ax.barh(
-                resources.index(resource),
+                resources.index(res_idx),
                 duration,
                 left=task_data.start,
                 **kwargs,
@@ -71,11 +71,31 @@ def plot_machine_gantt(
             if plot_labels:
                 ax.text(
                     task_data.start + duration / 2,
-                    resources.index(resource),
+                    resources.index(res_idx),
                     data.tasks[idx].name or f"{idx}",
                     ha="center",
                     va="center",
                 )
+
+    break_labeled = False
+    for res_idx in resources:
+        resource = data.resources[res_idx]
+        if not hasattr(resource, "breaks"):
+            continue
+
+        for start, end in resource.breaks:
+            ax.barh(
+                resources.index(res_idx),
+                end - start,
+                left=start,
+                color="red",
+                alpha=0.1,
+                hatch="///",
+                edgecolor="darkred",
+                linewidth=0.1,
+                label="Break" if not break_labeled else None,
+            )
+            break_labeled = True
 
     labels = [
         data.resources[idx].name or f"Machine {idx}" for idx in resources
@@ -87,3 +107,6 @@ def plot_machine_gantt(
     ax.set_xlim(0, ax.get_xlim()[1])  # start time at zero
     ax.set_xlabel("Time")
     ax.set_title("Solution")
+
+    if break_labeled:
+        ax.legend(loc="best")

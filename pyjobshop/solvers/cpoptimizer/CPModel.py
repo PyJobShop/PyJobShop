@@ -1,4 +1,5 @@
-from ortools.sat.python.cp_model import CpModel, CpSolver
+from docplex.cp.model import CpoModel
+from docplex.cp.solution import CpoSolveResult
 
 from pyjobshop.ProblemData import ProblemData
 from pyjobshop.Result import Result, SolveStatus
@@ -9,9 +10,9 @@ from .Objective import Objective
 from .Variables import Variables
 
 
-class Solver:
+class CPModel:
     """
-    Wrapper around the OR-Tools CP model.
+    Wrapper around the CP Optimizer CP model.
 
     Parameters
     ----------
@@ -22,7 +23,7 @@ class Solver:
     def __init__(self, data: ProblemData):
         self._data = data
 
-        self._model = CpModel()
+        self._model = CpoModel()
         self._variables = Variables(self._model, data)
         self._constraints = Constraints(self._model, data, self._variables)
         self._objective = Objective(self._model, data, self._variables)
@@ -30,40 +31,36 @@ class Solver:
         self._constraints.add_constraints()
         self._objective.add_objective()
 
-    def _get_solve_status(self, status: str):
-        if status == "OPTIMAL":
+    def _get_solve_status(self, status: str) -> SolveStatus:
+        if status == "Optimal":
             return SolveStatus.OPTIMAL
-        elif status == "FEASIBLE":
+
+        if status == "Feasible":
             return SolveStatus.FEASIBLE
-        elif status == "INFEASIBLE":
+
+        if status == "Infeasible":
             return SolveStatus.INFEASIBLE
-        elif status == "MODEL_INVALID":
-            return SolveStatus.UNKNOWN
-        else:
-            return SolveStatus.TIME_LIMIT
 
-    def _convert_to_solution(self, cp_solver: CpSolver) -> Solution:
+        return SolveStatus.TIME_LIMIT
+
+    def _convert_to_solution(self, result: CpoSolveResult) -> Solution:
         """
-        Converts a result from OR-Tools to a Solution object.
+        Converts an CpoSolveResult object to a solution.
         """
-        tasks = []
+        tasks = {}
 
-        for task_idx in range(self._data.num_tasks):
-            modes = self._data.task2modes(task_idx)
+        for var in result.get_all_var_solutions():  # type: ignore
+            name = var.get_name()
 
-            for mode_idx in modes:
-                mode_var = self._variables.mode_vars[mode_idx]
+            # Scheduled tasks are inferred from present mode variables.
+            if name.startswith("M") and var.is_present():
+                mode, task = map(int, name[1:].split("_"))
+                resources = self._data.modes[mode].resources
+                start = var.start
+                end = var.end
+                tasks[task] = TaskData(mode, resources, start, end)
 
-                if cp_solver.value(mode_var):  # selected mode
-                    task_var = self._variables.task_vars[task_idx]
-                    start = cp_solver.value(task_var.start)
-                    end = cp_solver.value(task_var.end)
-                    mode = self._data.modes[mode_idx]
-                    tasks.append(
-                        TaskData(mode_idx, mode.resources, start, end)
-                    )
-
-        return Solution(tasks)
+        return Solution([tasks[idx] for idx in range(self._data.num_tasks)])
 
     def solve(
         self,
@@ -100,32 +97,27 @@ class Solver:
             self._variables.warmstart(initial_solution)
 
         params = {
-            "max_time_in_seconds": time_limit,
-            "log_search_progress": display,
-            # 0 means using all available CPU cores.
-            "num_workers": num_workers if num_workers is not None else 0,
+            "TimeLimit": time_limit,
+            "LogVerbosity": "Terse" if display else "Quiet",
+            "Workers": num_workers if num_workers is not None else "Auto",
         }
         params.update(kwargs)  # this will override existing parameters!
 
-        cp_solver = CpSolver()
-        for key, value in params.items():
-            setattr(cp_solver.parameters, key, value)
+        cp_result: CpoSolveResult = self._model.solve(**params)  # type: ignore
+        status = cp_result.get_solve_status()
 
-        status_code = cp_solver.solve(self._model)
-        status = cp_solver.status_name(status_code)
-        objective_value = cp_solver.objective_value
-
-        if status in ["OPTIMAL", "FEASIBLE"]:
-            solution = self._convert_to_solution(cp_solver)
+        if status in ["Optimal", "Feasible"]:
+            solution = self._convert_to_solution(cp_result)
+            objective: float = cp_result.get_objective_value()  # type: ignore
         else:
-            # No feasible solution found due to infeasibility or time limit.
+            # No feasible solution due to infeasible instance or time limit.
             solution = Solution([])
-            objective_value = float("inf")
+            objective = float("inf")
 
         return Result(
-            objective=objective_value,
-            lower_bound=cp_solver.best_objective_bound,
+            objective=objective,
+            lower_bound=cp_result.get_objective_bound(),
             status=self._get_solve_status(status),
-            runtime=cp_solver.wall_time,
+            runtime=cp_result.get_solve_time(),
             best=solution,
         )
