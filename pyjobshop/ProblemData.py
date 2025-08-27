@@ -17,9 +17,10 @@ class Job:
     ----------
     weight
         The weight of the job, used as multiplicative factor in the
-        objective function. Default ``1``.
+        objective function. Must be non-negative. Default ``1``.
     release_date
-        The earliest time that the job may start. Default ``0``.
+        The earliest time that the job may start. Must be non-negative.
+        Default ``0``.
     deadline
         The latest time by which the job must be completed. Note that a
         deadline is different from a due date; the latter does not restrict
@@ -34,6 +35,11 @@ class Job:
         which initializes an empty list.
     name
         Name of the job.
+
+    Raises
+    ------
+    ValueError
+        If the release date is greater than the deadline.
     """
 
     def __init__(
@@ -129,16 +135,22 @@ class Machine:
     Parameters
     ----------
     breaks
-        List of time intervals during which tasks cannot be processed.
-        Each interval is represented as a tuple (start_time, end_time).
-        Default is an empty list (no breaks).
+        List of time intervals during which tasks cannot be processed. Each
+        break is represented as a tuple ``(start, end)``, where ``start`` must
+        be non-negative and ``start`` must be larger than ``end``. Default is
+        no breaks.
     no_idle
         Whether the machine must operate continuously without idle time between
         tasks. When ``True``, tasks are scheduled back-to-back with no gaps,
         except for required setup times. When ``False`` (default), the machine
-        can remain idle between tasks. Cannot be used with machine breaks.
+        can remain idle between tasks.
     name
         Name of the machine.
+
+    Raises
+    ------
+    ValueError
+        When breaks are specified and ``no_idle=True``.
     """
 
     def __init__(
@@ -151,7 +163,7 @@ class Machine:
         if breaks is not None:
             for start, end in breaks:
                 if start < 0 or start >= end:
-                    raise ValueError("Break start < 0 or start > end.")
+                    raise ValueError("Break start < 0 or start >= end.")
 
             for interval1, interval2 in pairwise(sorted(breaks)):
                 if interval1[1] > interval2[0]:
@@ -194,11 +206,12 @@ class Renewable:
     Parameters
     ----------
     capacity
-        Capacity of the resource.
+        Capacity of the resource. Must be non-negative.
     breaks
-        List of time intervals during which tasks cannot be processed.
-        Each interval is represented as a tuple (start_time, end_time).
-        Default is an empty list (no breaks).
+        List of time intervals during which tasks cannot be processed. Each
+        break is represented as a tuple ``(start, end)``, where ``start`` must
+        be non-negative and ``start`` must be larger than ``end``. Default is
+        no breaks.
     name
         Name of the resource.
     """
@@ -216,7 +229,7 @@ class Renewable:
         if breaks is not None:
             for start, end in breaks:
                 if start < 0 or start >= end:
-                    raise ValueError("Break start < 0 or start > end.")
+                    raise ValueError("Break start < 0 or start >= end.")
 
             for interval1, interval2 in pairwise(sorted(breaks)):
                 if interval1[1] > interval2[0]:
@@ -255,7 +268,7 @@ class NonRenewable:
     Parameters
     ----------
     capacity
-        Capacity of the resource.
+        Capacity of the resource. Must be non-negative.
     name
         Name of the resource.
     """
@@ -419,15 +432,20 @@ class Mode:
     task
         Task index that this mode belongs to.
     resources
-        List of resources that are required for this mode.
+        List of unique resources that are required for this mode.
     duration
-        Processing duration of this mode.
+        Processing duration of this mode. Must be non-negative.
     demands
-        Optional list of demands for each resource for this mode. If ``None``
-        is given, then the demands are initialized as list of zeros with the
-        same length as the resources.
+        Optional list of demands for each resource for this mode. Demands must
+        be non-negative. If set to ``None``, then the demands are initialized
+        as list of zeros with the same length as the resources.
     name
         Name of the mode.
+
+    Raises
+    ------
+    ValueError
+        If the length of resources and demands do not match.
     """
 
     def __init__(
