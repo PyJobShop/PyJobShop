@@ -24,7 +24,7 @@ class CPModel:
     def __init__(self, data: ProblemData, model: CpModel | None = None):
         self._data = data
 
-        self._model = CpModel() if model is None else model
+        self._model = model if model is not None else CpModel()
         self._variables = Variables(self._model, data)
         self._constraints = Constraints(self._model, data, self._variables)
         self._objective = Objective(self._model, data, self._variables)
