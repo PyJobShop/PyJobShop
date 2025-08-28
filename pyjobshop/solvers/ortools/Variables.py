@@ -483,16 +483,16 @@ class Variables:
         Creates the Boolean variables indicating whether each job is tardy.
         """
         model, data = self._model, self._data
-        is_tardy_vars = []
+        is_tardy = []
 
         for job, job_var in zip(data.jobs, self._jobs):
             assert job.due_date is not None
-            is_tardy = model.new_bool_var(f"is_tardy_{job}")
-            model.add(job_var.end > job.due_date).only_enforce_if(is_tardy)
-            model.add(job_var.end <= job.due_date).only_enforce_if(~is_tardy)
-            is_tardy_vars.append(is_tardy)
+            var = model.new_bool_var(f"is_tardy_{job}")
+            model.add(job_var.end > job.due_date).only_enforce_if(var)
+            model.add(job_var.end <= job.due_date).only_enforce_if(~var)
+            is_tardy.append(var)
 
-        return is_tardy_vars
+        return is_tardy
 
     def _make_flow_time_variables(self) -> list[IntVar]:
         """
@@ -502,11 +502,9 @@ class Variables:
         flow_times = []
 
         for job, job_var in zip(data.jobs, self._jobs):
-            flow_time = model.new_int_var(0, MAX_VALUE, f"flow_time_{job}")
-            model.add_max_equality(
-                flow_time, [0, job_var.end - job.release_date]
-            )
-            flow_times.append(flow_time)
+            var = model.new_int_var(0, MAX_VALUE, f"flow_time_{job}")
+            model.add_max_equality(var, [0, job_var.end - job.release_date])
+            flow_times.append(var)
 
         return flow_times
 
@@ -515,45 +513,45 @@ class Variables:
         Creates the tardiness variables for each job.
         """
         model, data = self._model, self._data
-        tardiness_list = []
+        tardiness = []
 
         for job, job_var in zip(data.jobs, self._jobs):
             assert job.due_date is not None
-            tardiness = model.new_int_var(0, MAX_VALUE, f"tardiness_{job}")
-            model.add_max_equality(tardiness, [0, job_var.end - job.due_date])
-            tardiness_list.append(tardiness)
+            var = model.new_int_var(0, MAX_VALUE, f"tardiness_{job}")
+            model.add_max_equality(var, [0, job_var.end - job.due_date])
+            tardiness.append(var)
 
-        return tardiness_list
+        return tardiness
 
     def _make_earliness_variables(self) -> list[IntVar]:
         """
         Creates the earliness variables for each job.
         """
         model, data = self._model, self._data
-        earliness_list = []
+        earliness = []
 
         for job, job_var in zip(data.jobs, self._jobs):
             assert job.due_date is not None
-            earliness = model.new_int_var(0, MAX_VALUE, f"earliness_{job}")
-            model.add_max_equality(earliness, [0, job.due_date - job_var.end])
-            earliness_list.append(earliness)
+            var = model.new_int_var(0, MAX_VALUE, f"earliness_{job}")
+            model.add_max_equality(var, [0, job.due_date - job_var.end])
+            earliness.append(var)
 
-        return earliness_list
+        return earliness
 
     def _make_max_tardiness_variable(self) -> IntVar:
         """
         Creates the maximum tardiness variable.
         """
-        model = self._model
+        model, data = self._model, self._data
         max_tardiness_var = model.new_int_var(0, MAX_VALUE, "max_tardiness")
 
         if self._jobs:
             # Need at least one job to enforce this constraint.
-            tardiness_list = [
+            tardiness = [
                 job.weight * job_var
-                for job, job_var in zip(self._data.jobs, self.tardiness)
+                for job, job_var in zip(data.jobs, self.tardiness)
             ]
-            model.add_max_equality(max_tardiness_var, tardiness_list)
+            model.add_max_equality(max_tardiness_var, tardiness)
 
         return max_tardiness_var
 
