@@ -223,10 +223,10 @@ class Constraints:
 
                 for res_idx in res_idcs:
                     seq_var = variables.sequences[res_idx]
-                    var1 = variables.modes[mode1]
-                    var2 = variables.modes[mode2]
+                    mode_var1 = variables.modes[mode1]
+                    mode_var2 = variables.modes[mode2]
 
-                    model.add(cpo.previous(seq_var, var1, var2))
+                    model.add(cpo.previous(seq_var, mode_var1, mode_var2))
 
     def _same_sequence_constraints(self):
         """
@@ -285,9 +285,9 @@ class Constraints:
 
         for idx1, idcs2 in data.constraints.mode_dependencies:
             mode_var1 = variables.modes[idx1]
-            modes2 = [variables.modes[idx] for idx in idcs2]
+            mode_vars2 = [variables.modes[idx] for idx in idcs2]
             expr1 = cpo.presence_of(mode_var1)
-            expr2 = sum(cpo.presence_of(mode2) for mode2 in modes2)
+            expr2 = sum(cpo.presence_of(var) for var in mode_vars2)
 
             model.add(expr1 <= expr2)
 
