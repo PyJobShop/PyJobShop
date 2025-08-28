@@ -22,6 +22,10 @@ class JobData:
     lateness: int = 0
 
     @property
+    def duration(self) -> int:
+        return self.end - self.start
+
+    @property
     def is_tardy(self) -> bool:
         return self.lateness > 0
 
@@ -56,6 +60,10 @@ class TaskData:
     start: int
     end: int
 
+    @property
+    def duration(self) -> int:
+        return self.end - self.start
+
 
 class Solution:
     """
@@ -67,10 +75,6 @@ class Solution:
         The problem data.
     tasks
         The list of scheduled tasks.
-
-    .. note ::
-        This class does not check for feasibility of the solution.
-        Solutions are also allowed to be incomplete.
     """
 
     def __init__(self, data: ProblemData, tasks: list[TaskData]):
@@ -192,3 +196,25 @@ class Solution:
         Returns the total setup time of all machines.
         """
         return 0  # TODO
+
+    # def feasible(self) -> bool:
+    #     """
+    #     Returns True if the solution is feasible, False otherwise.
+    #     """
+    #     return all(
+    #         feasible_jobs,
+    #         feasible_tasks,
+    #         feasible_machines,
+    #         feasible_renewables,
+    #         feasible_non_renewables,
+    #         feasible_constraints,
+    #     )
+
+    # def feasible_jobs(self) -> bool:
+    #     """
+    #     Checks that all jobs have been scheduled.
+    #     """
+    #     return len(self._jobs) == len(self._data.jobs) and all(
+    #         len(self._jobs[idx]) == len(job.tasks)
+    #         for idx, job in enumerate(self._data.jobs)
+    #     )

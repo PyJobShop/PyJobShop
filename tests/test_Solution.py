@@ -1,40 +1,50 @@
 from numpy.testing import assert_, assert_equal
 
-from pyjobshop.ProblemData import ProblemData
-from pyjobshop.Solution import Solution, TaskData
+from pyjobshop.Solution import JobData, Solution, TaskData
 
 
-def test_task_eq():
+def test_job_data_attributes():
     """
-    Tests the equality comparison of tasks.
+    Tests the attributes of JobData.
     """
-    task1 = TaskData(0, [0], 1, 2)
+    job = JobData(start=1, end=3, flow_time=2, lateness=1)
 
-    assert_equal(task1, TaskData(0, [0], 1, 2))
-    assert_(task1 != TaskData(0, [0], 1, 3))
+    assert_equal(job.duration, 2)
+    assert_equal(job.is_tardy, True)
+    assert_equal(job.tardiness, 1)
+    assert_equal(job.earliness, 0)
+
+    # Also test non-negative earliness.
+    job = JobData(start=1, end=3, flow_time=2, lateness=-1)
+    assert_equal(job.earliness, 1)
 
 
-def test_solution_eq():
+def test_task_data_attributes():
+    """
+    Tests the attributes of TaskData.
+    """
+    task = TaskData(mode=0, resources=[0], start=1, end=3)
+    assert_equal(task.duration, 2)
+
+
+def test_solution_eq(small):
     """
     Tests the equality comparison of solutions.
     """
-    # Create minimal ProblemData for testing
-    data = ProblemData([], [], [], [])
-    tasks = [TaskData(0, [0], 0, 0), TaskData(0, [1], 0, 1)]
-    sol1 = Solution(data, tasks)
+    tasks = [TaskData(0, [0], 0, 1), TaskData(0, [0], 1, 3)]
+    sol1 = Solution(small, tasks)
 
-    assert_equal(sol1, Solution(data, tasks))
-    other = [TaskData(0, [0], 0, 0), TaskData(1, [0], 0, 3)]
-    assert_(sol1 != Solution(data, other))
+    assert_equal(sol1, Solution(small, tasks))
+
+    other = [TaskData(0, [0], 2, 3), TaskData(1, [0], 0, 1)]
+    assert_(sol1 != Solution(small, other))
 
 
-def test_solution_makespan():
+def test_solution_makespan(small):
     """
     Tests the makespan calculation of a solution.
     """
-    # Create minimal ProblemData for testing
-    data = ProblemData([], [], [], [])
     tasks = [TaskData(0, [0], 0, 0), TaskData(0, [1], 0, 100)]
-    sol = Solution(data, tasks)
+    sol = Solution(small, tasks)
 
     assert_equal(sol.makespan, 100)
