@@ -17,12 +17,14 @@ class CPModel:
     ----------
     data
         The problem data instance.
+    model
+        CpModel instance to use. If None (default), a new one is created.
     """
 
-    def __init__(self, data: ProblemData):
+    def __init__(self, data: ProblemData, model: CpModel | None = None):
         self._data = data
 
-        self._model = CpModel()
+        self._model = CpModel() if model is None else model
         self._variables = Variables(self._model, data)
         self._constraints = Constraints(self._model, data, self._variables)
         self._objective = Objective(self._model, data, self._variables)
@@ -74,6 +76,7 @@ class CPModel:
         display: bool = False,
         num_workers: int | None = None,
         initial_solution: Solution | None = None,
+        solver: CpSolver | None = None,
         **kwargs,
     ) -> Result:
         """
@@ -90,6 +93,8 @@ class CPModel:
             available CPU cores are used.
         initial_solution
             Initial solution to start the solver from. Default is no solution.
+        solver
+            CpSolver instance to use. If None (default), a new one is created.
         kwargs
             Additional parameters passed to the solver.
 
@@ -110,16 +115,16 @@ class CPModel:
         }
         params.update(kwargs)  # this will override existing parameters!
 
-        cp_solver = CpSolver()
+        solver = CpSolver() if solver is None else solver
         for key, value in params.items():
-            setattr(cp_solver.parameters, key, value)
+            setattr(solver.parameters, key, value)
 
-        status_code = cp_solver.solve(self._model)
-        status = cp_solver.status_name(status_code)
-        objective_value = cp_solver.objective_value
+        status_code = solver.solve(self._model)
+        status = solver.status_name(status_code)
+        objective_value = solver.objective_value
 
         if status in ["OPTIMAL", "FEASIBLE"]:
-            solution = self._convert_to_solution(cp_solver)
+            solution = self._convert_to_solution(solver)
         else:
             # No feasible solution found due to infeasibility or time limit.
             solution = Solution([])
@@ -127,8 +132,8 @@ class CPModel:
 
         return Result(
             objective=objective_value,
-            lower_bound=cp_solver.best_objective_bound,
+            lower_bound=solver.best_objective_bound,
             status=self._get_solve_status(status),
-            runtime=cp_solver.wall_time,
+            runtime=solver.wall_time,
             best=solution,
         )
