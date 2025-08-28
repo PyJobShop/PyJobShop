@@ -32,6 +32,13 @@ class CPModel:
         self._constraints.add_constraints()
         self._objective.add_objective()
 
+    @property
+    def model(self) -> CpModel:
+        """
+        Returns the underlying CpModel.
+        """
+        return self._model
+
     def _get_solve_status(self, status: str):
         if status == "OPTIMAL":
             return SolveStatus.OPTIMAL
