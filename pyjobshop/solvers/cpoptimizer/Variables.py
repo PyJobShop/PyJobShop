@@ -135,12 +135,12 @@ class Variables:
 
         for idx in data.machine_idcs:
             modes = data.resource2modes(idx)
-            intervals = [self.modes[mode] for mode in modes]
+            mode_vars = [self.modes[mode] for mode in modes]
             tasks = [data.modes[mode].task for mode in modes]
             seq_var = sequence_var(
                 name=f"S{idx}",
                 types=tasks,  # needed for total_setup_times objective
-                vars=intervals,
+                vars=mode_vars,
             )
             self._model.add(seq_var)
             variables[idx] = seq_var
