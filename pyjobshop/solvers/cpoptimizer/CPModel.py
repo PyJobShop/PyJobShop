@@ -18,18 +18,27 @@ class CPModel:
     ----------
     data
         The problem data instance.
+    model
+        CpoModel instance to use. If None (default), a new one is created.
     """
 
-    def __init__(self, data: ProblemData):
+    def __init__(self, data: ProblemData, model: CpoModel | None = None):
         self._data = data
 
-        self._model = CpoModel()
+        self._model = CpoModel() if model is None else model
         self._variables = Variables(self._model, data)
         self._constraints = Constraints(self._model, data, self._variables)
         self._objective = Objective(self._model, data, self._variables)
 
         self._constraints.add_constraints()
         self._objective.add_objective()
+
+    @property
+    def model(self) -> CpoModel:
+        """
+        Returns the underlying CpoModel.
+        """
+        return self._model
 
     def _get_solve_status(self, status: str) -> SolveStatus:
         if status == "Optimal":
