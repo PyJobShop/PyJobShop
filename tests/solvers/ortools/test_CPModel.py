@@ -25,14 +25,14 @@ def test_subsequent_solve_clears_hint(small):
     cp_model = CPModel(small)
 
     # We first solve the model with init1 as initial solution.
-    init1 = Solution([TaskData(0, [0], 0, 1), TaskData(0, [0], 1, 3)])
+    init1 = Solution(small, [TaskData(0, [0], 0, 1), TaskData(0, [0], 1, 3)])
     result = cp_model.solve(initial_solution=init1)
     assert_equal(result.status.value, "Optimal")
 
     # Next we solve the model with a different initial solution. If
     # the hint was not cleared, OR-Tools will throw a ``MODEL_INVALID``
     # error because the model contains duplicate hints.
-    init2 = Solution([TaskData(0, [1], 0, 1), TaskData(0, [1], 1, 3)])
+    init2 = Solution(small, [TaskData(0, [1], 0, 1), TaskData(0, [1], 1, 3)])
     result = cp_model.solve(initial_solution=init2)
     assert_equal(result.status.value, "Optimal")
 

@@ -1,5 +1,6 @@
 from numpy.testing import assert_equal
 
+from pyjobshop.ProblemData import ProblemData
 from pyjobshop.Result import Result, SolveStatus
 from pyjobshop.Solution import Solution
 
@@ -8,7 +9,9 @@ def test_result_attributes():
     """
     Test that the attributes of a Result object are set correctly.
     """
-    solution = Solution([])
+    # Create minimal ProblemData for testing
+    data = ProblemData([], [], [], [])
+    solution = Solution(data, [])
     result = Result(
         objective=100,
         lower_bound=100,
@@ -28,7 +31,9 @@ def test_result_string_representation():
     """
     Test that the string representation of a Result object is correct.
     """
-    solution = Solution([])
+    # Create minimal ProblemData for testing
+    data = ProblemData([], [], [], [])
+    solution = Solution(data, [])
     result = Result(
         objective=123.45,
         lower_bound=float("-inf"),

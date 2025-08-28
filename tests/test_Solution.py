@@ -1,5 +1,6 @@
 from numpy.testing import assert_, assert_equal
 
+from pyjobshop.ProblemData import ProblemData
 from pyjobshop.Solution import Solution, TaskData
 
 
@@ -17,19 +18,23 @@ def test_solution_eq():
     """
     Tests the equality comparison of solutions.
     """
+    # Create minimal ProblemData for testing
+    data = ProblemData([], [], [], [])
     tasks = [TaskData(0, [0], 0, 0), TaskData(0, [1], 0, 1)]
-    sol1 = Solution(tasks)
+    sol1 = Solution(data, tasks)
 
-    assert_equal(sol1, Solution(tasks))
+    assert_equal(sol1, Solution(data, tasks))
     other = [TaskData(0, [0], 0, 0), TaskData(1, [0], 0, 3)]
-    assert_(sol1 != Solution(other))
+    assert_(sol1 != Solution(data, other))
 
 
 def test_solution_makespan():
     """
     Tests the makespan calculation of a solution.
     """
+    # Create minimal ProblemData for testing
+    data = ProblemData([], [], [], [])
     tasks = [TaskData(0, [0], 0, 0), TaskData(0, [1], 0, 100)]
-    sol = Solution(tasks)
+    sol = Solution(data, tasks)
 
     assert_equal(sol.makespan, 100)
