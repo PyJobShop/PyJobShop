@@ -37,7 +37,7 @@ def test_custom_model(require_cpoptimizer, small):
     assert_equal(result.status.value, "Infeasible")
 
 
-def test_model_property(small):
+def test_model_property(require_cpoptimizer, small):
     """
     Tests that the model property can be accessed.
     """
@@ -52,7 +52,7 @@ def test_model_property(small):
     assert_equal(result.status.value, "Infeasible")
 
 
-def test_variables_property(small):
+def test_variables_property(require_cpoptimizer, small):
     """
     Tests that the variables property can be accessed.
     """
