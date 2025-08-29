@@ -89,3 +89,18 @@ def test_model_property(small):
     cp_model.model.add(1 == 2)
     result = cp_model.solve()
     assert_equal(result.status.value, "Infeasible")
+
+
+def test_variables_property(small):
+    """
+    Tests that the variables property can be accessed.
+    """
+    cp_model = CPModel(small)
+    variables = cp_model.variables
+
+    assert_equal(len(variables.job_vars), 1)
+    assert_equal(len(variables.task_vars), 2)
+    assert_equal(len(variables.mode_vars), 2)
+    assert_equal(len(variables.assign_vars), 2)
+    assert_equal(len(variables.demand_vars), 2)
+    assert_equal(len(variables.sequence_vars), 1)

@@ -50,3 +50,18 @@ def test_model_property(small):
     cp_model.model.add(1 == 2)
     result = cp_model.solve()
     assert_equal(result.status.value, "Infeasible")
+
+
+def test_variables_property(small):
+    """
+    Tests that the variables property can be accessed.
+    """
+    from pyjobshop.solvers.cpoptimizer.CPModel import CPModel
+
+    cp_model = CPModel(small)
+    variables = cp_model.variables
+
+    assert_equal(len(variables.job_vars), 1)
+    assert_equal(len(variables.task_vars), 2)
+    assert_equal(len(variables.mode_vars), 2)
+    assert_equal(len(variables.sequence_vars), 1)
