@@ -1,17 +1,14 @@
 from numpy.testing import assert_equal
 
-from pyjobshop.ProblemData import ProblemData
 from pyjobshop.Result import Result, SolveStatus
 from pyjobshop.Solution import Solution
 
 
-def test_result_attributes():
+def test_result_attributes(small):
     """
     Test that the attributes of a Result object are set correctly.
     """
-    # Create minimal ProblemData for testing
-    data = ProblemData([], [], [], [])
-    solution = Solution(data, [])
+    solution = Solution(small, [])
     result = Result(
         objective=100,
         lower_bound=100,
@@ -27,13 +24,11 @@ def test_result_attributes():
     assert_equal(result.best, solution)
 
 
-def test_result_string_representation():
+def test_result_string_representation(small):
     """
     Test that the string representation of a Result object is correct.
     """
-    # Create minimal ProblemData for testing
-    data = ProblemData([], [], [], [])
-    solution = Solution(data, [])
+    solution = Solution(small, [])
     result = Result(
         objective=123.45,
         lower_bound=float("-inf"),

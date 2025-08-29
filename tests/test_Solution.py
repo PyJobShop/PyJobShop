@@ -59,7 +59,7 @@ def test_solution_makespan(small):
     assert_equal(sol.makespan, 100)
 
 
-def test_solution_total_setup_times():
+def test_solution_total_setup_time():
     """
     Test that the total setup time of the solution is correctly calculated.
     """
