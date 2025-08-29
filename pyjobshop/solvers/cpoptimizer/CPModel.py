@@ -18,18 +18,34 @@ class CPModel:
     ----------
     data
         The problem data instance.
+    model
+        CpoModel instance to use. If None (default), a new one is created.
     """
 
-    def __init__(self, data: ProblemData):
+    def __init__(self, data: ProblemData, model: CpoModel | None = None):
         self._data = data
 
-        self._model = CpoModel()
+        self._model = model if model is not None else CpoModel()
         self._variables = Variables(self._model, data)
         self._constraints = Constraints(self._model, data, self._variables)
         self._objective = Objective(self._model, data, self._variables)
 
         self._constraints.add_constraints()
         self._objective.add_objective()
+
+    @property
+    def model(self) -> CpoModel:
+        """
+        Returns the underlying CpoModel.
+        """
+        return self._model
+
+    @property
+    def variables(self) -> Variables:
+        """
+        Returns the Variables object containing all model variables.
+        """
+        return self._variables
 
     def _get_solve_status(self, status: str) -> SolveStatus:
         if status == "Optimal":
@@ -109,14 +125,16 @@ class CPModel:
         if status in ["Optimal", "Feasible"]:
             solution = self._convert_to_solution(cp_result)
             objective: float = cp_result.get_objective_value()  # type: ignore
+            lower_bound: float = cp_result.get_objective_bound()  # type: ignore
         else:
             # No feasible solution due to infeasible instance or time limit.
             solution = Solution([])
             objective = float("inf")
+            lower_bound = float("-inf")
 
         return Result(
             objective=objective,
-            lower_bound=cp_result.get_objective_bound(),
+            lower_bound=lower_bound,
             status=self._get_solve_status(status),
             runtime=cp_result.get_solve_time(),
             best=solution,
