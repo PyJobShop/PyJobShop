@@ -142,6 +142,7 @@ class Solution:
         """
         if not self.tasks:
             return 0
+
         return max(task.end for task in self.tasks)
 
     @property
@@ -189,6 +190,9 @@ class Solution:
         """
         Returns the maximum tardiness of all jobs.
         """
+        if not self._jobs:
+            return 0
+
         return max(
             self._data.jobs[idx].weight * job.tardiness
             for idx, job in enumerate(self._jobs)
@@ -199,23 +203,22 @@ class Solution:
         """
         Returns the total setup time of all machines.
         """
-        # matrix = setup_times_matrix(self._data)
-        # if matrix is None:
-        #     return 0
+        matrix = setup_times_matrix(self._data)
+        if matrix is None:
+            return 0
 
-        # # figure out the ordering for each machine
-        # tasks_by_machine = defaultdict()
-        # for idx, sol_task in enumerate(self._tasks):
-        #     for res in sol_task.resources:
-        #         tasks_by_machine[res].append((idx, sol_task))
+        resource2tasks = defaultdict(list)
+        for idx, sol_task in enumerate(self._tasks):
+            for res in sol_task.resources:
+                resource2tasks[res].append((idx, sol_task))
 
         setup_times = 0
-        # for machine_idx in self._data.machine_idcs:
-        #     tasks = tasks_by_machine[machine_idx]
-        #     tasks.sort(key=lambda item: item[1].start)
-        #     task_idcs = [idx for idx, _ in tasks]
+        for machine_idx in self._data.machine_idcs:
+            tasks = resource2tasks[machine_idx]
+            tasks = sorted(tasks, key=lambda item: item[1].start)
+            sequence = [idx for idx, _ in tasks]
 
-        #     for task_idx1, task_idx2 in pairwise(task_idcs):
-        #         setup_times += matrix[machine_idx, task_idx1, task_idx2]
+            for task_idx1, task_idx2 in pairwise(sequence):
+                setup_times += matrix[machine_idx, task_idx1, task_idx2]
 
         return setup_times
