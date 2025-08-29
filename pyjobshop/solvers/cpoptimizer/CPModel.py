@@ -40,6 +40,13 @@ class CPModel:
         """
         return self._model
 
+    @property
+    def variables(self) -> Variables:
+        """
+        Returns the Variables object containing all model variables.
+        """
+        return self._variables
+
     def _get_solve_status(self, status: str) -> SolveStatus:
         if status == "Optimal":
             return SolveStatus.OPTIMAL
