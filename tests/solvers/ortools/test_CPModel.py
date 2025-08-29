@@ -1,4 +1,5 @@
 from numpy.testing import assert_, assert_equal
+from ortools.sat.python.cp_model import CpModel
 
 from pyjobshop.Model import Model
 from pyjobshop.Solution import Solution, TaskData
@@ -63,3 +64,28 @@ def test_empty_circuit_not_allowed_bug():
     # makespan 4. Before the fix, empty circuits weren't allowed, forcing
     # tasks onto separate resources and resulting in a longer makespan of 5.
     assert_equal(result.objective, 4)
+
+
+def test_custom_model(small):
+    """
+    Tests that a custom CpModel can be provided.
+    """
+    custom_model = CpModel()
+    custom_model.add(1 == 2)  # infeasible
+
+    cp_model = CPModel(small, model=custom_model)
+    result = cp_model.solve()
+    assert_equal(result.status.value, "Infeasible")
+
+
+def test_model_property(small):
+    """
+    Tests that the model property can be accessed.
+    """
+    cp_model = CPModel(small)
+    result = cp_model.solve()
+    assert_equal(result.status.value, "Optimal")
+
+    cp_model.model.add(1 == 2)
+    result = cp_model.solve()
+    assert_equal(result.status.value, "Infeasible")
