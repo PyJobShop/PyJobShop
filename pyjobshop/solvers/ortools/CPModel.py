@@ -90,7 +90,6 @@ class CPModel:
         display: bool = False,
         num_workers: int | None = None,
         initial_solution: Solution | None = None,
-        solver: CpSolver | None = None,
         **kwargs,
     ) -> Result:
         """
@@ -107,8 +106,6 @@ class CPModel:
             available CPU cores are used.
         initial_solution
             Initial solution to start the solver from. Default is no solution.
-        solver
-            CpSolver instance to use. If None (default), a new one is created.
         kwargs
             Additional parameters passed to the solver.
 
@@ -129,7 +126,7 @@ class CPModel:
         }
         params.update(kwargs)  # this will override existing parameters!
 
-        solver = CpSolver() if solver is None else solver
+        solver = CpSolver()
         for key, value in params.items():
             setattr(solver.parameters, key, value)
 
