@@ -1,6 +1,9 @@
+from collections import defaultdict
 from dataclasses import dataclass
+from itertools import pairwise
 
 from pyjobshop.ProblemData import ProblemData
+from pyjobshop.solvers.utils import setup_times_matrix
 
 
 @dataclass
@@ -75,6 +78,9 @@ class Solution:
         The problem data.
     tasks
         The list of scheduled tasks.
+
+    .. warning::
+       This class does yet not check the feasibility of the solution.
     """
 
     def __init__(self, data: ProblemData, tasks: list[TaskData]):
@@ -93,9 +99,7 @@ class Solution:
             start = min(task.start for task in tasks)
             end = max(task.end for task in tasks)
             flow_time = end - job.release_date
-            lateness = (
-                max(0, end - job.due_date) if job.due_date is not None else 0
-            )
+            lateness = 0 if job.due_date is None else end - job.due_date
             jobs.append(JobData(start, end, flow_time, lateness))
 
         return jobs
@@ -195,26 +199,23 @@ class Solution:
         """
         Returns the total setup time of all machines.
         """
-        return 0  # TODO
+        # matrix = setup_times_matrix(self._data)
+        # if matrix is None:
+        #     return 0
 
-    # def feasible(self) -> bool:
-    #     """
-    #     Returns True if the solution is feasible, False otherwise.
-    #     """
-    #     return all(
-    #         feasible_jobs,
-    #         feasible_tasks,
-    #         feasible_machines,
-    #         feasible_renewables,
-    #         feasible_non_renewables,
-    #         feasible_constraints,
-    #     )
+        # # figure out the ordering for each machine
+        # tasks_by_machine = defaultdict()
+        # for idx, sol_task in enumerate(self._tasks):
+        #     for res in sol_task.resources:
+        #         tasks_by_machine[res].append((idx, sol_task))
 
-    # def feasible_jobs(self) -> bool:
-    #     """
-    #     Checks that all jobs have been scheduled.
-    #     """
-    #     return len(self._jobs) == len(self._data.jobs) and all(
-    #         len(self._jobs[idx]) == len(job.tasks)
-    #         for idx, job in enumerate(self._data.jobs)
-    #     )
+        setup_times = 0
+        # for machine_idx in self._data.machine_idcs:
+        #     tasks = tasks_by_machine[machine_idx]
+        #     tasks.sort(key=lambda item: item[1].start)
+        #     task_idcs = [idx for idx, _ in tasks]
+
+        #     for task_idx1, task_idx2 in pairwise(task_idcs):
+        #         setup_times += matrix[machine_idx, task_idx1, task_idx2]
+
+        return setup_times
