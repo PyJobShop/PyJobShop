@@ -1,3 +1,4 @@
+from collections import defaultdict
 from itertools import product
 
 import numpy as np
@@ -60,21 +61,26 @@ class Constraints:
                 )
                 model.add(expr).only_enforce_if(mode_var)
 
-                for res_idx in range(data.num_resources):
-                    if (task_idx, res_idx) not in variables.assign_vars:
-                        continue
-
-                    # Select assignments based on selected mode's resources.
-                    # Because of cross interactions with assignment constraints
-                    # we also explicitly set absence of assignment variables.
-                    presence = variables.assign_vars[task_idx, res_idx].present
-                    required = res_idx in mode.resources
-                    model.add(presence == required).only_enforce_if(mode_var)
-
                 for res_idx, demand in zip(mode.resources, mode.demands):
+                    presence = variables.assign_vars[task_idx, res_idx].present
+                    model.add(presence == 1).only_enforce_if(mode_var)
+
                     # Set demands based on selected mode's demands.
                     dem_var = variables.demand_vars[task_idx, res_idx]
                     model.add(dem_var == demand).only_enforce_if(mode_var)
+
+            # For the given task, identify which modes use which resource.
+            res2modes = defaultdict(list)
+            for mode_idx in mode_idcs:
+                for res in data.modes[mode_idx].resources:
+                    res2modes[res].append(mode_idx)
+
+            for res_idx, res_mode_idcs in res2modes.items():
+                # Assignment variable can only be present if a modes is
+                # selected that uses the corresponding resource.
+                presence = variables.assign_vars[task_idx, res_idx].present
+                mode_vars = [variables.mode_vars[idx] for idx in res_mode_idcs]
+                model.add(presence <= sum(mode_vars))
 
     def _machines_no_overlap(self):
         """
