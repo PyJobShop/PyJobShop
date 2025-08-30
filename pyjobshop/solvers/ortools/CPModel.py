@@ -82,7 +82,7 @@ class CPModel:
                         TaskData(mode_idx, mode.resources, start, end)
                     )
 
-        return Solution(tasks)
+        return Solution(self._data, tasks)
 
     def solve(
         self,
@@ -138,7 +138,7 @@ class CPModel:
             solution = self._convert_to_solution(solver)
         else:
             # No feasible solution found due to infeasibility or time limit.
-            solution = Solution([])
+            solution = Solution(self._data, [])
             objective_value = float("inf")
 
         return Result(

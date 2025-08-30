@@ -76,7 +76,9 @@ class CPModel:
                 end = var.end
                 tasks[task] = TaskData(mode, resources, start, end)
 
-        return Solution([tasks[idx] for idx in range(self._data.num_tasks)])
+        return Solution(
+            self._data, [tasks[idx] for idx in range(self._data.num_tasks)]
+        )
 
     def solve(
         self,
@@ -128,7 +130,7 @@ class CPModel:
             lower_bound: float = cp_result.get_objective_bound()  # type: ignore
         else:
             # No feasible solution due to infeasible instance or time limit.
-            solution = Solution([])
+            solution = Solution(self._data, [])
             objective = float("inf")
             lower_bound = float("-inf")
 
