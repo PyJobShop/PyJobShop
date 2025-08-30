@@ -60,21 +60,26 @@ class Constraints:
                 )
                 model.add(expr).only_enforce_if(mode_var)
 
-                for res_idx in range(data.num_resources):
-                    if (task_idx, res_idx) not in variables.assign_vars:
-                        continue
-
-                    # Select assignments based on selected mode's resources.
-                    # Because of cross interactions with assignment constraints
-                    # we also explicitly set absence of assignment variables.
-                    presence = variables.assign_vars[task_idx, res_idx].present
-                    required = res_idx in mode.resources
-                    model.add(presence == required).only_enforce_if(mode_var)
-
                 for res_idx, demand in zip(mode.resources, mode.demands):
+                    presence = variables.assign_vars[task_idx, res_idx].present
+                    model.add(presence == 1).only_enforce_if(mode_var)
+
                     # Set demands based on selected mode's demands.
                     dem_var = variables.demand_vars[task_idx, res_idx]
                     model.add(dem_var == demand).only_enforce_if(mode_var)
+
+            # Assignment variables cannot be present if a relevant mode is not
+            # selected. This prevents cross-interactions with the assignment
+            # constraints.
+            res2modes = {}
+            for mode_idx in mode_idcs:
+                for res in data.modes[mode_idx].resources:
+                    res2modes.setdefault(res, []).append(mode_idx)
+
+            for res_idx, _mode_idcs in res2modes.items():
+                presence = variables.assign_vars[task_idx, res_idx].present
+                mode_vars = [variables.mode_vars[idx] for idx in _mode_idcs]
+                model.add(presence <= sum(mode_vars))
 
     def _machines_no_overlap(self):
         """
@@ -169,6 +174,9 @@ class Constraints:
                 presence2 = assign2.present if assign2 else 0
 
                 model.add(presence1 == presence2)
+
+            # Ensure that two modes are selected with the same number of
+            # resources.
 
         for task_idx1, task_idx2 in data.constraints.different_resources:
             for res_idx in range(data.num_resources):
