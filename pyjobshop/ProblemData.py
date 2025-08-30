@@ -318,11 +318,22 @@ class Task:
         Latest end time of the task.
         Default :const:`~pyjobshop.constants.MAX_VALUE`.
     fixed_duration
-        Whether the task has a fixed duration. A fixed duration means that
+        Whether the task's fixed duration. A fixed duration means that
         the task duration is precisely the processing time (on a given
         resource). If the duration is not fixed, then the task duration
         can take longer than the processing time, e.g., due to blocking.
         Default ``True``.
+    flexible_duration
+        Whether the task's duration is allowed to be flexible. If ``True``,
+        the task's durations can be any duration (but at least the required
+        processing time), which can be used to model blocking problems.
+        If ``False`` (default), then the task's duration is precisely equal
+        to the required processing time, including possible overlapping breaks
+        if ``resumable`` is set.
+    resumable
+        Whether the task can be resumed after being interrupted by breaks.
+        If ``True``, the task can continue processing after a break ends.
+        If ``False`` (default), the task cannot be interrupted by breaks.
     name
         Name of the task.
     """
@@ -335,6 +346,7 @@ class Task:
         earliest_end: int = 0,
         latest_end: int = MAX_VALUE,
         fixed_duration: bool = True,
+        resumable: bool = False,
         *,
         name: str = "",
     ):
@@ -350,6 +362,7 @@ class Task:
         self._earliest_end = earliest_end
         self._latest_end = latest_end
         self._fixed_duration = fixed_duration
+        self._resumable = resumable
         self._name = name
 
     @property
@@ -394,6 +407,13 @@ class Task:
         Whether the task has a fixed duration.
         """
         return self._fixed_duration
+
+    @property
+    def resumable(self) -> bool:
+        """
+        Whether the task can be resumed after being interrupted by breaks.
+        """
+        return self._resumable
 
     @property
     def name(self) -> str:

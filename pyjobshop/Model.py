@@ -133,6 +133,7 @@ class Model:
                 task.earliest_end,
                 task.latest_end,
                 task.fixed_duration,
+                task.resumable,
                 name=task.name,
             )
 
@@ -290,6 +291,7 @@ class Model:
         earliest_end: int = 0,
         latest_end: int = MAX_VALUE,
         fixed_duration: bool = True,
+        resumable: bool = False,
         *,
         name: str = "",
     ) -> Task:
@@ -304,6 +306,7 @@ class Model:
             earliest_end,
             latest_end,
             fixed_duration,
+            resumable,
             name=name,
         )
 

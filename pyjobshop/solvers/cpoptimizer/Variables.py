@@ -6,7 +6,6 @@ from docplex.cp.expression import (
 )
 from docplex.cp.model import CpoModel
 
-import pyjobshop.solvers.utils as utils
 from pyjobshop.constants import MAX_VALUE
 from pyjobshop.ProblemData import ProblemData
 from pyjobshop.Solution import Solution
@@ -77,7 +76,6 @@ class Variables:
         """
         data = self._data
         variables = []
-        task_durations = utils.compute_task_durations(self._data)
 
         for idx, task in enumerate(data.tasks):
             var = interval_var(name=f"T{task}")
@@ -88,9 +86,11 @@ class Variables:
             var.set_end_min(task.earliest_end)
             var.set_end_max(min(task.latest_end, MAX_VALUE))
 
-            var.set_size_min(min(task_durations[idx]))
+            modes = [data.modes[mode_idx] for mode_idx in data.task2modes(idx)]
+            durations = [mode.duration for mode in modes]
+            var.set_size_min(min(durations))
             var.set_size_max(
-                max(task_durations[idx]) if task.fixed_duration else MAX_VALUE
+                max(durations) if task.fixed_duration else MAX_VALUE
             )
 
             variables.append(var)
