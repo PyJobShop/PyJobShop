@@ -62,7 +62,7 @@ class Constraints:
                 model.add(expr).only_enforce_if(mode_var)
 
                 for res_idx, demand in zip(mode.resources, mode.demands):
-                    presence = variables.assign_vars[task_idx, res_idx].present
+                    presence = variables.assignments[task_idx, res_idx].present
                     model.add(presence == 1).only_enforce_if(mode_var)
 
                     # Set demands based on selected mode's demands.
@@ -78,8 +78,8 @@ class Constraints:
             for res_idx, res_mode_idcs in res2modes.items():
                 # Assignment variable can only be present if a modes is
                 # selected that uses the corresponding resource.
-                presence = variables.assign_vars[task_idx, res_idx].present
-                mode_vars = [variables.mode_vars[idx] for idx in res_mode_idcs]
+                presence = variables.assignments[task_idx, res_idx].present
+                mode_vars = [variables.modes[idx] for idx in res_mode_idcs]
                 model.add(presence <= sum(mode_vars))
 
     def _machines_no_overlap(self):
