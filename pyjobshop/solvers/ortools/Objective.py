@@ -37,20 +37,20 @@ class Objective:
             expr += obj_weight * variables.makespan_var
 
         if (obj_weight := objective.weight_tardy_jobs) > 0:
-            is_tardy_vars = variables.is_tardy_vars
-            expr += obj_weight * weighted_sum(is_tardy_vars, job_weights)
+            total_is_tardy = weighted_sum(variables.is_tardy, job_weights)
+            expr += obj_weight * total_is_tardy
 
         if (obj_weight := objective.weight_total_flow_time) > 0:
-            flow_time_vars = variables.flow_time_vars
-            expr += obj_weight * weighted_sum(flow_time_vars, job_weights)
+            total_flow_time = weighted_sum(variables.flow_times, job_weights)
+            expr += obj_weight * total_flow_time
 
         if (obj_weight := objective.weight_total_tardiness) > 0:
-            tardiness_vars = variables.tardiness_vars
-            expr += obj_weight * weighted_sum(tardiness_vars, job_weights)
+            total_tardiness = weighted_sum(variables.tardiness, job_weights)
+            expr += obj_weight * total_tardiness
 
         if (obj_weight := objective.weight_total_earliness) > 0:
-            earliness_vars = variables.earliness_vars
-            expr += obj_weight * weighted_sum(earliness_vars, job_weights)
+            total_earliness = weighted_sum(variables.earliness, job_weights)
+            expr += obj_weight * total_earliness
 
         if (obj_weight := objective.weight_max_tardiness) > 0:
             expr += obj_weight * variables.max_tardiness_var
@@ -61,7 +61,7 @@ class Objective:
             setup_time_vars = []
 
             for res_idx in data.machine_idcs:
-                seq_var = variables.sequence_vars[res_idx]
+                seq_var = variables.sequences[res_idx]
                 if not seq_var.is_active:
                     continue
 

@@ -28,12 +28,12 @@ class Constraints:
         model, data, variables = self._model, self._data, self._variables
 
         for idx, job in enumerate(data.jobs):
-            job_var = variables.job_vars[idx]
-            starts = [variables.task_vars[task].start for task in job.tasks]
-            ends = [variables.task_vars[task].end for task in job.tasks]
+            job_var = variables.jobs[idx]
+            task_starts = [variables.tasks[task].start for task in job.tasks]
+            task_ends = [variables.tasks[task].end for task in job.tasks]
 
-            model.add_min_equality(job_var.start, starts)
-            model.add_max_equality(job_var.end, ends)
+            model.add_min_equality(job_var.start, task_starts)
+            model.add_max_equality(job_var.end, task_ends)
 
     def _select_one_mode(self):
         """
@@ -44,9 +44,9 @@ class Constraints:
         model, data, variables = self._model, self._data, self._variables
 
         for task_idx in range(data.num_tasks):
-            task_var = variables.task_vars[task_idx]
+            task_var = variables.tasks[task_idx]
             mode_idcs = data.task2modes(task_idx)
-            mode_vars = [variables.mode_vars[idx] for idx in mode_idcs]
+            mode_vars = [variables.modes[idx] for idx in mode_idcs]
             model.add_exactly_one(mode_vars)
 
             for mode_idx, mode_var in zip(mode_idcs, mode_vars):
@@ -62,12 +62,12 @@ class Constraints:
                 model.add(expr).only_enforce_if(mode_var)
 
                 for res_idx, demand in zip(mode.resources, mode.demands):
-                    presence = variables.assign_vars[task_idx, res_idx].present
+                    presence = variables.assignments[task_idx, res_idx].present
                     model.add(presence == 1).only_enforce_if(mode_var)
 
                     # Set demands based on selected mode's demands.
-                    dem_var = variables.demand_vars[task_idx, res_idx]
-                    model.add(dem_var == demand).only_enforce_if(mode_var)
+                    demand_var = variables.demands[task_idx, res_idx]
+                    model.add(demand_var == demand).only_enforce_if(mode_var)
 
             # For the given task, identify which modes use which resource.
             res2modes = defaultdict(list)
@@ -78,8 +78,8 @@ class Constraints:
             for res_idx, res_mode_idcs in res2modes.items():
                 # Assignment variable can only be present if a modes is
                 # selected that uses the corresponding resource.
-                presence = variables.assign_vars[task_idx, res_idx].present
-                mode_vars = [variables.mode_vars[idx] for idx in res_mode_idcs]
+                presence = variables.assignments[task_idx, res_idx].present
+                mode_vars = [variables.modes[idx] for idx in res_mode_idcs]
                 model.add(presence <= sum(mode_vars))
 
     def _machines_no_overlap(self):
@@ -142,23 +142,23 @@ class Constraints:
         model, data, variables = self._model, self._data, self._variables
 
         for idx1, idx2, delay in data.constraints.start_before_start:
-            expr1 = variables.task_vars[idx1].start + delay
-            expr2 = variables.task_vars[idx2].start
+            expr1 = variables.tasks[idx1].start + delay
+            expr2 = variables.tasks[idx2].start
             model.add(expr1 <= expr2)
 
         for idx1, idx2, delay in data.constraints.start_before_end:
-            expr1 = variables.task_vars[idx1].start + delay
-            expr2 = variables.task_vars[idx2].end
+            expr1 = variables.tasks[idx1].start + delay
+            expr2 = variables.tasks[idx2].end
             model.add(expr1 <= expr2)
 
         for idx1, idx2, delay in data.constraints.end_before_start:
-            expr1 = variables.task_vars[idx1].end + delay
-            expr2 = variables.task_vars[idx2].start
+            expr1 = variables.tasks[idx1].end + delay
+            expr2 = variables.tasks[idx2].start
             model.add(expr1 <= expr2)
 
         for idx1, idx2, delay in data.constraints.end_before_end:
-            expr1 = variables.task_vars[idx1].end + delay
-            expr2 = variables.task_vars[idx2].end
+            expr1 = variables.tasks[idx1].end + delay
+            expr2 = variables.tasks[idx2].end
             model.add(expr1 <= expr2)
 
     def _identical_and_different_resource_constraints(self):
@@ -169,8 +169,8 @@ class Constraints:
 
         for task_idx1, task_idx2 in data.constraints.identical_resources:
             for res_idx in range(data.num_resources):
-                assign1 = variables.assign_vars.get((task_idx1, res_idx))
-                assign2 = variables.assign_vars.get((task_idx2, res_idx))
+                assign1 = variables.assignments.get((task_idx1, res_idx))
+                assign2 = variables.assignments.get((task_idx2, res_idx))
                 presence1 = assign1.present if assign1 else 0
                 presence2 = assign2.present if assign2 else 0
 
@@ -178,8 +178,8 @@ class Constraints:
 
         for task_idx1, task_idx2 in data.constraints.different_resources:
             for res_idx in range(data.num_resources):
-                assign1 = variables.assign_vars.get((task_idx1, res_idx))
-                assign2 = variables.assign_vars.get((task_idx2, res_idx))
+                assign1 = variables.assignments.get((task_idx1, res_idx))
+                assign2 = variables.assignments.get((task_idx2, res_idx))
                 presence1 = assign1.present if assign1 else 0
                 presence2 = assign2.present if assign2 else 0
 
@@ -193,16 +193,16 @@ class Constraints:
 
         for task_idx1, task_idx2 in data.constraints.consecutive:
             for res_idx in data.machine_idcs:
-                seq_var = variables.sequence_vars[res_idx]
+                seq_var = variables.sequences[res_idx]
                 seq_var.activate(model)
-                var1 = variables.assign_vars.get((task_idx1, res_idx))
-                var2 = variables.assign_vars.get((task_idx2, res_idx))
+                assign_var1 = variables.assignments.get((task_idx1, res_idx))
+                assign_var2 = variables.assignments.get((task_idx2, res_idx))
 
-                if not (var1 and var2):
+                if not (assign_var1 and assign_var2):
                     continue
 
                 arc = seq_var.arcs[task_idx1, task_idx2]
-                both_present = [var1.present, var2.present]
+                both_present = [assign_var1.present, assign_var2.present]
 
                 model.add(arc == 1).only_enforce_if(both_present)
 
@@ -215,8 +215,8 @@ class Constraints:
         for idcs in data.constraints.same_sequence:
             res_idx1, res_idx2, task_idcs1, task_idcs2 = idcs
 
-            seq_var1 = variables.sequence_vars[res_idx1]
-            seq_var2 = variables.sequence_vars[res_idx2]
+            seq_var1 = variables.sequences[res_idx1]
+            seq_var2 = variables.sequences[res_idx2]
             seq_var1.activate(model)
             seq_var2.activate(model)
 
@@ -248,7 +248,7 @@ class Constraints:
 
         for res_idx in data.machine_idcs:
             machine = data.resources[res_idx]
-            seq_var = variables.sequence_vars[res_idx]
+            seq_var = variables.sequences[res_idx]
 
             if setup_times is not None and np.any(setup_times[res_idx]):
                 seq_var.activate(model)
@@ -269,7 +269,7 @@ class Constraints:
             res_tasks = {data.modes[m].task for m in res_modes}
 
             for task_idx1 in res_tasks:
-                var1 = variables.assign_vars[task_idx1, res_idx]
+                var1 = variables.assignments[task_idx1, res_idx]
 
                 # Absent intervals require selecting loops (self-arcs).
                 loop = arcs[task_idx1, task_idx1]
@@ -285,7 +285,7 @@ class Constraints:
                     if task_idx1 == task_idx2:
                         continue
 
-                    var2 = variables.assign_vars[task_idx2, res_idx]
+                    var2 = variables.assignments[task_idx2, res_idx]
                     arc = arcs[task_idx1, task_idx2]
                     model.add(arc <= var1.present)
                     model.add(arc <= var2.present)
@@ -310,9 +310,9 @@ class Constraints:
         model, data, variables = self._model, self._data, self._variables
 
         for idx1, idcs2 in data.constraints.mode_dependencies:
-            expr1 = variables.mode_vars[idx1]
-            expr2 = sum(variables.mode_vars[idx] for idx in idcs2)
-            model.add(expr1 <= expr2)
+            mode_var1 = variables.modes[idx1]
+            mode_vars2 = [variables.modes[idx] for idx in idcs2]
+            model.add(mode_var1 <= sum(mode_vars2))
 
     def add_constraints(self):
         """

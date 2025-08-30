@@ -98,9 +98,9 @@ def test_variables_property(small):
     cp_model = CPModel(small)
     variables = cp_model.variables
 
-    assert_equal(len(variables.job_vars), 1)
-    assert_equal(len(variables.task_vars), 2)
-    assert_equal(len(variables.mode_vars), 2)
-    assert_equal(len(variables.assign_vars), 2)
-    assert_equal(len(variables.demand_vars), 2)
-    assert_equal(len(variables.sequence_vars), 1)
+    assert_equal(len(variables.jobs), 1)
+    assert_equal(len(variables.tasks), 2)
+    assert_equal(len(variables.modes), 2)
+    assert_equal(len(variables.assignments), 2)
+    assert_equal(len(variables.demands), 2)
+    assert_equal(len(variables.sequences), 1)
