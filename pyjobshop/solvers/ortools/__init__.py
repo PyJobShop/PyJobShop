@@ -1,1 +1,1 @@
-from .Solver import Solver as Solver
+from .CPModel import CPModel as CPModel

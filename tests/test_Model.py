@@ -295,6 +295,36 @@ def test_model_set_objective():
     assert_equal(model.objective.weight_total_setup_time, 7)
 
 
+def test_summary():
+    """
+    Tests that the summary method returns a string representation of the
+    problem data built from the model.
+    """
+    model = Model()
+
+    machine = model.add_machine()
+    model.add_renewable(2)
+    task1 = model.add_task()
+    task2 = model.add_task()
+    model.add_mode(task1, machine, 1)
+    model.add_mode(task2, machine, 1)
+    model.add_end_before_start(task1, task2)
+
+    expected = (
+        "0 jobs\n"
+        "2 resources\n"
+        "├─ 1 machines\n"
+        "└─ 1 renewable\n"
+        "2 tasks\n"
+        "2 modes\n"
+        "1 constraints\n"
+        "└─ 1 end_before_start\n"
+        "objective\n"
+        "└─ weight_makespan=1"
+    )
+    assert_equal(model.summary(), expected)
+
+
 def test_solve(solver: str):
     """
     Tests the solve method of the Model class.

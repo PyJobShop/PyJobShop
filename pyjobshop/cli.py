@@ -93,7 +93,7 @@ def tabulate(headers: list[str], rows: np.ndarray) -> str:
 def write_solution(instance_loc: Path, sol_dir: Path, result: Result):
     with open(sol_dir / (instance_loc.stem + ".sol"), "w") as fh:
         fh.write(f"instance: {instance_loc.name}\n")
-        fh.write(f"status: {result.status.value}\n")
+        fh.write(f"status: {result.status}\n")
         fh.write(f"objective: {result.objective}\n")
         fh.write(f"lower_bound: {result.lower_bound}\n")
         fh.write(f"runtime: {result.runtime}\n")

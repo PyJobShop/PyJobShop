@@ -20,14 +20,13 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v6
         with:
-          version: "0.7.5"
+          version: "0.8.10"
           enable-cache: true
       - name: Install Python version
         run: uv python install 3.12
       - name: Install Python dependencies
         run: uv sync --all-extras
       - name: Run benchmarks
-        # We evaluate the microbenchmarks using the release build.
         uses: CodSpeedHQ/action@v3
         with:
           token: ${{ secrets.CODSPEED_TOKEN }}

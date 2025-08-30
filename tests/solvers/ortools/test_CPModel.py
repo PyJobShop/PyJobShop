@@ -1,8 +1,9 @@
 from numpy.testing import assert_, assert_equal
+from ortools.sat.python.cp_model import CpModel
 
 from pyjobshop.Model import Model
 from pyjobshop.Solution import Solution, TaskData
-from pyjobshop.solvers.ortools.Solver import Solver
+from pyjobshop.solvers.ortools.CPModel import CPModel
 
 
 def test_solve_initial_solution(complete_data, complete_sol, capfd):
@@ -10,8 +11,8 @@ def test_solve_initial_solution(complete_data, complete_sol, capfd):
     Tests that the solver correctly hints the solution by checking that the
     display log is correct when an initial solution is provided.
     """
-    solver = Solver(complete_data)
-    solver.solve(display=True, initial_solution=complete_sol)
+    cp_model = CPModel(complete_data)
+    cp_model.solve(display=True, initial_solution=complete_sol)
 
     msg = "The solution hint is complete and is feasible."
     printed = capfd.readouterr().out
@@ -22,18 +23,18 @@ def test_subsequent_solve_clears_hint(small):
     """
     Tests that subsequent solve calls clear the previous hint.
     """
-    solver = Solver(small)
+    cp_model = CPModel(small)
 
     # We first solve the model with init1 as initial solution.
     init1 = Solution([TaskData(0, [0], 0, 1), TaskData(0, [0], 1, 3)])
-    result = solver.solve(initial_solution=init1)
+    result = cp_model.solve(initial_solution=init1)
     assert_equal(result.status.value, "Optimal")
 
     # Next we solve the model with a different initial solution. If
     # the hint was not cleared, OR-Tools will throw a ``MODEL_INVALID``
     # error because the model contains duplicate hints.
     init2 = Solution([TaskData(0, [1], 0, 1), TaskData(0, [1], 1, 3)])
-    result = solver.solve(initial_solution=init2)
+    result = cp_model.solve(initial_solution=init2)
     assert_equal(result.status.value, "Optimal")
 
 
@@ -56,10 +57,50 @@ def test_empty_circuit_not_allowed_bug():
 
     model.add_consecutive(*tasks)  # this activates the circuit constraints
 
-    solver = Solver(model.data())
-    result = solver.solve()
+    cp_model = CPModel(model.data())
+    result = cp_model.solve()
 
     # Optimal solution is to schedule both tasks on resource 1, achieving
     # makespan 4. Before the fix, empty circuits weren't allowed, forcing
     # tasks onto separate resources and resulting in a longer makespan of 5.
     assert_equal(result.objective, 4)
+
+
+def test_custom_model(small):
+    """
+    Tests that a custom CpModel can be provided.
+    """
+    custom_model = CpModel()
+    custom_model.add(1 == 2)  # infeasible
+
+    cp_model = CPModel(small, model=custom_model)
+    result = cp_model.solve()
+    assert_equal(result.status.value, "Infeasible")
+
+
+def test_model_property(small):
+    """
+    Tests that the model property can be accessed.
+    """
+    cp_model = CPModel(small)
+    result = cp_model.solve()
+    assert_equal(result.status.value, "Optimal")
+
+    cp_model.model.add(1 == 2)
+    result = cp_model.solve()
+    assert_equal(result.status.value, "Infeasible")
+
+
+def test_variables_property(small):
+    """
+    Tests that the variables property can be accessed.
+    """
+    cp_model = CPModel(small)
+    variables = cp_model.variables
+
+    assert_equal(len(variables.job_vars), 1)
+    assert_equal(len(variables.task_vars), 2)
+    assert_equal(len(variables.mode_vars), 2)
+    assert_equal(len(variables.assign_vars), 2)
+    assert_equal(len(variables.demand_vars), 2)
+    assert_equal(len(variables.sequence_vars), 1)

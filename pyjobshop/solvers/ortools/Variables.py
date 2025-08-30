@@ -73,23 +73,21 @@ class TaskVar:
 
 
 @dataclass
-class AssignVar:
+class OptionalIntervalVar:
     """
-    Variables that represent a task-resource assignment in the problem.
+    Wrapper around the OR-Tools interval variable, which does not expose
+    the ``present`` vaiable.
 
     Parameters
     ----------
     interval
-        The interval variable representing the task-resource assignment.
+        The interval variable to be represented.
     present
         The Boolean variable indicating whether the interval is present.
-    demand
-        The demand consumed by the task-resource pair.
     """
 
     interval: IntervalVar
     present: BoolVarT
-    demand: LinearExprT
 
     @property
     def start(self) -> LinearExprT:
@@ -187,6 +185,7 @@ class Variables:
         self._task_vars = self._make_task_variables()
         self._mode_vars = [model.new_bool_var("") for _ in self._data.modes]
         self._assign_vars = self._make_assign_variables(self._task_vars)
+        self._demand_vars = self._make_demand_variables()
         self._sequence_vars = self._make_sequence_variables()
 
         # Variables below are lazily created.
@@ -212,18 +211,27 @@ class Variables:
         return self._task_vars
 
     @property
-    def assign_vars(self) -> dict[tuple[TaskIdx, ResourceIdx], AssignVar]:
+    def mode_vars(self) -> list[ModeVar]:
+        """
+        Returns the mode variables.
+        """
+        return self._mode_vars
+
+    @property
+    def assign_vars(
+        self,
+    ) -> dict[tuple[TaskIdx, ResourceIdx], OptionalIntervalVar]:
         """
         Retruns the assignment variables.
         """
         return self._assign_vars
 
     @property
-    def mode_vars(self) -> list[ModeVar]:
+    def demand_vars(self) -> dict[tuple[TaskIdx, ResourceIdx], IntVar]:
         """
-        Returns the mode variables.
+        Returns the demand variables.
         """
-        return self._mode_vars
+        return self._demand_vars
 
     @property
     def sequence_vars(self) -> dict[int, SequenceVar]:
@@ -303,11 +311,18 @@ class Variables:
         self._max_tardiness_var = self._make_max_tardiness_variable()
         return self._max_tardiness_var
 
-    def res2assign(self, idx: int) -> list[AssignVar]:
+    def res2assign(self, idx: int) -> list[OptionalIntervalVar]:
         """
         Returns all assignment variables for the given resource.
         """
         items = self.assign_vars.items()
+        return [var for (_, res_idx), var in items if res_idx == idx]
+
+    def res2demand(self, idx: int) -> list[IntVar]:
+        """
+        Returns all demand variables for the given resource.
+        """
+        items = self.demand_vars.items()
         return [var for (_, res_idx), var in items if res_idx == idx]
 
     def _make_job_variables(self) -> list[JobVar]:
@@ -380,7 +395,7 @@ class Variables:
 
     def _make_assign_variables(
         self, task_vars: list[TaskVar]
-    ) -> dict[tuple[TaskIdx, ResourceIdx], AssignVar]:
+    ) -> dict[tuple[TaskIdx, ResourceIdx], OptionalIntervalVar]:
         """
         Creates an optional interval variable for each task-resource pair.
         """
@@ -407,9 +422,33 @@ class Variables:
                     present,
                     f"{name}_interval",
                 )
-                demand = model.new_int_var(0, MAX_VALUE, f"{name}_demand")
-                var = AssignVar(interval, present, demand)
+                var = OptionalIntervalVar(interval, present)
                 variables[task_idx, res_idx] = var
+
+        return variables
+
+    def _make_demand_variables(
+        self,
+    ) -> dict[tuple[TaskIdx, ResourceIdx], IntVar]:
+        """
+        Creates a integer demand variable for each task-resource pair.
+        """
+        model, data = self._model, self._data
+        variables = {}
+
+        for task_idx in range(data.num_tasks):
+            # Only create demand variables for (task, resource) pairs
+            # that are actually used in the problem.
+            resources = {
+                res
+                for mode in data.task2modes(task_idx)
+                for res in data.modes[mode].resources
+            }
+
+            for res_idx in resources:
+                name = f"{task_idx}_{res_idx}"
+                demand = model.new_int_var(0, MAX_VALUE, f"{name}_demand")
+                variables[task_idx, res_idx] = demand
 
         return variables
 
@@ -594,9 +633,12 @@ class Variables:
                 task_resources.update(data.modes[mode].resources)
 
             for res_idx in task_resources:
-                var = assign_vars[task_idx, res_idx]
-                model.add_hint(var.present, res_idx in sol_task.resources)
-                model.add_hint(var.demand, res2demands.get(res_idx, 0))  # type: ignore
+                assign_var = assign_vars[task_idx, res_idx]
+                is_present = res_idx in sol_task.resources
+                model.add_hint(assign_var.present, is_present)
+
+                demand_var = self.demand_vars[task_idx, res_idx]
+                model.add_hint(demand_var, res2demands.get(res_idx, 0))
 
         # Sequencing related variables.
         for res_idx in data.machine_idcs:
