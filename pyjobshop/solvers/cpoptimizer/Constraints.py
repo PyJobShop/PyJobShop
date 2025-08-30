@@ -298,7 +298,7 @@ class Constraints:
         Adds redundant cumulative constraints for connected components of
         machines.
         """
-        model, data = self._model, self._data
+        model, data, variables = self._model, self._data, self._variables
 
         for component in utils.redundant_cumulative_components(data):
             if not (0 < len(component.machines) < data.num_machines):
@@ -307,7 +307,7 @@ class Constraints:
             if not (0 < len(component.tasks) < data.num_tasks):
                 continue
 
-            intervals = [self._task_vars[idx] for idx in component.tasks]
+            intervals = [variables.task_vars[idx] for idx in component.tasks]
             pulses = [cpo.pulse(interval, 1) for interval in intervals]
             model.add(sum(pulses) <= len(component.machines))
 
