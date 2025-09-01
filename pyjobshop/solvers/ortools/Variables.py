@@ -79,7 +79,7 @@ class TaskVar:
 class OptionalIntervalVar:
     """
     Wrapper around the OR-Tools interval variable, which does not expose
-    the ``present`` vaiable.
+    the ``present`` variable.
 
     Parameters
     ----------
