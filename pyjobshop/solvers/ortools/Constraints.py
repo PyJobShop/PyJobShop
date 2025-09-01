@@ -207,14 +207,13 @@ class Constraints:
 
         for task_idx1, task_idx2 in data.constraints.consecutive:
             for res_idx in data.machine_idcs:
-                seq_var = variables.sequence_vars[res_idx]
-                seq_var.activate(model)
-
                 var1 = variables.assign_vars.get((task_idx1, res_idx))
                 var2 = variables.assign_vars.get((task_idx2, res_idx))
-
                 if not (var1 and var2):
                     continue
+
+                seq_var = variables.sequence_vars[res_idx]
+                seq_var.activate(model)
 
                 arc = seq_var.arcs[task_idx1, task_idx2]
                 both_present = [var1.present, var2.present]
