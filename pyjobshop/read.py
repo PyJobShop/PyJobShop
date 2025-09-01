@@ -23,7 +23,7 @@ class InstanceFormat(str, Enum):
 
 def read(
     loc: str | Path,
-    instance_format: InstanceFormat = InstanceFormat.FJSPLIB,
+    instance_format: str | InstanceFormat = InstanceFormat.FJSPLIB,
 ) -> ProblemData:
     """
     Reads an FJSPLIB instance and returns a ProblemData object.
