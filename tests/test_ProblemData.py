@@ -1268,6 +1268,33 @@ def test_task_resumable_does_not_end_in_break(solver: str):
     assert_equal(result.best.tasks[0].end, 1)
 
 
+def test_task_resumable_multiple_resources(solver: str):
+    """
+    Tests a special case with a resumable task requiring multiple resources
+    that have overlapping breaks. This makes the overlap duration calculation
+    more complicated, as we need to consider the "merged" breaks of all
+    resources that are required by the mode.
+    """
+    if solver == "cpoptimizer":
+        return  # TODO
+
+    model = Model()
+
+    machine = model.add_machine(breaks=[(1, 3)])
+    renewable = model.add_renewable(capacity=1, breaks=[(2, 4)])
+    task = model.add_task(fixed_duration=True, resumable=True)
+    model.add_mode(task, [machine, renewable], duration=2)
+
+    # The task requires both resources, which have overlapping breaks.
+    # That means the task can only be processed outside the breaks,
+    # i.e., in the intervals [0, 1) and [4, ...). The task should therefore
+    # end at time 5.
+    result = model.solve(solver=solver)
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.objective, 5)
+    assert_equal(result.best.tasks, [TaskData(0, [0, 1], 0, 5)])
+
+
 def test_machine_breaks(solver: str):
     """
     Tests that a machine resource respects breaks.

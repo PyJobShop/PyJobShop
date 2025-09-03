@@ -55,9 +55,18 @@ class TaskVar:
     ----------
     interval
         The interval variable representing the task.
+    processing
+        The integer variable representing the processing time of the task.
+    idle
+        The integer variable representing the idle time of the task.
+    overlap
+        The integer variable representing the break overlap time of the task.
     """
 
     interval: IntervalVar
+    processing: IntVar
+    idle: IntVar
+    overlap: IntVar
 
     @property
     def start(self) -> LinearExprT:
@@ -175,9 +184,9 @@ class SequenceVar:
 @dataclass
 class OverlapVar:
     """
-    Variable representing whether an assignment interval overlaps with a
-    resource break. It's used to allow assignment intervals to be interrupted
-    by breaks, and resume processing afterwards.
+    Variable representing whether an interval overlaps with a resource break.
+    It's used to allow tasks intervals to be interrupted by breaks, and resume
+    processing afterwards.
 
     Parameters
     ----------
@@ -218,7 +227,7 @@ class Variables:
         self._sequence_vars = self._make_sequence_variables()
 
         # Variables below are lazily created.
-        self._overlap_vars: dict[TaskResIdcs, list[OverlapVar]] | None = None
+        self._overlap_vars: list[list[OverlapVar]] | None = None
         self._makespan_var: IntVar | None = None
         self._is_tardy_vars: list[IntVar] | None = None
         self._flow_time_vars: list[IntVar] | None = None
@@ -269,10 +278,9 @@ class Variables:
         return self._sequence_vars
 
     @property
-    def overlap_vars(self) -> dict[TaskResIdcs, list[OverlapVar]]:
+    def overlap_vars(self) -> list[list[OverlapVar]]:
         """
-        Returns the overlap variables (one per break) for each task-resource
-        pair.
+        Returns the overlap variables for each mode.
         """
         if self._overlap_vars is not None:
             return self._overlap_vars
@@ -418,20 +426,28 @@ class Variables:
 
             modes = [data.modes[mode_idx] for mode_idx in data.task2modes(idx)]
             domain = Domain.from_values([mode.duration for mode in modes])
+            processing = model.new_int_var_from_domain(
+                domain, name=f"{name}_processing"
+            )
+            idle = model.new_int_var(0, MAX_VALUE, f"{name}_idle")
+            overlap = model.new_int_var(0, MAX_VALUE, f"{name}_overlap")
             duration = model.new_int_var(
-                lb=domain.min(),
-                ub=MAX_VALUE,
-                name=f"{name}_duration",
+                domain.min(), MAX_VALUE, f"{name}_duration"
             )
 
-            if task.fixed_duration and not task.resumable:
-                # Task duration is exactly one of the mode's durations.
-                model.add_linear_expression_in_domain(duration, domain)
+            parts = [processing]
+            if task.resumable:
+                parts.append(overlap)
+
+            if not task.fixed_duration:
+                parts.append(idle)
+
+            model.add(duration == sum(parts))
 
             interval = model.new_interval_var(
                 start, duration, end, f"interval_{task}"
             )
-            variables.append(TaskVar(interval))
+            variables.append(TaskVar(interval, processing, idle, overlap))
 
         return variables
 
@@ -507,48 +523,47 @@ class Variables:
 
         return variables
 
-    def _make_overlap_variables(self) -> dict[TaskResIdcs, list[OverlapVar]]:
+    def _make_overlap_variables(self) -> list[list[OverlapVar]]:
         """
         Creates the overlap variables.
         """
         model, data = self._model, self._data
-        variables: dict[TaskResIdcs, list[OverlapVar]] = {}
+        variables = []
 
-        for (task_idx, res_idx), assign_var in self.assign_vars.items():
-            resource = data.resources[res_idx]
-            if not hasattr(resource, "breaks"):
-                continue
-
+        for mode in data.modes:
+            breaks = [
+                brk
+                for res_idx in mode.resources
+                for brk in getattr(data.resources[res_idx], "breaks", [])
+            ]
+            breaks = merge(breaks)  # super breaks
+            task_var = self._task_vars[mode.task]
             overlap_vars = []
 
-            for start, end in resource.breaks:
+            for start, end in breaks:
                 before = model.new_bool_var("")
-                model.add(assign_var.end <= start).only_enforce_if(before)
-                model.add(assign_var.end > start).only_enforce_if(~before)
+                model.add(task_var.end <= start).only_enforce_if(before)
+                model.add(task_var.end > start).only_enforce_if(~before)
 
                 after = model.new_bool_var("")
-                model.add(assign_var.start >= end).only_enforce_if(after)
-                model.add(assign_var.start < end).only_enforce_if(~after)
+                model.add(task_var.start >= end).only_enforce_if(after)
+                model.add(task_var.start < end).only_enforce_if(~after)
 
                 overlaps = model.new_bool_var("")
                 model.add_bool_or(after, before, overlaps)
                 model.add_implication(after, ~overlaps)
                 model.add_implication(before, ~overlaps)
 
+                # Overlap duration is either zero or the break duration.
                 domain = Domain.from_values([0, end - start])
                 duration = model.new_int_var_from_domain(domain, "")
                 model.add(duration == end - start).only_enforce_if(overlaps)
                 model.add(duration == 0).only_enforce_if(~overlaps)
 
-                # Redundant: absent assignment variable means no overlap.
-                # TODO why do these redundant constraint not work?
-                # model.add(overlaps <= assign_var.present)
-                # model.add(duration <= (end - start) * assign_var.present)
-
                 overlap_var = OverlapVar(before, after, overlaps, duration)
                 overlap_vars.append(overlap_var)
 
-            variables[task_idx, res_idx] = overlap_vars
+            variables.append(overlap_vars)
 
         return variables
 
@@ -761,3 +776,20 @@ class Variables:
                     )
 
                 model.add_hint(arc, hint)
+
+
+def merge(intervals: list[tuple[int, int]]) -> list[tuple[int, int]]:
+    if not intervals:
+        return []
+
+    intervals = sorted(intervals)
+    merged = []
+
+    for start, end in intervals:
+        if not merged or start > merged[-1][1]:
+            merged.append((start, end))  # no overlap
+        else:
+            new_end = max(merged[-1][1], end)  # overlap -> merge with last
+            merged[-1] = (merged[-1][0], new_end)
+
+    return merged

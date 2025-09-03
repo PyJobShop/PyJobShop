@@ -2,7 +2,7 @@ from collections import defaultdict
 from itertools import product
 
 import numpy as np
-from ortools.sat.python.cp_model import CpModel, Domain, LinearExpr
+from ortools.sat.python.cp_model import CpModel, LinearExpr
 
 import pyjobshop.solvers.utils as utils
 from pyjobshop.ProblemData import ProblemData
@@ -38,8 +38,8 @@ class Constraints:
     def _select_one_mode(self):
         """
         Selects one mode for each task, ensuring that each task obtains the
-        correct duration, is assigned to a set of resources, and demands are
-        correctly set.
+        correct processing time, is assigned to a set of resources, and
+        demands are correctly set.
         """
         model, data, variables = self._model, self._data, self._variables
 
@@ -51,13 +51,7 @@ class Constraints:
 
             for mode_idx, mode_var in zip(mode_idcs, mode_vars):
                 mode = data.modes[mode_idx]
-
-                # Set task duration to at least the selected mode's duration,
-                # or equal if we know its duration is fixed.
-                expr = task_var.duration >= mode.duration
-                if data.tasks[task_idx].fixed_duration:
-                    expr = task_var.duration == mode.duration
-
+                expr = task_var.processing == mode.duration
                 model.add(expr).only_enforce_if(mode_var)
 
                 for res_idx, demand in zip(mode.resources, mode.demands):
@@ -121,51 +115,46 @@ class Constraints:
         """
         model, data, variables = self._model, self._data, self._variables
 
-        for res_idx in data.machine_idcs + data.renewable_idcs:
-            breaks = data.resources[res_idx].breaks
-            if not breaks:
-                continue
+        for task_idx in range(data.num_tasks):
+            task_var = variables.task_vars[task_idx]
+            # assign_vars = ...
 
-            break_intervals = [
-                model.new_fixed_size_interval_var(start, end - start, "")
-                for start, end in breaks
-            ]
+            # if not data.tasks[task_idx].resumable:
+            #     # TODO:
+            #     # - get all assignment variables of this task
+            #     # - for each assignment variable, get the resource breaks
+            #     # - create no-overlap with the break intervals
+            #     # - note that this does not affect task vars, because it
+            #     # relies on the presence of the assignment variable.
+            #     #
+            #     # Task is not resumable, so its assignment variables
+            #     # should not overlap with any of the break intervals.
+            #     model.add_no_overlap([assign_var.interval, *break_intervals])
+            #     model.add(task_var.overlap == 0)
+            #     continue
 
-            for (task_idx, var_res_idx), var in variables.assign_vars.items():
-                if res_idx != var_res_idx:
-                    continue
+            # If overlap is allowed, assignment variable should not start or
+            # end during a break. It could be possible in theory but we don't
+            # want it.
 
-                if not data.tasks[task_idx].resumable:
-                    # Task is not resumable, so this assignment variable should
-                    # not overlap with any of the break intervals.
-                    model.add_no_overlap([var.interval, *break_intervals])
-                    continue
+            # Assignment variable cannot start or end during a break. The
+            # domains capture the invalid start/end times, and the complement
+            # ensures that these values are excluded.
+            # starts = Domain.from_intervals([(s, e - 1) for s, e in breaks])
+            # ends = Domain.from_intervals([(s + 1, e) for s, e in breaks])
+            # model.add_linear_expression_in_domain(
+            #     var.start, starts.complement()
+            # ).only_enforce_if(mode_var)
+            # model.add_linear_expression_in_domain(
+            #     var.end, ends.complement()
+            # ).only_enforce_if(mode_var)
 
-                # Task is resumable, so we need to adjust the assignment
-                # variable's duration based on the number of breaks that it
-                # overlaps. The duration is equal to the mode's duration plus
-                # the total duration of the overlapping breaks.
-                overlap_vars = variables.overlap_vars[task_idx, res_idx]
-                overlap_durations = [var.duration for var in overlap_vars]
-                mode_idcs = data.task2modes(task_idx)
-                mode_vars = [variables.mode_vars[idx] for idx in mode_idcs]
-
-                for mode_idx, mode_var in zip(mode_idcs, mode_vars):
-                    mode = data.modes[mode_idx]
-                    total_duration = mode.duration + sum(overlap_durations)
-                    expr = var.duration == total_duration
-                    model.add(expr).only_enforce_if(mode_var)
-
-                # Cannot start or end during a break. The domains capture the
-                # invalid start/end times, and the complement ensures that
-                # these values are excluded.
-                starts = Domain.from_intervals([(s, e - 1) for s, e in breaks])
-                ends = Domain.from_intervals([(s + 1, e) for s, e in breaks])
-                model.add_linear_expression_in_domain(
-                    var.start, starts.complement()
-                )
-                model.add_linear_expression_in_domain(
-                    var.end, ends.complement()
+            for mode_idx in data.task2modes(task_idx):
+                mode_var = variables.mode_vars[mode_idx]
+                overlap_vars = variables.overlap_vars[mode_idx]
+                total_overlap = sum(var.duration for var in overlap_vars)
+                model.add(task_var.overlap == total_overlap).only_enforce_if(
+                    mode_var
                 )
 
     def _timing_constraints(self):
