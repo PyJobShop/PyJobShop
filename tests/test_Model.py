@@ -10,6 +10,10 @@ from pyjobshop.ProblemData import (
     IdenticalResources,
     Mode,
     ModeDependency,
+    ModeEndBeforeEnd,
+    ModeEndBeforeStart,
+    ModeStartBeforeEnd,
+    ModeStartBeforeStart,
     Objective,
     SameSequence,
     SetupTime,
@@ -361,3 +365,46 @@ def test_solve_additional_kwargs_initial_solution_fixed(small):
     # instance admits a better solution with makespan 3.
     assert_equal(result.objective, 5)
     assert_equal(result.status.value, "Optimal")
+
+
+def test_mode_precedence_constraints():
+    """
+    Tests that mode-based precedence constraints are correctly added to
+    the model.
+    """
+    model = Model()
+
+    job = model.add_job()
+    machine = model.add_machine()
+    task1 = model.add_task(job=job)
+    task2 = model.add_task(job=job)
+
+    mode1 = model.add_mode(task1, machine, 1)
+    mode2 = model.add_mode(task1, machine, 2)
+    mode3 = model.add_mode(task2, machine, 1)
+    mode4 = model.add_mode(task2, machine, 2)
+
+    # Add mode-based precedence constraints
+    c1 = model.add_mode_start_before_start(mode1, mode3, 2)
+    c2 = model.add_mode_start_before_end(mode1, mode4, 3)
+    c3 = model.add_mode_end_before_start(mode2, mode3, 4)
+    c4 = model.add_mode_end_before_end(mode2, mode4, 5)
+
+    # Verify constraints are added
+    assert_equal(len(model.constraints.mode_start_before_start), 1)
+    assert_equal(len(model.constraints.mode_start_before_end), 1)
+    assert_equal(len(model.constraints.mode_end_before_start), 1)
+    assert_equal(len(model.constraints.mode_end_before_end), 1)
+
+    # Verify constraint attributes
+    assert_equal(c1, ModeStartBeforeStart(0, 2, 2))
+    assert_equal(c2, ModeStartBeforeEnd(0, 3, 3))
+    assert_equal(c3, ModeEndBeforeStart(1, 2, 4))
+    assert_equal(c4, ModeEndBeforeEnd(1, 3, 5))
+
+    # Verify data conversion
+    data = model.data()
+    assert_equal(len(data.constraints.mode_start_before_start), 1)
+    assert_equal(len(data.constraints.mode_start_before_end), 1)
+    assert_equal(len(data.constraints.mode_end_before_start), 1)
+    assert_equal(len(data.constraints.mode_end_before_end), 1)

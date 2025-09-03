@@ -293,6 +293,32 @@ class Constraints:
 
             model.add(expr1 <= expr2)
 
+    def _mode_precedence_constraints(self):
+        """
+        Implements the mode-based precedence constraints.
+        """
+        model, data = self._model, self._data
+
+        for idx1, idx2, delay in data.constraints.mode_start_before_start:
+            mode_var1 = self._mode_vars[idx1]
+            mode_var2 = self._mode_vars[idx2]
+            model.add(cpo.start_before_start(mode_var1, mode_var2, delay))
+
+        for idx1, idx2, delay in data.constraints.mode_start_before_end:
+            mode_var1 = self._mode_vars[idx1]
+            mode_var2 = self._mode_vars[idx2]
+            model.add(cpo.start_before_end(mode_var1, mode_var2, delay))
+
+        for idx1, idx2, delay in data.constraints.mode_end_before_start:
+            mode_var1 = self._mode_vars[idx1]
+            mode_var2 = self._mode_vars[idx2]
+            model.add(cpo.end_before_start(mode_var1, mode_var2, delay))
+
+        for idx1, idx2, delay in data.constraints.mode_end_before_end:
+            mode_var1 = self._mode_vars[idx1]
+            mode_var2 = self._mode_vars[idx2]
+            model.add(cpo.end_before_end(mode_var1, mode_var2, delay))
+
     def add_constraints(self):
         """
         Adds all the constraints to the CP model.
@@ -308,3 +334,4 @@ class Constraints:
         self._consecutive_constraints()
         self._same_sequence_constraints()
         self._mode_dependencies()
+        self._mode_precedence_constraints()
