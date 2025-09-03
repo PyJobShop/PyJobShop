@@ -1,3 +1,5 @@
+from itertools import pairwise
+
 import docplex.cp.modeler as cpo
 import numpy as np
 from docplex.cp.function import CpoStepFunction
@@ -7,6 +9,7 @@ import pyjobshop.solvers.utils as utils
 from pyjobshop.constants import MAX_VALUE
 from pyjobshop.ProblemData import ProblemData
 
+from .utils import presence_of
 from .Variables import Variables
 
 
@@ -138,7 +141,7 @@ class Constraints:
         for res_idx in data.non_renewable_idcs:
             modes = data.resource2modes(res_idx)
             usage = sum(
-                cpo.presence_of(variables.mode_vars[mode_idx])
+                presence_of(variables.mode_vars[mode_idx])
                 * self._get_demand(mode_idx, res_idx)
                 for mode_idx in modes
             )
@@ -195,19 +198,17 @@ class Constraints:
 
         for idx1, idx2 in data.constraints.identical_resources:
             for mode1, modes2 in utils.identical_modes(data, idx1, idx2):
-                expr1 = cpo.presence_of(variables.mode_vars[mode1])
+                expr1 = presence_of(variables.mode_vars[mode1])
                 expr2 = sum(
-                    cpo.presence_of(variables.mode_vars[mode2])
-                    for mode2 in modes2
+                    presence_of(variables.mode_vars[mode2]) for mode2 in modes2
                 )
                 model.add(expr1 <= expr2)
 
         for idx1, idx2 in data.constraints.different_resources:
             for mode1, modes2 in utils.different_modes(data, idx1, idx2):
-                expr1 = cpo.presence_of(variables.mode_vars[mode1])
+                expr1 = presence_of(variables.mode_vars[mode1])
                 expr2 = sum(
-                    cpo.presence_of(variables.mode_vars[mode2])
-                    for mode2 in modes2
+                    presence_of(variables.mode_vars[mode2]) for mode2 in modes2
                 )
                 model.add(expr1 <= expr2)
 
@@ -288,10 +289,42 @@ class Constraints:
         for idx1, idcs2 in data.constraints.mode_dependencies:
             mode_var1 = variables.mode_vars[idx1]
             modes_vars2 = [variables.mode_vars[idx] for idx in idcs2]
-            expr1 = cpo.presence_of(mode_var1)
-            expr2 = sum(cpo.presence_of(mode2) for mode2 in modes_vars2)
+            expr1 = presence_of(mode_var1)
+            expr2 = sum(presence_of(mode2) for mode2 in modes_vars2)
 
             model.add(expr1 <= expr2)
+
+    def _task_selection_constraints(self):
+        """
+        Creates constraints for task selection constraints.
+        """
+        model, data, variables = self._model, self._data, self._variables
+
+        def presence_var_or_true(idx: int | None):
+            """
+            Returns the Boolean presence variable of the task if a valid index
+            is passed, otherwise returns a constant True value.
+            """
+            return 1 if idx is None else presence_of(variables.task_vars[idx])
+
+        for idcs, condition_idx in data.constraints.select_all_or_none:
+            condition = presence_var_or_true(condition_idx) == 1
+
+            for idx1, idx2 in pairwise(idcs):
+                var1 = variables.task_vars[idx1]
+                var2 = variables.task_vars[idx2]
+                expr = presence_of(var1) == presence_of(var2)
+                model.add(cpo.if_then(condition, expr))
+
+        for idcs, condition_idx in data.constraints.select_at_least_one:
+            condition = presence_var_or_true(condition_idx) == 1
+            presences = [presence_of(variables.task_vars[idx]) for idx in idcs]
+            model.add(condition <= sum(presences))
+
+        for idcs, condition_idx in data.constraints.select_exactly_one:
+            condition = presence_var_or_true(condition_idx) == 1
+            presences = [presence_of(variables.task_vars[idx]) for idx in idcs]
+            model.add(cpo.if_then(condition, sum(presences) == 1))
 
     def add_constraints(self):
         """
@@ -308,3 +341,4 @@ class Constraints:
         self._consecutive_constraints()
         self._same_sequence_constraints()
         self._mode_dependencies()
+        self._task_selection_constraints()
