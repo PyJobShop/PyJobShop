@@ -1321,6 +1321,31 @@ def test_task_resumable_does_not_end_in_break(solver: str):
     assert_equal(result.best.tasks[0].end, 1)
 
 
+def test_task_resumable_with_modes(solver: str):
+    """
+    Smoke test.
+    Tests that resumable tasks with multiple modes are scheduled correctly.
+    This checks that breaks on other resources does not interfere with the
+    tasks.
+    """
+    model = Model()
+
+    with_breaks = model.add_machine(breaks=[(0, 10)])
+    no_breaks = model.add_machine()
+    task = model.add_task(fixed_duration=False, resumable=True)
+    model.add_mode(task, with_breaks, duration=3)
+    model.add_mode(task, no_breaks, duration=1)
+
+    result = model.solve(solver=solver)
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.objective, 1)
+
+    sol_task = result.best.tasks[0]
+    assert_equal(sol_task.start, 0)
+    assert_equal(sol_task.end, 1)
+    assert_equal(sol_task.overlap, 0)
+
+
 def test_task_resumable_multiple_resources(solver: str):
     """
     Tests a special case with a resumable task requiring multiple resources

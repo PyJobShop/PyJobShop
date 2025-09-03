@@ -543,7 +543,7 @@ class Variables:
         model, data = self._model, self._data
         variables = []
 
-        for mode in data.modes:
+        for mode_idx, mode in enumerate(data.modes):
             breaks = [
                 brk
                 for res_idx in mode.resources
@@ -551,16 +551,25 @@ class Variables:
             ]
             breaks = merge(breaks)  # super breaks
             task_var = self._task_vars[mode.task]
+            mode_var = self._mode_vars[mode_idx]
             overlap_vars = []
 
             for start, end in breaks:
                 before = model.new_bool_var("")
-                model.add(task_var.end <= start).only_enforce_if(before)
-                model.add(task_var.end > start).only_enforce_if(~before)
+                model.add(task_var.end <= start).only_enforce_if(
+                    [before, mode_var]
+                )
+                model.add(task_var.end > start).only_enforce_if(
+                    [~before, mode_var]
+                )
 
                 after = model.new_bool_var("")
-                model.add(task_var.start >= end).only_enforce_if(after)
-                model.add(task_var.start < end).only_enforce_if(~after)
+                model.add(task_var.start >= end).only_enforce_if(
+                    [after, mode_var]
+                )
+                model.add(task_var.start < end).only_enforce_if(
+                    [~after, mode_var]
+                )
 
                 overlaps = model.new_bool_var("")
                 model.add_bool_or(after, before, overlaps)
