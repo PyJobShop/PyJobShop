@@ -57,10 +57,13 @@ class Variables:
         """
         Creates an interval variable for each job.
         """
+        data = self._data
         variables = []
 
-        for job in self._data.jobs:
-            var = interval_var(name=f"J{job}")
+        for idx, job in enumerate(data.jobs):
+            # Job variable has to be optional if all tasks are optional.
+            optional = all(data.tasks[idx].optional for idx in job.tasks)
+            var = interval_var(optional=optional, name=f"J{idx}")
 
             var.set_start_min(job.release_date)
             var.set_end_max(min(job.deadline, MAX_VALUE))
@@ -78,7 +81,7 @@ class Variables:
         variables = []
 
         for idx, task in enumerate(data.tasks):
-            var = interval_var(name=f"T{task}")
+            var = interval_var(optional=task.optional, name=f"T{idx}")
 
             var.set_start_min(task.earliest_start)
             var.set_start_max(min(task.latest_start, MAX_VALUE))
@@ -152,26 +155,28 @@ class Variables:
         Warmstarts the variables based on the given solution.
         """
         data = self._data
-        stp = self._model.create_empty_solution()
+        init = self._model.create_empty_solution()
 
         for idx in range(data.num_jobs):
             job = data.jobs[idx]
             job_var = self.job_vars[idx]
             sol_tasks = [solution.tasks[task] for task in job.tasks]
 
-            job_start = min(task.start for task in sol_tasks)
-            job_end = max(task.end for task in sol_tasks)
+            present = any(task.present for task in sol_tasks)
+            job_start = min(task.start for task in sol_tasks if task.present)
+            job_end = max(task.end for task in sol_tasks if task.present)
 
-            stp.add_interval_var_solution(
-                job_var, start=job_start, end=job_end
+            init.add_interval_var_solution(
+                job_var, presence=present, start=job_start, end=job_end
             )
 
         for idx in range(data.num_tasks):
             task_var = self.task_vars[idx]
             sol_task = solution.tasks[idx]
 
-            stp.add_interval_var_solution(
+            init.add_interval_var_solution(
                 task_var,
+                presence=sol_task.present,
                 start=sol_task.start,
                 end=sol_task.end,
                 size=sol_task.end - sol_task.start,
@@ -181,7 +186,7 @@ class Variables:
             sol_task = solution.tasks[mode.task]
             var = self.mode_vars[idx]
 
-            stp.add_interval_var_solution(
+            init.add_interval_var_solution(
                 var,
                 presence=idx == sol_task.mode,
                 start=sol_task.start,
@@ -189,4 +194,4 @@ class Variables:
                 size=sol_task.end - sol_task.start,
             )
 
-        self._model.set_starting_point(stp)
+        self._model.set_starting_point(init)

@@ -15,6 +15,9 @@ from .ProblemData import Objective as Objective
 from .ProblemData import ProblemData as ProblemData
 from .ProblemData import Renewable as Renewable
 from .ProblemData import SameSequence as SameSequence
+from .ProblemData import SelectAllOrNone as SelectAllOrNone
+from .ProblemData import SelectAtLeastOne as SelectAtLeastOne
+from .ProblemData import SelectExactlyOne as SelectExactlyOne
 from .ProblemData import SetupTime as SetupTime
 from .ProblemData import StartBeforeEnd as StartBeforeEnd
 from .ProblemData import StartBeforeStart as StartBeforeStart

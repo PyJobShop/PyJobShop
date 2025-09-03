@@ -334,6 +334,8 @@ class Task:
         Whether the task can be resumed after being interrupted by breaks.
         If ``True``, the task can continue processing after a break ends.
         If ``False`` (default), the task cannot be interrupted by breaks.
+    optional
+        Whether the task is optional. Default ``False``.
     name
         Name of the task.
     """
@@ -347,6 +349,7 @@ class Task:
         latest_end: int = MAX_VALUE,
         fixed_duration: bool = True,
         resumable: bool = False,
+        optional: bool = False,
         *,
         name: str = "",
     ):
@@ -363,6 +366,7 @@ class Task:
         self._latest_end = latest_end
         self._fixed_duration = fixed_duration
         self._resumable = resumable
+        self._optional = optional
         self._name = name
 
     @property
@@ -414,6 +418,13 @@ class Task:
         Whether the task can be resumed after being interrupted by breaks.
         """
         return self._resumable
+
+    @property
+    def optional(self) -> bool:
+        """
+        Whether the task is optional.
+        """
+        return self._optional
 
     @property
     def name(self) -> str:
@@ -731,6 +742,45 @@ class ModeDependency(IterableMixin):
 
 
 @dataclass
+class SelectAllOrNone(IterableMixin):
+    """
+    Enforces that all tasks from the given list are selected, or none are.
+
+    If ``condition_task`` is provided, this rule only applies when that task
+    is selected; otherwise, it has no effect.
+    """
+
+    tasks: list[int]
+    condition_task: int | None = None
+
+
+@dataclass
+class SelectAtLeastOne(IterableMixin):
+    """
+    Enforces that at least one task from the given list is selected.
+
+    If ``condition_task`` is provided, this rule only applies when that task
+    is selected; otherwise, it has no effect.
+    """
+
+    tasks: list[int]
+    condition_task: int | None = None
+
+
+@dataclass
+class SelectExactlyOne(IterableMixin):
+    """
+    Enforces that exactly one task from the given list is selected.
+
+    If ``condition_task`` is provided, this rule only applies when that task
+    is selected; otherwise, it has no effect.
+    """
+
+    tasks: list[int]
+    condition_task: int | None = None
+
+
+@dataclass
 class Constraints:
     """
     Simple container class for storing all constraints.
@@ -746,6 +796,9 @@ class Constraints:
     same_sequence: list[SameSequence] = field(default_factory=list)
     setup_times: list[SetupTime] = field(default_factory=list)
     mode_dependencies: list[ModeDependency] = field(default_factory=list)
+    select_all_or_none: list[SelectAllOrNone] = field(default_factory=list)
+    select_at_least_one: list[SelectAtLeastOne] = field(default_factory=list)
+    select_exactly_one: list[SelectExactlyOne] = field(default_factory=list)
 
     def __len__(self) -> int:
         """
@@ -1102,6 +1155,26 @@ class ProblemData:
                     " refer to the same task."
                 )
                 raise ValueError(msg)
+
+        selection_constraints = [
+            (self.constraints.select_all_or_none, "select_all_or_none"),
+            (self.constraints.select_at_least_one, "select_at_least_one"),
+            (self.constraints.select_exactly_one, "select_exactly_one"),
+        ]
+        for constraints, name in selection_constraints:
+            for idcs1, idx2 in constraints:
+                if not idcs1:
+                    msg = "Task list cannot be empty in select_all_or_none."
+                    raise ValueError(msg)
+
+                for idx in idcs1:
+                    if not (0 <= idx < self.num_tasks):
+                        msg = f"Invalid task index {idx} in {name}."
+                        raise ValueError(msg)
+
+                if idx2 is not None and not (0 <= idx2 < self.num_tasks):
+                    msg = f"Invalid task index {idx2} in {name}."
+                    raise ValueError(msg)
 
         if (
             self.objective.weight_tardy_jobs > 0

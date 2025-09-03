@@ -55,6 +55,8 @@ class TaskVar:
     ----------
     interval
         The interval variable representing the task.
+    present
+        The boolean variable indicating whether the interval is present.
     processing
         The integer variable representing the processing time of the task.
     idle
@@ -64,6 +66,7 @@ class TaskVar:
     """
 
     interval: IntervalVar
+    present: IntervalVar
     processing: IntVar
     idle: IntVar
     overlap: IntVar
@@ -85,7 +88,7 @@ class TaskVar:
 class OptionalIntervalVar:
     """
     Wrapper around the OR-Tools interval variable, which does not expose
-    the ``present`` vaiable.
+    the ``present`` variable.
 
     Parameters
     ----------
@@ -413,16 +416,19 @@ class Variables:
 
         for idx, task in enumerate(data.tasks):
             name = f"T{idx}"
-            start = model.new_int_var(
-                lb=task.earliest_start,
-                ub=min(task.latest_start, MAX_VALUE),
-                name=f"{name}_start",
+            present = (
+                model.new_bool_var(f"{name}_present")
+                if task.optional
+                else model.new_constant(True)
             )
-            end = model.new_int_var(
-                lb=task.earliest_end,
-                ub=min(task.latest_end, MAX_VALUE),
-                name=f"{name}_end",
-            )
+
+            start = model.new_int_var(lb=0, ub=MAX_VALUE, name=f"{name}_start")
+            model.add(start >= task.earliest_start).only_enforce_if(present)
+            model.add(start <= task.latest_start).only_enforce_if(present)
+
+            end = model.new_int_var(lb=0, ub=MAX_VALUE, name=f"{name}_end")
+            model.add(end >= task.earliest_end).only_enforce_if(present)
+            model.add(end <= task.latest_end).only_enforce_if(present)
 
             modes = [data.modes[mode_idx] for mode_idx in data.task2modes(idx)]
             domain = Domain.from_values([mode.duration for mode in modes])
@@ -445,9 +451,11 @@ class Variables:
             model.add(duration == sum(parts))
 
             interval = model.new_interval_var(
-                start, duration, end, f"interval_{task}"
+                start, duration, end, present, f"{name}_interval"
             )
-            variables.append(TaskVar(interval, processing, idle, overlap))
+            variables.append(
+                TaskVar(interval, present, processing, idle, overlap)
+            )
 
         return variables
 
@@ -723,6 +731,11 @@ class Variables:
             model.add_hint(task_var.duration, task_duration)  # type: ignore
             model.add_hint(task_var.end, sol_task.end)  # type: ignore
 
+            if data.tasks[task_idx].optional:
+                # OR-Tools complains about adding hints to interval
+                # variables that are always present.
+                model.add_hint(task_var.present, sol_task.present)
+
             for mode_idx in data.task2modes(task_idx):
                 mode_var = self.mode_vars[mode_idx]
                 model.add_hint(mode_var, mode_idx == sol_task.mode)
@@ -748,30 +761,34 @@ class Variables:
             if not seq_var.is_active:
                 continue
 
+            # Identify the tasks assigned to this machine.
             tasks = {data.modes[m].task for m in data.resource2modes(res_idx)}
-            present_tasks = {
+            assigned = {
                 idx for idx in tasks if res_idx in sol_tasks[idx].resources
             }
 
             # Identify the first and last task in the sequence.
-            first = min(present_tasks, key=lambda idx: sol_tasks[idx].start)
-            last = max(present_tasks, key=lambda idx: sol_tasks[idx].start)
+            def task_start(idx):
+                return sol_tasks[idx].start
+
+            first = min(assigned, default=None, key=task_start)
+            last = max(assigned, default=None, key=task_start)
 
             for (idx1, idx2), arc in seq_var.arcs.items():
                 if idx1 == seq_var.DUMMY and idx2 == seq_var.DUMMY:
-                    hint = not present_tasks
+                    hint = not assigned
                 elif idx1 == seq_var.DUMMY:
                     hint = idx2 == first
                 elif idx2 == seq_var.DUMMY:
                     hint = idx1 == last
                 elif idx1 == idx2:
-                    hint = idx1 not in present_tasks
+                    hint = idx1 not in assigned
                 else:
                     # TODO There's an edge case when the task duration is 0.
                     # Revisit after #257.
                     hint = (
-                        idx1 in present_tasks
-                        and idx2 in present_tasks
+                        idx1 in assigned
+                        and idx2 in assigned
                         and sol_tasks[idx1].start < sol_tasks[idx2].start
                     )
 
@@ -783,7 +800,7 @@ def merge(intervals: list[tuple[int, int]]) -> list[tuple[int, int]]:
         return []
 
     intervals = sorted(intervals)
-    merged = []
+    merged: list[tuple[int, int]] = []
 
     for start, end in intervals:
         if not merged or start > merged[-1][1]:
