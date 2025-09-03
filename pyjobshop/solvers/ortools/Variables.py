@@ -541,7 +541,7 @@ class Variables:
         Creates the overlap variables.
         """
         model, data = self._model, self._data
-        variables = []
+        variables: list[list[OverlapVar]] = []
 
         for mode_idx, mode in enumerate(data.modes):
             breaks = [
