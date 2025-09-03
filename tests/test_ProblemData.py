@@ -212,6 +212,7 @@ def test_task_attributes():
         earliest_end=3,
         latest_end=4,
         fixed_duration=False,
+        optional=True,
         name="TestTask",
     )
 
@@ -221,6 +222,7 @@ def test_task_attributes():
     assert_equal(task.earliest_end, 3)
     assert_equal(task.latest_end, 4)
     assert_equal(task.fixed_duration, False)
+    assert_equal(task.optional, True)
     assert_equal(task.name, "TestTask")
 
 
@@ -236,6 +238,7 @@ def test_task_default_attributes():
     assert_equal(task.earliest_end, 0)
     assert_equal(task.latest_end, MAX_VALUE)
     assert_equal(task.fixed_duration, True)
+    assert_equal(task.optional, False)
     assert_equal(task.name, "")
 
 
