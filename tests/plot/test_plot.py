@@ -39,7 +39,7 @@ def test_plot_machine_gantt_breaks():
     model.add_mode(task, [machine, renewable], duration=2, demands=[0, 1])
 
     # Task overlaps with break, but that's OK.
-    sol = Solution([TaskData(0, [0, 1], 2, 4)])
+    sol = Solution(model.data(), [TaskData(0, [0, 1], 2, 4)])
 
     # This only plots the machine and renewable resource.
     plot_machine_gantt(sol, model.data(), resources=[0, 1])

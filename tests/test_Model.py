@@ -350,7 +350,7 @@ def test_solve_additional_kwargs_initial_solution_fixed(small):
     additional kwargs to the solver, fixing the solution.
     """
     model = Model.from_data(small)
-    init = Solution([TaskData(0, [0], 0, 1), TaskData(1, [0], 3, 5)])
+    init = Solution(small, [TaskData(0, [0], 0, 1), TaskData(1, [0], 3, 5)])
     result = model.solve(
         "ortools",
         initial_solution=init,
