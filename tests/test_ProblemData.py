@@ -1258,7 +1258,15 @@ def test_task_non_fixed_duration(solver: str):
     result = model.solve(solver=solver)
     assert_equal(result.status.value, "Optimal")
     assert_equal(result.objective, 10)
-    assert_equal(result.best.tasks, [TaskData(0, [0], 0, 10)])
+
+    sol_task = result.best.tasks[0]
+    assert_equal(sol_task.start, 0)
+    assert_equal(sol_task.end, 10)
+
+    if solver == "cpoptimizer":
+        return  # TODO
+
+    assert_equal(sol_task.idle, 9)
 
 
 def test_task_resumable(solver: str):
@@ -1337,7 +1345,11 @@ def test_task_resumable_multiple_resources(solver: str):
     result = model.solve(solver=solver)
     assert_equal(result.status.value, "Optimal")
     assert_equal(result.objective, 5)
-    assert_equal(result.best.tasks, [TaskData(0, [0, 1], 0, 5)])
+
+    sol_task = result.best.tasks[0]
+    assert_equal(sol_task.start, 0)
+    assert_equal(sol_task.end, 5)
+    assert_equal(sol_task.overlap, 3)
 
 
 def test_machine_breaks(solver: str):

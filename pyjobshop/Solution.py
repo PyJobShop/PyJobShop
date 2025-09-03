@@ -18,6 +18,10 @@ class TaskData:
         The end time.
     present
         Whether the task is present in the solution.
+    overlap
+        Duration of overlap with other tasks on shared resources.
+    idle
+        Duration of idle time before the task starts on shared resources.
     """
 
     mode: int
@@ -25,6 +29,8 @@ class TaskData:
     start: int
     end: int
     present: bool = True
+    overlap: int = 0
+    idle: int = 0
 
 
 class Solution:

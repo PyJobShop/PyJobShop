@@ -50,10 +50,11 @@ def complete_data():
     jobs = [Job(tasks=[2], due_date=1)]
     resources = [
         Machine(no_idle=True),
-        Renewable(1, breaks=[(0, 1)]),
+        Renewable(1),
         NonRenewable(1),
         Machine(),
         Machine(),
+        Machine(breaks=[(1, 2)]),
     ]
     tasks = [
         Task(),
@@ -63,6 +64,7 @@ def complete_data():
         Task(),
         Task(),
         Task(optional=True),
+        Task(resumable=True),
     ]
     modes = [
         Mode(0, [0], 1),
@@ -73,6 +75,7 @@ def complete_data():
         Mode(4, [3], 1),
         Mode(5, [3], 1),
         Mode(6, [4], 1),
+        Mode(7, [5], 2),
     ]
     constraints = Constraints(
         start_before_start=[StartBeforeStart(0, 1)],
@@ -123,6 +126,7 @@ def complete_sol():
             TaskData(5, [3], 0, 1),
             TaskData(6, [3], 2, 3),
             TaskData(-1, [], 0, 0, present=False),
+            TaskData(8, [5], 0, 3, overlap=1),
         ]
     )
 

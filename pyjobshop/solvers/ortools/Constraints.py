@@ -123,21 +123,27 @@ class Constraints:
 
         for task_idx in range(data.num_tasks):
             task_var = variables.task_vars[task_idx]
-            # assign_vars = ...
 
-            # if not data.tasks[task_idx].resumable:
-            #     # TODO:
-            #     # - get all assignment variables of this task
-            #     # - for each assignment variable, get the resource breaks
-            #     # - create no-overlap with the break intervals
-            #     # - note that this does not affect task vars, because it
-            #     # relies on the presence of the assignment variable.
-            #     #
-            #     # Task is not resumable, so its assignment variables
-            #     # should not overlap with any of the break intervals.
-            #     model.add_no_overlap([assign_var.interval, *break_intervals])
-            #     model.add(task_var.overlap == 0)
-            #     continue
+            if not data.tasks[task_idx].resumable:
+                # Task is not resumable, so its assignment variables
+                # should not overlap with any of the break intervals.
+                resources = {
+                    res
+                    for mode in data.task2modes(task_idx)
+                    for res in data.modes[mode].resources
+                }
+                for res_idx in resources:
+                    breaks = getattr(data.resources[res_idx], "breaks", [])
+                    assign_var = variables.assign_vars[task_idx, res_idx]
+                    break_intervals = [
+                        model.new_interval_var(s, e - s, e, "")
+                        for s, e in breaks
+                    ]
+                    model.add_no_overlap(
+                        [assign_var.interval, *break_intervals]
+                    )
+
+                continue
 
             # If overlap is allowed, assignment variable should not start or
             # end during a break. It could be possible in theory but we don't
@@ -159,9 +165,12 @@ class Constraints:
                 mode_var = variables.mode_vars[mode_idx]
                 overlap_vars = variables.overlap_vars[mode_idx]
                 total_overlap = sum(var.duration for var in overlap_vars)
-                model.add(task_var.overlap == total_overlap).only_enforce_if(
-                    mode_var
-                )
+                expr = task_var.overlap == total_overlap
+                model.add(expr).only_enforce_if(mode_var)
+
+                for var in overlap_vars:
+                    # Overlap intervals can only exist if the mode is present.
+                    model.add(var.overlaps <= mode_var)
 
     def _timing_constraints(self):
         """

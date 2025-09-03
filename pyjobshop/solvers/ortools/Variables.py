@@ -205,12 +205,16 @@ class OverlapVar:
     duration
         Integer variable representing the duration of the overlap (0 if no
         overlap, otherwise the length of the break).
+    break_time
+        The (start, end) time of the break that belongs to this overlap
+        variable.
     """
 
     before: BoolVarT
     after: BoolVarT
     overlaps: BoolVarT
     duration: IntVar
+    break_time: tuple[int, int]
 
 
 class Variables:
@@ -435,20 +439,21 @@ class Variables:
             processing = model.new_int_var_from_domain(
                 domain, name=f"{name}_processing"
             )
+            processing = model.new_int_var(0, MAX_VALUE, f"{name}_processing")
+            model.add_linear_expression_in_domain(
+                processing, domain
+            ).only_enforce_if(present)
+
             idle = model.new_int_var(0, MAX_VALUE, f"{name}_idle")
             overlap = model.new_int_var(0, MAX_VALUE, f"{name}_overlap")
-            duration = model.new_int_var(
-                domain.min(), MAX_VALUE, f"{name}_duration"
-            )
+            duration = model.new_int_var(0, MAX_VALUE, f"{name}_duration")
+            model.add(duration == processing + idle + overlap)
 
-            parts = [processing]
-            if task.resumable:
-                parts.append(overlap)
+            if not task.resumable:
+                model.add(overlap == 0)
 
-            if not task.fixed_duration:
-                parts.append(idle)
-
-            model.add(duration == sum(parts))
+            if task.fixed_duration:
+                model.add(idle == 0)
 
             interval = model.new_optional_interval_var(
                 start, duration, end, present, f"{name}_interval"
@@ -568,7 +573,13 @@ class Variables:
                 model.add(duration == end - start).only_enforce_if(overlaps)
                 model.add(duration == 0).only_enforce_if(~overlaps)
 
-                overlap_var = OverlapVar(before, after, overlaps, duration)
+                overlap_var = OverlapVar(
+                    before,
+                    after,
+                    overlaps,
+                    duration,
+                    (start, end),
+                )
                 overlap_vars.append(overlap_var)
 
             variables.append(overlap_vars)
@@ -728,8 +739,12 @@ class Variables:
             task_duration = sol_task.end - sol_task.start
 
             model.add_hint(task_var.start, sol_task.start)  # type: ignore
-            model.add_hint(task_var.duration, task_duration)  # type: ignore
             model.add_hint(task_var.end, sol_task.end)  # type: ignore
+            model.add_hint(task_var.idle, sol_task.idle)  # type: ignore
+            model.add_hint(task_var.overlap, sol_task.overlap)  # type: ignore
+            processing = task_duration - sol_task.idle - sol_task.overlap
+            model.add_hint(task_var.processing, processing)  # type: ignore
+            model.add_hint(task_var.duration, task_duration)  # type: ignore
 
             if data.tasks[task_idx].optional:
                 # OR-Tools complains about adding hints to interval
@@ -738,7 +753,24 @@ class Variables:
 
             for mode_idx in data.task2modes(task_idx):
                 mode_var = self.mode_vars[mode_idx]
-                model.add_hint(mode_var, mode_idx == sol_task.mode)
+                mode_selected = mode_idx == sol_task.mode
+                model.add_hint(mode_var, mode_selected)
+
+                # Overlap related variables.
+                for overlap_var in self.overlap_vars[mode_idx]:
+                    break_start, break_end = overlap_var.break_time
+                    before = sol_task.end <= break_start
+                    after = sol_task.start >= break_end
+                    overlaps = mode_selected and not (before or after)
+                    model.add_hint(overlap_var.overlaps, overlaps)
+                    model.add_hint(overlap_var.before, before)
+                    model.add_hint(overlap_var.after, after)
+                    model.add_hint(
+                        overlap_var.duration,
+                        (break_end - break_start)
+                        if mode_selected and overlaps
+                        else 0,
+                    )
 
             mode_data = data.modes[sol_task.mode]
             res2demands = dict(zip(mode_data.resources, mode_data.demands))

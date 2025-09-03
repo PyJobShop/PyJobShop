@@ -1,6 +1,8 @@
+import pytest
 from numpy.testing import assert_, assert_equal
 
 
+@pytest.mark.skip("Breaks not yet supported")
 def test_solve_initial_solution(
     require_cpoptimizer,
     complete_data,

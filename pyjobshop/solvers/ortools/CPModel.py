@@ -82,7 +82,17 @@ class CPModel:
                     start = cp_solver.value(task_var.start)
                     end = cp_solver.value(task_var.end)
                     mode = self._data.modes[mode_idx]
-                    task = TaskData(mode_idx, mode.resources, start, end)
+                    idle = cp_solver.value(task_var.idle)
+                    overlap = cp_solver.value(task_var.overlap)
+                    task = TaskData(
+                        mode_idx,
+                        mode.resources,
+                        start,
+                        end,
+                        True,
+                        overlap,
+                        idle,
+                    )
                     tasks.append(task)
 
         return Solution(tasks)
