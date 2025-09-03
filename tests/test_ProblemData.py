@@ -21,6 +21,7 @@ from pyjobshop.ProblemData import (
     SameSequence,
     SelectAllOrNone,
     SelectAtLeastOne,
+    SelectExactlyOne,
     SetupTime,
     StartBeforeEnd,
     StartBeforeStart,
@@ -691,6 +692,21 @@ def test_problem_data_all_modes_demand_infeasible():
             ],
         ),
         ("mode_dependencies", ModeDependency, [(2, [0]), (0, [2])]),
+        (
+            "select_all_or_none",
+            SelectAllOrNone,
+            [([], None), ([2], None), ([0], 2)],
+        ),
+        (
+            "select_at_least_one",
+            SelectAtLeastOne,
+            [([], None), ([2], None), ([0], 2)],
+        ),
+        (
+            "select_exactly_one",
+            SelectExactlyOne,
+            [([], None), ([2], None), ([0], 2)],
+        ),
     ],
 )
 def test_problem_data_raises_invalid_indices(name, cls, idcs_list):
@@ -702,7 +718,7 @@ def test_problem_data_raises_invalid_indices(name, cls, idcs_list):
         constraints = Constraints()
         getattr(constraints, name).append(cls(*idcs))
 
-        with assert_raises(ValueError):
+        with pytest.raises(ValueError):
             ProblemData(
                 [],
                 [Machine(), Renewable(0)],

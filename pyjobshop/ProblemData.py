@@ -1136,6 +1136,26 @@ class ProblemData:
                 )
                 raise ValueError(msg)
 
+        selection_constraints = [
+            (self.constraints.select_all_or_none, "select_all_or_none"),
+            (self.constraints.select_at_least_one, "select_at_least_one"),
+            (self.constraints.select_exactly_one, "select_exactly_one"),
+        ]
+        for constraints, name in selection_constraints:
+            for idcs1, idx2 in constraints:
+                if not idcs1:
+                    msg = "Task list cannot be empty in select_all_or_none."
+                    raise ValueError(msg)
+
+                for idx in idcs1:
+                    if not (0 <= idx < self.num_tasks):
+                        msg = f"Invalid task index {idx} in {name}."
+                        raise ValueError(msg)
+
+                if idx2 is not None and not (0 <= idx2 < self.num_tasks):
+                    msg = f"Invalid task index {idx2} in {name}."
+                    raise ValueError(msg)
+
         if (
             self.objective.weight_tardy_jobs > 0
             or self.objective.weight_total_tardiness > 0
