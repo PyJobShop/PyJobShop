@@ -450,7 +450,7 @@ class Variables:
 
             model.add(duration == sum(parts))
 
-            interval = model.new_interval_var(
+            interval = model.new_optional_interval_var(
                 start, duration, end, present, f"{name}_interval"
             )
             variables.append(
