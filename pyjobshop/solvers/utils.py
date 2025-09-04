@@ -134,3 +134,30 @@ def setup_times_matrix(data: ProblemData) -> np.ndarray | None:
         setup[res, task1, task2] = duration
 
     return setup
+
+
+def merge(intervals: list[tuple[int, int]]) -> list[tuple[int, int]]:
+    """
+    Merges overlapping intervals into non-overlapping ones.
+
+    Parameters
+    ----------
+    intervals
+        A list of (start, end) tuples representing intervals.
+
+    Returns
+    -------
+    list[tuple[int, int]]
+        A list of merged non-overlapping intervals, sorted by start time.
+    """
+    intervals = sorted(intervals)
+    merged: list[tuple[int, int]] = []
+
+    for start, end in intervals:
+        if not merged or start > merged[-1][1]:
+            merged.append((start, end))  # no overlap
+        else:
+            new_end = max(merged[-1][1], end)  # overlap -> merge with last
+            merged[-1] = (merged[-1][0], new_end)
+
+    return merged

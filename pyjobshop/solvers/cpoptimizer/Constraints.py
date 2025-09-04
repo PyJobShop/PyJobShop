@@ -161,7 +161,7 @@ class Constraints:
                 for res_idx in mode.resources
                 for br in getattr(data.resources[res_idx], "breaks", [])
             ]
-            breaks = merge(breaks)
+            breaks = utils.merge(breaks)
 
             # The step function represents the periods during which an interval
             # may be processed. A nonzero value indicates that processing is
@@ -366,20 +366,3 @@ class Constraints:
         self._same_sequence_constraints()
         self._mode_dependencies()
         self._task_selection_constraints()
-
-
-def merge(intervals: list[tuple[int, int]]) -> list[tuple[int, int]]:
-    if not intervals:
-        return []
-
-    intervals = sorted(intervals)
-    merged: list[tuple[int, int]] = []
-
-    for start, end in intervals:
-        if not merged or start > merged[-1][1]:
-            merged.append((start, end))  # no overlap
-        else:
-            new_end = max(merged[-1][1], end)  # overlap -> merge with last
-            merged[-1] = (merged[-1][0], new_end)
-
-    return merged

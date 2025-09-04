@@ -357,7 +357,7 @@ class Task:
         task may not have idle time but is allowed to have breaks (default).
     allow_breaks
         Whether the task can be interrupted by breaks. If ``True``, the task
-        can stops processing during a break and resumes afterwards. Otherwise,
+        stops processing during breaks and resumes afterwards. Otherwise,
         the task must be processed in one go without interruptions (default).
     optional
         Whether the task is optional. Default ``False``.

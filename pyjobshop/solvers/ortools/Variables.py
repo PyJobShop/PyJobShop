@@ -10,6 +10,7 @@ from ortools.sat.python.cp_model import (
     LinearExprT,
 )
 
+import pyjobshop.solvers.utils as utils
 from pyjobshop.constants import MAX_VALUE
 from pyjobshop.ProblemData import ProblemData
 from pyjobshop.Solution import Solution
@@ -551,7 +552,7 @@ class Variables:
                 for res_idx in mode.resources
                 for brk in getattr(data.resources[res_idx], "breaks", [])
             ]
-            breaks = merge(breaks)  # super breaks
+            breaks = utils.merge(breaks)  # super breaks
             mode_var = self._mode_vars[mode_idx]
             overlap_vars = []
 
@@ -826,20 +827,3 @@ class Variables:
                     )
 
                 model.add_hint(arc, hint)
-
-
-def merge(intervals: list[tuple[int, int]]) -> list[tuple[int, int]]:
-    if not intervals:
-        return []
-
-    intervals = sorted(intervals)
-    merged: list[tuple[int, int]] = []
-
-    for start, end in intervals:
-        if not merged or start > merged[-1][1]:
-            merged.append((start, end))  # no overlap
-        else:
-            new_end = max(merged[-1][1], end)  # overlap -> merge with last
-            merged[-1] = (merged[-1][0], new_end)
-
-    return merged
