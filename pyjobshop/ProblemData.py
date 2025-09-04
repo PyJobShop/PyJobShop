@@ -412,6 +412,7 @@ class Task:
             and self.earliest_end == other.earliest_end
             and self.latest_end == other.latest_end
             and self.fixed_duration == other.fixed_duration
+            and self.resumable == other.resumable
             and self.optional == other.optional
             and self.name == other.name
         )

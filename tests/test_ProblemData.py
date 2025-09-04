@@ -330,10 +330,10 @@ def test_task_equality():
     """
     assert_equal(Task(), Task())
 
-    task1 = Task(1, 0, 100, name="T1")
+    task1 = Task(1, 0, 100, 0, 100, False, False, name="T1")
     assert_(task1 != Task())
 
-    task2 = Task(1, 0, 100, name="T1")
+    task2 = Task(1, 0, 100, 0, 100, False, False, name="T1")
     assert_equal(task1, task2)
 
 
@@ -377,14 +377,6 @@ def test_mode_raises_invalid_parameters(resources, duration, demands):
         Mode(task=0, resources=resources, duration=duration, demands=demands)
 
 
-def test_mode_dependency_must_have_at_least_one_succesor_mode():
-    """
-    Tests that ModeDependency requires at least one successor mode.
-    """
-    with assert_raises(ValueError):
-        ModeDependency(0, [])
-
-
 def test_mode_equality():
     """
     Tests that equality comparison works correctly for Mode objects.
@@ -396,6 +388,14 @@ def test_mode_equality():
 
     mode2 = Mode(0, [1, 2], 10, [5, 3], name="M1")
     assert_equal(mode1, mode2)
+
+
+def test_mode_dependency_must_have_at_least_one_succesor_mode():
+    """
+    Tests that ModeDependency requires at least one successor mode.
+    """
+    with assert_raises(ValueError):
+        ModeDependency(0, [])
 
 
 @pytest.mark.parametrize(
