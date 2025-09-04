@@ -17,9 +17,9 @@ class TaskData:
     end
         The end time.
     idle
-        Duration of idle time before the task starts on shared resources.
-    overlap
-        Duration of overlap with other tasks on shared resources.
+        The time that this task is not processing, excluding breaks.
+    breaks
+        The total time that this task is interrupted by resource breaks.
     present
         Whether the task is present in the solution.
     """
@@ -29,7 +29,7 @@ class TaskData:
     start: int
     end: int
     idle: int = 0
-    overlap: int = 0
+    breaks: int = 0
     present: bool = True
 
     @property
@@ -44,7 +44,7 @@ class TaskData:
         """
         Returns the processing time of the task.
         """
-        return self.duration - self.overlap - self.idle
+        return self.duration - self.breaks - self.idle
 
 
 class Solution:

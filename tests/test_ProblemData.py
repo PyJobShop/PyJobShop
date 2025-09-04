@@ -1428,7 +1428,7 @@ def test_task_allow_breaks_with_modes(solver: str):
     sol_task = result.best.tasks[0]
     assert_equal(sol_task.start, 0)
     assert_equal(sol_task.end, 1)
-    assert_equal(sol_task.overlap, 0)
+    assert_equal(sol_task.breaks, 0)
 
 
 def test_task_allow_breaks_multiple_resources(solver: str):
@@ -1456,7 +1456,7 @@ def test_task_allow_breaks_multiple_resources(solver: str):
     sol_task = result.best.tasks[0]
     assert_equal(sol_task.start, 0)
     assert_equal(sol_task.end, 5)
-    assert_equal(sol_task.overlap, 3)
+    assert_equal(sol_task.breaks, 3)
 
 
 def test_task_flexible_duration_and_allow_breaks(solver):
@@ -1483,7 +1483,7 @@ def test_task_flexible_duration_and_allow_breaks(solver):
     assert_equal(sol_tasks.end, 5)
     assert_equal(sol_tasks.duration, 5)
     assert_equal(sol_tasks.idle, 1)
-    assert_equal(sol_tasks.overlap, 2)
+    assert_equal(sol_tasks.breaks, 2)
     assert_equal(sol_tasks.processing, 2)
 
 

@@ -750,8 +750,8 @@ class Variables:
             model.add_hint(task_var.start, sol_task.start)  # type: ignore
             model.add_hint(task_var.end, sol_task.end)  # type: ignore
             model.add_hint(task_var.idle, sol_task.idle)  # type: ignore
-            model.add_hint(task_var.overlap, sol_task.overlap)  # type: ignore
-            processing = task_duration - sol_task.idle - sol_task.overlap
+            model.add_hint(task_var.overlap, sol_task.breaks)  # type: ignore
+            processing = task_duration - sol_task.idle - sol_task.breaks
             model.add_hint(task_var.processing, processing)  # type: ignore
             model.add_hint(task_var.duration, task_duration)  # type: ignore
 

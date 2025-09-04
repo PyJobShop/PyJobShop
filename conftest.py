@@ -126,7 +126,7 @@ def complete_sol():
             TaskData(5, [3], 0, 1),
             TaskData(6, [3], 2, 3),
             TaskData(-1, [], 0, 0, 0, 0, present=False),
-            TaskData(8, [5], 0, 3, overlap=1),
+            TaskData(8, [5], 0, 3, breaks=1),
         ]
     )
 
