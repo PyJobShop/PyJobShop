@@ -1262,10 +1262,6 @@ def test_task_non_fixed_duration(solver: str):
     sol_task = result.best.tasks[0]
     assert_equal(sol_task.start, 0)
     assert_equal(sol_task.end, 10)
-
-    if solver == "cpoptimizer":
-        return  # TODO
-
     assert_equal(sol_task.idle, 9)
 
 
@@ -1273,9 +1269,6 @@ def test_task_resumable(solver: str):
     """
     Tests that a task that can be resumed after breaks.
     """
-    if solver == "cpoptimizer":
-        return  # TODO
-
     model = Model()
 
     resource = model.add_renewable(1, breaks=[(1, 3), (4, 5)])
@@ -1298,9 +1291,6 @@ def test_task_resumable_does_not_end_in_break(solver: str):
     """
     Tests that a resumable task will not end during a break.
     """
-    if solver == "cpoptimizer":
-        return  # TODO
-
     model = Model()
 
     # Job with due date (2) in the break (1-4).
@@ -1353,14 +1343,11 @@ def test_task_resumable_multiple_resources(solver: str):
     more complicated, as we need to consider the "merged" breaks of all
     resources that are required by the mode.
     """
-    if solver == "cpoptimizer":
-        return  # TODO
-
     model = Model()
 
     machine = model.add_machine(breaks=[(1, 3)])
     renewable = model.add_renewable(capacity=1, breaks=[(2, 4)])
-    task = model.add_task(fixed_duration=True, resumable=True)
+    task = model.add_task(fixed_duration=False, resumable=True)
     model.add_mode(task, [machine, renewable], duration=2)
 
     # The task requires both resources, which have overlapping breaks.

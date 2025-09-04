@@ -154,15 +154,40 @@ class Constraints:
         """
         model, data, variables = self._model, self._data, self._variables
 
-        for res_idx in data.renewable_idcs + data.machine_idcs:
-            for start, end in data.resources[res_idx].breaks:
-                for mode_idx in data.resource2modes(res_idx):
-                    step = CpoStepFunction()
-                    step.set_value(0, MAX_VALUE, 1)
-                    step.set_value(start, end, 0)
+        for mode_idx, mode_var in enumerate(variables.mode_vars):
+            mode = data.modes[mode_idx]
+            breaks = [
+                br
+                for res_idx in mode.resources
+                for br in getattr(data.resources[res_idx], "breaks", [])
+            ]
+            breaks = merge(breaks)
 
-                    mode_var = variables.mode_vars[mode_idx]
-                    model.add(cpo.forbid_extent(mode_var, step))
+            # The step function represents the periods during which an interval
+            # may be processed. A nonzero value indicates that processing is
+            # allowed, while a zero value indicates that processing is not
+            # allowed due to breaks.
+            step = CpoStepFunction()
+
+            # Domain including -1 allows ending at t=0, and the value 100
+            # represents to the availability as percentage.
+            step.set_value(-1, MAX_VALUE, 100)
+
+            for start, end in breaks:
+                step.set_value(start, end, 0)
+
+            # Not allowed to start/end during breaks.
+            # model.add(cpo.forbid_start(mode_var, step))
+            # model.add(cpo.forbid_end(mode_var, step))
+            # assert 0
+
+            if data.tasks[mode.task].resumable:
+                # Resumable tasks can be interrupted by breaks: the intensity
+                # defines at what percentage a task can be processed.
+                mode_var.set_intensity(step)
+            else:
+                # Non-resumable tasks cannot be interrupted by breaks
+                model.add(cpo.forbid_extent(mode_var, step))
 
     def _timing_constraints(self):
         """
@@ -342,3 +367,20 @@ class Constraints:
         self._same_sequence_constraints()
         self._mode_dependencies()
         self._task_selection_constraints()
+
+
+def merge(intervals: list[tuple[int, int]]) -> list[tuple[int, int]]:
+    if not intervals:
+        return []
+
+    intervals = sorted(intervals)
+    merged: list[tuple[int, int]] = []
+
+    for start, end in intervals:
+        if not merged or start > merged[-1][1]:
+            merged.append((start, end))  # no overlap
+        else:
+            new_end = max(merged[-1][1], end)  # overlap -> merge with last
+            merged[-1] = (merged[-1][0], new_end)
+
+    return merged

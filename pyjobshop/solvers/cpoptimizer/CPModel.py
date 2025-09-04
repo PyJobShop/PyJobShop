@@ -74,8 +74,18 @@ class CPModel:
                 resources = self._data.modes[mode].resources
                 start = var.start
                 end = var.end
+                duration = end - start
+                overlap = duration - var.size
+                processing = self._data.modes[mode].duration
+                idle = duration - processing - overlap
                 tasks[task] = TaskData(
-                    mode, resources, start, end, present=True
+                    mode,
+                    resources,
+                    start,
+                    end,
+                    present=True,
+                    overlap=overlap,
+                    idle=idle,
                 )
 
         for idx in range(self._data.num_tasks):
