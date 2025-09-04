@@ -516,7 +516,8 @@ class Mode:
 
     def __eq__(self, other) -> bool:
         return (
-            self.task == other.task
+            isinstance(other, Mode)
+            and self.task == other.task
             and self.resources == other.resources
             and self.duration == other.duration
             and self.demands == other.demands
