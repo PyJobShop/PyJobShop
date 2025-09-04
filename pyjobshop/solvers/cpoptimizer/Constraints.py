@@ -177,9 +177,8 @@ class Constraints:
                 step.set_value(start, end, 0)
 
             # Not allowed to start/end during breaks.
-            # model.add(cpo.forbid_start(mode_var, step))
-            # model.add(cpo.forbid_end(mode_var, step))
-            # assert 0
+            model.add(cpo.forbid_start(mode_var, step))
+            model.add(cpo.forbid_end(mode_var, step))
 
             if data.tasks[mode.task].resumable:
                 # Resumable tasks can be interrupted by breaks: the intensity

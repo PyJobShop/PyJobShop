@@ -92,9 +92,9 @@ class Variables:
             modes = [data.modes[mode_idx] for mode_idx in data.task2modes(idx)]
             durations = [mode.duration for mode in modes]
             var.set_size_min(min(durations))
-            var.set_size_max(
-                max(durations) if task.fixed_duration else MAX_VALUE
-            )
+            # var.set_size_max(
+            #     max(durations) if task.fixed_duration else MAX_VALUE
+            # ) # TODO could be longer ?
 
             variables.append(var)
             self._model.add(var)
@@ -179,7 +179,7 @@ class Variables:
                 presence=sol_task.present,
                 start=sol_task.start,
                 end=sol_task.end,
-                size=sol_task.end - sol_task.start,
+                length=sol_task.end - sol_task.start,
             )
 
         for idx, mode in enumerate(data.modes):
@@ -191,7 +191,7 @@ class Variables:
                 presence=idx == sol_task.mode,
                 start=sol_task.start,
                 end=sol_task.end,
-                size=sol_task.end - sol_task.start,
+                length=sol_task.end - sol_task.start,
             )
 
         self._model.set_starting_point(init)
