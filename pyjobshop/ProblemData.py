@@ -352,15 +352,13 @@ class Task:
         Latest end time of the task.
         Default :const:`~pyjobshop.constants.MAX_VALUE`.
     allow_idle
-        Whether the task can have idle time (duration longer than processing
-        time). If ``True``, the task duration can exceed the processing time,
-        e.g., due to blocking. If ``False`` (default), the task duration is
-        precisely equal to the processing time.
-        Default ``False``.
+        Whether the task can have idle time. If ``True``, the task duration
+        can exceed the processing time, e.g., due to blocking. Otherwise, the
+        task may not have idle time but is allowed to have breaks (default).
     allow_breaks
-        Whether the task can be interrupted by breaks and then resume.
-        If ``True``, the task can continue processing after a break ends.
-        If ``False`` (default), the task cannot be interrupted by breaks.
+        Whether the task can be interrupted by breaks. If ``True``, the task
+        can stops processing during a break and resumes afterwards. Otherwise,
+        the task must be processed in one go without interruptions (default).
     optional
         Whether the task is optional. Default ``False``.
     name
@@ -456,7 +454,7 @@ class Task:
     @property
     def allow_breaks(self) -> bool:
         """
-        Whether the task can be resumed after being interrupted by breaks.
+        Whether the task can be interrupted by breaks.
         """
         return self._allow_breaks
 
