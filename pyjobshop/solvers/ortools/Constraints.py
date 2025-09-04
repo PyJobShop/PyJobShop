@@ -121,9 +121,8 @@ class Constraints:
         """
         model, data, variables = self._model, self._data, self._variables
 
-        for task_idx in range(data.num_tasks):
-            task_var = variables.task_vars[task_idx]
-            if data.tasks[task_idx].allow_breaks:
+        for task_idx, task in enumerate(data.tasks):
+            if task.allow_breaks:
                 continue
 
             # Task does not allow breaks, so its assignment variables
@@ -141,8 +140,8 @@ class Constraints:
                 ]
                 model.add_no_overlap([assign_var.interval, *break_intervals])
 
-        for task_idx in range(data.num_tasks):
-            if not data.tasks[task_idx].allow_breaks:
+        for task_idx, task in enumerate(data.tasks):
+            if not task.allow_breaks:
                 continue
 
             task_var = variables.task_vars[task_idx]
@@ -150,33 +149,34 @@ class Constraints:
             for mode_idx in data.task2modes(task_idx):
                 mode_var = variables.mode_vars[mode_idx]
                 overlap_vars = variables.overlap_vars[mode_idx]
-                breaks = [var.break_time for var in overlap_vars]
 
-                # Only add overlap constraints if there are overlap variables
-                # (i.e., the task allows breaks and has breaks to overlap with)
-                if overlap_vars:
-                    total_overlap = sum(var.duration for var in overlap_vars)
-                    expr = task_var.overlap == total_overlap
-                    model.add(expr).only_enforce_if(mode_var)
-
-                    for var in overlap_vars:
-                        # Overlap intervals can only exist if mode is present.
-                        model.add(var.overlaps <= mode_var)
-                else:
-                    # No overlap variables means no overlap possible
-                    model.add(task_var.overlap == 0).only_enforce_if(mode_var)
+                # Set the total break duration of the task variable.
+                total_overlap = sum(var.duration for var in overlap_vars)
+                model.add(task_var.overlap == total_overlap)
 
                 # Cannot start or end during a break. The domains capture the
                 # invalid start/end times, and the complement ensures that
                 # these values are excluded.
+                breaks = [var.break_time for var in overlap_vars]
                 starts = Domain.from_intervals([(s, e - 1) for s, e in breaks])
                 ends = Domain.from_intervals([(s + 1, e) for s, e in breaks])
+
                 model.add_linear_expression_in_domain(
                     task_var.start, starts.complement()
                 ).only_enforce_if(mode_var)
                 model.add_linear_expression_in_domain(
                     task_var.end, ends.complement()
                 ).only_enforce_if(mode_var)
+
+                for var in overlap_vars:
+                    # If there is no overlap with a given break, then the task
+                    # must end before or start after the break.
+                    start, end = var.break_time
+                    task_start, task_end = task_var.start, task_var.end
+                    model.add(task_end <= start).only_enforce_if(var.before)
+                    model.add(task_end > start).only_enforce_if(~var.before)
+                    model.add(task_start >= end).only_enforce_if(var.after)
+                    model.add(task_start < end).only_enforce_if(~var.after)
 
     def _timing_constraints(self):
         """
