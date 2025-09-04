@@ -264,7 +264,7 @@ def test_task_attributes():
         latest_start=2,
         earliest_end=3,
         latest_end=4,
-        fixed_duration=False,
+        allow_idle=True,
         allow_breaks=True,
         optional=True,
         name="TestTask",
@@ -275,7 +275,7 @@ def test_task_attributes():
     assert_equal(task.latest_start, 2)
     assert_equal(task.earliest_end, 3)
     assert_equal(task.latest_end, 4)
-    assert_equal(task.fixed_duration, False)
+    assert_equal(task.allow_idle, True)
     assert_equal(task.allow_breaks, True)
     assert_equal(task.optional, True)
     assert_equal(task.name, "TestTask")
@@ -292,7 +292,7 @@ def test_task_default_attributes():
     assert_equal(task.latest_start, MAX_VALUE)
     assert_equal(task.earliest_end, 0)
     assert_equal(task.latest_end, MAX_VALUE)
-    assert_equal(task.fixed_duration, True)
+    assert_equal(task.allow_idle, False)
     assert_equal(task.allow_breaks, False)
     assert_equal(task.optional, False)
     assert_equal(task.name, "")
@@ -1313,7 +1313,7 @@ def test_task_fixed_end(solver: str):
     assert_equal(result.objective, 42)
 
 
-def test_task_fixed_duration_infeasible_with_timing_constraints(
+def test_task_allow_idle_infeasible_with_timing_constraints(
     solver: str,
 ):
     """
@@ -1333,7 +1333,7 @@ def test_task_fixed_duration_infeasible_with_timing_constraints(
     assert_equal(result.status.value, "Infeasible")
 
 
-def test_task_non_fixed_duration(solver: str):
+def test_task_allow_idle(solver: str):
     """
     Tests that a task with non-fixed duration is scheduled correctly.
     """
@@ -1343,7 +1343,7 @@ def test_task_non_fixed_duration(solver: str):
     task = model.add_task(
         latest_start=0,
         earliest_end=10,
-        fixed_duration=False,
+        allow_idle=True,
     )
     model.add_mode(task, machine, duration=1)
 
@@ -1367,7 +1367,7 @@ def test_task_allow_breaks(solver: str):
     model = Model()
 
     resource = model.add_renewable(1, breaks=[(1, 3), (4, 5)])
-    task = model.add_task(fixed_duration=False, allow_breaks=True)
+    task = model.add_task(allow_idle=True, allow_breaks=True)
     model.add_mode(task, resource, duration=3)
 
     # Task starts at time 0 and runs for 1 time unit. Then the first
@@ -1391,7 +1391,7 @@ def test_task_allow_breaks_does_not_end_in_break(solver: str):
     # Job with due date (2) in the break (1-4).
     job = model.add_job(due_date=2)
     resource = model.add_machine(breaks=[(1, 4)])
-    task = model.add_task(job, fixed_duration=True, allow_breaks=True)
+    task = model.add_task(job, allow_idle=False, allow_breaks=True)
     model.add_mode(task, resource, duration=1)
     model.set_objective(weight_total_earliness=1, weight_total_tardiness=1)
 
@@ -1417,7 +1417,7 @@ def test_task_allow_breaks_with_modes(solver: str):
 
     with_breaks = model.add_machine(breaks=[(0, 10)])
     no_breaks = model.add_machine()
-    task = model.add_task(fixed_duration=False, allow_breaks=True)
+    task = model.add_task(allow_idle=True, allow_breaks=True)
     model.add_mode(task, with_breaks, duration=3)
     model.add_mode(task, no_breaks, duration=1)
 
@@ -1442,7 +1442,7 @@ def test_task_allow_breaks_multiple_resources(solver: str):
 
     machine = model.add_machine(breaks=[(1, 3)])
     renewable = model.add_renewable(capacity=1, breaks=[(2, 4)])
-    task = model.add_task(fixed_duration=False, allow_breaks=True)
+    task = model.add_task(allow_idle=True, allow_breaks=True)
     model.add_mode(task, [machine, renewable], duration=2)
 
     # The task requires both resources, which have overlapping breaks.
@@ -1467,7 +1467,7 @@ def test_task_flexible_duration_and_allow_breaks(solver):
     model = Model()
     machine = model.add_machine(breaks=[(1, 3)])
     task = model.add_task(
-        latest_start=0, earliest_end=5, fixed_duration=False, allow_breaks=True
+        latest_start=0, earliest_end=5, allow_idle=True, allow_breaks=True
     )
     model.add_mode(task, machine, duration=2, demands=[0])
 

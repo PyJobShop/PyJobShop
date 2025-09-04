@@ -351,12 +351,12 @@ class Task:
     latest_end
         Latest end time of the task.
         Default :const:`~pyjobshop.constants.MAX_VALUE`.
-    fixed_duration
-        Whether the task's fixed duration. A fixed duration means that
-        the task duration is precisely the processing time (on a given
-        resource). If the duration is not fixed, then the task duration
-        can take longer than the processing time, e.g., due to blocking.
-        Default ``True``.
+    allow_idle
+        Whether the task can have idle time (duration longer than processing
+        time). If ``True``, the task duration can exceed the processing time,
+        e.g., due to blocking. If ``False`` (default), the task duration is
+        precisely equal to the processing time.
+        Default ``False``.
     allow_breaks
         Whether the task can be interrupted by breaks and then resume.
         If ``True``, the task can continue processing after a break ends.
@@ -374,7 +374,7 @@ class Task:
         latest_start: int = MAX_VALUE,
         earliest_end: int = 0,
         latest_end: int = MAX_VALUE,
-        fixed_duration: bool = True,
+        allow_idle: bool = False,
         allow_breaks: bool = False,
         optional: bool = False,
         *,
@@ -391,7 +391,7 @@ class Task:
         self._latest_start = latest_start
         self._earliest_end = earliest_end
         self._latest_end = latest_end
-        self._fixed_duration = fixed_duration
+        self._allow_idle = allow_idle
         self._allow_breaks = allow_breaks
         self._optional = optional
         self._name = name
@@ -404,7 +404,7 @@ class Task:
             and self.latest_start == other.latest_start
             and self.earliest_end == other.earliest_end
             and self.latest_end == other.latest_end
-            and self.fixed_duration == other.fixed_duration
+            and self.allow_idle == other.allow_idle
             and self.allow_breaks == other.allow_breaks
             and self.optional == other.optional
             and self.name == other.name
@@ -447,11 +447,11 @@ class Task:
         return self._latest_end
 
     @property
-    def fixed_duration(self) -> bool:
+    def allow_idle(self) -> bool:
         """
-        Whether the task has a fixed duration.
+        Whether the task can have idle time.
         """
-        return self._fixed_duration
+        return self._allow_idle
 
     @property
     def allow_breaks(self) -> bool:

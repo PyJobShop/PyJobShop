@@ -93,7 +93,7 @@ class Variables:
             durations = [mode.duration for mode in modes]
             var.set_size_min(min(durations))
             # var.set_size_max(
-            #     max(durations) if task.fixed_duration else MAX_VALUE
+            #     max(durations) if not task.allow_idle else MAX_VALUE
             # ) # TODO could be longer ?
 
             variables.append(var)
@@ -118,7 +118,7 @@ class Variables:
             var.set_end_min(task.earliest_end)
             var.set_end_max(min(task.latest_end, MAX_VALUE))
 
-            if task.fixed_duration:
+            if not task.allow_idle:
                 var.set_size(mode.duration)
             else:
                 var.set_size_min(mode.duration)

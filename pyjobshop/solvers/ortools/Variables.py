@@ -452,7 +452,7 @@ class Variables:
             if not task.allow_breaks:
                 model.add(overlap == 0)
 
-            if task.fixed_duration:
+            if not task.allow_idle:
                 model.add(idle == 0)
 
             interval = model.new_optional_interval_var(
