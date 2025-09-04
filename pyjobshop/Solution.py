@@ -32,6 +32,20 @@ class TaskData:
     overlap: int = 0
     idle: int = 0
 
+    @property
+    def duration(self) -> int:
+        """
+        Returns the duration of the task.
+        """
+        return self.end - self.start
+
+    @property
+    def processing(self) -> int:
+        """
+        Returns the processing time of the task.
+        """
+        return self.duration - self.overlap - self.idle
+
 
 class Solution:
     """

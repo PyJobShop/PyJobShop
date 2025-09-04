@@ -1459,6 +1459,34 @@ def test_task_resumable_multiple_resources(solver: str):
     assert_equal(sol_task.overlap, 3)
 
 
+def test_task_flexible_duration_and_resumable(solver):
+    """
+    Tests that a task with flexible duration and resumable has the correct
+    task data in the solution.
+    """
+    model = Model()
+    machine = model.add_machine(breaks=[(1, 3)])
+    task = model.add_task(
+        latest_start=0, earliest_end=5, fixed_duration=False, resumable=True
+    )
+    model.add_mode(task, machine, duration=2, demands=[0])
+
+    result = model.solve(solver=solver)
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.objective, 5)
+
+    # Task must start at time 0 and ends at time 5. The processing time is 2,
+    # with 2 time units of overlap (break from 1 to 3) and 1 time unit of idle
+    # time (from 4 to 5).
+    sol_tasks = result.best.tasks[0]
+    assert_equal(sol_tasks.start, 0)
+    assert_equal(sol_tasks.end, 5)
+    assert_equal(sol_tasks.duration, 5)
+    assert_equal(sol_tasks.idle, 1)
+    assert_equal(sol_tasks.overlap, 2)
+    assert_equal(sol_tasks.processing, 2)
+
+
 def test_machine_breaks(solver: str):
     """
     Tests that a machine resource respects breaks.
