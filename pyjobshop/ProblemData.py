@@ -514,6 +514,15 @@ class Mode:
         self._demands = demands
         self._name = name
 
+    def __eq__(self, other) -> bool:
+        return (
+            self.task == other.task
+            and self.resources == other.resources
+            and self.duration == other.duration
+            and self.demands == other.demands
+            and self.name == other.name
+        )
+
     @property
     def task(self) -> int:
         return self._task
@@ -533,15 +542,6 @@ class Mode:
     @property
     def name(self) -> str:
         return self._name
-
-    def __eq__(self, other) -> bool:
-        return (
-            self.task == other.task
-            and self.resources == other.resources
-            and self.duration == other.duration
-            and self.demands == other.demands
-            and self.name == other.name
-        )
 
 
 class IterableMixin:

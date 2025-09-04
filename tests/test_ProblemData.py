@@ -384,7 +384,7 @@ def test_mode_dependency_must_have_at_least_one_succesor_mode():
 
 def test_mode_equality():
     """
-    Tests that Mode equality (already implemented) works correctly.
+    Tests that equality comparison works correctly for Mode objects.
     """
     assert_equal(Mode(0, [0], 1), Mode(0, [0], 1))
 
