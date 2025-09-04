@@ -71,6 +71,17 @@ class Job:
         self._tasks = [] if tasks is None else tasks
         self._name = name
 
+    def __eq__(self, other) -> bool:
+        return (
+            isinstance(other, Job)
+            and self.weight == other.weight
+            and self.release_date == other.release_date
+            and self.deadline == other.deadline
+            and self.due_date == other.due_date
+            and self.tasks == other.tasks
+            and self.name == other.name
+        )
+
     @property
     def weight(self) -> int:
         """
@@ -176,6 +187,14 @@ class Machine:
         self._no_idle = no_idle
         self._name = name
 
+    def __eq__(self, other) -> bool:
+        return (
+            isinstance(other, Machine)
+            and self.breaks == other.breaks
+            and self.no_idle == other.no_idle
+            and self.name == other.name
+        )
+
     @property
     def breaks(self) -> list[tuple[int, int]]:
         """
@@ -239,6 +258,14 @@ class Renewable:
         self._breaks = breaks or []
         self._name = name
 
+    def __eq__(self, other) -> bool:
+        return (
+            isinstance(other, Renewable)
+            and self.capacity == other.capacity
+            and self.breaks == other.breaks
+            and self.name == other.name
+        )
+
     @property
     def capacity(self) -> int:
         """
@@ -279,6 +306,13 @@ class NonRenewable:
 
         self._capacity = capacity
         self._name = name
+
+    def __eq__(self, other) -> bool:
+        return (
+            isinstance(other, NonRenewable)
+            and self.capacity == other.capacity
+            and self.name == other.name
+        )
 
     @property
     def capacity(self) -> int:
@@ -355,6 +389,19 @@ class Task:
         self._fixed_duration = fixed_duration
         self._optional = optional
         self._name = name
+
+    def __eq__(self, other) -> bool:
+        return (
+            isinstance(other, Task)
+            and self.job == other.job
+            and self.earliest_start == other.earliest_start
+            and self.latest_start == other.latest_start
+            and self.earliest_end == other.earliest_end
+            and self.latest_end == other.latest_end
+            and self.fixed_duration == other.fixed_duration
+            and self.optional == other.optional
+            and self.name == other.name
+        )
 
     @property
     def job(self) -> int | None:
@@ -467,6 +514,16 @@ class Mode:
         self._demands = demands
         self._name = name
 
+    def __eq__(self, other) -> bool:
+        return (
+            isinstance(other, Mode)
+            and self.task == other.task
+            and self.resources == other.resources
+            and self.duration == other.duration
+            and self.demands == other.demands
+            and self.name == other.name
+        )
+
     @property
     def task(self) -> int:
         return self._task
@@ -486,15 +543,6 @@ class Mode:
     @property
     def name(self) -> str:
         return self._name
-
-    def __eq__(self, other) -> bool:
-        return (
-            self.task == other.task
-            and self.resources == other.resources
-            and self.duration == other.duration
-            and self.demands == other.demands
-            and self.name == other.name
-        )
 
 
 class IterableMixin:
@@ -944,6 +992,17 @@ class ProblemData:
                 self._renewable_idcs.append(idx)
             elif isinstance(resource, NonRenewable):
                 self._non_renewable_idcs.append(idx)
+
+    def __eq__(self, other) -> bool:
+        return (
+            isinstance(other, ProblemData)
+            and self.jobs == other.jobs
+            and self.resources == other.resources
+            and self.tasks == other.tasks
+            and self.modes == other.modes
+            and self.constraints == other.constraints
+            and self.objective == other.objective
+        )
 
     def __str__(self):
         lines = [
