@@ -123,10 +123,10 @@ class Constraints:
 
         for task_idx in range(data.num_tasks):
             task_var = variables.task_vars[task_idx]
-            if data.tasks[task_idx].resumable:
+            if data.tasks[task_idx].allow_breaks:
                 continue
 
-            # Task is not resumable, so its assignment variables
+            # Task does not allow breaks, so its assignment variables
             # should not overlap with any of the break intervals.
             resources = {
                 res
@@ -142,7 +142,7 @@ class Constraints:
                 model.add_no_overlap([assign_var.interval, *break_intervals])
 
         for task_idx in range(data.num_tasks):
-            if not data.tasks[task_idx].resumable:
+            if not data.tasks[task_idx].allow_breaks:
                 continue
 
             task_var = variables.task_vars[task_idx]
@@ -153,7 +153,7 @@ class Constraints:
                 breaks = [var.break_time for var in overlap_vars]
 
                 # Only add overlap constraints if there are overlap variables
-                # (i.e., the task is resumable and has breaks to overlap with)
+                # (i.e., the task allows breaks and has breaks to overlap with)
                 if overlap_vars:
                     total_overlap = sum(var.duration for var in overlap_vars)
                     expr = task_var.overlap == total_overlap

@@ -208,7 +208,7 @@ def test_add_task_attributes():
         earliest_end=3,
         latest_end=4,
         fixed_duration=True,
-        resumable=True,
+        allow_breaks=True,
         optional=False,
         name="task",
     )
@@ -218,7 +218,7 @@ def test_add_task_attributes():
     assert_equal(task.earliest_end, 3)
     assert_equal(task.latest_end, 4)
     assert_equal(task.fixed_duration, True)
-    assert_equal(task.resumable, True)
+    assert_equal(task.allow_breaks, True)
     assert_equal(task.optional, False)
     assert_equal(task.name, "task")
 

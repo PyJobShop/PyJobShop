@@ -449,7 +449,7 @@ class Variables:
             duration = model.new_int_var(0, MAX_VALUE, f"{name}_duration")
             model.add(duration == processing + idle + overlap)
 
-            if not task.resumable:
+            if not task.allow_breaks:
                 model.add(overlap == 0)
 
             if task.fixed_duration:

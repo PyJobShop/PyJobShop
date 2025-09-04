@@ -180,12 +180,12 @@ class Constraints:
             model.add(cpo.forbid_start(mode_var, step))
             model.add(cpo.forbid_end(mode_var, step))
 
-            if data.tasks[mode.task].resumable:
-                # Resumable tasks can be interrupted by breaks: the intensity
+            if data.tasks[mode.task].allow_breaks:
+                # Tasks allowing breaks can be interrupted: the intensity
                 # defines at what percentage a task can be processed.
                 mode_var.set_intensity(step)
             else:
-                # Non-resumable tasks cannot be interrupted by breaks
+                # Tasks not allowing breaks cannot be interrupted
                 model.add(cpo.forbid_extent(mode_var, step))
 
     def _timing_constraints(self):

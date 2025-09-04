@@ -265,7 +265,7 @@ def test_task_attributes():
         earliest_end=3,
         latest_end=4,
         fixed_duration=False,
-        resumable=True,
+        allow_breaks=True,
         optional=True,
         name="TestTask",
     )
@@ -276,7 +276,7 @@ def test_task_attributes():
     assert_equal(task.earliest_end, 3)
     assert_equal(task.latest_end, 4)
     assert_equal(task.fixed_duration, False)
-    assert_equal(task.resumable, True)
+    assert_equal(task.allow_breaks, True)
     assert_equal(task.optional, True)
     assert_equal(task.name, "TestTask")
 
@@ -293,7 +293,7 @@ def test_task_default_attributes():
     assert_equal(task.earliest_end, 0)
     assert_equal(task.latest_end, MAX_VALUE)
     assert_equal(task.fixed_duration, True)
-    assert_equal(task.resumable, False)
+    assert_equal(task.allow_breaks, False)
     assert_equal(task.optional, False)
     assert_equal(task.name, "")
 
@@ -1360,14 +1360,14 @@ def test_task_non_fixed_duration(solver: str):
     assert_equal(sol_task.idle, 9)
 
 
-def test_task_resumable(solver: str):
+def test_task_allow_breaks(solver: str):
     """
     Tests that a task that can be resumed after breaks.
     """
     model = Model()
 
     resource = model.add_renewable(1, breaks=[(1, 3), (4, 5)])
-    task = model.add_task(fixed_duration=False, resumable=True)
+    task = model.add_task(fixed_duration=False, allow_breaks=True)
     model.add_mode(task, resource, duration=3)
 
     # Task starts at time 0 and runs for 1 time unit. Then the first
@@ -1382,16 +1382,16 @@ def test_task_resumable(solver: str):
     assert_equal(result.best.tasks[0].end, 6)
 
 
-def test_task_resumable_does_not_end_in_break(solver: str):
+def test_task_allow_breaks_does_not_end_in_break(solver: str):
     """
-    Tests that a resumable task will not end during a break.
+    Tests that a task allowing breaks will not end during a break.
     """
     model = Model()
 
     # Job with due date (2) in the break (1-4).
     job = model.add_job(due_date=2)
     resource = model.add_machine(breaks=[(1, 4)])
-    task = model.add_task(job, fixed_duration=True, resumable=True)
+    task = model.add_task(job, fixed_duration=True, allow_breaks=True)
     model.add_mode(task, resource, duration=1)
     model.set_objective(weight_total_earliness=1, weight_total_tardiness=1)
 
@@ -1406,10 +1406,10 @@ def test_task_resumable_does_not_end_in_break(solver: str):
     assert_equal(result.best.tasks[0].end, 1)
 
 
-def test_task_resumable_with_modes(solver: str):
+def test_task_allow_breaks_with_modes(solver: str):
     """
     Smoke test.
-    Tests that resumable tasks with multiple modes are scheduled correctly.
+    Tests tasks allowing breaks with multiple modes are scheduled correctly.
     This checks that breaks on other resources does not interfere with the
     tasks.
     """
@@ -1417,7 +1417,7 @@ def test_task_resumable_with_modes(solver: str):
 
     with_breaks = model.add_machine(breaks=[(0, 10)])
     no_breaks = model.add_machine()
-    task = model.add_task(fixed_duration=False, resumable=True)
+    task = model.add_task(fixed_duration=False, allow_breaks=True)
     model.add_mode(task, with_breaks, duration=3)
     model.add_mode(task, no_breaks, duration=1)
 
@@ -1431,18 +1431,18 @@ def test_task_resumable_with_modes(solver: str):
     assert_equal(sol_task.overlap, 0)
 
 
-def test_task_resumable_multiple_resources(solver: str):
+def test_task_allow_breaks_multiple_resources(solver: str):
     """
-    Tests a special case with a resumable task requiring multiple resources
-    that have overlapping breaks. This makes the overlap duration calculation
-    more complicated, as we need to consider the "merged" breaks of all
-    resources that are required by the mode.
+    Tests a special case with a task allowing breaks requiring multiple
+    resources that have overlapping breaks. This makes the overlap duration
+    calculation more complicated, as we need to consider the "merged" breaks
+    of all resources that are required by the mode.
     """
     model = Model()
 
     machine = model.add_machine(breaks=[(1, 3)])
     renewable = model.add_renewable(capacity=1, breaks=[(2, 4)])
-    task = model.add_task(fixed_duration=False, resumable=True)
+    task = model.add_task(fixed_duration=False, allow_breaks=True)
     model.add_mode(task, [machine, renewable], duration=2)
 
     # The task requires both resources, which have overlapping breaks.
@@ -1459,15 +1459,15 @@ def test_task_resumable_multiple_resources(solver: str):
     assert_equal(sol_task.overlap, 3)
 
 
-def test_task_flexible_duration_and_resumable(solver):
+def test_task_flexible_duration_and_allow_breaks(solver):
     """
-    Tests that a task with flexible duration and resumable has the correct
+    Tests that a task with flexible duration and allow_breaks has the correct
     task data in the solution.
     """
     model = Model()
     machine = model.add_machine(breaks=[(1, 3)])
     task = model.add_task(
-        latest_start=0, earliest_end=5, fixed_duration=False, resumable=True
+        latest_start=0, earliest_end=5, fixed_duration=False, allow_breaks=True
     )
     model.add_mode(task, machine, duration=2, demands=[0])
 

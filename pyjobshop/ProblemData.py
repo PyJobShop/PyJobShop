@@ -357,15 +357,8 @@ class Task:
         resource). If the duration is not fixed, then the task duration
         can take longer than the processing time, e.g., due to blocking.
         Default ``True``.
-    flexible_duration
-        Whether the task's duration is allowed to be flexible. If ``True``,
-        the task's durations can be any duration (but at least the required
-        processing time), which can be used to model blocking problems.
-        If ``False`` (default), then the task's duration is precisely equal
-        to the required processing time, including possible overlapping breaks
-        if ``resumable`` is set.
-    resumable
-        Whether the task can be resumed after being interrupted by breaks.
+    allow_breaks
+        Whether the task can be interrupted by breaks and then resume.
         If ``True``, the task can continue processing after a break ends.
         If ``False`` (default), the task cannot be interrupted by breaks.
     optional
@@ -382,7 +375,7 @@ class Task:
         earliest_end: int = 0,
         latest_end: int = MAX_VALUE,
         fixed_duration: bool = True,
-        resumable: bool = False,
+        allow_breaks: bool = False,
         optional: bool = False,
         *,
         name: str = "",
@@ -399,7 +392,7 @@ class Task:
         self._earliest_end = earliest_end
         self._latest_end = latest_end
         self._fixed_duration = fixed_duration
-        self._resumable = resumable
+        self._allow_breaks = allow_breaks
         self._optional = optional
         self._name = name
 
@@ -412,7 +405,7 @@ class Task:
             and self.earliest_end == other.earliest_end
             and self.latest_end == other.latest_end
             and self.fixed_duration == other.fixed_duration
-            and self.resumable == other.resumable
+            and self.allow_breaks == other.allow_breaks
             and self.optional == other.optional
             and self.name == other.name
         )
@@ -461,11 +454,11 @@ class Task:
         return self._fixed_duration
 
     @property
-    def resumable(self) -> bool:
+    def allow_breaks(self) -> bool:
         """
         Whether the task can be resumed after being interrupted by breaks.
         """
-        return self._resumable
+        return self._allow_breaks
 
     @property
     def optional(self) -> bool:

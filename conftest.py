@@ -64,7 +64,7 @@ def complete_data():
         Task(),
         Task(),
         Task(optional=True),
-        Task(resumable=True),
+        Task(allow_breaks=True),
     ]
     modes = [
         Mode(0, [0], 1),
