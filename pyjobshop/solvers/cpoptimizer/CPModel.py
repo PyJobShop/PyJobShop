@@ -83,8 +83,8 @@ class CPModel:
                     resources,
                     start,
                     end,
-                    overlap=overlap,
-                    idle=idle,
+                    idle,
+                    overlap,
                     present=True,
                 )
 

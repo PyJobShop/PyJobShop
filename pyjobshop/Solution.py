@@ -16,10 +16,10 @@ class TaskData:
         The start time.
     end
         The end time.
-    overlap
-        Duration of overlap with other tasks on shared resources.
     idle
         Duration of idle time before the task starts on shared resources.
+    overlap
+        Duration of overlap with other tasks on shared resources.
     present
         Whether the task is present in the solution.
     """
@@ -28,8 +28,8 @@ class TaskData:
     resources: list[int]
     start: int
     end: int
-    overlap: int = 0
     idle: int = 0
+    overlap: int = 0
     present: bool = True
 
     @property

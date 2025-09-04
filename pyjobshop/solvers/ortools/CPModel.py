@@ -89,9 +89,9 @@ class CPModel:
                         mode.resources,
                         start,
                         end,
-                        overlap,
                         idle,
-                        True,
+                        overlap,
+                        present=True,
                     )
                     tasks.append(task)
 
