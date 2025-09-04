@@ -152,7 +152,7 @@ class Constraints:
 
                 # Set the total break duration of the task variable.
                 total_overlap = sum(var.duration for var in overlap_vars)
-                model.add(task_var.overlap == total_overlap)
+                model.add(task_var.breaks == total_overlap)
 
                 # Cannot start or end during a break. The domains capture the
                 # invalid start/end times, and the complement ensures that

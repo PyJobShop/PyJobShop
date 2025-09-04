@@ -61,15 +61,15 @@ class TaskVar:
         The integer variable representing the processing time of the task.
     idle
         The integer variable representing the idle time of the task.
-    overlap
-        The integer variable representing the break overlap time of the task.
+    breaks
+        The integer variable representing the break times of the task.
     """
 
     interval: IntervalVar
     present: IntervalVar
     processing: IntVar
     idle: IntVar
-    overlap: IntVar
+    breaks: IntVar
 
     @property
     def start(self) -> LinearExprT:
@@ -438,21 +438,18 @@ class Variables:
 
             modes = [data.modes[mode_idx] for mode_idx in data.task2modes(idx)]
             domain = Domain.from_values([mode.duration for mode in modes])
-            processing = model.new_int_var_from_domain(
-                domain, name=f"{name}_processing"
-            )
             processing = model.new_int_var(0, MAX_VALUE, f"{name}_processing")
             model.add_linear_expression_in_domain(
                 processing, domain
             ).only_enforce_if(present)
 
             idle = model.new_int_var(0, MAX_VALUE, f"{name}_idle")
-            overlap = model.new_int_var(0, MAX_VALUE, f"{name}_overlap")
+            breaks = model.new_int_var(0, MAX_VALUE, f"{name}_breaks")
             duration = model.new_int_var(0, MAX_VALUE, f"{name}_duration")
-            model.add(duration == processing + idle + overlap)
+            model.add(duration == processing + idle + breaks)
 
             if not task.allow_breaks:
-                model.add(overlap == 0)
+                model.add(breaks == 0)
 
             if not task.allow_idle:
                 model.add(idle == 0)
@@ -461,7 +458,7 @@ class Variables:
                 start, duration, end, present, f"{name}_interval"
             )
             variables.append(
-                TaskVar(interval, present, processing, idle, overlap)
+                TaskVar(interval, present, processing, idle, breaks)
             )
 
         return variables
@@ -743,7 +740,7 @@ class Variables:
             model.add_hint(task_var.start, sol_task.start)  # type: ignore
             model.add_hint(task_var.end, sol_task.end)  # type: ignore
             model.add_hint(task_var.idle, sol_task.idle)  # type: ignore
-            model.add_hint(task_var.overlap, sol_task.breaks)  # type: ignore
+            model.add_hint(task_var.breaks, sol_task.breaks)  # type: ignore
             processing = task_duration - sol_task.idle - sol_task.breaks
             model.add_hint(task_var.processing, processing)  # type: ignore
             model.add_hint(task_var.duration, task_duration)  # type: ignore
