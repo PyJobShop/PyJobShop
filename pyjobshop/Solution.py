@@ -16,21 +16,21 @@ class TaskData:
         The start time.
     end
         The end time.
-    present
-        Whether the task is present in the solution.
     overlap
         Duration of overlap with other tasks on shared resources.
     idle
         Duration of idle time before the task starts on shared resources.
+    present
+        Whether the task is present in the solution.
     """
 
     mode: int
     resources: list[int]
     start: int
     end: int
-    present: bool = True
     overlap: int = 0
     idle: int = 0
+    present: bool = True
 
     @property
     def duration(self) -> int:

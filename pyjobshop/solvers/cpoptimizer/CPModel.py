@@ -83,15 +83,15 @@ class CPModel:
                     resources,
                     start,
                     end,
-                    present=True,
                     overlap=overlap,
                     idle=idle,
+                    present=True,
                 )
 
         for idx in range(self._data.num_tasks):
             if idx not in tasks:
                 tasks[idx] = TaskData(
-                    self._data.num_modes, [], 0, 0, present=False
+                    self._data.num_modes, [], 0, 0, 0, 0, present=False
                 )
 
         return Solution([tasks[idx] for idx in range(self._data.num_tasks)])
