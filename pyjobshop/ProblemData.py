@@ -148,7 +148,7 @@ class Machine:
     breaks
         List of time intervals during which tasks cannot be processed. Each
         break is represented as a tuple ``(start, end)``, where ``start`` must
-        be non-negative and ``start`` must be larger than ``end``. Default is
+        be non-negative and ``start`` must be smaller than ``end``. Default is
         no breaks.
     no_idle
         Whether the machine must operate continuously without idle time between
@@ -229,7 +229,7 @@ class Renewable:
     breaks
         List of time intervals during which tasks cannot be processed. Each
         break is represented as a tuple ``(start, end)``, where ``start`` must
-        be non-negative and ``start`` must be larger than ``end``. Default is
+        be non-negative and ``start`` must be smaller than ``end``. Default is
         no breaks.
     name
         Name of the resource.
@@ -299,7 +299,7 @@ class NonRenewable:
     breaks
         List of time intervals during which tasks cannot be processed. Each
         break is represented as a tuple ``(start, end)``, where ``start`` must
-        be non-negative and ``start`` must be larger than ``end``. Default is
+        be non-negative and ``start`` must be smaller than ``end``. Default is
         no breaks.
     name
         Name of the resource.
