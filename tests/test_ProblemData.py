@@ -1433,7 +1433,7 @@ def test_task_allow_breaks(solver: str, resource):
     assert_equal(sol_task.breaks, 3)
 
 
-def test_task_allow_breaks_with_modes(solver: str):
+def test_task_allow_breaks_with_multiple_modes(solver: str):
     """
     Smoke test that checks that tasks allowing breaks with multiple modes are
     scheduled correctly. Specifically, it checks that the breaks of one mode
@@ -1458,6 +1458,24 @@ def test_task_allow_breaks_with_modes(solver: str):
     assert_equal(sol_task.end, 1)
     assert_equal(sol_task.processing, 1)
     assert_equal(sol_task.breaks, 0)
+
+
+def test_task_multiple_modes_and_overlaps(solver: str):
+    """
+    Tests that a task with multiple modes and break overlaps is scheduled
+    correctly.
+    """
+    model = Model()
+
+    task = model.add_task(allow_breaks=True)
+
+    for _ in range(2):
+        machine = model.add_machine(breaks=[(5, 7), (12, 14)])
+        model.add_mode(task, machine, duration=10)
+
+    result = model.solve(solver=solver)
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.objective, 12)
 
 
 def test_task_allow_breaks_multiple_resources(solver: str):
