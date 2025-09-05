@@ -986,12 +986,16 @@ class ProblemData:
 
         # After validation, we can safely set the helper attributes.
         self._task2modes: list[list[int]] = [[] for _ in tasks]
+        self._task2resources: list[list[int]] = [[] for _ in tasks]
         self._resource2modes: list[list[int]] = [[] for _ in resources]
 
         for mode_idx, mode in enumerate(self.modes):
             self._task2modes[mode.task].append(mode_idx)
+            self._task2resources[mode.task].extend(mode.resources)
             for res_idx in mode.resources:
                 self._resource2modes[res_idx].append(mode_idx)
+
+        self._task2resources = [sorted(set(v)) for v in self._task2resources]
 
         self._machine_idcs: list[int] = []
         self._renewable_idcs: list[int] = []
@@ -1452,3 +1456,21 @@ class ProblemData:
         if not (0 <= resource < self.num_resources):
             raise ValueError(f"Invalid resource index {resource}.")
         return self._resource2modes[resource]
+
+    def task2resources(self, task: int) -> list[int]:
+        """
+        Returns the resource indices that the given task can use.
+
+        Parameters
+        ----------
+        task
+            The task index.
+
+        Returns
+        -------
+        list[int]
+            The list of resource indices for the given task.
+        """
+        if not (0 <= task < self.num_tasks):
+            raise ValueError(f"Invalid task index {task}.")
+        return self._task2resources[task]

@@ -1092,6 +1092,36 @@ def test_problem_data_task2modes():
         data.task2modes(2)
 
 
+def test_problem_data_task2resources():
+    """
+    Tests that the resource indices corresponding to each task are correctly
+    computed.
+    """
+    data = ProblemData(
+        [],
+        [Renewable(1), Renewable(10), Renewable(5)],
+        [Task(), Task(), Task()],
+        modes=[
+            Mode(0, [0], 1, [1]),
+            Mode(0, [1, 2], 2, [10, 5]),
+            Mode(1, [1], 3, [0]),
+            Mode(2, [], 0, []),
+        ],
+    )
+
+    assert_equal(data.task2resources(0), [0, 1, 2])
+    assert_equal(data.task2resources(1), [1])
+    assert_equal(data.task2resources(2), [])
+
+    # Check that the task2resources method raises an error when an invalid
+    # task index is passed.
+    with pytest.raises(ValueError):
+        data.task2resources(-1)
+
+    with pytest.raises(ValueError):
+        data.task2resources(3)
+
+
 def test_problem_data_equality():
     """
     Tests the equality comparison for ProblemData objects.

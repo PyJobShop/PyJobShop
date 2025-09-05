@@ -473,18 +473,9 @@ class Variables:
         model, data = self._model, self._data
         variables = {}
 
-        for task_idx in range(data.num_tasks):
-            # Only create assignment variables for (task, resource) pairs
-            # that are actually used in the problem.
-            resources = {
-                res
-                for mode in data.task2modes(task_idx)
-                for res in data.modes[mode].resources
-            }
-
-            for res_idx in resources:
+        for task_idx, task_var in enumerate(task_vars):
+            for res_idx in data.task2resources(task_idx):
                 name = f"A_{task_idx}_{res_idx}"
-                task_var = task_vars[task_idx]
                 present = model.new_bool_var(f"{name}_present")
                 interval = model.new_optional_interval_var(
                     task_var.start,
@@ -508,15 +499,7 @@ class Variables:
         variables = {}
 
         for task_idx in range(data.num_tasks):
-            # Only create demand variables for (task, resource) pairs
-            # that are actually used in the problem.
-            resources = {
-                res
-                for mode in data.task2modes(task_idx)
-                for res in data.modes[mode].resources
-            }
-
-            for res_idx in resources:
+            for res_idx in data.task2resources(task_idx):
                 name = f"{task_idx}_{res_idx}"
                 demand = model.new_int_var(0, MAX_VALUE, f"{name}_demand")
                 variables[task_idx, res_idx] = demand
@@ -777,11 +760,7 @@ class Variables:
             mode_data = data.modes[sol_task.mode]
             res2demands = dict(zip(mode_data.resources, mode_data.demands))
 
-            task_resources = set()
-            for mode in data.task2modes(task_idx):
-                task_resources.update(data.modes[mode].resources)
-
-            for res_idx in task_resources:
+            for res_idx in data.task2resources(task_idx):
                 assign_var = assign_vars[task_idx, res_idx]
                 is_present = res_idx in sol_task.resources
                 model.add_hint(assign_var.present, is_present)
