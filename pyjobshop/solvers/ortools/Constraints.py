@@ -76,10 +76,10 @@ class Constraints:
                 mode_vars = [variables.mode_vars[idx] for idx in res_mode_idcs]
                 model.add(presence <= sum(mode_vars))
 
-        for (task_idx, _), assign_var in variables.assign_vars.items():
-            # Assignment variable can only be present if task is present.
-            task_var = variables.task_vars[task_idx]
-            model.add(assign_var.present <= task_var.present)
+            for res_idx in data.task2resources(task_idx):
+                # Assignment variable can only be present if task is present.
+                assign_var = variables.assign_vars[task_idx, res_idx]
+                model.add(assign_var.present <= task_var.present)
 
     def _machines_no_overlap(self):
         """
@@ -125,13 +125,14 @@ class Constraints:
             if task.allow_breaks:
                 continue
 
-            # Task does not allow breaks, so its assignment variables
-            # should not overlap with any of the break intervals.
             for res_idx in data.task2resources(task_idx):
-                breaks = data.resources[res_idx].breaks
+                # Assignment variables should not overlap with any break. Using
+                # the `no_overlap` also handles the case when the assignment
+                # variable is absent.
                 assign_var = variables.assign_vars[task_idx, res_idx]
                 break_intervals = [
-                    model.new_interval_var(s, e - s, e, "") for s, e in breaks
+                    model.new_fixed_size_interval_var(start, end - start, "")
+                    for start, end in data.resources[res_idx].breaks
                 ]
                 model.add_no_overlap([assign_var.interval, *break_intervals])
 
@@ -149,12 +150,12 @@ class Constraints:
                 total_overlap = sum(var.duration for var in overlap_vars)
                 model.add(task_var.breaks == total_overlap)
 
-                # Cannot start or end during a break. The domains capture the
-                # invalid start/end times, and the complement ensures that
+                # Cannot start or end during a break. The domains below capture
+                # the invalid start/end times, and the complement ensures that
                 # these values are excluded.
                 breaks = [var.break_time for var in overlap_vars]
-                starts = Domain.from_intervals([(s, e - 1) for s, e in breaks])
-                ends = Domain.from_intervals([(s + 1, e) for s, e in breaks])
+                starts = Domain.from_intervals([[s, e - 1] for s, e in breaks])
+                ends = Domain.from_intervals([[s + 1, e] for s, e in breaks])
 
                 model.add_linear_expression_in_domain(
                     task_var.start, starts.complement()

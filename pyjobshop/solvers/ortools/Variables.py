@@ -543,8 +543,8 @@ class Variables:
                 after = model.new_bool_var("")
                 has_overlap = model.new_bool_var("")
 
-                # If mode is selected, then (after OR before) XOR has_overlap.
-                model.add_bool_or(after, before, has_overlap).only_enforce_if(
+                # If mode is selected, then (before OR after) XOR has_overlap.
+                model.add_bool_or(before, after, has_overlap).only_enforce_if(
                     mode_var
                 )
                 model.add_implication(after, ~has_overlap)
