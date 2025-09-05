@@ -17,6 +17,7 @@ from pyjobshop.Solution import Solution
 
 TaskIdx = int
 ResourceIdx = int
+TaskResIdcs = tuple[TaskIdx, ResourceIdx]
 ModeVar: TypeAlias = IntVar  # actually BoolVarT
 
 
@@ -57,10 +58,19 @@ class TaskVar:
         The interval variable representing the task.
     present
         The boolean variable indicating whether the interval is present.
+    processing
+        The integer variable representing the processing time of the task.
+    idle
+        The integer variable representing the idle time of the task.
+    breaks
+        The integer variable representing the break times of the task.
     """
 
     interval: IntervalVar
-    present: BoolVarT
+    present: IntervalVar
+    processing: IntVar
+    idle: IntVar
+    breaks: IntVar
 
     @property
     def start(self) -> LinearExprT:
@@ -175,6 +185,41 @@ class SequenceVar:
         }
 
 
+@dataclass
+class BreakOverlapVar:
+    """
+    Represents whether a task overlaps with a break for a given mode.
+
+    If the corresponding mode is selected, then exactly one of the following
+    must hold for the given break:
+    - The task ends before the break (before).
+    - The task starts after the break (after).
+    - The task overlaps with the break (overlaps).
+
+    Otherwise, all variables are false, and the duration is zero.
+
+    Parameters
+    ----------
+    break_time
+        The (start, end) time of the break.
+    before
+        Boolean variable indicating if interval ends before the break.
+    after
+        Boolean variable indicating if interval starts after the break.
+    has_overlap
+        Boolean variable indicating if interval overlaps with break.
+    duration
+        Integer variable representing the duration of the overlap, which is
+        0 if there is no overlap, otherwise it is the length of the break
+    """
+
+    break_time: tuple[int, int]
+    before: BoolVarT
+    after: BoolVarT
+    has_overlap: BoolVarT
+    duration: IntVar
+
+
 class Variables:
     """
     Manages the core variables of the OR-Tools model.
@@ -192,6 +237,7 @@ class Variables:
         self._sequence_vars = self._make_sequence_variables()
 
         # Variables below are lazily created.
+        self._overlap_vars: list[list[BreakOverlapVar]] | None = None
         self._makespan_var: IntVar | None = None
         self._is_tardy_vars: list[IntVar] | None = None
         self._flow_time_vars: list[IntVar] | None = None
@@ -221,16 +267,14 @@ class Variables:
         return self._mode_vars
 
     @property
-    def assign_vars(
-        self,
-    ) -> dict[tuple[TaskIdx, ResourceIdx], OptionalIntervalVar]:
+    def assign_vars(self) -> dict[TaskResIdcs, OptionalIntervalVar]:
         """
         Retruns the assignment variables.
         """
         return self._assign_vars
 
     @property
-    def demand_vars(self) -> dict[tuple[TaskIdx, ResourceIdx], IntVar]:
+    def demand_vars(self) -> dict[TaskResIdcs, IntVar]:
         """
         Returns the demand variables.
         """
@@ -242,6 +286,17 @@ class Variables:
         Returns the sequence variables.
         """
         return self._sequence_vars
+
+    @property
+    def overlap_vars(self) -> list[list[BreakOverlapVar]]:
+        """
+        Returns the overlap variables for each mode.
+        """
+        if self._overlap_vars is not None:
+            return self._overlap_vars
+
+        self._overlap_vars = self._make_overlap_variables()
+        return self._overlap_vars
 
     @property
     def makespan_var(self) -> IntVar:
@@ -365,7 +420,6 @@ class Variables:
         """
         model, data = self._model, self._data
         variables = []
-        task_durations = utils.compute_task_durations(data)
 
         for idx, task in enumerate(data.tasks):
             name = f"T{idx}"
@@ -383,46 +437,45 @@ class Variables:
             model.add(end >= task.earliest_end).only_enforce_if(present)
             model.add(end <= task.latest_end).only_enforce_if(present)
 
-            if task.fixed_duration and not task.optional:
-                # If an optional task is absent, the duration is a free
-                # variable, so we cannot force it to be within a given domain.
-                domain = Domain.from_values(task_durations[idx])
-                duration = model.new_int_var_from_domain(
-                    domain, f"{name}_duration"
-                )
-            else:
-                duration = model.new_int_var(
-                    lb=0, ub=MAX_VALUE, name=f"{name}_duration"
-                )
+            modes = [data.modes[mode_idx] for mode_idx in data.task2modes(idx)]
+            domain = Domain.from_values([mode.duration for mode in modes])
+            processing = model.new_int_var(0, MAX_VALUE, f"{name}_processing")
+            model.add_linear_expression_in_domain(
+                processing, domain
+            ).only_enforce_if(present)
+
+            idle = model.new_int_var(0, MAX_VALUE, f"{name}_idle")
+            breaks = model.new_int_var(0, MAX_VALUE, f"{name}_breaks")
+            duration = model.new_int_var(0, MAX_VALUE, f"{name}_duration")
+            model.add(duration == processing + idle + breaks)
+
+            if not task.allow_breaks:
+                model.add(breaks == 0)
+
+            if not task.allow_idle:
+                model.add(idle == 0)
 
             interval = model.new_optional_interval_var(
                 start, duration, end, present, f"{name}_interval"
             )
-            variables.append(TaskVar(interval, present))
+            variables.append(
+                TaskVar(interval, present, processing, idle, breaks)
+            )
 
         return variables
 
     def _make_assign_variables(
         self, task_vars: list[TaskVar]
-    ) -> dict[tuple[TaskIdx, ResourceIdx], OptionalIntervalVar]:
+    ) -> dict[TaskResIdcs, OptionalIntervalVar]:
         """
         Creates an optional interval variable for each task-resource pair.
         """
         model, data = self._model, self._data
         variables = {}
 
-        for task_idx in range(data.num_tasks):
-            # Only create assignment variables for (task, resource) pairs
-            # that are actually used in the problem.
-            resources = {
-                res
-                for mode in data.task2modes(task_idx)
-                for res in data.modes[mode].resources
-            }
-
-            for res_idx in resources:
+        for task_idx, task_var in enumerate(task_vars):
+            for res_idx in data.task2resources(task_idx):
                 name = f"A_{task_idx}_{res_idx}"
-                task_var = task_vars[task_idx]
                 present = model.new_bool_var(f"{name}_present")
                 interval = model.new_optional_interval_var(
                     task_var.start,
@@ -438,7 +491,7 @@ class Variables:
 
     def _make_demand_variables(
         self,
-    ) -> dict[tuple[TaskIdx, ResourceIdx], IntVar]:
+    ) -> dict[TaskResIdcs, IntVar]:
         """
         Creates a integer demand variable for each task-resource pair.
         """
@@ -446,15 +499,7 @@ class Variables:
         variables = {}
 
         for task_idx in range(data.num_tasks):
-            # Only create demand variables for (task, resource) pairs
-            # that are actually used in the problem.
-            resources = {
-                res
-                for mode in data.task2modes(task_idx)
-                for res in data.modes[mode].resources
-            }
-
-            for res_idx in resources:
+            for res_idx in data.task2resources(task_idx):
                 name = f"{task_idx}_{res_idx}"
                 demand = model.new_int_var(0, MAX_VALUE, f"{name}_demand")
                 variables[task_idx, res_idx] = demand
@@ -471,6 +516,47 @@ class Variables:
         for idx in data.machine_idcs:
             tasks = {data.modes[m].task for m in data.resource2modes(idx)}
             variables[idx] = SequenceVar(sorted(tasks))
+
+        return variables
+
+    def _make_overlap_variables(self) -> list[list[BreakOverlapVar]]:
+        """
+        Creates the overlap variables.
+        """
+        model, data = self._model, self._data
+        variables: list[list[BreakOverlapVar]] = []
+
+        for mode_idx, mode in enumerate(data.modes):
+            # For single-resource modes, breaks map directly to individual
+            # resource breaks. For multi-resource modes, breaks may represent
+            # combined breaks (e.g., when resources have overlapping breaks).
+            all_breaks = []
+            for res_idx in mode.resources:
+                all_breaks.extend(data.resources[res_idx].breaks)
+            breaks = utils.merge(all_breaks)
+
+            mode_var = self._mode_vars[mode_idx]
+            overlap_vars = []
+
+            for start, end in breaks:
+                before = model.new_bool_var("")
+                after = model.new_bool_var("")
+                has_overlap = model.new_bool_var("")
+                model.add(before + after + has_overlap == mode_var)
+
+                duration = model.new_int_var(0, end - start, "")
+                model.add(duration == (end - start) * has_overlap)
+
+                overlap_var = BreakOverlapVar(
+                    (start, end),
+                    before,
+                    after,
+                    has_overlap,
+                    duration,
+                )
+                overlap_vars.append(overlap_var)
+
+            variables.append(overlap_vars)
 
         return variables
 
@@ -627,8 +713,12 @@ class Variables:
             task_duration = sol_task.end - sol_task.start
 
             model.add_hint(task_var.start, sol_task.start)  # type: ignore
-            model.add_hint(task_var.duration, task_duration)  # type: ignore
             model.add_hint(task_var.end, sol_task.end)  # type: ignore
+            model.add_hint(task_var.idle, sol_task.idle)  # type: ignore
+            model.add_hint(task_var.breaks, sol_task.breaks)  # type: ignore
+            processing = task_duration - sol_task.idle - sol_task.breaks
+            model.add_hint(task_var.processing, processing)  # type: ignore
+            model.add_hint(task_var.duration, task_duration)  # type: ignore
 
             if data.tasks[task_idx].optional:
                 # OR-Tools complains about adding hints to interval
@@ -637,16 +727,31 @@ class Variables:
 
             for mode_idx in data.task2modes(task_idx):
                 mode_var = self.mode_vars[mode_idx]
-                model.add_hint(mode_var, mode_idx == sol_task.mode)
+                mode_selected = mode_idx == sol_task.mode
+                model.add_hint(mode_var, mode_selected)
+
+                # Overlap related variables.
+                for overlap_var in self.overlap_vars[mode_idx]:
+                    break_start, break_end = overlap_var.break_time
+                    before = sol_task.end <= break_start
+                    after = sol_task.start >= break_end
+                    has_overlap = mode_selected and not (before or after)
+                    model.add_hint(overlap_var.has_overlap, has_overlap)
+                    model.add_hint(overlap_var.before, before)
+                    model.add_hint(overlap_var.after, after)
+                    model.add_hint(
+                        overlap_var.duration,
+                        (
+                            (break_end - break_start)
+                            if mode_selected and has_overlap
+                            else 0
+                        ),
+                    )
 
             mode_data = data.modes[sol_task.mode]
             res2demands = dict(zip(mode_data.resources, mode_data.demands))
 
-            task_resources = set()
-            for mode in data.task2modes(task_idx):
-                task_resources.update(data.modes[mode].resources)
-
-            for res_idx in task_resources:
+            for res_idx in data.task2resources(task_idx):
                 assign_var = assign_vars[task_idx, res_idx]
                 is_present = res_idx in sol_task.resources
                 model.add_hint(assign_var.present, is_present)

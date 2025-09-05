@@ -63,6 +63,7 @@ class CPModel:
         """
         Converts an CpoSolveResult object to a solution.
         """
+        data = self._data
         tasks = {}
 
         for var in result.get_all_var_solutions():  # type: ignore
@@ -70,18 +71,24 @@ class CPModel:
 
             # Scheduled tasks are inferred from present mode variables.
             if name.startswith("M") and var.is_present():
-                mode, task = map(int, name[1:].split("_"))
-                resources = self._data.modes[mode].resources
-                start = var.start
-                end = var.end
+                mode_idx, task = map(int, name[1:].split("_"))
+                overlap = var.get_length() - var.size
+                processing = data.modes[mode_idx].duration
+                idle = var.get_length() - processing - overlap
                 tasks[task] = TaskData(
-                    mode, resources, start, end, present=True
+                    mode_idx,
+                    data.modes[mode_idx].resources,
+                    var.start,
+                    var.end,
+                    idle,
+                    overlap,
+                    present=True,
                 )
 
-        for idx in range(self._data.num_tasks):
+        for idx in range(data.num_tasks):
             if idx not in tasks:
                 tasks[idx] = TaskData(
-                    self._data.num_modes, [], 0, 0, present=False
+                    data.num_modes, [], 0, 0, 0, 0, present=False
                 )
 
         return Solution([tasks[idx] for idx in range(self._data.num_tasks)])
