@@ -255,11 +255,11 @@ def test_non_renewable_equality():
     """
     assert_equal(NonRenewable(0), NonRenewable(0))
 
-    renewable1 = NonRenewable(5, [(10, 20)], name="R1")
-    assert_(renewable1 != NonRenewable(0))
+    non_renewable1 = NonRenewable(5, [(10, 20)], name="R1")
+    assert_(non_renewable1 != NonRenewable(0))
 
-    renewable2 = NonRenewable(5, [(10, 20)], name="R1")
-    assert_equal(renewable1, renewable2)
+    non_renewable2 = NonRenewable(5, [(10, 20)], name="R1")
+    assert_equal(non_renewable1, non_renewable2)
 
 
 def test_task_attributes():
