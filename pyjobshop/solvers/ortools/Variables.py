@@ -542,18 +542,10 @@ class Variables:
                 before = model.new_bool_var("")
                 after = model.new_bool_var("")
                 has_overlap = model.new_bool_var("")
+                model.add(before + after + has_overlap == mode_var)
 
-                # If mode is selected, then (before OR after) XOR has_overlap.
-                model.add_bool_or(before, after, has_overlap).only_enforce_if(
-                    mode_var
-                )
-                model.add_implication(after, ~has_overlap)
-                model.add_implication(before, ~has_overlap)
-
-                domain = Domain.from_values([0, end - start])
-                duration = model.new_int_var_from_domain(domain, "")
-                model.add(duration == end - start).only_enforce_if(has_overlap)
-                model.add(duration == 0).only_enforce_if(~has_overlap)
+                duration = model.new_int_var(0, end - start, "")
+                model.add(duration == (end - start) * has_overlap)
 
                 overlap_var = BreakOverlapVar(
                     (start, end),

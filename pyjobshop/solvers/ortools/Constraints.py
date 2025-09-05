@@ -172,9 +172,7 @@ class Constraints:
                     start, end = var.break_time
                     task_start, task_end = task_var.start, task_var.end
                     model.add(task_end <= start).only_enforce_if(var.before)
-                    model.add(task_end > start).only_enforce_if(~var.before)
                     model.add(task_start >= end).only_enforce_if(var.after)
-                    model.add(task_start < end).only_enforce_if(~var.after)
 
     def _timing_constraints(self):
         """
