@@ -162,14 +162,13 @@ class Constraints:
                 all_breaks.extend(data.resources[res_idx].breaks)
             breaks = utils.merge(all_breaks)
 
-            # The step function represents the periods during which an interval
-            # may be processed. A nonzero value indicates that processing is
-            # allowed, while a zero value indicates that processing is not
-            # allowed due to breaks.
+            # The step function represents the time periods in which an
+            # interval can be processed: a nonzero value means that processing
+            # is allowed, while a zero means that processing is not allowed.
             step = CpoStepFunction()
 
-            # Domain including -1 allows ending at t=0, and the value 100
-            # represents to the availability as percentage.
+            # Domain includes -1 to allows ending at t=0, and the value 100
+            # refers to the intensity (i.e., percentage available).
             step.set_value(-1, MAX_VALUE, 100)
 
             for start, end in breaks:
@@ -180,11 +179,11 @@ class Constraints:
             model.add(cpo.forbid_end(mode_var, step))
 
             if data.tasks[mode.task].allow_breaks:
-                # Tasks allowing breaks can be interrupted: the intensity
-                # defines at what percentage a task can be processed.
+                # This ensures that the time during breaks is not counted
+                # towards the task size (processing time).
                 mode_var.set_intensity(step)
             else:
-                # Tasks not allowing breaks cannot be interrupted
+                # No overlap allowed between breaks and tasks.
                 model.add(cpo.forbid_extent(mode_var, step))
 
     def _timing_constraints(self):

@@ -35,7 +35,7 @@ class TaskData:
     @property
     def duration(self) -> int:
         """
-        Returns the duration of the task.
+        Returns the total duration of the task.
         """
         return self.end - self.start
 
