@@ -128,14 +128,10 @@ class Constraints:
         """
         model, data, variables = self._model, self._data, self._variables
 
-        for idx in data.machine_idcs + data.renewable_idcs:
-            breaks = data.resources[idx].breaks
-            if not breaks:
-                continue
-
+        for idx, resource in enumerate(data.resources):
             break_intervals = [
                 model.new_fixed_size_interval_var(start, end - start, "")
-                for start, end in breaks
+                for start, end in resource.breaks
             ]
 
             for var in variables.res2assign(idx):

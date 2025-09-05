@@ -213,14 +213,12 @@ def test_non_renewable_attributes():
     """
     Tests that the attributes of the NonRenewable class are set correctly.
     """
-    # Let's first test the default values.
-    non_renewable = NonRenewable(capacity=1)
-    assert_equal(non_renewable.name, "")
-
-    # Now test with some values.
-    non_renewable = NonRenewable(capacity=1, name="TestNonRenewable")
+    non_renewable = NonRenewable(
+        capacity=1, breaks=[(0, 1)], name="non_renewable"
+    )
     assert_equal(non_renewable.capacity, 1)
-    assert_equal(non_renewable.name, "TestNonRenewable")
+    assert_equal(non_renewable.breaks, [(0, 1)])
+    assert_equal(non_renewable.name, "non_renewable")
 
 
 def test_non_renewable_default_attributes():
@@ -230,15 +228,25 @@ def test_non_renewable_default_attributes():
     """
     non_renewable = NonRenewable(capacity=0)
     assert_equal(non_renewable.name, "")
+    assert_equal(non_renewable.breaks, [])
 
 
-def test_non_renewable_raises_invalid_capacity():
+@pytest.mark.parametrize(
+    "capacity, breaks",
+    [
+        (-1, [(0, 1)]),  # capacity < 0
+        (1, [(-1, 0)]),  # breaks start < 0
+        (1, [(2, 1)]),  # breaks start > end
+        (1, [(1, 3), (2, 4)]),  # breaks overlapping
+    ],
+)
+def test_non_renewable_raises_invalid_parameters(capacity, breaks):
     """
-    Tests that a ValueError is raised when an invalid capacity is passed
-    to the Renewable class.
+    Tests that a ValueError is raised when invalid parameters are passed
+    to the NonRenewable class.
     """
     with assert_raises(ValueError):
-        NonRenewable(capacity=-1)  # negative
+        NonRenewable(capacity=capacity, breaks=breaks)
 
 
 def test_non_renewable_equality():
@@ -247,11 +255,11 @@ def test_non_renewable_equality():
     """
     assert_equal(NonRenewable(0), NonRenewable(0))
 
-    nonrenewable1 = NonRenewable(100, name="NR1")
-    assert_(nonrenewable1 != NonRenewable(0))
+    non_renewable1 = NonRenewable(5, [(10, 20)], name="R1")
+    assert_(non_renewable1 != NonRenewable(0))
 
-    nonrenewable2 = NonRenewable(100, name="NR1")
-    assert_equal(nonrenewable1, nonrenewable2)
+    non_renewable2 = NonRenewable(5, [(10, 20)], name="R1")
+    assert_equal(non_renewable1, non_renewable2)
 
 
 def test_task_attributes():
@@ -1545,6 +1553,40 @@ def test_resource_non_renewable_capacity(solver: str):
     # cannot be scheduled.
     result = model.solve(solver=solver)
     assert_equal(result.status.value, "Infeasible")
+
+
+def test_non_renewable_breaks(solver: str):
+    """
+    Tests that a NonRenewable resource respects breaks.
+    """
+    model = Model()
+    resource1 = model.add_non_renewable(capacity=10, breaks=[(1, 2), (3, 4)])
+    resource2 = model.add_non_renewable(capacity=10, breaks=[(0, 100)])
+    task = model.add_task()
+    model.add_mode(task, resource1, duration=2, demands=5)
+    model.add_mode(task, resource2, duration=2, demands=5)
+
+    # It's best to use resource 1, and the earliest that the task can start is
+    # at time 4, so the makespan is 6.
+    result = model.solve(solver=solver)
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.objective, 6)
+
+
+def test_non_renewable_breaks_respected_by_zero_demand(solver: str):
+    """
+    Tests that a NonRenewable resource break is respected even if the mode has
+    zero demand.
+    """
+    model = Model()
+    resource = model.add_non_renewable(capacity=10, breaks=[(1, 2), (3, 4)])
+    task = model.add_task()
+    model.add_mode(task, resource, duration=2, demands=[0])
+
+    # The earliest that the task can start is at time 4, so the makespan is 6.
+    result = model.solve(solver=solver)
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.objective, 6)
 
 
 @pytest.fixture
