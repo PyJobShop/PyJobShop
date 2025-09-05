@@ -156,12 +156,11 @@ class Constraints:
 
         for mode_idx, mode_var in enumerate(variables.mode_vars):
             mode = data.modes[mode_idx]
-            breaks = [
-                br
-                for res_idx in mode.resources
-                for br in getattr(data.resources[res_idx], "breaks", [])
-            ]
-            breaks = utils.merge(breaks)
+
+            all_breaks: list[tuple[int, int]] = []
+            for res_idx in mode.resources:
+                all_breaks.extend(data.resources[res_idx].breaks)
+            breaks = utils.merge(all_breaks)
 
             # The step function represents the periods during which an interval
             # may be processed. A nonzero value indicates that processing is

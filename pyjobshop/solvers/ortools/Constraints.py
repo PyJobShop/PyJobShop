@@ -128,7 +128,7 @@ class Constraints:
             # Task does not allow breaks, so its assignment variables
             # should not overlap with any of the break intervals.
             for res_idx in data.task2resources(task_idx):
-                breaks = getattr(data.resources[res_idx], "breaks", [])
+                breaks = data.resources[res_idx].breaks
                 assign_var = variables.assign_vars[task_idx, res_idx]
                 break_intervals = [
                     model.new_interval_var(s, e - s, e, "") for s, e in breaks

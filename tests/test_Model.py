@@ -190,9 +190,12 @@ def test_add_non_renewable_resource_attributes():
     """
     model = Model()
 
-    non_renewable = model.add_non_renewable(capacity=1, name="resource")
+    non_renewable = model.add_non_renewable(
+        capacity=1, breaks=[(0, 1)], name="resource"
+    )
 
     assert_equal(non_renewable.capacity, 1)
+    assert_equal(non_renewable.breaks, [(0, 1)])
     assert_equal(non_renewable.name, "resource")
 
 

@@ -530,12 +530,11 @@ class Variables:
             # For single-resource modes, breaks map directly to individual
             # resource breaks. For multi-resource modes, breaks may represent
             # combined breaks (e.g., when resources have overlapping breaks).
-            breaks = [
-                brk
-                for res_idx in mode.resources
-                for brk in getattr(data.resources[res_idx], "breaks", [])
-            ]
-            breaks = utils.merge(breaks)  # super breaks
+            all_breaks: list[tuple[int, int]] = []
+            for res_idx in mode.resources:
+                all_breaks.extend(data.resources[res_idx].breaks)
+            breaks = utils.merge(all_breaks)
+
             mode_var = self._mode_vars[mode_idx]
             overlap_vars = []
 
