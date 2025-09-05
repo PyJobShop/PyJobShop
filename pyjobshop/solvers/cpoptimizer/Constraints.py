@@ -157,7 +157,7 @@ class Constraints:
         for mode_idx, mode_var in enumerate(variables.mode_vars):
             mode = data.modes[mode_idx]
 
-            all_breaks: list[tuple[int, int]] = []
+            all_breaks = []
             for res_idx in mode.resources:
                 all_breaks.extend(data.resources[res_idx].breaks)
             breaks = utils.merge(all_breaks)
