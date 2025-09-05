@@ -146,9 +146,11 @@ class Constraints:
                 mode_var = variables.mode_vars[mode_idx]
                 overlap_vars = variables.overlap_vars[mode_idx]
 
-                # Set the total break duration of the task variable.
+                # Set the task break duration equal to the total overlap of
+                # the selected mode variable.
                 total_overlap = sum(var.duration for var in overlap_vars)
-                model.add(task_var.breaks == total_overlap)
+                expr = task_var.breaks == total_overlap
+                model.add(expr).only_enforce_if(mode_var)
 
                 # Cannot start or end during a break. The domains below capture
                 # the invalid start/end times, and the complement ensures that
