@@ -296,21 +296,43 @@ class NonRenewable:
     ----------
     capacity
         Capacity of the resource. Must be non-negative.
+    breaks
+        List of time intervals during which tasks cannot be processed. Each
+        break is represented as a tuple ``(start, end)``, where ``start`` must
+        be non-negative and ``start`` must be larger than ``end``. Default is
+        no breaks.
     name
         Name of the resource.
     """
 
-    def __init__(self, capacity: int, *, name: str = ""):
+    def __init__(
+        self,
+        capacity: int,
+        breaks: list[tuple[int, int]] | None = None,
+        *,
+        name: str = "",
+    ):
         if capacity < 0:
             raise ValueError("Capacity must be non-negative.")
 
+        if breaks is not None:
+            for start, end in breaks:
+                if start < 0 or start >= end:
+                    raise ValueError("Break start < 0 or start >= end.")
+
+            for interval1, interval2 in pairwise(sorted(breaks)):
+                if interval1[1] > interval2[0]:
+                    raise ValueError("Break intervals must not overlap.")
+
         self._capacity = capacity
+        self._breaks = breaks or []
         self._name = name
 
     def __eq__(self, other) -> bool:
         return (
             isinstance(other, NonRenewable)
             and self.capacity == other.capacity
+            and self.breaks == other.breaks
             and self.name == other.name
         )
 
@@ -320,6 +342,13 @@ class NonRenewable:
         Capacity of the resource.
         """
         return self._capacity
+
+    @property
+    def breaks(self) -> list[tuple[int, int]]:
+        """
+        List of time intervals during which tasks cannot be processed.
+        """
+        return self._breaks
 
     @property
     def name(self) -> str:

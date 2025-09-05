@@ -123,6 +123,7 @@ class Model:
             elif isinstance(resource, NonRenewable):
                 model.add_non_renewable(
                     resource.capacity,
+                    resource.breaks,
                     name=resource.name,
                 )
             else:
@@ -292,12 +293,16 @@ class Model:
         return resource
 
     def add_non_renewable(
-        self, capacity: int, *, name: str = ""
+        self,
+        capacity: int,
+        breaks: list[tuple[int, int]] | None = None,
+        *,
+        name: str = "",
     ) -> NonRenewable:
         """
         Adds a non-renewable resource to the model.
         """
-        resource = NonRenewable(capacity, name=name)
+        resource = NonRenewable(capacity, breaks, name=name)
 
         self._id2resource[id(resource)] = len(self.resources)
         self._resources.append(resource)
