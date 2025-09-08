@@ -71,6 +71,17 @@ class Job:
         self._tasks = [] if tasks is None else tasks
         self._name = name
 
+    def __eq__(self, other) -> bool:
+        return (
+            isinstance(other, Job)
+            and self.weight == other.weight
+            and self.release_date == other.release_date
+            and self.deadline == other.deadline
+            and self.due_date == other.due_date
+            and self.tasks == other.tasks
+            and self.name == other.name
+        )
+
     @property
     def weight(self) -> int:
         """
@@ -137,7 +148,7 @@ class Machine:
     breaks
         List of time intervals during which tasks cannot be processed. Each
         break is represented as a tuple ``(start, end)``, where ``start`` must
-        be non-negative and ``start`` must be larger than ``end``. Default is
+        be non-negative and ``start`` must be smaller than ``end``. Default is
         no breaks.
     no_idle
         Whether the machine must operate continuously without idle time between
@@ -176,6 +187,14 @@ class Machine:
         self._no_idle = no_idle
         self._name = name
 
+    def __eq__(self, other) -> bool:
+        return (
+            isinstance(other, Machine)
+            and self.breaks == other.breaks
+            and self.no_idle == other.no_idle
+            and self.name == other.name
+        )
+
     @property
     def breaks(self) -> list[tuple[int, int]]:
         """
@@ -210,7 +229,7 @@ class Renewable:
     breaks
         List of time intervals during which tasks cannot be processed. Each
         break is represented as a tuple ``(start, end)``, where ``start`` must
-        be non-negative and ``start`` must be larger than ``end``. Default is
+        be non-negative and ``start`` must be smaller than ``end``. Default is
         no breaks.
     name
         Name of the resource.
@@ -238,6 +257,14 @@ class Renewable:
         self._capacity = capacity
         self._breaks = breaks or []
         self._name = name
+
+    def __eq__(self, other) -> bool:
+        return (
+            isinstance(other, Renewable)
+            and self.capacity == other.capacity
+            and self.breaks == other.breaks
+            and self.name == other.name
+        )
 
     @property
     def capacity(self) -> int:
@@ -269,16 +296,45 @@ class NonRenewable:
     ----------
     capacity
         Capacity of the resource. Must be non-negative.
+    breaks
+        List of time intervals during which tasks cannot be processed. Each
+        break is represented as a tuple ``(start, end)``, where ``start`` must
+        be non-negative and ``start`` must be smaller than ``end``. Default is
+        no breaks.
     name
         Name of the resource.
     """
 
-    def __init__(self, capacity: int, *, name: str = ""):
+    def __init__(
+        self,
+        capacity: int,
+        breaks: list[tuple[int, int]] | None = None,
+        *,
+        name: str = "",
+    ):
         if capacity < 0:
             raise ValueError("Capacity must be non-negative.")
 
+        if breaks is not None:
+            for start, end in breaks:
+                if start < 0 or start >= end:
+                    raise ValueError("Break start < 0 or start >= end.")
+
+            for interval1, interval2 in pairwise(sorted(breaks)):
+                if interval1[1] > interval2[0]:
+                    raise ValueError("Break intervals must not overlap.")
+
         self._capacity = capacity
+        self._breaks = breaks or []
         self._name = name
+
+    def __eq__(self, other) -> bool:
+        return (
+            isinstance(other, NonRenewable)
+            and self.capacity == other.capacity
+            and self.breaks == other.breaks
+            and self.name == other.name
+        )
 
     @property
     def capacity(self) -> int:
@@ -286,6 +342,13 @@ class NonRenewable:
         Capacity of the resource.
         """
         return self._capacity
+
+    @property
+    def breaks(self) -> list[tuple[int, int]]:
+        """
+        List of time intervals during which tasks cannot be processed.
+        """
+        return self._breaks
 
     @property
     def name(self) -> str:
@@ -323,6 +386,8 @@ class Task:
         resource). If the duration is not fixed, then the task duration
         can take longer than the processing time, e.g., due to blocking.
         Default ``True``.
+    optional
+        Whether the task is optional. Default ``False``.
     name
         Name of the task.
     """
@@ -335,6 +400,7 @@ class Task:
         earliest_end: int = 0,
         latest_end: int = MAX_VALUE,
         fixed_duration: bool = True,
+        optional: bool = False,
         *,
         name: str = "",
     ):
@@ -350,7 +416,21 @@ class Task:
         self._earliest_end = earliest_end
         self._latest_end = latest_end
         self._fixed_duration = fixed_duration
+        self._optional = optional
         self._name = name
+
+    def __eq__(self, other) -> bool:
+        return (
+            isinstance(other, Task)
+            and self.job == other.job
+            and self.earliest_start == other.earliest_start
+            and self.latest_start == other.latest_start
+            and self.earliest_end == other.earliest_end
+            and self.latest_end == other.latest_end
+            and self.fixed_duration == other.fixed_duration
+            and self.optional == other.optional
+            and self.name == other.name
+        )
 
     @property
     def job(self) -> int | None:
@@ -394,6 +474,13 @@ class Task:
         Whether the task has a fixed duration.
         """
         return self._fixed_duration
+
+    @property
+    def optional(self) -> bool:
+        """
+        Whether the task is optional.
+        """
+        return self._optional
 
     @property
     def name(self) -> str:
@@ -456,6 +543,16 @@ class Mode:
         self._demands = demands
         self._name = name
 
+    def __eq__(self, other) -> bool:
+        return (
+            isinstance(other, Mode)
+            and self.task == other.task
+            and self.resources == other.resources
+            and self.duration == other.duration
+            and self.demands == other.demands
+            and self.name == other.name
+        )
+
     @property
     def task(self) -> int:
         return self._task
@@ -475,15 +572,6 @@ class Mode:
     @property
     def name(self) -> str:
         return self._name
-
-    def __eq__(self, other) -> bool:
-        return (
-            self.task == other.task
-            and self.resources == other.resources
-            and self.duration == other.duration
-            and self.demands == other.demands
-            and self.name == other.name
-        )
 
 
 class IterableMixin:
@@ -711,6 +799,45 @@ class ModeDependency(IterableMixin):
 
 
 @dataclass
+class SelectAllOrNone(IterableMixin):
+    """
+    Enforces that all tasks from the given list are selected, or none are.
+
+    If ``condition_task`` is provided, this rule only applies when that task
+    is selected; otherwise, it has no effect.
+    """
+
+    tasks: list[int]
+    condition_task: int | None = None
+
+
+@dataclass
+class SelectAtLeastOne(IterableMixin):
+    """
+    Enforces that at least one task from the given list is selected.
+
+    If ``condition_task`` is provided, this rule only applies when that task
+    is selected; otherwise, it has no effect.
+    """
+
+    tasks: list[int]
+    condition_task: int | None = None
+
+
+@dataclass
+class SelectExactlyOne(IterableMixin):
+    """
+    Enforces that exactly one task from the given list is selected.
+
+    If ``condition_task`` is provided, this rule only applies when that task
+    is selected; otherwise, it has no effect.
+    """
+
+    tasks: list[int]
+    condition_task: int | None = None
+
+
+@dataclass
 class Constraints:
     """
     Simple container class for storing all constraints.
@@ -726,6 +853,9 @@ class Constraints:
     same_sequence: list[SameSequence] = field(default_factory=list)
     setup_times: list[SetupTime] = field(default_factory=list)
     mode_dependencies: list[ModeDependency] = field(default_factory=list)
+    select_all_or_none: list[SelectAllOrNone] = field(default_factory=list)
+    select_at_least_one: list[SelectAtLeastOne] = field(default_factory=list)
+    select_exactly_one: list[SelectExactlyOne] = field(default_factory=list)
 
     def __len__(self) -> int:
         """
@@ -891,6 +1021,17 @@ class ProblemData:
                 self._renewable_idcs.append(idx)
             elif isinstance(resource, NonRenewable):
                 self._non_renewable_idcs.append(idx)
+
+    def __eq__(self, other) -> bool:
+        return (
+            isinstance(other, ProblemData)
+            and self.jobs == other.jobs
+            and self.resources == other.resources
+            and self.tasks == other.tasks
+            and self.modes == other.modes
+            and self.constraints == other.constraints
+            and self.objective == other.objective
+        )
 
     def __str__(self):
         lines = [
@@ -1082,6 +1223,26 @@ class ProblemData:
                     " refer to the same task."
                 )
                 raise ValueError(msg)
+
+        selection_constraints = [
+            (self.constraints.select_all_or_none, "select_all_or_none"),
+            (self.constraints.select_at_least_one, "select_at_least_one"),
+            (self.constraints.select_exactly_one, "select_exactly_one"),
+        ]
+        for constraints, name in selection_constraints:
+            for idcs1, idx2 in constraints:
+                if not idcs1:
+                    msg = "Task list cannot be empty in select_all_or_none."
+                    raise ValueError(msg)
+
+                for idx in idcs1:
+                    if not (0 <= idx < self.num_tasks):
+                        msg = f"Invalid task index {idx} in {name}."
+                        raise ValueError(msg)
+
+                if idx2 is not None and not (0 <= idx2 < self.num_tasks):
+                    msg = f"Invalid task index {idx2} in {name}."
+                    raise ValueError(msg)
 
         if (
             self.objective.weight_tardy_jobs > 0
