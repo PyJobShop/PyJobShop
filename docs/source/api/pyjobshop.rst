@@ -55,6 +55,7 @@ PyJobShop
     .. autoclass:: ModeDependency
 
     .. autoclass:: Constraints
+       :exclude-members: __len__
        :members:
 
     .. autoclass:: Objective
