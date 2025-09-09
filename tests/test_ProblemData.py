@@ -2411,8 +2411,6 @@ def test_total_setup_time(solver: str):
 def test_total_job_duration(solver: str):
     """
     Tests that the total job duration objective is correctly computed.
-    Solvers have trouble proving optimality for this objective, so we
-    resort to finding the first solution only.
     """
     model = Model()
 
@@ -2428,18 +2426,14 @@ def test_total_job_duration(solver: str):
 
     model.set_objective(weight_total_job_duration=1)
 
-    # Stop at the first solution found, because optimality is difficult.
-    kwargs = (
-        {"stop_after_first_solution": True}
-        if solver == "ortools"
-        else {"SolutionLimit": 1}  # type: ignore
-    )
-    result = model.solve(solver=solver, **kwargs)  # type: ignore
+    # Solvers have trouble proving optimality for this objective, so we
+    # set a time limit.
+    result = model.solve(solver=solver, time_limit=0.5)
 
     # Both jobs have a total duration of 2. With weights 1 and 2, the
     # objective value is 1 * 2 + 2 * 2 = 6.
     assert_equal(result.objective, 6)
-    assert_equal(result.status.value, "Feasible")
+    assert_(result.status.value in ["Optimal", "Feasible"])
 
 
 def test_combined_objective(solver: str):
