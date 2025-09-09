@@ -903,8 +903,7 @@ class Objective:
         .. math::
            TFT = \sum_{j \in J} w_j ( C_j - r_j )
 
-    .. note::
-       If you want to minimize only the actual processing duration of jobs, use the **Total job duration** objective instead.
+    If you want to minimize only the actual processing duration of jobs, use the **Total job duration** objective instead.
 
     **Total tardiness** (:math:`TT`): The weighted sum of the tardiness of each job, where the tardiness is the difference between completion time and due date :math:`d_j` (0 if completed before due date).
         .. math::
