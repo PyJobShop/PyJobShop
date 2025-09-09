@@ -61,6 +61,7 @@ dev = [
     "pytest>=8.3.2",
     "pytest-cov>=5.0.0",
     "pytest-codspeed>=4.0.0",
+    "pytest-xdist>=3.6.1",
     "pytest-sugar>=1.0.0",
     "codecov>=2.1.13",
 ]
@@ -110,7 +111,7 @@ known-third-party = ["ortools"]
 
 
 [tool.pytest.ini_options]
-addopts = "--cov=. --cov-report=xml"
+addopts = "--cov=. --cov-report=xml --numprocesses=auto"
 testpaths = ["tests"]
 
 [tool.coverage.run]
