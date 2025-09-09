@@ -475,13 +475,14 @@ def test_constraints_str():
 @pytest.mark.parametrize(
     "weights",
     [
-        [-1, 0, 0, 0, 0, 0, 0],  # weight_makespan < 0,
-        [0, -1, 0, 0, 0, 0, 0],  # weight_tardy_jobs < 0
-        [0, 0, -1, 0, 0, 0, 0],  # weight_total_flow_time < 0
-        [0, 0, 0, -1, 0, 0, 0],  # weight_total_tardiness < 0
-        [0, 0, 0, 0, -1, 0, 0],  # weight_total_earliness < 0
-        [0, 0, 0, 0, 0, -1, 0],  # weight_max_tardiness < 0
-        [0, 0, 0, 0, 0, 0, -1],  # weight_total_setup_time < 0
+        [-1, 0, 0, 0, 0, 0, 0, 0],  # weight_makespan < 0,
+        [0, -1, 0, 0, 0, 0, 0, 0],  # weight_tardy_jobs < 0
+        [0, 0, -1, 0, 0, 0, 0, 0],  # weight_total_flow_time < 0
+        [0, 0, 0, -1, 0, 0, 0, 0],  # weight_total_tardiness < 0
+        [0, 0, 0, 0, -1, 0, 0, 0],  # weight_total_earliness < 0
+        [0, 0, 0, 0, 0, -1, 0, 0],  # weight_max_tardiness < 0
+        [0, 0, 0, 0, 0, 0, -1, 0],  # weight_total_setup_time < 0
+        [0, 0, 0, 0, 0, 0, 0, -1],  # weight_total_job_duration < 0
     ],
 )
 def test_objective_valid_values(weights: list[int]):

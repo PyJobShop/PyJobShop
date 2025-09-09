@@ -298,6 +298,7 @@ def test_model_set_objective():
         weight_total_earliness=5,
         weight_max_tardiness=6,
         weight_total_setup_time=7,
+        weight_total_job_duration=8,
     )
 
     assert_equal(model.objective.weight_makespan, 1)
@@ -307,6 +308,7 @@ def test_model_set_objective():
     assert_equal(model.objective.weight_total_earliness, 5)
     assert_equal(model.objective.weight_max_tardiness, 6)
     assert_equal(model.objective.weight_total_setup_time, 7)
+    assert_equal(model.objective.weight_total_job_duration, 8)
 
 
 def test_summary():
