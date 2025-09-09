@@ -78,4 +78,8 @@ class Objective:
 
             expr += obj_weight * LinearExpr.sum(setup_time_vars)
 
+        if (obj_weight := objective.weight_total_job_duration) > 0:
+            duration_vars = [var.duration for var in variables.job_vars]
+            expr += obj_weight * weighted_sum(duration_vars, job_weights)
+
         self._model.minimize(expr)

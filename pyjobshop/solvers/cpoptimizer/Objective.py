@@ -119,6 +119,16 @@ class Objective:
 
         return cpo.sum(total)  # type: ignore
 
+    def _total_job_duration_expr(self) -> CpoExpr:
+        """
+        Returns an expression representing the total job duration.
+        """
+        total = []
+        for job, var in zip(self._data.jobs, self._job_vars):
+            total.append(job.weight * cpo.length_of(var))
+
+        return cpo.sum(total)  # type: ignore
+
     def _objective_expr(self, objective: ObjectiveData) -> CpoExpr:
         """
         Returns the expression corresponding to the given objective.
@@ -131,6 +141,10 @@ class Objective:
             (objective.weight_total_earliness, self._total_earliness_expr),
             (objective.weight_max_tardiness, self._max_tardiness_expr),
             (objective.weight_total_setup_time, self._total_setup_time_expr),
+            (
+                objective.weight_total_job_duration,
+                self._total_job_duration_expr,
+            ),
         ]
         exprs = [weight * expr() for weight, expr in items if weight > 0]
         return cpo.minimize(cpo.sum(exprs))

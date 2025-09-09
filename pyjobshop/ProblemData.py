@@ -903,6 +903,12 @@ class Objective:
         .. math::
             TFT = \sum_{j \in J} w_j ( C_j - r_j )
 
+        .. note::
+            This objective includes waiting time from the release date. If you
+            want to minimize only the actual processing duration of jobs
+            (without considering release dates), use the **Total job duration**
+            objective instead.
+
     **Total tardiness** (:math:`TT`): The weighted sum of the tardiness of each job, where the tardiness is the difference between completion time and due date :math:`d_j` (0 if completed before due date).
         .. math::
             TT = \sum_{j \in J} w_j U_j
@@ -919,6 +925,10 @@ class Objective:
         .. math::
             TST = \sum_{r \in R} \sum_{u, v \in M^R_r} s_{t_u, t_v, r} b_{ruv}
 
+    **Total job duration** (:math:`TJD`): The weighted sum of the duration of each job, where the duration is the difference between the job's end time and start time.
+        .. math::
+            TJD = \sum_{j \in J} w_j ( C_j - S_j )
+
     .. note::
         Use :attr:`Job.weight` to set a specific job's weight (:math:`w_j`) in the
         objective function.
@@ -931,6 +941,7 @@ class Objective:
     weight_total_earliness: int = 0
     weight_max_tardiness: int = 0
     weight_total_setup_time: int = 0
+    weight_total_job_duration: int = 0
 
     def __post_init__(self):
         for f in fields(self):

@@ -222,6 +222,7 @@ class Model:
             weight_total_earliness=data.objective.weight_total_earliness,
             weight_max_tardiness=data.objective.weight_max_tardiness,
             weight_total_setup_time=data.objective.weight_total_setup_time,
+            weight_total_job_duration=data.objective.weight_total_job_duration,
         )
 
         return model
@@ -575,6 +576,7 @@ class Model:
         weight_total_earliness: int = 0,
         weight_max_tardiness: int = 0,
         weight_total_setup_time: int = 0,
+        weight_total_job_duration: int = 0,
     ) -> Objective:
         """
         Sets the objective function in this model.
@@ -587,6 +589,7 @@ class Model:
             weight_total_earliness=weight_total_earliness,
             weight_max_tardiness=weight_max_tardiness,
             weight_total_setup_time=weight_total_setup_time,
+            weight_total_job_duration=weight_total_job_duration,
         )
         return self._objective
 

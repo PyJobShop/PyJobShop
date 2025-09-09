@@ -2407,6 +2407,59 @@ def test_total_setup_time(solver: str):
     assert_equal(result.status.value, "Optimal")
 
 
+def test_job_duration_ortools():
+    """
+    Tests that the total job duration objective is correctly computed
+    for OR-Tools.
+    """
+    model = Model()
+
+    machine = model.add_machine()
+
+    # Two jobs with weights 1 and 2, each with two tasks of duration 1.
+    for idx in range(2):
+        job = model.add_job(weight=idx + 1)
+
+        for _ in range(2):
+            task = model.add_task(job=job)
+            model.add_mode(task, machine, duration=1)
+
+    model.set_objective(weight_total_job_duration=1)
+
+    # Both jobs have a total duration of 2. With weights 1 and 2, the
+    # objective value is 1 * 2 + 2 * 2 = 6.
+    result = model.solve()
+    assert_equal(result.objective, 6)
+    assert_equal(result.status.value, "Optimal")
+
+
+def test_job_duration_cpoptimizer(require_cpoptimizer):
+    """
+    Tests that the total job duration objective is correctly computed
+    for CP Optimizer. This solver has a hard time providing optimality,
+    so we check that it finds a solution with the correct objective.
+    """
+    model = Model()
+
+    machine = model.add_machine()
+
+    # Two jobs with weights 1 and 2, each with two tasks of duration 1.
+    for idx in range(2):
+        job = model.add_job(weight=idx + 1)
+
+        for _ in range(2):
+            task = model.add_task(job=job)
+            model.add_mode(task, machine, duration=1)
+
+    model.set_objective(weight_total_job_duration=1)
+
+    # Both jobs have a total duration of 2. With weights 1 and 2, the
+    # objective value is 1 * 2 + 2 * 2 = 6.
+    result = model.solve(solver="cpoptimizer", time_limit=0.5)
+    assert_equal(result.objective, 6)
+    assert_equal(result.status.value, "Feasible")
+
+
 def test_combined_objective(solver: str):
     """
     Tests that a combined objective function of makespan and tardy jobs is
