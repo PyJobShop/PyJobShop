@@ -891,43 +891,40 @@ class Objective:
 
     **Makespan** (:math:`C_{\max}`): The finish time of the latest task.
         .. math::
-            C_{\max} = \max_{t \in T} C_t
+           C_{\max} = \max_{t \in T} C_t
 
     **Number of tardy jobs** (:math:`NTJ`): The weighted sum of all tardy jobs, where a job is tardy when it does not meet its due date :math:`d_j`.
         .. math::
-            NTJ = \sum_{j \in J} w_j \mathbb{1}_{\{C_j - d_j > 0\}}
+           NTJ = \sum_{j \in J} w_j \mathbb{1}_{\{C_j - d_j > 0\}}
 
     where :math:`\mathbb{1}_{\{x\}}` is the indicator function.
 
     **Total flow time** (:math:`TFT`): The weighted sum of the length of stay in the system of each job, from their release date to their completion.
         .. math::
-            TFT = \sum_{j \in J} w_j ( C_j - r_j )
+           TFT = \sum_{j \in J} w_j ( C_j - r_j )
 
-        .. note::
-            This objective includes waiting time from the release date. If you
-            want to minimize only the actual processing duration of jobs
-            (without considering release dates), use the **Total job duration**
-            objective instead.
+    .. note::
+       If you want to minimize only the actual processing duration of jobs, use the **Total job duration** objective instead.
 
     **Total tardiness** (:math:`TT`): The weighted sum of the tardiness of each job, where the tardiness is the difference between completion time and due date :math:`d_j` (0 if completed before due date).
         .. math::
-            TT = \sum_{j \in J} w_j U_j
+           TT = \sum_{j \in J} w_j U_j
 
     **Total earliness** (:math:`TE`): The weighted sum of the earliness of each job, where earliness is the difference between due date :math:`d_j` and completion time (0 if completed after due date).
         .. math::
-            TE = \sum_{j \in J} w_j (\max(d_j - C_j, 0))
+           TE = \sum_{j \in J} w_j (\max(d_j - C_j, 0))
 
     **Maximum tardiness** (:math:`U_{\max}`): The weighted maximum tardiness of all jobs.
         .. math::
-            U_{\max} = \max_{j \in J} w_j (\max(C_j - d_j, 0))
+           U_{\max} = \max_{j \in J} w_j (\max(C_j - d_j, 0))
 
     **Total setup time** (:math:`TST`): The sum of all sequence-dependent setup times between consecutive tasks on each machine, where :math:`R` denotes the set of machines, :math:`M^R_r` denotes the set of modes requiring :math:`r \in R`, :math:`s_{t_u, t_v, r}` denotes the setup time between tasks :math:`t_u` and :math:`t_v` on machine :math:`r` and :math:`b_{ruv}` is the binary variable indicating whether task :math:`t_u` is followed by task :math:`t_v` on machine :math:`r`.
         .. math::
-            TST = \sum_{r \in R} \sum_{u, v \in M^R_r} s_{t_u, t_v, r} b_{ruv}
+           TST = \sum_{r \in R} \sum_{u, v \in M^R_r} s_{t_u, t_v, r} b_{ruv}
 
     **Total job duration** (:math:`TJD`): The weighted sum of the duration of each job, where the duration is the difference between the job's end time and start time.
         .. math::
-            TJD = \sum_{j \in J} w_j ( C_j - S_j )
+           TJD = \sum_{j \in J} w_j ( C_j - S_j )
 
     .. note::
         Use :attr:`Job.weight` to set a specific job's weight (:math:`w_j`) in the
