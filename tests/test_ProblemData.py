@@ -2408,9 +2408,11 @@ def test_total_setup_time(solver: str):
     assert_equal(result.status.value, "Optimal")
 
 
-def test_job_duration(solver: str):
+def test_total_job_duration():
     """
     Tests that the total job duration objective is correctly computed.
+    CP Optimizer has trouble optimizing the job duration objective,
+    so we skip this test for that solver.
     """
     model = Model()
 
@@ -2426,17 +2428,12 @@ def test_job_duration(solver: str):
 
     model.set_objective(weight_total_job_duration=1)
 
-    # CP Optimizer can't prove optimality in a reasonable time, so we
-    # stop at the first solution found.
-    kwargs = {"SolutionLimit": 1} if solver == "cpoptimizer" else {}
-    result = model.solve(solver=solver, **kwargs)  # type: ignore
+    result = model.solve(solver="ortools")
 
     # Both jobs have a total duration of 2. With weights 1 and 2, the
     # objective value is 1 * 2 + 2 * 2 = 6.
     assert_equal(result.objective, 6)
-
-    status = "Feasible" if solver == "cpoptimizer" else "Optimal"
-    assert_equal(result.status.value, status)
+    assert_equal(result.status.value, "Optimal")
 
 
 def test_combined_objective(solver: str):
