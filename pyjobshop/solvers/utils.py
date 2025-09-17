@@ -1,6 +1,8 @@
-from itertools import product
+from collections import defaultdict
+from itertools import pairwise, product
 
 import numpy as np
+from ortools.sat.python.cp_model import Domain
 
 from pyjobshop.ProblemData import ProblemData
 
@@ -161,3 +163,89 @@ def merge(intervals: list[tuple[int, int]]) -> list[tuple[int, int]]:
             merged[-1] = (merged[-1][0], new_end)
 
     return merged
+
+
+def analyze_break_domains(
+    breaks: list[tuple[int, int]], task_duration: int
+) -> dict[int, Domain]:
+    """
+    Analyzes breaks to determine how much time a task overlaps with breaks.
+    This function partitions the task start times into domains based on the
+    total break overlap.
+
+    Parameters
+    ----------
+    breaks
+        A list of (start, end) tuples representing breaks.
+    task_duration
+        The duration of the task to be scheduled.
+
+    Returns
+    -------
+    dict[int, Domain]
+        A dict mapping duration to domains, where each domain represents
+        the possible start times for the task that has total break overlap
+        of the given duration.
+    """
+    # Find critical points. This is the earliest time that starting this
+    # task will result in overlap with the considered break. We process breaks
+    # in reverse order to account for previous breaks that would also overlap.
+    break_intervals = [(start, end) for start, end in breaks]
+    reversed_breaks = list(reversed(break_intervals))
+    critical_intervals = []
+
+    for idx, (start, _) in enumerate(reversed_breaks):
+        point = max(0, start - task_duration + 1)
+        for prev_start, prev_end in reversed_breaks[idx + 1 :]:
+            if point < prev_end:
+                # This previous break overlaps with the current critical point
+                # so we need to move the critical point back by the duration.
+                prev_duration = prev_end - prev_start
+                point = max(0, point - prev_duration)
+            else:
+                break
+
+        # If a task starts in this interval, it will overlap with this break.
+        critical_intervals.append((point, start))
+
+    # Next, we partition the start times. We identify all breakpoints and
+    # analyze the segments between them, finding which breaks will be
+    # overlapped if the task starts in that segment.
+    partition = defaultdict(list)
+    breakpoints = sorted(set(p for cp in critical_intervals for p in cp))
+
+    for point1, point2 in pairwise(breakpoints):
+        segment = (point1, point2)
+        overlapping = []
+
+        for idx, (earliest, latest) in enumerate(critical_intervals):
+            if earliest <= segment[0] and segment[1] <= latest:
+                overlapping.append(reversed_breaks[idx])
+
+        if overlapping:
+            total_duration = sum(end - start for (start, end) in overlapping)
+            partition[total_duration].append(segment)
+
+    domains = {}
+    for duration, intervals in partition.items():
+        # Convert half-open to closed intervals, which represent the domain.
+        closed = [[start, end - 1] for start, end in intervals]
+        domains[duration] = Domain.from_intervals(closed)
+
+    domain = Domain.from_intervals([])  # empty
+    for other in domains.values():
+        domain = Domain.union_with(domain, other)
+    domains[0] = domain.complement()
+
+    # Postprocess to exclude start times to fall within breaks.
+    def subtract(dom1, dom2):
+        # A - B = A \cap complement(B)
+        return dom1.intersection_with(dom2.complement())
+
+    breaks_domain = Domain.from_intervals(
+        [[start, end - 1] for (start, end) in breaks]
+    )
+    for duration, domain in domains.items():
+        domains[duration] = subtract(domain, breaks_domain)
+
+    return domains

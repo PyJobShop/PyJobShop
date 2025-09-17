@@ -188,36 +188,16 @@ class SequenceVar:
 @dataclass
 class BreakOverlapVar:
     """
-    Represents whether a task overlaps with a break for a given mode.
-
-    If the corresponding mode is selected, then exactly one of the following
-    must hold for the given break:
-    - The task ends before the break (before).
-    - The task starts after the break (after).
-    - The task overlaps with the break (overlaps).
-
-    Otherwise, all variables are false, and the duration is zero.
+    Represents how much a task overlaps with breaks for a given mode.
 
     Parameters
     ----------
-    break_time
-        The (start, end) time of the break.
-    before
-        Boolean variable indicating if interval ends before the break.
-    after
-        Boolean variable indicating if interval starts after the break.
-    has_overlap
-        Boolean variable indicating if interval overlaps with break.
-    duration
-        Integer variable representing the duration of the overlap, which is
-        0 if there is no overlap, otherwise it is the length of the break
+    TODO
     """
 
-    break_time: tuple[int, int]
-    before: BoolVarT
-    after: BoolVarT
-    has_overlap: BoolVarT
-    duration: IntVar
+    selected: BoolVarT
+    domain: Domain
+    duration: int
 
 
 class Variables:
@@ -535,26 +515,12 @@ class Variables:
                 all_breaks.extend(data.resources[res_idx].breaks)
             breaks = utils.merge(all_breaks)
 
-            mode_var = self._mode_vars[mode_idx]
+            domains = utils.analyze_break_domains(breaks, mode.duration)
+
             overlap_vars = []
-
-            for start, end in breaks:
-                before = model.new_bool_var("")
-                after = model.new_bool_var("")
-                has_overlap = model.new_bool_var("")
-                model.add(before + after + has_overlap == mode_var)
-
-                duration = model.new_int_var(0, end - start, "")
-                model.add(duration == (end - start) * has_overlap)
-
-                overlap_var = BreakOverlapVar(
-                    (start, end),
-                    before,
-                    after,
-                    has_overlap,
-                    duration,
-                )
-                overlap_vars.append(overlap_var)
+            for dur, domain in domains.items():
+                select = model.new_bool_var("")
+                overlap_vars.append(BreakOverlapVar(select, domain, dur))
 
             variables.append(overlap_vars)
 
@@ -732,21 +698,11 @@ class Variables:
 
                 # Overlap related variables.
                 for overlap_var in self.overlap_vars[mode_idx]:
-                    break_start, break_end = overlap_var.break_time
-                    before = sol_task.end <= break_start
-                    after = sol_task.start >= break_end
-                    has_overlap = mode_selected and not (before or after)
-                    model.add_hint(overlap_var.has_overlap, has_overlap)
-                    model.add_hint(overlap_var.before, before)
-                    model.add_hint(overlap_var.after, after)
-                    model.add_hint(
-                        overlap_var.duration,
-                        (
-                            (break_end - break_start)
-                            if mode_selected and has_overlap
-                            else 0
-                        ),
+                    selected = (
+                        overlap_var.duration == sol_task.breaks
+                        and mode_selected
                     )
+                    model.add_hint(overlap_var.selected, selected)
 
             mode_data = data.modes[sol_task.mode]
             res2demands = dict(zip(mode_data.resources, mode_data.demands))

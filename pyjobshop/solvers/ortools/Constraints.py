@@ -2,7 +2,7 @@ from collections import defaultdict
 from itertools import pairwise, product
 
 import numpy as np
-from ortools.sat.python.cp_model import BoolVarT, CpModel, Domain, LinearExpr
+from ortools.sat.python.cp_model import BoolVarT, CpModel, LinearExpr
 
 import pyjobshop.solvers.utils as utils
 from pyjobshop.ProblemData import ProblemData
@@ -146,33 +146,17 @@ class Constraints:
                 mode_var = variables.mode_vars[mode_idx]
                 overlap_vars = variables.overlap_vars[mode_idx]
 
-                # Set the task break duration equal to the total overlap of
-                # the selected mode variable.
-                total_overlap = sum(var.duration for var in overlap_vars)
-                expr = task_var.breaks == total_overlap
-                model.add(expr).only_enforce_if(mode_var)
+                # Select exactly one break var
+                model.add(
+                    mode_var == sum(var.selected for var in overlap_vars)
+                )
 
-                # Cannot start or end during a break. The domains below capture
-                # the invalid start/end times, and the complement ensures that
-                # these values are excluded.
-                breaks = [var.break_time for var in overlap_vars]
-                starts = Domain.from_intervals([[s, e - 1] for s, e in breaks])
-                ends = Domain.from_intervals([[s + 1, e] for s, e in breaks])
-
-                model.add_linear_expression_in_domain(
-                    task_var.start, starts.complement()
-                ).only_enforce_if(mode_var)
-                model.add_linear_expression_in_domain(
-                    task_var.end, ends.complement()
-                ).only_enforce_if(mode_var)
-
-                for var in overlap_vars:
-                    # If there is no overlap with a given break, then the task
-                    # must end before or start after the break.
-                    start, end = var.break_time
-                    task_start, task_end = task_var.start, task_var.end
-                    model.add(task_end <= start).only_enforce_if(var.before)
-                    model.add(task_start >= end).only_enforce_if(var.after)
+                for overlap_var in overlap_vars:
+                    expr = task_var.breaks == overlap_var.duration
+                    model.add(expr).only_enforce_if(overlap_var.selected)
+                    model.add_linear_expression_in_domain(
+                        task_var.start, overlap_var.domain
+                    ).only_enforce_if(overlap_var.selected)
 
     def _timing_constraints(self):
         """
