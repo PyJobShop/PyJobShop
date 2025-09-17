@@ -174,7 +174,7 @@ class Variables:
                 presence=sol_task.present,
                 start=sol_task.start,
                 end=sol_task.end,
-                length=sol_task.end - sol_task.start,
+                length=sol_task.duration,
             )
 
         for idx, mode in enumerate(data.modes):
@@ -186,7 +186,7 @@ class Variables:
                 presence=idx == sol_task.mode,
                 start=sol_task.start,
                 end=sol_task.end,
-                length=sol_task.end - sol_task.start,
+                length=sol_task.duration,
             )
 
         self._model.set_starting_point(init)
