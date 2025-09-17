@@ -429,13 +429,11 @@ class Variables:
                 processing, Domain.from_values(mode_durations)
             ).only_enforce_if(present)
 
-            idle = model.new_int_var(0, MAX_VALUE, f"{name}_idle")
-            if not task.allow_idle:
-                model.add(idle == 0)
+            ub_idle = MAX_VALUE if task.allow_idle else 0
+            idle = model.new_int_var(0, ub_idle, f"{name}_idle")
 
-            breaks = model.new_int_var(0, MAX_VALUE, f"{name}_breaks")
-            if not task.allow_breaks:
-                model.add(breaks == 0)
+            ub_breaks = MAX_VALUE if task.allow_breaks else 0
+            breaks = model.new_int_var(0, ub_breaks, f"{name}_breaks")
 
             duration = model.new_int_var(0, MAX_VALUE, f"{name}_duration")
             model.add(duration == processing + idle + breaks)
