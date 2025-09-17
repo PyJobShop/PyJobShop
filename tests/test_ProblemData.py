@@ -1361,6 +1361,36 @@ def test_task_non_fixed_duration(solver: str):
     assert_equal(result.best.tasks, [TaskData(0, [0], 0, 10)])
 
 
+def test_mode_without_resources(solver: str):
+    """
+    Tests that a mode without resources is scheduled correctly.
+    """
+    model = Model()
+    machine = model.add_machine()
+
+    task1 = model.add_task()
+    model.add_mode(task1, [], duration=1)
+    model.add_mode(task1, [machine], duration=10)
+
+    task2 = model.add_task()
+    model.add_mode(task2, [], duration=1)
+    model.add_mode(task2, [machine], duration=10)
+
+    # Check that these constraints also work.
+    model.add_end_before_start(task1, task2)
+    model.add_identical_resources(task1, task2)
+
+    # The best option is to schedule both tasks using the mode without
+    # resources, resulting in a makespan of 2.
+    result = model.solve(solver=solver)
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.objective, 2)
+    assert_equal(
+        result.best.tasks,
+        [TaskData(0, [], 0, 1), TaskData(2, [], 1, 2)],
+    )
+
+
 def test_machine_breaks(solver: str):
     """
     Tests that a machine resource respects breaks.
