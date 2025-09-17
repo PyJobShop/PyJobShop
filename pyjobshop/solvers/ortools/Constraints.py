@@ -146,14 +146,16 @@ class Constraints:
                 mode_var = variables.mode_vars[mode_idx]
                 overlap_vars = variables.overlap_vars[mode_idx]
 
-                # Select exactly one break var
-                model.add(
-                    mode_var == sum(var.selected for var in overlap_vars)
-                )
+                # Select exactly one overlap variable iff the mode is selected.
+                selected = sum(var.selected for var in overlap_vars)
+                model.add(mode_var == selected)
 
                 for overlap_var in overlap_vars:
+                    # Synchronize task break duration with selected overlap.
                     expr = task_var.breaks == overlap_var.duration
                     model.add(expr).only_enforce_if(overlap_var.selected)
+
+                    # Enforce task start inside domain of selected overlap.
                     model.add_linear_expression_in_domain(
                         task_var.start, overlap_var.domain
                     ).only_enforce_if(overlap_var.selected)

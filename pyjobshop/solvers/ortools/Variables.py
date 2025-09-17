@@ -192,7 +192,12 @@ class BreakOverlapVar:
 
     Parameters
     ----------
-    TODO
+    selected
+        The Boolean variable indicating whether this overlap is selected.
+    domain
+        The domain of possible start times for this overlap.
+    duration
+        The total duration of the break overlap.
     """
 
     selected: BoolVarT
@@ -506,21 +511,21 @@ class Variables:
         model, data = self._model, self._data
         variables: list[list[BreakOverlapVar]] = []
 
-        for mode_idx, mode in enumerate(data.modes):
+        for mode in data.modes:
             # For single-resource modes, breaks map directly to individual
             # resource breaks. For multi-resource modes, breaks may represent
             # combined breaks (e.g., when resources have overlapping breaks).
             all_breaks = []
             for res_idx in mode.resources:
                 all_breaks.extend(data.resources[res_idx].breaks)
-            breaks = utils.merge(all_breaks)
 
+            breaks = utils.merge(all_breaks)
             domains = utils.analyze_break_domains(breaks, mode.duration)
 
             overlap_vars = []
-            for dur, domain in domains.items():
+            for duration, domain in domains.items():
                 select = model.new_bool_var("")
-                overlap_vars.append(BreakOverlapVar(select, domain, dur))
+                overlap_vars.append(BreakOverlapVar(select, domain, duration))
 
             variables.append(overlap_vars)
 
