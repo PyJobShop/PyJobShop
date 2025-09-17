@@ -67,7 +67,7 @@ class TaskVar:
     """
 
     interval: IntervalVar
-    present: IntervalVar
+    present: BoolVarT
     processing: IntVar
     idle: IntVar
     breaks: IntVar
