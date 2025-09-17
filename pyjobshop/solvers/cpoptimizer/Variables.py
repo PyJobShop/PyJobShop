@@ -90,13 +90,8 @@ class Variables:
             var.set_end_max(min(task.latest_end, MAX_VALUE))
 
             modes = [data.modes[mode_idx] for mode_idx in data.task2modes(idx)]
-            durations = [mode.duration for mode in modes]
-            var.set_size_min(min(durations))
-            var.set_length_min(min(durations))
-
-            if not (task.allow_idle or task.allow_breaks):
-                var.set_size_max(max(durations))
-                var.set_length_max(max(durations))
+            mode_durations = [mode.duration for mode in modes]
+            var.set_size_min(min(mode_durations))
 
             variables.append(var)
             self._model.add(var)
@@ -120,13 +115,9 @@ class Variables:
             var.set_end_min(task.earliest_end)
             var.set_end_max(min(task.latest_end, MAX_VALUE))
 
-            if not (task.allow_idle or task.allow_breaks):
-                # No idle or breaks allowed, so size is fixed.
+            var.set_size_min(mode.duration)
+            if not task.allow_idle:
                 var.set_size(mode.duration)
-            else:
-                # Idle or breaks allowed, so size is flexible, but at least
-                # the mode duration.
-                var.set_size_min(mode.duration)
 
             variables.append(var)
             self._model.add(var)
