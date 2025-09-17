@@ -425,9 +425,12 @@ class Variables:
             processing = model.new_int_var(0, MAX_VALUE, f"{name}_processing")
             modes = [data.modes[mode_idx] for mode_idx in data.task2modes(idx)]
             mode_durations = [mode.duration for mode in modes]
+            if task.optional:
+                mode_durations.append(0)  # 0 is OK if task is absent
+
             model.add_linear_expression_in_domain(
                 processing, Domain.from_values(mode_durations)
-            ).only_enforce_if(present)
+            )
 
             ub_idle = MAX_VALUE if task.allow_idle else 0
             idle = model.new_int_var(0, ub_idle, f"{name}_idle")
