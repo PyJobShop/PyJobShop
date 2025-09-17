@@ -90,6 +90,7 @@ class CPModel:
                         present=True,
                     )
                     tasks.append(task)
+                    break
 
         return Solution(tasks)
 
