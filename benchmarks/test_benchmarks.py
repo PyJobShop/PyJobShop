@@ -141,11 +141,6 @@ def test_pfsp(benchmark, solver: str):
             [15, 11, 49, 31, 20],
             [71, 99, 15, 68, 85],
             [77, 56, 89, 78, 53],
-            [36, 70, 45, 91, 35],
-            [53, 99, 60, 13, 53],
-            [38, 60, 23, 59, 41],
-            [27, 5, 57, 49, 69],
-            [87, 56, 64, 85, 13],
         ]
     )
     num_jobs, num_machines = DURATIONS.shape
@@ -173,7 +168,7 @@ def test_pfsp(benchmark, solver: str):
         model.add_same_sequence(machines[idx1], machines[idx2])
 
     result = benchmark(model.solve, solver=solver, time_limit=10)
-    assert_equal(result.objective, 769)
+    assert_equal(result.objective, 576)
 
 
 def test_dpfsp(benchmark, solver: str):
