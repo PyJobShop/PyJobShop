@@ -167,7 +167,7 @@ class Constraints:
             # is allowed, while a zero means that processing is not allowed.
             step = CpoStepFunction()
 
-            # Domain includes -1 to allows ending at t=0, and the value 100
+            # Domain includes -1 to allow ending at t=0, and the value 100
             # refers to the intensity (i.e., percentage available).
             step.set_value(-1, MAX_VALUE, 100)
 
@@ -180,7 +180,7 @@ class Constraints:
 
             if data.tasks[mode.task].allow_breaks:
                 # This ensures that the time during breaks is not counted
-                # towards the task size (processing time).
+                # towards the task size, i.e., processing time.
                 mode_var.set_intensity(step)
             else:
                 # No overlap allowed between breaks and tasks.
