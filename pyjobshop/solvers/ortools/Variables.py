@@ -422,23 +422,23 @@ class Variables:
             model.add(end >= task.earliest_end).only_enforce_if(present)
             model.add(end <= task.latest_end).only_enforce_if(present)
 
-            modes = [data.modes[mode_idx] for mode_idx in data.task2modes(idx)]
-            domain = Domain.from_values([mode.duration for mode in modes])
             processing = model.new_int_var(0, MAX_VALUE, f"{name}_processing")
+            modes = [data.modes[mode_idx] for mode_idx in data.task2modes(idx)]
+            mode_durations = [mode.duration for mode in modes]
             model.add_linear_expression_in_domain(
-                processing, domain
+                processing, Domain.from_values(mode_durations)
             ).only_enforce_if(present)
 
             idle = model.new_int_var(0, MAX_VALUE, f"{name}_idle")
-            breaks = model.new_int_var(0, MAX_VALUE, f"{name}_breaks")
-            duration = model.new_int_var(0, MAX_VALUE, f"{name}_duration")
-            model.add(duration == processing + idle + breaks)
+            if not task.allow_idle:
+                model.add(idle == 0)
 
+            breaks = model.new_int_var(0, MAX_VALUE, f"{name}_breaks")
             if not task.allow_breaks:
                 model.add(breaks == 0)
 
-            if not task.allow_idle:
-                model.add(idle == 0)
+            duration = model.new_int_var(0, MAX_VALUE, f"{name}_duration")
+            model.add(duration == processing + idle + breaks)
 
             interval = model.new_optional_interval_var(
                 start, duration, end, present, f"{name}_interval"
@@ -474,9 +474,7 @@ class Variables:
 
         return variables
 
-    def _make_demand_variables(
-        self,
-    ) -> dict[TaskResIdcs, IntVar]:
+    def _make_demand_variables(self) -> dict[TaskResIdcs, IntVar]:
         """
         Creates a integer demand variable for each task-resource pair.
         """
@@ -681,15 +679,13 @@ class Variables:
         for task_idx in range(data.num_tasks):
             task_var = task_vars[task_idx]
             sol_task = solution.tasks[task_idx]
-            task_duration = sol_task.end - sol_task.start
 
             model.add_hint(task_var.start, sol_task.start)  # type: ignore
             model.add_hint(task_var.end, sol_task.end)  # type: ignore
-            model.add_hint(task_var.idle, sol_task.idle)  # type: ignore
-            model.add_hint(task_var.breaks, sol_task.breaks)  # type: ignore
-            processing = task_duration - sol_task.idle - sol_task.breaks
-            model.add_hint(task_var.processing, processing)  # type: ignore
-            model.add_hint(task_var.duration, task_duration)  # type: ignore
+            model.add_hint(task_var.idle, sol_task.idle)
+            model.add_hint(task_var.breaks, sol_task.breaks)
+            model.add_hint(task_var.processing, sol_task.processing)
+            model.add_hint(task_var.duration, sol_task.duration)  # type: ignore
 
             if data.tasks[task_idx].optional:
                 # OR-Tools complains about adding hints to interval
@@ -709,6 +705,7 @@ class Variables:
                     )
                     model.add_hint(overlap_var.selected, selected)
 
+            # Assignment and demand related variables.
             mode_data = data.modes[sol_task.mode]
             res2demands = dict(zip(mode_data.resources, mode_data.demands))
 
