@@ -121,27 +121,7 @@ class Constraints:
         """
         model, data, variables = self._model, self._data, self._variables
 
-        for task_idx, task in enumerate(data.tasks):
-            if task.allow_breaks:
-                continue
-
-            for res_idx in data.task2resources(task_idx):
-                # Assignment variables should not overlap with any break. Using
-                # the `no_overlap` also handles the case when the assignment
-                # variable is absent.
-                assign_var = variables.assign_vars[task_idx, res_idx]
-                break_intervals = [
-                    model.new_fixed_size_interval_var(start, end - start, "")
-                    for start, end in data.resources[res_idx].breaks
-                ]
-                model.add_no_overlap([assign_var.interval, *break_intervals])
-
-        for task_idx, task in enumerate(data.tasks):
-            if not task.allow_breaks:
-                continue
-
-            task_var = variables.task_vars[task_idx]
-
+        for task_idx, task_var in enumerate(variables.task_vars):
             for mode_idx in data.task2modes(task_idx):
                 mode_var = variables.mode_vars[mode_idx]
                 break_vars = variables.break_vars[mode_idx]
