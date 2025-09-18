@@ -39,6 +39,7 @@ We provide example notebooks that show how PyJobShop may be used to solve schedu
 - Notebooks solving the classical machine scheduling problems such as the flexible job shop problem ([here](https://pyjobshop.org/stable/examples/flexible_job_shop.html)), the hybrid flow shop ([here](https://pyjobshop.org/stable/examples/hybrid_flow_shop.html)), and the permutation flow shop ([here](https://pyjobshop.org/stable/examples/permutation_flow_shop.html)).
 - A notebook showing how to solve different project scheduling problems, [here](https://pyjobshop.org/stable/examples/project_scheduling.html).
 - A notebook showing how to solve scheduling problems with optional tasks, [here](https://pyjobshop.org/stable/examples/optional_tasks.html).
+- A notebook showing how to solve scheduling problems with resource breaks, [here](https://pyjobshop.org/stable/examples/breaks.html).
 - An overview of supported objective functions, [here](https://pyjobshop.org/stable/examples/objectives_examples.html).
 
 ## Contributing
