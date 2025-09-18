@@ -519,10 +519,12 @@ class Variables:
                 all_breaks.extend(data.resources[res_idx].breaks)
 
             breaks = utils.merge(all_breaks)
-            domains = utils.analyze_break_domains(breaks, mode.duration)
+            partition = utils.partition_task_start_by_break_overlap(
+                breaks, mode.duration
+            )
 
             overlap_vars = []
-            for duration, domain in domains.items():
+            for duration, domain in partition.items():
                 select = model.new_bool_var("")
                 overlap_vars.append(BreakOverlapVar(select, domain, duration))
 
