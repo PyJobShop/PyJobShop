@@ -144,21 +144,21 @@ class Constraints:
 
             for mode_idx in data.task2modes(task_idx):
                 mode_var = variables.mode_vars[mode_idx]
-                overlap_vars = variables.overlap_vars[mode_idx]
+                break_vars = variables.break_vars[mode_idx]
 
-                # Select exactly one overlap variable iff the mode is selected.
-                selected = sum(var.selected for var in overlap_vars)
+                # Select exactly one break variable iff the mode is selected.
+                selected = sum(var.selected for var in break_vars)
                 model.add(mode_var == selected)
 
-                for overlap_var in overlap_vars:
-                    # Synchronize task break duration with selected overlap.
-                    expr = task_var.breaks == overlap_var.duration
-                    model.add(expr).only_enforce_if(overlap_var.selected)
+                for break_var in break_vars:
+                    # Synchronize task break duration with selected break.
+                    expr = task_var.breaks == break_var.duration
+                    model.add(expr).only_enforce_if(break_var.selected)
 
-                    # Enforce task start inside domain of selected overlap.
+                    # Enforce task start inside domain of selected break.
                     model.add_linear_expression_in_domain(
-                        task_var.start, overlap_var.domain
-                    ).only_enforce_if(overlap_var.selected)
+                        task_var.start, break_var.start_domain
+                    ).only_enforce_if(break_var.selected)
 
     def _timing_constraints(self):
         """

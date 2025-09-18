@@ -186,22 +186,44 @@ class SequenceVar:
 
 
 @dataclass
-class BreakOverlapVar:
+class BreakVar:
     """
-    Represents how much a task overlaps with breaks for a given mode.
+    Represents a discrete choice for break interruption duration for a mode.
+
+    When a task allows breaks (`allow_breaks=True`), the solver must determine
+    how much break time will interrupt the task's execution. This depends on
+    both the task's start time and duration. To model this efficiently, all
+    possible break durations are pre-computed and represented as discrete
+    choices, where exactly one choice is selected per mode.
 
     Parameters
     ----------
     selected
-        The Boolean variable indicating whether this overlap is selected.
-    domain
-        The domain of possible start times for this overlap.
+        Boolean variable indicating whether this break duration choice is
+        active. Exactly one BreakVar per selected mode will must be selected.
+    start_domain
+        Valid start time domain for this break duration. Tasks can only start
+        at times within this domain if this break duration is selected.
     duration
-        The total duration of the break overlap.
+        Total duration of break interruptions for this choice. This represents
+        the amount of time the task will be interrupted by resource breaks.
+
+    Notes
+    -----
+    Multiple BreakVar instances exist per mode because different start times
+    can result in different total break durations. The solver selects the
+    appropriate choice based on the task's actual start time.
+
+    Examples
+    --------
+    For a 4-hour task with breaks at [2-3] and [6-7]:
+    - BreakVar(duration=0): start times that avoid all breaks
+    - BreakVar(duration=1): start times that hit exactly one break
+    - BreakVar(duration=2): start times that hit both breaks
     """
 
     selected: BoolVarT
-    domain: Domain
+    start_domain: Domain
     duration: int
 
 
@@ -222,7 +244,7 @@ class Variables:
         self._sequence_vars = self._make_sequence_variables()
 
         # Variables below are lazily created.
-        self._overlap_vars: list[list[BreakOverlapVar]] | None = None
+        self._break_vars: list[list[BreakVar]] | None = None
         self._makespan_var: IntVar | None = None
         self._is_tardy_vars: list[IntVar] | None = None
         self._flow_time_vars: list[IntVar] | None = None
@@ -273,15 +295,15 @@ class Variables:
         return self._sequence_vars
 
     @property
-    def overlap_vars(self) -> list[list[BreakOverlapVar]]:
+    def break_vars(self) -> list[list[BreakVar]]:
         """
-        Returns the overlap variables for each mode.
+        Returns the break variables for each mode.
         """
-        if self._overlap_vars is not None:
-            return self._overlap_vars
+        if self._break_vars is not None:
+            return self._break_vars
 
-        self._overlap_vars = self._make_overlap_variables()
-        return self._overlap_vars
+        self._break_vars = self._make_break_variables()
+        return self._break_vars
 
     @property
     def makespan_var(self) -> IntVar:
@@ -503,12 +525,12 @@ class Variables:
 
         return variables
 
-    def _make_overlap_variables(self) -> list[list[BreakOverlapVar]]:
+    def _make_break_variables(self) -> list[list[BreakVar]]:
         """
-        Creates the overlap variables.
+        Creates the break variables.
         """
         model, data = self._model, self._data
-        variables: list[list[BreakOverlapVar]] = []
+        variables: list[list[BreakVar]] = []
 
         for mode in data.modes:
             # For single-resource modes, breaks map directly to individual
@@ -523,12 +545,12 @@ class Variables:
                 breaks, mode.duration
             )
 
-            overlap_vars = []
-            for duration, domain in partition.items():
+            break_vars = []
+            for duration, start_domain in partition.items():
                 select = model.new_bool_var("")
-                overlap_vars.append(BreakOverlapVar(select, domain, duration))
+                break_vars.append(BreakVar(select, start_domain, duration))
 
-            variables.append(overlap_vars)
+            variables.append(break_vars)
 
         return variables
 
@@ -700,13 +722,12 @@ class Variables:
                 mode_selected = mode_idx == sol_task.mode
                 model.add_hint(mode_var, mode_selected)
 
-                # Overlap related variables.
-                for overlap_var in self.overlap_vars[mode_idx]:
+                # Break related variables.
+                for break_var in self.break_vars[mode_idx]:
                     selected = (
-                        overlap_var.duration == sol_task.breaks
-                        and mode_selected
+                        break_var.duration == sol_task.breaks and mode_selected
                     )
-                    model.add_hint(overlap_var.selected, selected)
+                    model.add_hint(break_var.selected, selected)
 
             # Assignment and demand related variables.
             mode_data = data.modes[sol_task.mode]
