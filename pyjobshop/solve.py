@@ -1,6 +1,5 @@
 import textwrap
 from importlib.metadata import version
-from typing import Any
 
 from ortools.sat.python.cp_model import CpSolverSolutionCallback
 
@@ -89,8 +88,8 @@ def solve(
 
 
 def solve_model_with_callback(
-    cp_model: Any,
-    callback: Any,
+    cp_model: object,
+    callback: object,
     time_limit: float = float("inf"),
     display: bool = False,
     num_workers: int | None = None,
