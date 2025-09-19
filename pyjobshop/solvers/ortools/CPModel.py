@@ -1,4 +1,8 @@
-from ortools.sat.python.cp_model import CpModel, CpSolver
+from ortools.sat.python.cp_model import (
+    CpModel,
+    CpSolver,
+    CpSolverSolutionCallback,
+)
 
 from pyjobshop.ProblemData import ProblemData
 from pyjobshop.Result import Result, SolveStatus
@@ -33,6 +37,13 @@ class CPModel:
         self._objective.add_objective()
 
     @property
+    def data(self) -> ProblemData:
+        """
+        Returns the corresponding ProblemData.
+        """
+        return self._data
+
+    @property
     def model(self) -> CpModel:
         """
         Returns the underlying CpModel.
@@ -61,7 +72,7 @@ class CPModel:
 
         return SolveStatus.TIME_LIMIT
 
-    def _convert_to_solution(self, cp_solver: CpSolver) -> Solution:
+    def convert_to_solution(self, cp_solver: CpSolver) -> Solution:
         """
         Converts a result from OR-Tools to a Solution object.
         """
@@ -93,6 +104,7 @@ class CPModel:
         display: bool = False,
         num_workers: int | None = None,
         initial_solution: Solution | None = None,
+        callback: CpSolverSolutionCallback | None = None,
         **kwargs,
     ) -> Result:
         """
@@ -109,6 +121,8 @@ class CPModel:
             available CPU cores are used.
         initial_solution
             Initial solution to start the solver from. Default is no solution.
+        callback
+            A callback that can be given to the solver.
         kwargs
             Additional parameters passed to the solver.
 
@@ -133,12 +147,12 @@ class CPModel:
         for key, value in params.items():
             setattr(solver.parameters, key, value)
 
-        status_code = solver.solve(self._model)
+        status_code = solver.solve(self._model, callback)
         status = solver.status_name(status_code)
         objective_value = solver.objective_value
 
         if status in ["OPTIMAL", "FEASIBLE"]:
-            solution = self._convert_to_solution(solver)
+            solution = self.convert_to_solution(solver)
         else:
             # No feasible solution found due to infeasibility or time limit.
             solution = Solution([])

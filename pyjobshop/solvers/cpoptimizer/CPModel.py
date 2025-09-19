@@ -1,5 +1,6 @@
 from docplex.cp.model import CpoModel
 from docplex.cp.solution import CpoSolveResult
+from docplex.cp.solver.cpo_callback import CpoCallback
 
 from pyjobshop.ProblemData import ProblemData
 from pyjobshop.Result import Result, SolveStatus
@@ -34,6 +35,13 @@ class CPModel:
         self._objective.add_objective()
 
     @property
+    def data(self) -> ProblemData:
+        """
+        Returns the corresponding ProblemData.
+        """
+        return self._data
+
+    @property
     def model(self) -> CpoModel:
         """
         Returns the underlying CpoModel.
@@ -59,7 +67,7 @@ class CPModel:
 
         return SolveStatus.TIME_LIMIT
 
-    def _convert_to_solution(self, result: CpoSolveResult) -> Solution:
+    def convert_to_solution(self, result: CpoSolveResult) -> Solution:
         """
         Converts an CpoSolveResult object to a solution.
         """
@@ -92,6 +100,7 @@ class CPModel:
         display: bool = False,
         num_workers: int | None = None,
         initial_solution: Solution | None = None,
+        callback: CpoCallback | None = None,
         **kwargs,
     ) -> Result:
         """
@@ -108,6 +117,8 @@ class CPModel:
             available CPU cores are used.
         initial_solution
             Initial solution to start the solver from. Default is no solution.
+        callback
+            A CpoCallback to use during solving. Default is no callback.
         kwargs
             Additional parameters passed to the solver.
 
@@ -127,11 +138,14 @@ class CPModel:
         }
         params.update(kwargs)  # this will override existing parameters!
 
+        if callback is not None:
+            self._model.add_solver_callback(callback)
+
         cp_result: CpoSolveResult = self._model.solve(**params)  # type: ignore
         status = cp_result.get_solve_status()
 
         if status in ["Optimal", "Feasible"]:
-            solution = self._convert_to_solution(cp_result)
+            solution = self.convert_to_solution(cp_result)
             objective: float = cp_result.get_objective_value()  # type: ignore
             lower_bound: float = cp_result.get_objective_bound()  # type: ignore
         else:

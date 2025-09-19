@@ -604,6 +604,7 @@ class Model:
         display: bool = True,
         num_workers: int | None = None,
         initial_solution: Solution | None = None,
+        callback: object | None = None,
         **kwargs,
     ) -> Result:
         """
@@ -625,6 +626,8 @@ class Model:
         initial_solution
             An initial solution to start the solver from. Default is no
             solution.
+        callback
+            A suitable callback to use during solving with solver.
         kwargs
             Additional parameters passed to the solver.
 
@@ -641,5 +644,6 @@ class Model:
             display,
             num_workers,
             initial_solution,
+            callback,
             **kwargs,
         )
