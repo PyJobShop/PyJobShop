@@ -10,13 +10,17 @@ from ortools.sat.python.cp_model import (
     LinearExprT,
 )
 
-import pyjobshop.solvers.utils as utils
 from pyjobshop.constants import MAX_VALUE
 from pyjobshop.ProblemData import ProblemData
 from pyjobshop.Solution import Solution
+from pyjobshop.solvers.ortools.utils import (
+    partition_task_start_by_break_overlap,
+)
+from pyjobshop.solvers.utils import merge
 
 TaskIdx = int
 ResourceIdx = int
+TaskResIdcs = tuple[TaskIdx, ResourceIdx]
 ModeVar: TypeAlias = IntVar  # actually BoolVarT
 
 
@@ -55,9 +59,21 @@ class TaskVar:
     ----------
     interval
         The interval variable representing the task.
+    present
+        The boolean variable indicating whether the interval is present.
+    processing
+        The integer variable representing the processing time of the task.
+    idle
+        The integer variable representing the idle time of the task.
+    breaks
+        The integer variable representing the break times of the task.
     """
 
     interval: IntervalVar
+    present: BoolVarT
+    processing: IntVar
+    idle: IntVar
+    breaks: IntVar
 
     @property
     def start(self) -> LinearExprT:
@@ -76,7 +92,7 @@ class TaskVar:
 class OptionalIntervalVar:
     """
     Wrapper around the OR-Tools interval variable, which does not expose
-    the ``present`` vaiable.
+    the ``present`` variable.
 
     Parameters
     ----------
@@ -172,6 +188,48 @@ class SequenceVar:
         }
 
 
+@dataclass
+class BreakVar:
+    """
+    Represents a discrete choice for break interruption duration for a mode.
+
+    When a task allows breaks (`allow_breaks=True`), the solver must determine
+    how much break time will interrupt the task's execution. This depends on
+    both the task's start time and duration. To model this efficiently, all
+    possible break durations are pre-computed and represented as discrete
+    choices, where exactly one choice is selected per mode.
+
+    Parameters
+    ----------
+    selected
+        Boolean variable indicating whether this break duration choice is
+        active. Exactly one BreakVar per selected mode will must be selected.
+    start_domain
+        Valid start time domain for this break duration. Tasks can only start
+        at times within this domain if this break duration is selected.
+    duration
+        Total duration of break interruptions for this choice. This represents
+        the amount of time the task will be interrupted by resource breaks.
+
+    Notes
+    -----
+    Multiple BreakVar instances exist per mode because different start times
+    can result in different total break durations. The solver selects the
+    appropriate choice based on the task's actual start time.
+
+    Examples
+    --------
+    For a 4-hour task with breaks at [2-3] and [6-7]:
+    - BreakVar(duration=0): start times that avoid all breaks
+    - BreakVar(duration=1): start times that hit exactly one break
+    - BreakVar(duration=2): start times that hit both breaks
+    """
+
+    selected: BoolVarT
+    start_domain: Domain
+    duration: int
+
+
 class Variables:
     """
     Manages the core variables of the OR-Tools model.
@@ -189,6 +247,7 @@ class Variables:
         self._sequence_vars = self._make_sequence_variables()
 
         # Variables below are lazily created.
+        self._break_vars: list[list[BreakVar]] | None = None
         self._makespan_var: IntVar | None = None
         self._is_tardy_vars: list[IntVar] | None = None
         self._flow_time_vars: list[IntVar] | None = None
@@ -218,16 +277,14 @@ class Variables:
         return self._mode_vars
 
     @property
-    def assign_vars(
-        self,
-    ) -> dict[tuple[TaskIdx, ResourceIdx], OptionalIntervalVar]:
+    def assign_vars(self) -> dict[TaskResIdcs, OptionalIntervalVar]:
         """
         Retruns the assignment variables.
         """
         return self._assign_vars
 
     @property
-    def demand_vars(self) -> dict[tuple[TaskIdx, ResourceIdx], IntVar]:
+    def demand_vars(self) -> dict[TaskResIdcs, IntVar]:
         """
         Returns the demand variables.
         """
@@ -239,6 +296,17 @@ class Variables:
         Returns the sequence variables.
         """
         return self._sequence_vars
+
+    @property
+    def break_vars(self) -> list[list[BreakVar]]:
+        """
+        Returns the break variables for each mode.
+        """
+        if self._break_vars is not None:
+            return self._break_vars
+
+        self._break_vars = self._make_break_variables()
+        return self._break_vars
 
     @property
     def makespan_var(self) -> IntVar:
@@ -362,58 +430,63 @@ class Variables:
         """
         model, data = self._model, self._data
         variables = []
-        task_durations = utils.compute_task_durations(data)
 
         for idx, task in enumerate(data.tasks):
             name = f"T{idx}"
-            start = model.new_int_var(
-                lb=task.earliest_start,
-                ub=min(task.latest_start, MAX_VALUE),
-                name=f"{name}_start",
+            present = (
+                model.new_bool_var(f"{name}_present")
+                if task.optional
+                else model.new_constant(True)
             )
-            if task.fixed_duration:
-                duration = model.new_int_var_from_domain(
-                    Domain.from_values(task_durations[idx]), f"{name}_duration"
-                )
-            else:
-                duration = model.new_int_var(
-                    lb=min(task_durations[idx]),
-                    ub=MAX_VALUE,
-                    name=f"{name}_duration",
-                )
-            end = model.new_int_var(
-                lb=task.earliest_end,
-                ub=min(task.latest_end, MAX_VALUE),
-                name=f"{name}_end",
+
+            start = model.new_int_var(lb=0, ub=MAX_VALUE, name=f"{name}_start")
+            model.add(start >= task.earliest_start).only_enforce_if(present)
+            model.add(start <= task.latest_start).only_enforce_if(present)
+
+            end = model.new_int_var(lb=0, ub=MAX_VALUE, name=f"{name}_end")
+            model.add(end >= task.earliest_end).only_enforce_if(present)
+            model.add(end <= task.latest_end).only_enforce_if(present)
+
+            processing = model.new_int_var(0, MAX_VALUE, f"{name}_processing")
+            modes = [data.modes[mode_idx] for mode_idx in data.task2modes(idx)]
+            mode_durations = [mode.duration for mode in modes]
+            if task.optional:
+                mode_durations.append(0)  # 0 is OK if task is absent
+
+            model.add_linear_expression_in_domain(
+                processing, Domain.from_values(mode_durations)
             )
-            interval = model.new_interval_var(
-                start, duration, end, f"interval_{task}"
+
+            ub_idle = MAX_VALUE if task.allow_idle else 0
+            idle = model.new_int_var(0, ub_idle, f"{name}_idle")
+
+            ub_breaks = MAX_VALUE if task.allow_breaks else 0
+            breaks = model.new_int_var(0, ub_breaks, f"{name}_breaks")
+
+            duration = model.new_int_var(0, MAX_VALUE, f"{name}_duration")
+            model.add(duration == processing + idle + breaks)
+
+            interval = model.new_optional_interval_var(
+                start, duration, end, present, f"{name}_interval"
             )
-            variables.append(TaskVar(interval))
+            variables.append(
+                TaskVar(interval, present, processing, idle, breaks)
+            )
 
         return variables
 
     def _make_assign_variables(
         self, task_vars: list[TaskVar]
-    ) -> dict[tuple[TaskIdx, ResourceIdx], OptionalIntervalVar]:
+    ) -> dict[TaskResIdcs, OptionalIntervalVar]:
         """
         Creates an optional interval variable for each task-resource pair.
         """
         model, data = self._model, self._data
         variables = {}
 
-        for task_idx in range(data.num_tasks):
-            # Only create assignment variables for (task, resource) pairs
-            # that are actually used in the problem.
-            resources = {
-                res
-                for mode in data.task2modes(task_idx)
-                for res in data.modes[mode].resources
-            }
-
-            for res_idx in resources:
+        for task_idx, task_var in enumerate(task_vars):
+            for res_idx in data.task2resources(task_idx):
                 name = f"A_{task_idx}_{res_idx}"
-                task_var = task_vars[task_idx]
                 present = model.new_bool_var(f"{name}_present")
                 interval = model.new_optional_interval_var(
                     task_var.start,
@@ -427,9 +500,7 @@ class Variables:
 
         return variables
 
-    def _make_demand_variables(
-        self,
-    ) -> dict[tuple[TaskIdx, ResourceIdx], IntVar]:
+    def _make_demand_variables(self) -> dict[TaskResIdcs, IntVar]:
         """
         Creates a integer demand variable for each task-resource pair.
         """
@@ -437,15 +508,7 @@ class Variables:
         variables = {}
 
         for task_idx in range(data.num_tasks):
-            # Only create demand variables for (task, resource) pairs
-            # that are actually used in the problem.
-            resources = {
-                res
-                for mode in data.task2modes(task_idx)
-                for res in data.modes[mode].resources
-            }
-
-            for res_idx in resources:
+            for res_idx in data.task2resources(task_idx):
                 name = f"{task_idx}_{res_idx}"
                 demand = model.new_int_var(0, MAX_VALUE, f"{name}_demand")
                 variables[task_idx, res_idx] = demand
@@ -462,6 +525,35 @@ class Variables:
         for idx in data.machine_idcs:
             tasks = {data.modes[m].task for m in data.resource2modes(idx)}
             variables[idx] = SequenceVar(sorted(tasks))
+
+        return variables
+
+    def _make_break_variables(self) -> list[list[BreakVar]]:
+        """
+        Creates the break variables.
+        """
+        model, data = self._model, self._data
+        variables: list[list[BreakVar]] = []
+
+        for mode in data.modes:
+            # For single-resource modes, breaks map directly to individual
+            # resource breaks. For multi-resource modes, breaks may represent
+            # combined breaks (e.g., when resources have overlapping breaks).
+            all_breaks = []
+            for res_idx in mode.resources:
+                all_breaks.extend(data.resources[res_idx].breaks)
+
+            breaks = merge(all_breaks)
+            partition = partition_task_start_by_break_overlap(
+                breaks, mode.duration
+            )
+
+            break_vars = []
+            for duration, start_domain in partition.items():
+                select = model.new_bool_var("")
+                break_vars.append(BreakVar(select, start_domain, duration))
+
+            variables.append(break_vars)
 
         return variables
 
@@ -615,24 +707,36 @@ class Variables:
         for task_idx in range(data.num_tasks):
             task_var = task_vars[task_idx]
             sol_task = solution.tasks[task_idx]
-            task_duration = sol_task.end - sol_task.start
 
             model.add_hint(task_var.start, sol_task.start)  # type: ignore
-            model.add_hint(task_var.duration, task_duration)  # type: ignore
             model.add_hint(task_var.end, sol_task.end)  # type: ignore
+            model.add_hint(task_var.idle, sol_task.idle)
+            model.add_hint(task_var.breaks, sol_task.breaks)
+            model.add_hint(task_var.processing, sol_task.processing)
+            model.add_hint(task_var.duration, sol_task.duration)  # type: ignore
+
+            if data.tasks[task_idx].optional:
+                # OR-Tools complains about adding hints to interval
+                # variables that are always present.
+                model.add_hint(task_var.present, sol_task.present)
 
             for mode_idx in data.task2modes(task_idx):
                 mode_var = self.mode_vars[mode_idx]
-                model.add_hint(mode_var, mode_idx == sol_task.mode)
+                mode_selected = mode_idx == sol_task.mode
+                model.add_hint(mode_var, mode_selected)
 
+                # Break related variables.
+                for break_var in self.break_vars[mode_idx]:
+                    selected = (
+                        break_var.duration == sol_task.breaks and mode_selected
+                    )
+                    model.add_hint(break_var.selected, selected)
+
+            # Assignment and demand related variables.
             mode_data = data.modes[sol_task.mode]
             res2demands = dict(zip(mode_data.resources, mode_data.demands))
 
-            task_resources = set()
-            for mode in data.task2modes(task_idx):
-                task_resources.update(data.modes[mode].resources)
-
-            for res_idx in task_resources:
+            for res_idx in data.task2resources(task_idx):
                 assign_var = assign_vars[task_idx, res_idx]
                 is_present = res_idx in sol_task.resources
                 model.add_hint(assign_var.present, is_present)
@@ -646,30 +750,34 @@ class Variables:
             if not seq_var.is_active:
                 continue
 
+            # Identify the tasks assigned to this machine.
             tasks = {data.modes[m].task for m in data.resource2modes(res_idx)}
-            present_tasks = {
+            assigned = {
                 idx for idx in tasks if res_idx in sol_tasks[idx].resources
             }
 
             # Identify the first and last task in the sequence.
-            first = min(present_tasks, key=lambda idx: sol_tasks[idx].start)
-            last = max(present_tasks, key=lambda idx: sol_tasks[idx].start)
+            def task_start(idx):
+                return sol_tasks[idx].start
+
+            first = min(assigned, default=None, key=task_start)
+            last = max(assigned, default=None, key=task_start)
 
             for (idx1, idx2), arc in seq_var.arcs.items():
                 if idx1 == seq_var.DUMMY and idx2 == seq_var.DUMMY:
-                    hint = not present_tasks
+                    hint = not assigned
                 elif idx1 == seq_var.DUMMY:
                     hint = idx2 == first
                 elif idx2 == seq_var.DUMMY:
                     hint = idx1 == last
                 elif idx1 == idx2:
-                    hint = idx1 not in present_tasks
+                    hint = idx1 not in assigned
                 else:
                     # TODO There's an edge case when the task duration is 0.
                     # Revisit after #257.
                     hint = (
-                        idx1 in present_tasks
-                        and idx2 in present_tasks
+                        idx1 in assigned
+                        and idx2 in assigned
                         and sol_tasks[idx1].start < sol_tasks[idx2].start
                     )
 

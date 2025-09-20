@@ -1,7 +1,8 @@
-from itertools import product
+from collections import defaultdict
+from itertools import pairwise, product
 
 import numpy as np
-from ortools.sat.python.cp_model import CpModel, LinearExpr
+from ortools.sat.python.cp_model import BoolVarT, CpModel, LinearExpr
 
 import pyjobshop.solvers.utils as utils
 from pyjobshop.ProblemData import ProblemData
@@ -37,44 +38,48 @@ class Constraints:
     def _select_one_mode(self):
         """
         Selects one mode for each task, ensuring that each task obtains the
-        correct duration, is assigned to a set of resources, and demands are
-        correctly set.
+        correct processing time, is assigned to a set of resources, and
+        demands are correctly set.
         """
         model, data, variables = self._model, self._data, self._variables
 
         for task_idx in range(data.num_tasks):
+            # Select exactly one mode iff the task is present.
             task_var = variables.task_vars[task_idx]
             mode_idcs = data.task2modes(task_idx)
             mode_vars = [variables.mode_vars[idx] for idx in mode_idcs]
-            model.add_exactly_one(mode_vars)
+            model.add(sum(mode_vars) == task_var.present)
 
             for mode_idx, mode_var in zip(mode_idcs, mode_vars):
                 mode = data.modes[mode_idx]
-
-                # Set task duration to the selected mode's duration.
-                fixed = data.tasks[task_idx].fixed_duration
-                expr = (
-                    task_var.duration == mode.duration
-                    if fixed
-                    else task_var.duration >= mode.duration
-                )
+                expr = task_var.processing == mode.duration
                 model.add(expr).only_enforce_if(mode_var)
 
-                for res_idx in range(data.num_resources):
-                    if (task_idx, res_idx) not in variables.assign_vars:
-                        continue
-
-                    # Select assignments based on selected mode's resources.
-                    # Because of cross interactions with assignment constraints
-                    # we also explicitly set absence of assignment variables.
-                    presence = variables.assign_vars[task_idx, res_idx].present
-                    required = res_idx in mode.resources
-                    model.add(presence == required).only_enforce_if(mode_var)
-
                 for res_idx, demand in zip(mode.resources, mode.demands):
+                    presence = variables.assign_vars[task_idx, res_idx].present
+                    model.add(presence == 1).only_enforce_if(mode_var)
+
                     # Set demands based on selected mode's demands.
                     dem_var = variables.demand_vars[task_idx, res_idx]
                     model.add(dem_var == demand).only_enforce_if(mode_var)
+
+            # For the given task, identify which modes use which resource.
+            res2modes = defaultdict(list)
+            for mode_idx in mode_idcs:
+                for res in data.modes[mode_idx].resources:
+                    res2modes[res].append(mode_idx)
+
+            for res_idx, res_mode_idcs in res2modes.items():
+                # Assignment variable can only be present if a modes is
+                # selected that uses the corresponding resource.
+                presence = variables.assign_vars[task_idx, res_idx].present
+                mode_vars = [variables.mode_vars[idx] for idx in res_mode_idcs]
+                model.add(presence <= sum(mode_vars))
+
+            for res_idx in data.task2resources(task_idx):
+                # Assignment variable can only be present if task is present.
+                assign_var = variables.assign_vars[task_idx, res_idx]
+                model.add(assign_var.present <= task_var.present)
 
     def _machines_no_overlap(self):
         """
@@ -116,18 +121,24 @@ class Constraints:
         """
         model, data, variables = self._model, self._data, self._variables
 
-        for idx in data.machine_idcs + data.renewable_idcs:
-            breaks = data.resources[idx].breaks
-            if not breaks:
-                continue
+        for task_idx, task_var in enumerate(variables.task_vars):
+            for mode_idx in data.task2modes(task_idx):
+                mode_var = variables.mode_vars[mode_idx]
+                break_vars = variables.break_vars[mode_idx]
 
-            break_intervals = [
-                model.new_fixed_size_interval_var(start, end - start, "")
-                for start, end in breaks
-            ]
+                # Select exactly one break variable iff the mode is selected.
+                selected = sum(var.selected for var in break_vars)
+                model.add(mode_var == selected)
 
-            for var in variables.res2assign(idx):
-                model.add_no_overlap([var.interval, *break_intervals])
+                for break_var in break_vars:
+                    # Synchronize task break duration with selected break.
+                    expr = task_var.breaks == break_var.duration
+                    model.add(expr).only_enforce_if(break_var.selected)
+
+                    # Enforce task start inside domain of selected break.
+                    model.add_linear_expression_in_domain(
+                        task_var.start, break_var.start_domain
+                    ).only_enforce_if(break_var.selected)
 
     def _timing_constraints(self):
         """
@@ -136,24 +147,32 @@ class Constraints:
         model, data, variables = self._model, self._data, self._variables
 
         for idx1, idx2, delay in data.constraints.start_before_start:
-            expr1 = variables.task_vars[idx1].start + delay
-            expr2 = variables.task_vars[idx2].start
-            model.add(expr1 <= expr2)
+            var1 = variables.task_vars[idx1]
+            var2 = variables.task_vars[idx2]
+            both_present = [var1.present, var2.present]
+            expr = var1.start + delay <= var2.start
+            model.add(expr).only_enforce_if(both_present)
 
         for idx1, idx2, delay in data.constraints.start_before_end:
-            expr1 = variables.task_vars[idx1].start + delay
-            expr2 = variables.task_vars[idx2].end
-            model.add(expr1 <= expr2)
+            var1 = variables.task_vars[idx1]
+            var2 = variables.task_vars[idx2]
+            both_present = [var1.present, var2.present]
+            expr = var1.start + delay <= var2.end
+            model.add(expr).only_enforce_if(both_present)
 
         for idx1, idx2, delay in data.constraints.end_before_start:
-            expr1 = variables.task_vars[idx1].end + delay
-            expr2 = variables.task_vars[idx2].start
-            model.add(expr1 <= expr2)
+            var1 = variables.task_vars[idx1]
+            var2 = variables.task_vars[idx2]
+            both_present = [var1.present, var2.present]
+            expr = var1.end + delay <= var2.start
+            model.add(expr).only_enforce_if(both_present)
 
         for idx1, idx2, delay in data.constraints.end_before_end:
-            expr1 = variables.task_vars[idx1].end + delay
-            expr2 = variables.task_vars[idx2].end
-            model.add(expr1 <= expr2)
+            var1 = variables.task_vars[idx1]
+            var2 = variables.task_vars[idx2]
+            both_present = [var1.present, var2.present]
+            expr = var1.end + delay <= var2.end
+            model.add(expr).only_enforce_if(both_present)
 
     def _identical_and_different_resource_constraints(self):
         """
@@ -187,13 +206,13 @@ class Constraints:
 
         for task_idx1, task_idx2 in data.constraints.consecutive:
             for res_idx in data.machine_idcs:
-                seq_var = variables.sequence_vars[res_idx]
-                seq_var.activate(model)
                 var1 = variables.assign_vars.get((task_idx1, res_idx))
                 var2 = variables.assign_vars.get((task_idx2, res_idx))
-
                 if not (var1 and var2):
                     continue
+
+                seq_var = variables.sequence_vars[res_idx]
+                seq_var.activate(model)
 
                 arc = seq_var.arcs[task_idx1, task_idx2]
                 both_present = [var1.present, var2.present]
@@ -308,6 +327,42 @@ class Constraints:
             expr2 = sum(variables.mode_vars[idx] for idx in idcs2)
             model.add(expr1 <= expr2)
 
+    def _task_selection_constraints(self):
+        """
+        Creates the task selection constraints.
+        """
+        model, data, variables = self._model, self._data, self._variables
+
+        def presence_var_or_true(idx: int | None) -> BoolVarT:
+            """
+            Returns the Boolean presence variable of the task if a valid index
+            is passed, otherwise returns a constant True value.
+            """
+            return (
+                variables.task_vars[idx].present
+                if idx is not None
+                else model.new_constant(1)
+            )
+
+        for idcs, condition_idx in data.constraints.select_all_or_none:
+            condition = presence_var_or_true(condition_idx)
+
+            for idx1, idx2 in pairwise(idcs):
+                var1 = variables.task_vars[idx1]
+                var2 = variables.task_vars[idx2]
+                expr = var1.present == var2.present
+                model.add(expr).only_enforce_if(condition)
+
+        for idcs, condition_idx in data.constraints.select_at_least_one:
+            condition = presence_var_or_true(condition_idx)
+            presences = [variables.task_vars[idx].present for idx in idcs]
+            model.add(condition <= sum(presences))
+
+        for idcs, condition_idx in data.constraints.select_exactly_one:
+            condition = presence_var_or_true(condition_idx)
+            presences = [variables.task_vars[idx].present for idx in idcs]
+            model.add(sum(presences) == 1).only_enforce_if(condition)
+
     def add_constraints(self):
         """
         Adds all the constraints to the CP model.
@@ -322,7 +377,6 @@ class Constraints:
         self._identical_and_different_resource_constraints()
         self._consecutive_constraints()
         self._same_sequence_constraints()
+        self._circuit_constraints()  # must be after sequencing constraints!
         self._mode_dependencies()
-
-        # From here onwards we know which sequence constraints are active.
-        self._circuit_constraints()
+        self._task_selection_constraints()

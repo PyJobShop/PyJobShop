@@ -54,7 +54,17 @@ PyJobShop
 
     .. autoclass:: ModeDependency
 
+    .. autoclass:: SelectAllOrNone
+       :exclude-members: condition_task
+
+    .. autoclass:: SelectAtLeastOne
+       :exclude-members: condition_task
+
+    .. autoclass:: SelectExactlyOne
+       :exclude-members: condition_task
+
     .. autoclass:: Constraints
+       :exclude-members: __len__
        :members:
 
     .. autoclass:: Objective

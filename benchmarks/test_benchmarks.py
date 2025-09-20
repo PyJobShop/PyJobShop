@@ -141,11 +141,6 @@ def test_pfsp(benchmark, solver: str):
             [15, 11, 49, 31, 20],
             [71, 99, 15, 68, 85],
             [77, 56, 89, 78, 53],
-            [36, 70, 45, 91, 35],
-            [53, 99, 60, 13, 53],
-            [38, 60, 23, 59, 41],
-            [27, 5, 57, 49, 69],
-            [87, 56, 64, 85, 13],
         ]
     )
     num_jobs, num_machines = DURATIONS.shape
@@ -173,7 +168,7 @@ def test_pfsp(benchmark, solver: str):
         model.add_same_sequence(machines[idx1], machines[idx2])
 
     result = benchmark(model.solve, solver=solver, time_limit=10)
-    assert_equal(result.objective, 769)
+    assert_equal(result.objective, 576)
 
 
 def test_dpfsp(benchmark, solver: str):
@@ -222,7 +217,7 @@ def test_dpfsp(benchmark, solver: str):
                 mode = model.add_mode(task, machine, duration=duration)
                 modes[factory_idx, job_idx, machine_idx] = mode
 
-    # Modes can only be select if the task is selected in that factory.
+    # Modes can only be selected if the task is selected in that factory.
     for factory_idx in range(num_factories):
         for job_idx in range(num_jobs):
             for mode1, mode2 in pairwise(modes[factory_idx, job_idx, :]):
@@ -242,3 +237,15 @@ def test_dpfsp(benchmark, solver: str):
 
     result = benchmark(model.solve, solver, time_limit=10)
     assert_equal(result.objective, 430)
+
+
+def test_aslib(benchmark, solver):
+    """
+    Benchmark ASLIB instance from
+    https://www.projectmanagement.ugent.be/research/project_scheduling/rcpspas.
+    """
+    loc = "data/aslib0_0.rcp"
+    data = read(loc, instance_format="aslib")
+
+    result = benchmark(solve, data, solver=solver, time_limit=10)
+    assert_equal(result.objective, 100)

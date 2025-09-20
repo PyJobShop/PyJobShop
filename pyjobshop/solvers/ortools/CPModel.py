@@ -17,18 +17,34 @@ class CPModel:
     ----------
     data
         The problem data instance.
+    model
+        CpModel instance to use. If None (default), a new one is created.
     """
 
-    def __init__(self, data: ProblemData):
+    def __init__(self, data: ProblemData, model: CpModel | None = None):
         self._data = data
 
-        self._model = CpModel()
+        self._model = model if model is not None else CpModel()
         self._variables = Variables(self._model, data)
         self._constraints = Constraints(self._model, data, self._variables)
         self._objective = Objective(self._model, data, self._variables)
 
         self._constraints.add_constraints()
         self._objective.add_objective()
+
+    @property
+    def model(self) -> CpModel:
+        """
+        Returns the underlying CpModel.
+        """
+        return self._model
+
+    @property
+    def variables(self) -> Variables:
+        """
+        Returns the Variables object containing all model variables.
+        """
+        return self._variables
 
     def _get_solve_status(self, status: str):
         if status == "OPTIMAL":
@@ -49,22 +65,32 @@ class CPModel:
         """
         Converts a result from OR-Tools to a Solution object.
         """
+        data, variables = self._data, self._variables
+
         tasks = []
+        for task_idx in range(data.num_tasks):
+            task_var = variables.task_vars[task_idx]
 
-        for task_idx in range(self._data.num_tasks):
-            modes = self._data.task2modes(task_idx)
+            if not cp_solver.value(task_var.present):
+                task = TaskData(data.num_modes, [], 0, 0, 0, 0, False)
+                tasks.append(task)
+                continue
 
-            for mode_idx in modes:
-                mode_var = self._variables.mode_vars[mode_idx]
+            for mode_idx in data.task2modes(task_idx):
+                mode_var = variables.mode_vars[mode_idx]
 
                 if cp_solver.value(mode_var):  # selected mode
-                    task_var = self._variables.task_vars[task_idx]
-                    start = cp_solver.value(task_var.start)
-                    end = cp_solver.value(task_var.end)
-                    mode = self._data.modes[mode_idx]
-                    tasks.append(
-                        TaskData(mode_idx, mode.resources, start, end)
+                    task = TaskData(
+                        mode_idx,
+                        data.modes[mode_idx].resources,
+                        cp_solver.value(task_var.start),
+                        cp_solver.value(task_var.end),
+                        cp_solver.value(task_var.idle),
+                        cp_solver.value(task_var.breaks),
+                        present=True,
                     )
+                    tasks.append(task)
+                    break
 
         return Solution(self._data, tasks)
 
@@ -110,16 +136,16 @@ class CPModel:
         }
         params.update(kwargs)  # this will override existing parameters!
 
-        cp_solver = CpSolver()
+        solver = CpSolver()
         for key, value in params.items():
-            setattr(cp_solver.parameters, key, value)
+            setattr(solver.parameters, key, value)
 
-        status_code = cp_solver.solve(self._model)
-        status = cp_solver.status_name(status_code)
-        objective_value = cp_solver.objective_value
+        status_code = solver.solve(self._model)
+        status = solver.status_name(status_code)
+        objective_value = solver.objective_value
 
         if status in ["OPTIMAL", "FEASIBLE"]:
-            solution = self._convert_to_solution(cp_solver)
+            solution = self._convert_to_solution(solver)
         else:
             # No feasible solution found due to infeasibility or time limit.
             solution = Solution(self._data, [])
@@ -127,8 +153,8 @@ class CPModel:
 
         return Result(
             objective=objective_value,
-            lower_bound=cp_solver.best_objective_bound,
+            lower_bound=solver.best_objective_bound,
             status=self._get_solve_status(status),
-            runtime=cp_solver.wall_time,
+            runtime=solver.wall_time,
             best=solution,
         )
