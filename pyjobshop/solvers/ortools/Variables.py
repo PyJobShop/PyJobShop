@@ -10,10 +10,13 @@ from ortools.sat.python.cp_model import (
     LinearExprT,
 )
 
-import pyjobshop.solvers.utils as utils
 from pyjobshop.constants import MAX_VALUE
 from pyjobshop.ProblemData import ProblemData
 from pyjobshop.Solution import Solution
+from pyjobshop.solvers.ortools.utils import (
+    partition_task_start_by_break_overlap,
+)
+from pyjobshop.solvers.utils import merge
 
 TaskIdx = int
 ResourceIdx = int
@@ -540,8 +543,8 @@ class Variables:
             for res_idx in mode.resources:
                 all_breaks.extend(data.resources[res_idx].breaks)
 
-            breaks = utils.merge(all_breaks)
-            partition = utils.partition_task_start_by_break_overlap(
+            breaks = merge(all_breaks)
+            partition = partition_task_start_by_break_overlap(
                 breaks, mode.duration
             )
 
