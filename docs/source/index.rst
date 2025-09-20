@@ -45,9 +45,10 @@ Contents
    examples/hybrid_flow_shop
    examples/permutation_flow_shop
    examples/project_scheduling
-   examples/quick_examples
-   examples/objectives_examples
    examples/optional_tasks
+   examples/breaks
+   examples/objectives
+   examples/quick_examples
 
 .. toctree::
    :maxdepth: 1

@@ -380,12 +380,14 @@ class Task:
     latest_end
         Latest end time of the task.
         Default :const:`~pyjobshop.constants.MAX_VALUE`.
-    fixed_duration
-        Whether the task has a fixed duration. A fixed duration means that
-        the task duration is precisely the processing time (on a given
-        resource). If the duration is not fixed, then the task duration
-        can take longer than the processing time, e.g., due to blocking.
-        Default ``True``.
+    allow_idle
+        Whether the task can remain idle after completing its processing.
+        If ``True``, the task can continue occupying resources after
+        finishing (e.g., blocking in flow shops). Default ``False``.
+    allow_breaks
+        Whether the task can be interrupted by resource breaks. If
+        ``True``, the task stops processing during breaks and resumes
+        afterwards. Default ``False``.
     optional
         Whether the task is optional. Default ``False``.
     name
@@ -399,7 +401,8 @@ class Task:
         latest_start: int = MAX_VALUE,
         earliest_end: int = 0,
         latest_end: int = MAX_VALUE,
-        fixed_duration: bool = True,
+        allow_idle: bool = False,
+        allow_breaks: bool = False,
         optional: bool = False,
         *,
         name: str = "",
@@ -415,7 +418,8 @@ class Task:
         self._latest_start = latest_start
         self._earliest_end = earliest_end
         self._latest_end = latest_end
-        self._fixed_duration = fixed_duration
+        self._allow_idle = allow_idle
+        self._allow_breaks = allow_breaks
         self._optional = optional
         self._name = name
 
@@ -427,7 +431,8 @@ class Task:
             and self.latest_start == other.latest_start
             and self.earliest_end == other.earliest_end
             and self.latest_end == other.latest_end
-            and self.fixed_duration == other.fixed_duration
+            and self.allow_idle == other.allow_idle
+            and self.allow_breaks == other.allow_breaks
             and self.optional == other.optional
             and self.name == other.name
         )
@@ -469,11 +474,18 @@ class Task:
         return self._latest_end
 
     @property
-    def fixed_duration(self) -> bool:
+    def allow_idle(self) -> bool:
         """
-        Whether the task has a fixed duration.
+        Whether the task can have idle time.
         """
-        return self._fixed_duration
+        return self._allow_idle
+
+    @property
+    def allow_breaks(self) -> bool:
+        """
+        Whether the task can be interrupted by breaks.
+        """
+        return self._allow_breaks
 
     @property
     def optional(self) -> bool:
@@ -1003,12 +1015,16 @@ class ProblemData:
 
         # After validation, we can safely set the helper attributes.
         self._task2modes: list[list[int]] = [[] for _ in tasks]
+        self._task2resources: list[list[int]] = [[] for _ in tasks]
         self._resource2modes: list[list[int]] = [[] for _ in resources]
 
         for mode_idx, mode in enumerate(self.modes):
             self._task2modes[mode.task].append(mode_idx)
+            self._task2resources[mode.task].extend(mode.resources)
             for res_idx in mode.resources:
                 self._resource2modes[res_idx].append(mode_idx)
+
+        self._task2resources = [sorted(set(v)) for v in self._task2resources]
 
         self._machine_idcs: list[int] = []
         self._renewable_idcs: list[int] = []
@@ -1469,3 +1485,21 @@ class ProblemData:
         if not (0 <= resource < self.num_resources):
             raise ValueError(f"Invalid resource index {resource}.")
         return self._resource2modes[resource]
+
+    def task2resources(self, task: int) -> list[int]:
+        """
+        Returns the resource indices that the given task can use.
+
+        Parameters
+        ----------
+        task
+            The task index.
+
+        Returns
+        -------
+        list[int]
+            The list of resource indices for the given task.
+        """
+        if not (0 <= task < self.num_tasks):
+            raise ValueError(f"Invalid task index {task}.")
+        return self._task2resources[task]

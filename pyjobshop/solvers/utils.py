@@ -7,31 +7,6 @@ import numpy as np
 from pyjobshop.ProblemData import ProblemData
 
 
-def compute_task_durations(data: ProblemData) -> list[list[int]]:
-    """
-    Computes the set of processing time durations belong to each task. This is
-    used to restrict the domain of the corresponding interval variables.
-
-    Parameters
-    ----------
-    data
-        The problem data instance.
-
-    Returns
-    -------
-    tuple[list[int], list[int]]
-        The minimum and maximum durations for each task.
-    """
-    durations: list[list[int]] = [[] for _ in range(data.num_tasks)]
-    for mode in data.modes:
-        durations[mode.task].append(mode.duration)
-
-    return durations
-
-
-# --- Constraints utilities ---
-
-
 def identical_modes(
     data: ProblemData, task1: int, task2: int
 ) -> list[tuple[int, list[int]]]:
@@ -159,6 +134,34 @@ def setup_times_matrix(data: ProblemData) -> np.ndarray | None:
         setup[res, task1, task2] = duration
 
     return setup
+
+
+def merge(intervals: list[tuple[int, int]]) -> list[tuple[int, int]]:
+    """
+    Merges overlapping or touching intervals.
+
+    Parameters
+    ----------
+    intervals
+        A list of (start, end) tuples representing time intervals.
+
+    Returns
+    -------
+    list[tuple[int, int]]
+        A list of merged intervals, such that no interval overlaps or touches,
+        sorted by start time.
+    """
+    intervals = sorted(intervals)
+    merged: list[tuple[int, int]] = []
+
+    for start, end in intervals:
+        if not merged or start > merged[-1][1]:
+            merged.append((start, end))  # no overlap
+        else:
+            new_end = max(merged[-1][1], end)  # overlap -> merge with last
+            merged[-1] = (merged[-1][0], new_end)
+
+    return merged
 
 
 @dataclass

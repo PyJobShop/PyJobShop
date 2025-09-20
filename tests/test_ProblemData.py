@@ -272,7 +272,8 @@ def test_task_attributes():
         latest_start=2,
         earliest_end=3,
         latest_end=4,
-        fixed_duration=False,
+        allow_idle=True,
+        allow_breaks=True,
         optional=True,
         name="TestTask",
     )
@@ -282,7 +283,8 @@ def test_task_attributes():
     assert_equal(task.latest_start, 2)
     assert_equal(task.earliest_end, 3)
     assert_equal(task.latest_end, 4)
-    assert_equal(task.fixed_duration, False)
+    assert_equal(task.allow_idle, True)
+    assert_equal(task.allow_breaks, True)
     assert_equal(task.optional, True)
     assert_equal(task.name, "TestTask")
 
@@ -298,7 +300,8 @@ def test_task_default_attributes():
     assert_equal(task.latest_start, MAX_VALUE)
     assert_equal(task.earliest_end, 0)
     assert_equal(task.latest_end, MAX_VALUE)
-    assert_equal(task.fixed_duration, True)
+    assert_equal(task.allow_idle, False)
+    assert_equal(task.allow_breaks, False)
     assert_equal(task.optional, False)
     assert_equal(task.name, "")
 
@@ -335,10 +338,10 @@ def test_task_equality():
     """
     assert_equal(Task(), Task())
 
-    task1 = Task(1, 0, 100, name="T1")
+    task1 = Task(1, 0, 100, 0, 100, False, False, name="T1")
     assert_(task1 != Task())
 
-    task2 = Task(1, 0, 100, name="T1")
+    task2 = Task(1, 0, 100, 0, 100, False, False, name="T1")
     assert_equal(task1, task2)
 
 
@@ -382,14 +385,6 @@ def test_mode_raises_invalid_parameters(resources, duration, demands):
         Mode(task=0, resources=resources, duration=duration, demands=demands)
 
 
-def test_mode_dependency_must_have_at_least_one_succesor_mode():
-    """
-    Tests that ModeDependency requires at least one successor mode.
-    """
-    with assert_raises(ValueError):
-        ModeDependency(0, [])
-
-
 def test_mode_equality():
     """
     Tests that equality comparison works correctly for Mode objects.
@@ -401,6 +396,14 @@ def test_mode_equality():
 
     mode2 = Mode(0, [1, 2], 10, [5, 3], name="M1")
     assert_equal(mode1, mode2)
+
+
+def test_mode_dependency_must_have_at_least_one_succesor_mode():
+    """
+    Tests that ModeDependency requires at least one successor mode.
+    """
+    with assert_raises(ValueError):
+        ModeDependency(0, [])
 
 
 @pytest.mark.parametrize(
@@ -1097,6 +1100,36 @@ def test_problem_data_task2modes():
         data.task2modes(2)
 
 
+def test_problem_data_task2resources():
+    """
+    Tests that the resource indices corresponding to each task are correctly
+    computed.
+    """
+    data = ProblemData(
+        [],
+        [Renewable(1), Renewable(10), Renewable(5)],
+        [Task(), Task(), Task()],
+        modes=[
+            Mode(0, [0], 1, [1]),
+            Mode(0, [1, 2], 2, [10, 5]),
+            Mode(1, [1], 3, [0]),
+            Mode(2, [], 0, []),
+        ],
+    )
+
+    assert_equal(data.task2resources(0), [0, 1, 2])
+    assert_equal(data.task2resources(1), [1])
+    assert_equal(data.task2resources(2), [])
+
+    # Check that the task2resources method raises an error when an invalid
+    # task index is passed.
+    with pytest.raises(ValueError):
+        data.task2resources(-1)
+
+    with pytest.raises(ValueError):
+        data.task2resources(3)
+
+
 def test_problem_data_equality():
     """
     Tests the equality comparison for ProblemData objects.
@@ -1318,11 +1351,11 @@ def test_task_fixed_end(solver: str):
     assert_equal(result.objective, 42)
 
 
-def test_task_fixed_duration_infeasible_with_timing_constraints(
+def test_task_allow_idle_infeasible_with_timing_constraints(
     solver: str,
 ):
     """
-    Tests that a task with fixed duration cannot be feasibly scheduled
+    Tests that a task without idle times cannot be feasibly scheduled
     in combination with tight timing constraints.
     """
     model = Model()
@@ -1332,15 +1365,15 @@ def test_task_fixed_duration_infeasible_with_timing_constraints(
     model.add_mode(task, machine, duration=1)
 
     # Because of the latest start and earliest end constraints, we cannot
-    # schedule the task with fixed duration, since its processing time
-    # is 1.
+    # schedule the task, since its processing time is 1 and idle time is
+    # not allowed.
     result = model.solve(solver=solver)
     assert_equal(result.status.value, "Infeasible")
 
 
-def test_task_non_fixed_duration(solver: str):
+def test_task_allow_idle(solver: str):
     """
-    Tests that a task with non-fixed duration is scheduled correctly.
+    Tests that a task that allows idle times is scheduled correctly.
     """
     model = Model()
 
@@ -1348,17 +1381,216 @@ def test_task_non_fixed_duration(solver: str):
     task = model.add_task(
         latest_start=0,
         earliest_end=10,
-        fixed_duration=False,
+        allow_idle=True,
     )
     model.add_mode(task, machine, duration=1)
 
-    # Since the task's duration is not fixed, it can be scheduled in a
+    # Since the task is allowed to have idle time, it can be scheduled in a
     # feasible way. In this case, it starts at 0 and ends at 10, which includes
     # the processing time (1) and respects the timing constraints.
     result = model.solve(solver=solver)
     assert_equal(result.status.value, "Optimal")
     assert_equal(result.objective, 10)
-    assert_equal(result.best.tasks, [TaskData(0, [0], 0, 10)])
+
+    sol_task = result.best.tasks[0]
+    assert_equal(sol_task.start, 0)
+    assert_equal(sol_task.end, 10)
+    assert_equal(sol_task.idle, 9)
+
+
+@pytest.mark.parametrize(
+    "resource",
+    [
+        # Breaks [(1, 3), (4, 5)] for all resources.
+        Machine(breaks=[(1, 3), (4, 5)]),
+        Renewable(capacity=1, breaks=[(1, 3), (4, 5)]),
+        NonRenewable(capacity=1, breaks=[(1, 3), (4, 5)]),
+    ],
+)
+def test_task_allow_breaks(solver: str, resource):
+    """
+    Tests that a task that allows for breaks is correctly scheduled.
+    """
+    data = ProblemData(
+        [],
+        [resource],
+        [Task(allow_breaks=True)],
+        [Mode(0, [0], 3)],
+    )
+
+    # Task starts at time 0 and runs for 1 time unit. Then the first break
+    # occurs (1-3), interrupting the task, and the task resumes at time 3
+    # and runs for another time unit. Then the second break occurs (4-5),
+    # and the task resumes at time 5 and finishes at time 6.
+    result = solve(data, solver=solver)
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.objective, 6)
+
+    sol_task = result.best.tasks[0]
+    assert_equal(sol_task.start, 0)
+    assert_equal(sol_task.end, 6)
+    assert_equal(sol_task.processing, 3)
+    assert_equal(sol_task.breaks, 3)
+
+
+def test_task_allow_breaks_with_multiple_modes(solver: str):
+    """
+    Smoke test that checks that tasks allowing breaks with multiple modes are
+    scheduled correctly. Specifically, it checks that the breaks of one mode
+    do not interfere with the processing of another mode.
+    """
+    model = Model()
+
+    with_breaks = model.add_machine(breaks=[(0, 10)])
+    no_breaks = model.add_machine()
+    task = model.add_task(allow_breaks=True)
+    model.add_mode(task, with_breaks, duration=3)
+    model.add_mode(task, no_breaks, duration=1)
+
+    # The second mode will be selected (resource without breaks). The breaks
+    # of the first mode should not interfere with the processing of this mode.
+    result = model.solve(solver=solver)
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.objective, 1)
+
+    sol_task = result.best.tasks[0]
+    assert_equal(sol_task.start, 0)
+    assert_equal(sol_task.end, 1)
+    assert_equal(sol_task.processing, 1)
+    assert_equal(sol_task.breaks, 0)
+
+
+def test_task_multiple_modes_and_overlaps(solver: str):
+    """
+    Tests that a task with multiple modes and break overlaps is scheduled
+    correctly.
+    """
+    model = Model()
+
+    task = model.add_task(allow_breaks=True)
+
+    for _ in range(2):
+        machine = model.add_machine(breaks=[(5, 7), (12, 14)])
+        model.add_mode(task, machine, duration=10)
+
+    result = model.solve(solver=solver)
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.objective, 12)
+
+
+def test_task_allow_breaks_multiple_resources(solver: str):
+    """
+    Tests a special case with a task allowing breaks that requires multiple
+    resources which have overlapping breaks. This makes the overlap duration
+    calculation more complicated, as we need to consider the "merged" breaks
+    of all resources that are required by the mode.
+    """
+    model = Model()
+
+    machine1 = model.add_machine(breaks=[(1, 3)])
+    machine2 = model.add_machine(breaks=[(2, 4)])
+    task = model.add_task(allow_breaks=True)
+    model.add_mode(task, [machine1, machine2], duration=2)
+
+    # The task requires both resources, which have overlapping breaks, so
+    # the actual break of this mode is (1, 4). The task should therefore start
+    # at time 0 and end at time 5.
+    result = model.solve(solver=solver)
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.objective, 5)
+
+    sol_task = result.best.tasks[0]
+    assert_equal(sol_task.start, 0)
+    assert_equal(sol_task.end, 5)
+    assert_equal(sol_task.processing, 2)
+    assert_equal(sol_task.breaks, 3)
+
+
+def test_task_does_not_end_in_break(solver: str):
+    """
+    Tests that a task that allows for breaks does not end during a break.
+    """
+    model = Model()
+
+    # Job with due date (2) in the break (1-4).
+    job = model.add_job(due_date=2)
+    resource = model.add_machine(breaks=[(1, 4)])
+    task = model.add_task(job, allow_idle=False, allow_breaks=True)
+    model.add_mode(task, resource, duration=1)
+    model.set_objective(weight_total_earliness=1, weight_total_tardiness=1)
+
+    # If a task could end in a break, it would start at time 0 and end at
+    # time 2, minimizing the objective. However, it's not allowed to end in a
+    # break, so it starts at 0 and ends at time 1.
+    result = model.solve(solver=solver)
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.objective, 1)
+
+    sol_task = result.best.tasks[0]
+    assert_equal(sol_task.start, 0)
+    assert_equal(sol_task.end, 1)
+    assert_equal(sol_task.processing, 1)
+    assert_equal(sol_task.breaks, 0)
+
+
+def test_task_allow_idle_and_breaks(solver):
+    """
+    Tests that a task which allows for idle time and breaks is correctly
+    scheduled.
+    """
+    model = Model()
+    machine = model.add_machine(breaks=[(1, 3)])
+    task = model.add_task(
+        latest_start=0,
+        earliest_end=10,
+        allow_idle=True,
+        allow_breaks=True,
+    )
+    model.add_mode(task, machine, duration=2, demands=[0])
+
+    result = model.solve(solver=solver)
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.objective, 10)
+
+    # Task must start at time 0 and ends at time 10. The processing time is 2,
+    # with 2 time units of overlap (break from 1 to 3) and 6 time unit of idle
+    # time (from 4 to 10).
+    sol_tasks = result.best.tasks[0]
+    assert_equal(sol_tasks.start, 0)
+    assert_equal(sol_tasks.end, 10)
+    assert_equal(sol_tasks.idle, 6)
+    assert_equal(sol_tasks.breaks, 2)
+    assert_equal(sol_tasks.processing, 2)
+
+
+def test_mode_without_resources(solver: str):
+    """
+    Tests that a mode without resources is scheduled correctly.
+    """
+    model = Model()
+    machine = model.add_machine()
+
+    task1 = model.add_task()
+    model.add_mode(task1, [], duration=1)
+    model.add_mode(task1, [machine], duration=10)
+
+    task2 = model.add_task()
+    model.add_mode(task2, [], duration=1)
+    model.add_mode(task2, [machine], duration=10)
+
+    # Check that these constraints also work.
+    model.add_end_before_start(task1, task2)
+    model.add_identical_resources(task1, task2)
+
+    # The best option is to schedule both tasks using the mode without
+    # resources, resulting in a makespan of 2.
+    result = model.solve(solver=solver)
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.objective, 2)
+    assert_equal(
+        result.best.tasks,
+        [TaskData(0, [], 0, 1), TaskData(2, [], 1, 2)],
+    )
 
 
 def test_machine_breaks(solver: str):

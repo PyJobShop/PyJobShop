@@ -6,7 +6,6 @@ from docplex.cp.expression import (
 )
 from docplex.cp.model import CpoModel
 
-import pyjobshop.solvers.utils as utils
 from pyjobshop.constants import MAX_VALUE
 from pyjobshop.ProblemData import ProblemData
 from pyjobshop.Solution import Solution
@@ -80,7 +79,6 @@ class Variables:
         """
         data = self._data
         variables = []
-        task_durations = utils.compute_task_durations(data)
 
         for idx, task in enumerate(data.tasks):
             var = interval_var(optional=task.optional, name=f"T{idx}")
@@ -91,10 +89,9 @@ class Variables:
             var.set_end_min(task.earliest_end)
             var.set_end_max(min(task.latest_end, MAX_VALUE))
 
-            var.set_size_min(min(task_durations[idx]))
-            var.set_size_max(
-                max(task_durations[idx]) if task.fixed_duration else MAX_VALUE
-            )
+            modes = [data.modes[mode_idx] for mode_idx in data.task2modes(idx)]
+            mode_durations = [mode.duration for mode in modes]
+            var.set_size_min(min(mode_durations))
 
             variables.append(var)
             self._model.add(var)
@@ -118,11 +115,9 @@ class Variables:
             var.set_end_min(task.earliest_end)
             var.set_end_max(min(task.latest_end, MAX_VALUE))
 
-            if task.fixed_duration:
+            var.set_size_min(mode.duration)
+            if not task.allow_idle:
                 var.set_size(mode.duration)
-            else:
-                var.set_size_min(mode.duration)
-                var.set_size_max(MAX_VALUE)
 
             variables.append(var)
             self._model.add(var)
@@ -179,7 +174,7 @@ class Variables:
                 presence=sol_task.present,
                 start=sol_task.start,
                 end=sol_task.end,
-                size=sol_task.end - sol_task.start,
+                length=sol_task.duration,
             )
 
         for idx, mode in enumerate(data.modes):
@@ -191,7 +186,7 @@ class Variables:
                 presence=idx == sol_task.mode,
                 start=sol_task.start,
                 end=sol_task.end,
-                size=sol_task.end - sol_task.start,
+                length=sol_task.duration,
             )
 
         self._model.set_starting_point(init)

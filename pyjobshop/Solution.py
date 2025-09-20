@@ -16,6 +16,10 @@ class TaskData:
         The start time.
     end
         The end time.
+    idle
+        The time that this task is not processing, excluding breaks.
+    breaks
+        The total time that this task is interrupted by resource breaks.
     present
         Whether the task is present in the solution.
     """
@@ -24,7 +28,23 @@ class TaskData:
     resources: list[int]
     start: int
     end: int
+    idle: int = 0
+    breaks: int = 0
     present: bool = True
+
+    @property
+    def duration(self) -> int:
+        """
+        Returns the total duration of the task.
+        """
+        return self.end - self.start
+
+    @property
+    def processing(self) -> int:
+        """
+        Returns the processing time of the task.
+        """
+        return self.duration - self.breaks - self.idle
 
 
 class Solution:
