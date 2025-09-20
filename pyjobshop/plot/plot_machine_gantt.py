@@ -15,7 +15,7 @@ def plot_machine_gantt(
     resources: list[int] | None = None,
     plot_labels: bool = False,
     ax: Axes | None = None,
-):
+) -> Axes:
     """
     Plots a Gantt chart of the solution, where each row represents a machine
     and each bar represents a task processed on that machine.
@@ -109,3 +109,5 @@ def plot_machine_gantt(
 
     if break_labeled:
         ax.legend(loc="best")
+
+    return ax
