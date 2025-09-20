@@ -77,7 +77,7 @@ def test_solve_initial_solution(small, solver, capfd):
     }
     msg = solver2msg[solver]
 
-    init = Solution([TaskData(0, [0], 0, 1), TaskData(1, [0], 1, 3)])
+    init = Solution(small, [TaskData(0, [0], 0, 1), TaskData(1, [0], 1, 3)])
     solve(small, solver, display=True, initial_solution=init)
     printed = capfd.readouterr().out
     assert_(msg in printed)
