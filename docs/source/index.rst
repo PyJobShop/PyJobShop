@@ -46,6 +46,7 @@ Contents
    examples/permutation_flow_shop
    examples/project_scheduling
    examples/optional_tasks
+   examples/breaks
    examples/objectives
    examples/quick_examples
 

@@ -154,15 +154,37 @@ class Constraints:
         """
         model, data, variables = self._model, self._data, self._variables
 
-        for idx, resource in enumerate(data.resources):
-            for start, end in resource.breaks:
-                for mode_idx in data.resource2modes(idx):
-                    step = CpoStepFunction()
-                    step.set_value(0, MAX_VALUE, 1)
-                    step.set_value(start, end, 0)
+        for mode_idx, mode_var in enumerate(variables.mode_vars):
+            mode = data.modes[mode_idx]
 
-                    mode_var = variables.mode_vars[mode_idx]
-                    model.add(cpo.forbid_extent(mode_var, step))
+            all_breaks = []
+            for res_idx in mode.resources:
+                all_breaks.extend(data.resources[res_idx].breaks)
+            breaks = utils.merge(all_breaks)
+
+            # The step function represents the time periods in which an
+            # interval can be processed: a nonzero value means that processing
+            # is allowed, while a zero means that processing is not allowed.
+            step = CpoStepFunction()
+
+            # Domain includes -1 to allow ending at t=0, and the value 100
+            # refers to the intensity (i.e., percentage available).
+            step.set_value(-1, MAX_VALUE, 100)
+
+            for start, end in breaks:
+                step.set_value(start, end, 0)
+
+            # Not allowed to start/end during breaks.
+            model.add(cpo.forbid_start(mode_var, step))
+            model.add(cpo.forbid_end(mode_var, step))
+
+            if data.tasks[mode.task].allow_breaks:
+                # This ensures that the time during breaks is not counted
+                # towards the task size, i.e., processing time.
+                mode_var.set_intensity(step)
+            else:
+                # No overlap allowed between breaks and tasks.
+                model.add(cpo.forbid_extent(mode_var, step))
 
     def _timing_constraints(self):
         """

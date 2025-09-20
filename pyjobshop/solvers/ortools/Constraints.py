@@ -38,8 +38,8 @@ class Constraints:
     def _select_one_mode(self):
         """
         Selects one mode for each task, ensuring that each task obtains the
-        correct duration, is assigned to a set of resources, and demands are
-        correctly set.
+        correct processing time, is assigned to a set of resources, and
+        demands are correctly set.
         """
         model, data, variables = self._model, self._data, self._variables
 
@@ -52,14 +52,7 @@ class Constraints:
 
             for mode_idx, mode_var in zip(mode_idcs, mode_vars):
                 mode = data.modes[mode_idx]
-
-                # Set task duration to the selected mode's duration.
-                fixed = data.tasks[task_idx].fixed_duration
-                expr = (
-                    task_var.duration == mode.duration
-                    if fixed
-                    else task_var.duration >= mode.duration
-                )
+                expr = task_var.processing == mode.duration
                 model.add(expr).only_enforce_if(mode_var)
 
                 for res_idx, demand in zip(mode.resources, mode.demands):
@@ -83,10 +76,10 @@ class Constraints:
                 mode_vars = [variables.mode_vars[idx] for idx in res_mode_idcs]
                 model.add(presence <= sum(mode_vars))
 
-        for (task_idx, _), assign_var in variables.assign_vars.items():
-            # Assignment variable can only be present if task is present.
-            task_var = variables.task_vars[task_idx]
-            model.add(assign_var.present <= task_var.present)
+            for res_idx in data.task2resources(task_idx):
+                # Assignment variable can only be present if task is present.
+                assign_var = variables.assign_vars[task_idx, res_idx]
+                model.add(assign_var.present <= task_var.present)
 
     def _machines_no_overlap(self):
         """
@@ -128,14 +121,24 @@ class Constraints:
         """
         model, data, variables = self._model, self._data, self._variables
 
-        for idx, resource in enumerate(data.resources):
-            break_intervals = [
-                model.new_fixed_size_interval_var(start, end - start, "")
-                for start, end in resource.breaks
-            ]
+        for task_idx, task_var in enumerate(variables.task_vars):
+            for mode_idx in data.task2modes(task_idx):
+                mode_var = variables.mode_vars[mode_idx]
+                break_vars = variables.break_vars[mode_idx]
 
-            for var in variables.res2assign(idx):
-                model.add_no_overlap([var.interval, *break_intervals])
+                # Select exactly one break variable iff the mode is selected.
+                selected = sum(var.selected for var in break_vars)
+                model.add(mode_var == selected)
+
+                for break_var in break_vars:
+                    # Synchronize task break duration with selected break.
+                    expr = task_var.breaks == break_var.duration
+                    model.add(expr).only_enforce_if(break_var.selected)
+
+                    # Enforce task start inside domain of selected break.
+                    model.add_linear_expression_in_domain(
+                        task_var.start, break_var.start_domain
+                    ).only_enforce_if(break_var.selected)
 
     def _timing_constraints(self):
         """

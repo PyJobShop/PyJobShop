@@ -65,25 +65,32 @@ class CPModel:
         """
         Converts a result from OR-Tools to a Solution object.
         """
+        data, variables = self._data, self._variables
+
         tasks = []
-        for task_idx in range(self._data.num_tasks):
-            task_var = self._variables.task_vars[task_idx]
+        for task_idx in range(data.num_tasks):
+            task_var = variables.task_vars[task_idx]
 
             if not cp_solver.value(task_var.present):
-                task = TaskData(self._data.num_modes, [], 0, 0, False)
+                task = TaskData(data.num_modes, [], 0, 0, 0, 0, False)
                 tasks.append(task)
                 continue
 
-            for mode_idx in self._data.task2modes(task_idx):
-                mode_var = self._variables.mode_vars[mode_idx]
+            for mode_idx in data.task2modes(task_idx):
+                mode_var = variables.mode_vars[mode_idx]
 
                 if cp_solver.value(mode_var):  # selected mode
-                    task_var = self._variables.task_vars[task_idx]
-                    start = cp_solver.value(task_var.start)
-                    end = cp_solver.value(task_var.end)
-                    mode = self._data.modes[mode_idx]
-                    task = TaskData(mode_idx, mode.resources, start, end)
+                    task = TaskData(
+                        mode_idx,
+                        data.modes[mode_idx].resources,
+                        cp_solver.value(task_var.start),
+                        cp_solver.value(task_var.end),
+                        cp_solver.value(task_var.idle),
+                        cp_solver.value(task_var.breaks),
+                        present=True,
+                    )
                     tasks.append(task)
+                    break
 
         return Solution(tasks)
 

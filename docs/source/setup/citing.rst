@@ -16,6 +16,6 @@ Or, using the following BibTeX entry:
         author={Leon Lan and Joost Berkhout},
         year={2025},
         url={https://arxiv.org/abs/2502.13483},
-        archivePrefix="arXiv"
+        archivePrefix="arXiv",
         eprint={2502.13483},
       }

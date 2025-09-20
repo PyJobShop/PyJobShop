@@ -217,7 +217,7 @@ def test_dpfsp(benchmark, solver: str):
                 mode = model.add_mode(task, machine, duration=duration)
                 modes[factory_idx, job_idx, machine_idx] = mode
 
-    # Modes can only be select if the task is selected in that factory.
+    # Modes can only be selected if the task is selected in that factory.
     for factory_idx in range(num_factories):
         for job_idx in range(num_jobs):
             for mode1, mode2 in pairwise(modes[factory_idx, job_idx, :]):
