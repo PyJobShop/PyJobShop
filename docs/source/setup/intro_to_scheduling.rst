@@ -28,7 +28,7 @@ A solution to a scheduling problem includes the specific task-to-resource assign
 
 Optimizing scheduling problems has been keeping researchers very interested because of the potential time savings,
 However, since most scheduling problems are classified as NP-hard, obtaining the optimal solution can be extremely difficult.
-There is a variety of proposed methods to solve scheduling scheduling methods, such as heuristics, metaheuristics, and exact algorithms, which include local search, genetic algorithms, and branch-and-cut algorithms.
+There is a variety of proposed methods to solve scheduling problems, such as heuristics, metaheuristics, and exact algorithms, which include local search, genetic algorithms, and branch-and-cut algorithms.
 
 .. note::
 
