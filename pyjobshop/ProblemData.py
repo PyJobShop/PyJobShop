@@ -381,15 +381,13 @@ class Task:
         Latest end time of the task.
         Default :const:`~pyjobshop.constants.MAX_VALUE`.
     allow_idle
-        Whether the task can have voluntary idle time. If ``True``, the task
-        duration can exceed the processing time due to blocking or waiting
-        (e.g., in blocking flow shops). Otherwise, the task duration equals
-        the processing time and, if allowed, any break interruptions.
+        Whether the task can remain idle after completing its processing.
+        If ``True``, the task can continue occupying resources after
+        finishing (e.g., blocking in flow shops). Default ``False``.
     allow_breaks
-        Whether the task can be interrupted by resource breaks. If ``True``,
-        the task stops processing during breaks and resumes afterwards, with
-        break time not counting toward processing time. Otherwise, the task
-        must be scheduled to avoid all resource breaks entirely.
+        Whether the task can be interrupted by resource breaks. If
+        ``True``, the task stops processing during breaks and resumes
+        afterwards. Default ``False``.
     optional
         Whether the task is optional. Default ``False``.
     name
