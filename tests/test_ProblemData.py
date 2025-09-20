@@ -6,6 +6,7 @@ from pyjobshop.Model import Model
 from pyjobshop.ProblemData import (
     Consecutive,
     Constraints,
+    Consumable,
     DifferentResources,
     EndBeforeEnd,
     EndBeforeStart,
@@ -14,7 +15,6 @@ from pyjobshop.ProblemData import (
     Machine,
     Mode,
     ModeDependency,
-    NonRenewable,
     Objective,
     ProblemData,
     Renewable,
@@ -209,26 +209,24 @@ def test_renewable_equality():
     assert_equal(renewable1, renewable2)
 
 
-def test_non_renewable_attributes():
+def test_consumable_attributes():
     """
-    Tests that the attributes of the NonRenewable class are set correctly.
+    Tests that the attributes of the Consumable class are set correctly.
     """
-    non_renewable = NonRenewable(
-        capacity=1, breaks=[(0, 1)], name="non_renewable"
-    )
-    assert_equal(non_renewable.capacity, 1)
-    assert_equal(non_renewable.breaks, [(0, 1)])
-    assert_equal(non_renewable.name, "non_renewable")
+    consumable = Consumable(capacity=1, breaks=[(0, 1)], name="consumable")
+    assert_equal(consumable.capacity, 1)
+    assert_equal(consumable.breaks, [(0, 1)])
+    assert_equal(consumable.name, "consumable")
 
 
-def test_non_renewable_default_attributes():
+def test_consumable_default_attributes():
     """
-    Tests that the default attributes of the NonRenewable class are set
+    Tests that the default attributes of the Consumable class are set
     correctly.
     """
-    non_renewable = NonRenewable(capacity=0)
-    assert_equal(non_renewable.name, "")
-    assert_equal(non_renewable.breaks, [])
+    consumable = Consumable(capacity=0)
+    assert_equal(consumable.name, "")
+    assert_equal(consumable.breaks, [])
 
 
 @pytest.mark.parametrize(
@@ -240,26 +238,26 @@ def test_non_renewable_default_attributes():
         (1, [(1, 3), (2, 4)]),  # breaks overlapping
     ],
 )
-def test_non_renewable_raises_invalid_parameters(capacity, breaks):
+def test_consumable_raises_invalid_parameters(capacity, breaks):
     """
     Tests that a ValueError is raised when invalid parameters are passed
-    to the NonRenewable class.
+    to the Consumable class.
     """
     with assert_raises(ValueError):
-        NonRenewable(capacity=capacity, breaks=breaks)
+        Consumable(capacity=capacity, breaks=breaks)
 
 
-def test_non_renewable_equality():
+def test_consumable_equality():
     """
-    Tests the equality comparison for NonRenewable objects.
+    Tests the equality comparison for Consumable objects.
     """
-    assert_equal(NonRenewable(0), NonRenewable(0))
+    assert_equal(Consumable(0), Consumable(0))
 
-    non_renewable1 = NonRenewable(5, [(10, 20)], name="R1")
-    assert_(non_renewable1 != NonRenewable(0))
+    consumable1 = Consumable(5, [(10, 20)], name="R1")
+    assert_(consumable1 != Consumable(0))
 
-    non_renewable2 = NonRenewable(5, [(10, 20)], name="R1")
-    assert_equal(non_renewable1, non_renewable2)
+    consumable2 = Consumable(5, [(10, 20)], name="R1")
+    assert_equal(consumable1, consumable2)
 
 
 def test_task_attributes():
@@ -448,7 +446,7 @@ def test_constraints_len():
         setup_times=[
             SetupTime(0, 0, 1, 1),  # machine
             SetupTime(1, 0, 1, 0),  # renewable
-            SetupTime(2, 0, 1, 0),  # non-renewable
+            SetupTime(2, 0, 1, 0),  # consumable
         ],
         mode_dependencies=[ModeDependency(0, [1])],
         select_all_or_none=[SelectAllOrNone([1, 2], 3)],
@@ -557,7 +555,7 @@ def test_problem_data_non_input_parameter_attributes():
     class are set correctly.
     """
     jobs = [Job(tasks=[0, 1, 2])]
-    resources = [Machine(), Renewable(1), NonRenewable(2)]
+    resources = [Machine(), Renewable(1), Consumable(2)]
     tasks = [Task(job=0) for _ in range(3)]
     modes = [
         Mode(task=2, resources=[1], duration=1),
@@ -581,7 +579,7 @@ def test_problem_data_non_input_parameter_attributes():
     assert_equal(data.num_constraints, 4)
     assert_equal(data.machine_idcs, [0])
     assert_equal(data.renewable_idcs, [1])
-    assert_equal(data.non_renewable_idcs, [2])
+    assert_equal(data.consumable_idcs, [2])
 
 
 def test_problem_data_default_values():
@@ -603,7 +601,7 @@ def test_problem_data_str():
     Tests the string representation of the ProblemData class.
     """
     jobs = [Job(tasks=[idx]) for idx in range(5)]
-    resources = [Machine() for _ in range(5)] + [Renewable(1), NonRenewable(1)]
+    resources = [Machine() for _ in range(5)] + [Renewable(1), Consumable(1)]
     tasks = [Task(job=idx) for idx in range(5)]
     modes = [
         Mode(task=task, resources=[resource], duration=1)
@@ -625,7 +623,7 @@ def test_problem_data_str():
         "7 resources\n"
         "├─ 5 machines\n"
         "├─ 1 renewable\n"
-        "└─ 1 non_renewable\n"
+        "└─ 1 consumable\n"
         "5 tasks\n"
         "25 modes\n"
         "3 constraints\n"
@@ -867,7 +865,7 @@ def test_problem_data_raises_same_sequence_invalid_tasks(same_sequence):
     "resource",
     [
         Renewable(capacity=1),
-        NonRenewable(capacity=1),
+        Consumable(capacity=1),
     ],
 )
 def test_problem_data_raises_capacitated_resources_and_setup_times(resource):
@@ -948,7 +946,7 @@ def make_replace_data():
     ]
     resources = [
         Renewable(capacity=0, name="resource"),
-        NonRenewable(capacity=0, name="resource"),
+        Consumable(capacity=0, name="resource"),
     ]
     tasks = [Task(job=0, earliest_start=1), Task(job=1, earliest_start=1)]
     modes = [
@@ -1404,7 +1402,7 @@ def test_task_allow_idle(solver: str):
         # Breaks [(1, 3), (4, 5)] for all resources.
         Machine(breaks=[(1, 3), (4, 5)]),
         Renewable(capacity=1, breaks=[(1, 3), (4, 5)]),
-        NonRenewable(capacity=1, breaks=[(1, 3), (4, 5)]),
+        Consumable(capacity=1, breaks=[(1, 3), (4, 5)]),
     ],
 )
 def test_task_allow_breaks(solver: str, resource):
@@ -1761,13 +1759,13 @@ def test_renewable_breaks_respected_by_zero_demand(solver: str):
     assert_equal(result.objective, 6)
 
 
-def test_resource_non_renewable_capacity(solver: str):
+def test_resource_consumable_capacity(solver: str):
     """
-    Tests that a resource with non-renewable capacity is respected.
+    Tests that a resource with consumable capacity is respected.
     """
     model = Model()
 
-    resource = model.add_non_renewable(capacity=1)
+    resource = model.add_consumable(capacity=1)
     task1 = model.add_task()
     model.add_mode(task1, [resource], duration=1, demands=[1])
 
@@ -1781,19 +1779,19 @@ def test_resource_non_renewable_capacity(solver: str):
     task2 = model.add_task()
     model.add_mode(task2, [resource], duration=1, demands=[1])
 
-    # Since the resource has non-renewable capacity, the second task
+    # Since the resource has consumable capacity, the second task
     # cannot be scheduled.
     result = model.solve(solver=solver)
     assert_equal(result.status.value, "Infeasible")
 
 
-def test_non_renewable_breaks(solver: str):
+def test_consumable_breaks(solver: str):
     """
-    Tests that a NonRenewable resource respects breaks.
+    Tests that a Consumable resource respects breaks.
     """
     model = Model()
-    resource1 = model.add_non_renewable(capacity=10, breaks=[(1, 2), (3, 4)])
-    resource2 = model.add_non_renewable(capacity=10, breaks=[(0, 100)])
+    resource1 = model.add_consumable(capacity=10, breaks=[(1, 2), (3, 4)])
+    resource2 = model.add_consumable(capacity=10, breaks=[(0, 100)])
     task = model.add_task()
     model.add_mode(task, resource1, duration=2, demands=5)
     model.add_mode(task, resource2, duration=2, demands=5)
@@ -1805,13 +1803,13 @@ def test_non_renewable_breaks(solver: str):
     assert_equal(result.objective, 6)
 
 
-def test_non_renewable_breaks_respected_by_zero_demand(solver: str):
+def test_consumable_breaks_respected_by_zero_demand(solver: str):
     """
-    Tests that a NonRenewable resource break is respected even if the mode has
+    Tests that a Consumable resource break is respected even if the mode has
     zero demand.
     """
     model = Model()
-    resource = model.add_non_renewable(capacity=10, breaks=[(1, 2), (3, 4)])
+    resource = model.add_consumable(capacity=10, breaks=[(1, 2), (3, 4)])
     task = model.add_task()
     model.add_mode(task, resource, duration=2, demands=[0])
 

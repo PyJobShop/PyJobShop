@@ -34,7 +34,7 @@ def test_plot_machine_gantt_breaks():
     model = Model()
     machine = model.add_machine(breaks=[(0, 2)])
     renewable = model.add_renewable(1, breaks=[(3, 4)])
-    model.add_non_renewable(1)
+    model.add_consumable(1)
     task = model.add_task()
     model.add_mode(task, [machine, renewable], duration=2, demands=[0, 1])
 
@@ -51,7 +51,7 @@ def test_plot_resource_usage():
     resources = [
         model.add_machine(name="Machine"),
         model.add_renewable(capacity=5, name="Renewable"),
-        model.add_non_renewable(capacity=2, name="Non-renewable"),
+        model.add_consumable(capacity=2, name="Consumable"),
     ]
 
     for idx in [1, 2]:

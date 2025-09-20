@@ -132,13 +132,13 @@ class Constraints:
             capacity = data.resources[res_idx].capacity
             model.add(pulses <= capacity)
 
-    def _non_renewable_capacity(self):
+    def _consumable_capacity(self):
         """
-        Creates capacity constraints for the non-renewable resources.
+        Creates capacity constraints for the consumable resources.
         """
         model, data, variables = self._model, self._data, self._variables
 
-        for res_idx in data.non_renewable_idcs:
+        for res_idx in data.consumable_idcs:
             modes = data.resource2modes(res_idx)
             usage = sum(
                 presence_of(variables.mode_vars[mode_idx])
@@ -356,7 +356,7 @@ class Constraints:
         self._select_one_mode()
         self._machines_no_overlap_and_setup_times()
         self._renewable_capacity()
-        self._non_renewable_capacity()
+        self._consumable_capacity()
         self._resource_breaks_constraints()
         self._timing_constraints()
         self._identical_and_different_resource_constraints()

@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.axes import Axes
 
-from pyjobshop import NonRenewable, ProblemData, Renewable, Solution
+from pyjobshop import Consumable, ProblemData, Renewable, Solution
 
 
 def plot_resource_usage(
@@ -69,7 +69,7 @@ def _compute_usage(solution: Solution, data: ProblemData) -> np.ndarray:
 
             if isinstance(resource, Renewable):
                 usages[resource_idx, task.start : task.end] += demand
-            elif isinstance(resource, NonRenewable):
+            elif isinstance(resource, Consumable):
                 usages[resource_idx, task.start :] += demand
             else:
                 # Machine is a unary renewable resource.
