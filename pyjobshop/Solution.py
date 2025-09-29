@@ -20,7 +20,7 @@ class JobData:
     release_date
         The release date of the job. Default 0.
     due_date
-        The due date of the job. Default None.
+        The due date of the job. Default ``None``.
     """
 
     start: int
@@ -45,14 +45,16 @@ class JobData:
     @property
     def is_tardy(self) -> bool:
         """
-        Returns whether the job is tardy. Not tardy if the job has no due date.
+        Returns whether the job is tardy. If the job has no due date,
+        returns ``False``.
         """
         return self.end > self.due_date if self.due_date is not None else True
 
     @property
     def tardiness(self) -> int:
         """
-        Returns the tardiness of the job. Zero if the job has no due date.
+        Returns the tardiness of the job. If the job has no due date,
+        returns 0.
         """
         return (
             max(self.end - self.due_date, 0)
@@ -63,7 +65,8 @@ class JobData:
     @property
     def earliness(self) -> int:
         """
-        Returns the earliness of the job. Zero if the job has no due date.
+        Returns the earliness of the job. If the job has no due date,
+        returns 0.
         """
         return (
             max(self.due_date - self.end, 0)
@@ -125,7 +128,7 @@ class Solution:
     Parameters
     ----------
     data
-        The problem data.
+        The problem data instance.
     tasks
         The list of scheduled tasks.
 
@@ -159,14 +162,14 @@ class Solution:
     @property
     def tasks(self) -> list[TaskData]:
         """
-        Returns the list of tasks and its scheduling data.
+        Returns the list of task data.
         """
         return self._tasks
 
     @property
     def jobs(self) -> list[JobData]:
         """
-        Returns the list of jobs and its scheduling data.
+        Returns the list of job data.
         """
         return self._jobs
 

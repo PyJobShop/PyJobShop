@@ -2637,7 +2637,7 @@ def test_total_setup_time(solver: str):
     # two, the objective value is 2 * (1 + 3) = 8.
     assert_equal(result.objective, 8)
     assert_equal(result.status.value, "Optimal")
-    assert_equal(result.objective, result.best.objective)
+    assert_equal(result.best.objective, 8)
 
 
 def test_combined_objective(solver: str):

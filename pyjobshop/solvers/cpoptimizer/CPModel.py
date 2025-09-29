@@ -91,9 +91,7 @@ class CPModel:
                     data.num_modes, [], 0, 0, 0, 0, present=False
                 )
 
-        return Solution(
-            self._data, [tasks[idx] for idx in range(self._data.num_tasks)]
-        )
+        return Solution(data, [tasks[idx] for idx in range(data.num_tasks)])
 
     def solve(
         self,
