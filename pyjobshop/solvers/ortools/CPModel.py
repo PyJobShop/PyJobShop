@@ -92,7 +92,7 @@ class CPModel:
                     tasks.append(task)
                     break
 
-        return Solution(self._data, tasks)
+        return Solution(data, tasks)
 
     def solve(
         self,
