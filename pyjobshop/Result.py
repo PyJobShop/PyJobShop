@@ -24,17 +24,18 @@ class Result:
     Parameters
     ----------
     objective
-        The objective value of the solution. If no solution was found, this
-        should be set to ``float('inf')``.
+        The objective value of the solution. If no feasible solution was found,
+        this is set to ``float('inf')``.
     lower_bound
-        The lower bound of the objective function.
+        The lower bound of the objective function. If no feasible solution was
+        found, this is set to 0.
     status
         The termination status of the solver run.
     runtime
         The runtime of the solver.
     best
-        The best found solution. If no solution was found, this should be a
-        dummy solution.
+        The best found solution. If no feasible solution was found, this is
+        an empty solution.
     """
 
     objective: float

@@ -140,12 +140,12 @@ class CPModel:
         if status in ["Optimal", "Feasible"]:
             solution = self._convert_to_solution(cp_result)
             objective: float = cp_result.get_objective_value()  # type: ignore
-            lower_bound: float = cp_result.get_objective_bound()  # type: ignore
+            lower_bound = cp_result.get_objective_bound()
         else:
             # No feasible solution due to infeasible instance or time limit.
             solution = Solution(self._data, [])
             objective = float("inf")
-            lower_bound = float("-inf")
+            lower_bound = 0
 
         return Result(
             objective=objective,
