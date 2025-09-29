@@ -7,75 +7,6 @@ from pyjobshop.solvers.utils import setup_times_matrix
 
 
 @dataclass
-class JobData:
-    """
-    Stores scheduling data related to a job.
-
-    Parameters
-    ----------
-    start
-        The start time of the job.
-    end
-        The end time of the job.
-    release_date
-        The release date of the job. Default 0.
-    due_date
-        The due date of the job. Default ``None``.
-    """
-
-    start: int
-    end: int
-    release_date: int = 0
-    due_date: int | None = None
-
-    @property
-    def duration(self) -> int:
-        """
-        Returns the total duration of the job.
-        """
-        return self.end - self.start
-
-    @property
-    def flow_time(self) -> int:
-        """
-        Returns the flow time of the job.
-        """
-        return self.end - self.release_date
-
-    @property
-    def is_tardy(self) -> bool:
-        """
-        Returns whether the job is tardy. If the job has no due date,
-        returns ``False``.
-        """
-        return self.end > self.due_date if self.due_date is not None else True
-
-    @property
-    def tardiness(self) -> int:
-        """
-        Returns the tardiness of the job. If the job has no due date,
-        returns 0.
-        """
-        return (
-            max(self.end - self.due_date, 0)
-            if self.due_date is not None
-            else 0
-        )
-
-    @property
-    def earliness(self) -> int:
-        """
-        Returns the earliness of the job. If the job has no due date,
-        returns 0.
-        """
-        return (
-            max(self.due_date - self.end, 0)
-            if self.due_date is not None
-            else 0
-        )
-
-
-@dataclass
 class TaskData:
     """
     Stores scheduling data related to a task.
@@ -119,6 +50,75 @@ class TaskData:
         Returns the processing time of the task.
         """
         return self.duration - self.breaks - self.idle
+
+
+@dataclass
+class JobData:
+    """
+    Stores scheduling data related to a job.
+
+    Parameters
+    ----------
+    start
+        The start time of the job.
+    end
+        The end time of the job.
+    release_date
+        The release date of the job. Default 0.
+    due_date
+        The due date of the job. Default ``None``.
+    """
+
+    start: int
+    end: int
+    release_date: int = 0
+    due_date: int | None = None
+
+    @property
+    def duration(self) -> int:
+        """
+        Returns the total duration of the job.
+        """
+        return self.end - self.start
+
+    @property
+    def flow_time(self) -> int:
+        """
+        Returns the flow time of the job.
+        """
+        return self.end - self.release_date
+
+    @property
+    def is_tardy(self) -> bool:
+        """
+        Returns whether the job is tardy. If the job has no due date,
+        returns ``False``.
+        """
+        return self.end > self.due_date if self.due_date is not None else False
+
+    @property
+    def tardiness(self) -> int:
+        """
+        Returns the tardiness of the job. If the job has no due date,
+        returns 0.
+        """
+        return (
+            max(self.end - self.due_date, 0)
+            if self.due_date is not None
+            else 0
+        )
+
+    @property
+    def earliness(self) -> int:
+        """
+        Returns the earliness of the job. If the job has no due date,
+        returns 0.
+        """
+        return (
+            max(self.due_date - self.end, 0)
+            if self.due_date is not None
+            else 0
+        )
 
 
 class Solution:
