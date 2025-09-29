@@ -16,15 +16,16 @@ def test_job_data_attributes():
     """
     Tests the attributes of JobData.
     """
-    job = JobData(start=1, end=3, flow_time=2, lateness=1)
+    job = JobData(start=1, end=3, release_date=1, due_date=2)
 
     assert_equal(job.duration, 2)
+    assert_equal(job.flow_time, 2)
     assert_equal(job.is_tardy, True)
     assert_equal(job.tardiness, 1)
     assert_equal(job.earliness, 0)
 
     # Also test non-negative earliness.
-    job = JobData(start=1, end=3, flow_time=2, lateness=-1)
+    job = JobData(start=1, end=3, release_date=1, due_date=4)
     assert_equal(job.earliness, 1)
 
 

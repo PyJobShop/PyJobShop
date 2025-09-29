@@ -17,28 +17,59 @@ class JobData:
         The start time of the job.
     end
         The end time of the job.
+    release_date
+        The release date of the job. Default 0.
+    due_date
+        The due date of the job. Default None.
     """
 
     start: int
     end: int
-    flow_time: int
-    lateness: int = 0
+    release_date: int = 0
+    due_date: int | None = None
 
     @property
     def duration(self) -> int:
+        """
+        Returns the total duration of the job.
+        """
         return self.end - self.start
 
     @property
+    def flow_time(self) -> int:
+        """
+        Returns the flow time of the job.
+        """
+        return self.end - self.release_date
+
+    @property
     def is_tardy(self) -> bool:
-        return self.lateness > 0
+        """
+        Returns whether the job is tardy. Not tardy if the job has no due date.
+        """
+        return self.end > self.due_date if self.due_date is not None else True
 
     @property
     def tardiness(self) -> int:
-        return max(0, self.lateness)
+        """
+        Returns the tardiness of the job. Zero if the job has no due date.
+        """
+        return (
+            max(self.end - self.due_date, 0)
+            if self.due_date is not None
+            else 0
+        )
 
     @property
     def earliness(self) -> int:
-        return -min(0, self.lateness)
+        """
+        Returns the earliness of the job. Zero if the job has no due date.
+        """
+        return (
+            max(self.due_date - self.end, 0)
+            if self.due_date is not None
+            else 0
+        )
 
 
 @dataclass
@@ -99,7 +130,7 @@ class Solution:
         The list of scheduled tasks.
 
     .. warning::
-       This class does yet not check the feasibility of the solution.
+       This class does not yet check the feasibility of the solution.
     """
 
     def __init__(self, data: ProblemData, tasks: list[TaskData]):
@@ -108,7 +139,11 @@ class Solution:
         self._jobs = self._make_job_data() if tasks else []
 
     def __eq__(self, other) -> bool:
-        return self.tasks == other.tasks and self.jobs == other.jobs
+        return (
+            isinstance(other, Solution)
+            and self.tasks == other.tasks
+            and self.jobs == other.jobs
+        )
 
     def _make_job_data(self) -> list[JobData]:
         jobs = []
@@ -117,9 +152,7 @@ class Solution:
             tasks = [self._tasks[idx] for idx in job.tasks]
             start = min(task.start for task in tasks)
             end = max(task.end for task in tasks)
-            flow_time = end - job.release_date
-            lateness = 0 if job.due_date is None else end - job.due_date
-            jobs.append(JobData(start, end, flow_time, lateness))
+            jobs.append(JobData(start, end, job.release_date, job.due_date))
 
         return jobs
 
@@ -143,7 +176,6 @@ class Solution:
         Returns the objective value of this solution.
         """
         objective = self._data.objective
-
         return (
             objective.weight_makespan * self.makespan
             + objective.weight_tardy_jobs * self.tardy_jobs
@@ -159,10 +191,7 @@ class Solution:
         """
         Returns the makespan of the solution.
         """
-        if not self.tasks:
-            return 0
-
-        return max(task.end for task in self.tasks)
+        return max((task.end for task in self.tasks), default=0)
 
     @property
     def tardy_jobs(self) -> int:
