@@ -130,10 +130,14 @@ class Solution:
     data
         The problem data instance.
     tasks
-        The list of scheduled tasks.
+        The list of TaskData objects, one for each task in the problem,
+        or an empty list if a dummy solution is to be created.
 
-    .. warning::
-       This class does not yet check the feasibility of the solution.
+
+    .. note::
+       This class does **not** validate solution feasibility. When instantiated
+       directly, it assumes the provided task data represent a feasible
+       solution, or an empty solution if no tasks are provided.
     """
 
     def __init__(self, data: ProblemData, tasks: list[TaskData]):
