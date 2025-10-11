@@ -72,7 +72,7 @@ class CPModel:
             task_var = variables.task_vars[task_idx]
 
             if not cp_solver.value(task_var.present):
-                task = TaskData(data.num_modes, [], 0, 0, 0, 0, False)
+                task = TaskData(0, [], 0, 0, 0, 0, False)
                 tasks.append(task)
                 continue
 

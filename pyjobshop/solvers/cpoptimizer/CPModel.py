@@ -87,9 +87,7 @@ class CPModel:
 
         for idx in range(data.num_tasks):
             if idx not in tasks:
-                tasks[idx] = TaskData(
-                    data.num_modes, [], 0, 0, 0, 0, present=False
-                )
+                tasks[idx] = TaskData(0, [], 0, 0, 0, 0, present=False)
 
         return Solution(data, [tasks[idx] for idx in range(data.num_tasks)])
 
