@@ -4,6 +4,7 @@ from pyjobshop.constants import MAX_VALUE
 from pyjobshop.ProblemData import (
     Consecutive,
     Constraints,
+    Consumable,
     DifferentResources,
     EndBeforeEnd,
     EndBeforeStart,
@@ -12,7 +13,6 @@ from pyjobshop.ProblemData import (
     Machine,
     Mode,
     ModeDependency,
-    NonRenewable,
     Objective,
     ProblemData,
     Renewable,
@@ -120,8 +120,8 @@ class Model:
                     resource.breaks,
                     name=resource.name,
                 )
-            elif isinstance(resource, NonRenewable):
-                model.add_non_renewable(
+            elif isinstance(resource, Consumable):
+                model.add_consumable(
                     resource.capacity,
                     resource.breaks,
                     name=resource.name,
@@ -293,17 +293,17 @@ class Model:
 
         return resource
 
-    def add_non_renewable(
+    def add_consumable(
         self,
         capacity: int,
         breaks: list[tuple[int, int]] | None = None,
         *,
         name: str = "",
-    ) -> NonRenewable:
+    ) -> Consumable:
         """
-        Adds a non-renewable resource to the model.
+        Adds a consumable resource to the model.
         """
-        resource = NonRenewable(capacity, breaks, name=name)
+        resource = Consumable(capacity, breaks, name=name)
 
         self._id2resource[id(resource)] = len(self.resources)
         self._resources.append(resource)
@@ -360,7 +360,7 @@ class Model:
         """
         Adds a processing mode to the model.
         """
-        if isinstance(resources, (Machine, Renewable, NonRenewable)):
+        if isinstance(resources, (Machine, Renewable, Consumable)):
             resources = [resources]
 
         if isinstance(demands, int):

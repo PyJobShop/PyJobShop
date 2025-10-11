@@ -24,7 +24,7 @@ PyJobShop
     .. autoclass:: Renewable
        :members:
 
-    .. autoclass:: NonRenewable
+    .. autoclass:: Consumable
        :members:
 
     .. autoclass:: Task

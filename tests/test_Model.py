@@ -184,19 +184,19 @@ def test_add_renewable_resource_attributes():
     assert_equal(renewable.name, "resource")
 
 
-def test_add_non_renewable_resource_attributes():
+def test_add_consumable_resource_attributes():
     """
     Tests that adding a resource to the model correctly sets the attributes.
     """
     model = Model()
 
-    non_renewable = model.add_non_renewable(
+    consumable = model.add_consumable(
         capacity=1, breaks=[(0, 1)], name="resource"
     )
 
-    assert_equal(non_renewable.capacity, 1)
-    assert_equal(non_renewable.breaks, [(0, 1)])
-    assert_equal(non_renewable.name, "resource")
+    assert_equal(consumable.capacity, 1)
+    assert_equal(consumable.breaks, [(0, 1)])
+    assert_equal(consumable.name, "resource")
 
 
 def test_add_task_attributes():

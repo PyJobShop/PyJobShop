@@ -4,6 +4,7 @@ from pyjobshop import Model
 from pyjobshop.ProblemData import (
     Consecutive,
     Constraints,
+    Consumable,
     DifferentResources,
     EndBeforeEnd,
     EndBeforeStart,
@@ -12,7 +13,6 @@ from pyjobshop.ProblemData import (
     Machine,
     Mode,
     ModeDependency,
-    NonRenewable,
     Objective,
     ProblemData,
     Renewable,
@@ -51,7 +51,7 @@ def complete_data():
     resources = [
         Machine(no_idle=True),
         Renewable(1),
-        NonRenewable(1),
+        Consumable(1),
         Machine(),
         Machine(),
         Machine(breaks=[(1, 2)]),

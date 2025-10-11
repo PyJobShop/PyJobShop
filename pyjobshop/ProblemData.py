@@ -140,8 +140,8 @@ class Job:
 
 class Machine:
     """
-    A machine resource is a specialized resource that only processes one task
-    at a time and can handle sequencing constraints.
+    A resource that processes tasks only one at a time and can enforce
+    sequencing constraints.
 
     Parameters
     ----------
@@ -219,8 +219,7 @@ class Machine:
 
 class Renewable:
     """
-    A renewable resource that replenishes its capacity after each task
-    completion.
+    A resource that replenishes its capacity after each task completion.
 
     Parameters
     ----------
@@ -288,9 +287,11 @@ class Renewable:
         return self._name
 
 
-class NonRenewable:
+class Consumable:
     """
-    A non-renewable resource that does not replenish its capacity.
+    A resource with finite capacity that is permanently consumed by tasks.
+    Unlike renewable resources, consumed capacity is never replenished during
+    the scheduling horizon.
 
     Parameters
     ----------
@@ -330,7 +331,7 @@ class NonRenewable:
 
     def __eq__(self, other) -> bool:
         return (
-            isinstance(other, NonRenewable)
+            isinstance(other, Consumable)
             and self.capacity == other.capacity
             and self.breaks == other.breaks
             and self.name == other.name
@@ -358,7 +359,7 @@ class NonRenewable:
         return self._name
 
 
-Resource = Machine | Renewable | NonRenewable
+Resource = Machine | Renewable | Consumable
 
 
 class Task:
@@ -1028,15 +1029,15 @@ class ProblemData:
 
         self._machine_idcs: list[int] = []
         self._renewable_idcs: list[int] = []
-        self._non_renewable_idcs: list[int] = []
+        self._consumable_idcs: list[int] = []
 
         for idx, resource in enumerate(self.resources):
             if isinstance(resource, Machine):
                 self._machine_idcs.append(idx)
             elif isinstance(resource, Renewable):
                 self._renewable_idcs.append(idx)
-            elif isinstance(resource, NonRenewable):
-                self._non_renewable_idcs.append(idx)
+            elif isinstance(resource, Consumable):
+                self._consumable_idcs.append(idx)
 
     def __eq__(self, other) -> bool:
         return (
@@ -1060,8 +1061,8 @@ class ProblemData:
             parts.append(f"{self.num_machines} machines")
         if self.num_renewables > 0:
             parts.append(f"{self.num_renewables} renewable")
-        if self.num_non_renewables > 0:
-            parts.append(f"{self.num_non_renewables} non_renewable")
+        if self.num_consumables > 0:
+            parts.append(f"{self.num_consumables} consumable")
 
         for idx, part in enumerate(parts):
             symbol = "└─" if idx == len(parts) - 1 else "├─"
@@ -1400,11 +1401,11 @@ class ProblemData:
         return len(self._renewable_idcs)
 
     @property
-    def num_non_renewables(self) -> int:
+    def num_consumables(self) -> int:
         """
-        Returns the number of non-renewable resources in this instance.
+        Returns the number of consumable resources in this instance.
         """
-        return len(self._non_renewable_idcs)
+        return len(self._consumable_idcs)
 
     @property
     def num_tasks(self) -> int:
@@ -1443,12 +1444,12 @@ class ProblemData:
         return self._renewable_idcs
 
     @property
-    def non_renewable_idcs(self) -> list[int]:
+    def consumable_idcs(self) -> list[int]:
         """
-        Returns the list of resource indices corresponding to non-renewable
+        Returns the list of resource indices corresponding to consumable
         resources.
         """
-        return self._non_renewable_idcs
+        return self._consumable_idcs
 
     def task2modes(self, task: int) -> list[int]:
         """

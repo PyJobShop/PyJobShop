@@ -103,13 +103,13 @@ class Constraints:
             capacity = data.resources[idx].capacity
             model.add_cumulative(intervals, demands, capacity)
 
-    def _non_renewable_capacity(self):
+    def _consumable_capacity(self):
         """
-        Creates capacity constraints for the non-renewable resources.
+        Creates capacity constraints for the consumable resources.
         """
         model, data, variables = self._model, self._data, self._variables
 
-        for idx in data.non_renewable_idcs:
+        for idx in data.consumable_idcs:
             demands = variables.res2demand(idx)
             total = LinearExpr.sum(demands)
             capacity = data.resources[idx].capacity
@@ -371,7 +371,7 @@ class Constraints:
         self._select_one_mode()
         self._machines_no_overlap()
         self._renewable_capacity()
-        self._non_renewable_capacity()
+        self._consumable_capacity()
         self._resource_breaks_constraints()
         self._timing_constraints()
         self._identical_and_different_resource_constraints()

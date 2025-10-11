@@ -2,6 +2,7 @@ from .constants import MAX_VALUE as MAX_VALUE
 from .Model import Model as Model
 from .ProblemData import Consecutive as Consecutive
 from .ProblemData import Constraints as Constraints
+from .ProblemData import Consumable as Consumable
 from .ProblemData import DifferentResources as DifferentResources
 from .ProblemData import EndBeforeEnd as EndBeforeEnd
 from .ProblemData import EndBeforeStart as EndBeforeStart
@@ -10,7 +11,6 @@ from .ProblemData import Job as Job
 from .ProblemData import Machine as Machine
 from .ProblemData import Mode as Mode
 from .ProblemData import ModeDependency as ModeDependency
-from .ProblemData import NonRenewable as NonRenewable
 from .ProblemData import Objective as Objective
 from .ProblemData import ProblemData as ProblemData
 from .ProblemData import Renewable as Renewable
