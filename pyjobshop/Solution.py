@@ -67,18 +67,25 @@ class JobData:
         The release date of the job. Default 0.
     due_date
         The due date of the job. Default ``None``.
+    present
+        Whether at least one of the job's tasks is present in the solution. If
+        ``False``, all job attributes are zero or ``False``. Default ``True``.
     """
 
     start: int
     end: int
     release_date: int = 0
     due_date: int | None = None
+    present: bool = True
 
     @property
     def duration(self) -> int:
         """
         Returns the total duration of the job.
         """
+        if not self.present:
+            return 0
+
         return self.end - self.start
 
     @property
@@ -86,6 +93,9 @@ class JobData:
         """
         Returns the flow time of the job.
         """
+        if not self.present:
+            return 0
+
         return self.end - self.release_date
 
     @property
@@ -94,7 +104,10 @@ class JobData:
         Returns whether the job is tardy. If the job has no due date,
         returns ``False``.
         """
-        return self.end > self.due_date if self.due_date is not None else False
+        if not self.present or self.due_date is None:
+            return False
+
+        return self.end > self.due_date
 
     @property
     def tardiness(self) -> int:
@@ -102,11 +115,10 @@ class JobData:
         Returns the tardiness of the job. If the job has no due date,
         returns 0.
         """
-        return (
-            max(self.end - self.due_date, 0)
-            if self.due_date is not None
-            else 0
-        )
+        if not self.present or self.due_date is None:
+            return 0
+
+        return max(self.end - self.due_date, 0)
 
     @property
     def earliness(self) -> int:
@@ -114,11 +126,10 @@ class JobData:
         Returns the earliness of the job. If the job has no due date,
         returns 0.
         """
-        return (
-            max(self.due_date - self.end, 0)
-            if self.due_date is not None
-            else 0
-        )
+        if not self.present or self.due_date is None:
+            return 0
+
+        return max(self.due_date - self.end, 0)
 
 
 class Solution:
@@ -135,9 +146,9 @@ class Solution:
 
 
     .. note::
-       This class does **not** validate solution feasibility. When instantiated
-       directly, it assumes the provided task data represent a feasible
-       solution, or an empty solution if no tasks are provided.
+       This class does **not** validate whether the solution is feasible. When
+       instantiated directly, it assumes that the provided task data represent
+       a feasible solution, or an empty solution if no tasks are provided.
     """
 
     def __init__(self, data: ProblemData, tasks: list[TaskData]):
@@ -156,10 +167,14 @@ class Solution:
         jobs = []
 
         for job in self._data.jobs:
-            tasks = [self._tasks[idx] for idx in job.tasks]
-            start = min(task.start for task in tasks)
-            end = max(task.end for task in tasks)
-            jobs.append(JobData(start, end, job.release_date, job.due_date))
+            tasks = [self._tasks[idx] for idx in job.tasks if self._tasks[idx]]
+            present_tasks = [task for task in tasks if task.present]
+            start = min([task.start for task in present_tasks], default=0)
+            end = max([task.end for task in present_tasks], default=0)
+            present = bool(present_tasks)
+            jobs.append(
+                JobData(start, end, job.release_date, job.due_date, present)
+            )
 
         return jobs
 

@@ -57,6 +57,20 @@ def test_job_data_attributes():
     assert_equal(job.earliness, 1)
 
 
+def test_job_data_absent_zero_attributes():
+    """
+    Tests that an absent job (i.e., without present tasks) has the correct
+    zero attributes.
+    """
+    job = JobData(start=0, end=0, present=False)
+
+    assert_equal(job.duration, 0)
+    assert_equal(job.flow_time, 0)
+    assert_equal(job.is_tardy, False)
+    assert_equal(job.tardiness, 0)
+    assert_equal(job.earliness, 0)
+
+
 def test_solution_eq(small):
     """
     Tests the equality comparison of solutions.
