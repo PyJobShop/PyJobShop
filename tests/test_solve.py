@@ -1,8 +1,9 @@
 import pytest
 from numpy.testing import assert_, assert_equal
 
-from pyjobshop import solve
+from pyjobshop import Model, solve
 from pyjobshop.Solution import Solution, TaskData
+from tests.utils import read
 
 
 def test_solve(small, solver):
@@ -77,7 +78,7 @@ def test_solve_initial_solution(small, solver, capfd):
     }
     msg = solver2msg[solver]
 
-    init = Solution([TaskData(0, [0], 0, 1), TaskData(1, [0], 1, 3)])
+    init = Solution(small, [TaskData(0, [0], 0, 1), TaskData(1, [0], 1, 3)])
     solve(small, solver, display=True, initial_solution=init)
     printed = capfd.readouterr().out
     assert_(msg in printed)
@@ -104,3 +105,38 @@ def test_solve_additional_params(small, solver, capfd):
     solve(small, solver, display=False, **{param: value})
     printed = capfd.readouterr().out
     assert_(printed != "")
+
+
+def test_solve_infeasible(solver):
+    """
+    Tests that solve returns the correct Result object when a problem does not
+    admit a feasible solution.
+    """
+    model = Model()
+    job = model.add_job(deadline=0)
+    machine = model.add_machine()
+    task = model.add_task(job=job)
+    model.add_mode(task, machine, duration=1)
+
+    data = model.data()
+    result = solve(data, solver)
+
+    assert_equal(result.status.value, "Infeasible")
+    assert_equal(result.objective, float("inf"))
+    assert_equal(result.lower_bound, 0)
+    assert_equal(result.best, Solution(data, []))
+
+
+def test_solve_time_limit_no_solution(solver):
+    """
+    Tests that solve returns the correct Result object when a time limit is
+    reached without finding a feasible solution.
+    """
+    # Very hard RCPSP/max instance without a trivial feasible solution.
+    data = read("data/PSP1.sch", instance_format="rcpsp_max")
+    result = solve(data, solver, time_limit=0)
+
+    assert_equal(result.status.value, "Time-limit")
+    assert_equal(result.objective, float("inf"))
+    assert_equal(result.lower_bound, 0)
+    assert_equal(result.best, Solution(data, []))
