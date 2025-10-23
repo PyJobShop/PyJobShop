@@ -31,7 +31,6 @@ add_module_names = False
 python_use_unqualified_type_names = True
 
 # -- API documentation
-autoclass_content = "class"
 autodoc_member_order = "bysource"
 autodoc_preserve_defaults = True
 
@@ -66,11 +65,6 @@ def setup(app):
 typehints_use_signature = True
 typehints_use_signature_return = True
 typehints_document_rtype = False
-always_document_param_types = False
-
-# -- napoleon
-napoleon_include_special_with_doc = True
-napoleon_use_rtype = True
 
 # -- intersphinx
 intersphinx_mapping = {
