@@ -33,7 +33,7 @@ from pyjobshop.solve import solve
 
 class Model:
     """
-    A simple interface for building a scheduling problem step-by-step.
+    A simple modeling interface for building a scheduling problem step-by-step.
     """
 
     def __init__(self):

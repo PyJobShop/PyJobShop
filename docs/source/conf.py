@@ -18,6 +18,7 @@ shutil.copytree("../../examples", "examples/", dirs_exist_ok=True)
 extensions = [
     "sphinx.ext.duration",
     "sphinx.ext.autodoc",
+    "sphinx.ext.autosummary",
     "sphinx.ext.intersphinx",
     "sphinx.ext.napoleon",
     "sphinx_immaterial",
@@ -33,6 +34,9 @@ python_use_unqualified_type_names = True
 # -- API documentation
 autodoc_member_order = "bysource"
 autodoc_preserve_defaults = True
+
+# -- autosummary
+autosummary_generate = True
 
 
 def autodoc_process_signature(
@@ -61,7 +65,6 @@ def setup(app):
 
 
 # -- sphinx-autodoc-typehints
-# https://github.com/tox-dev/sphinx-autodoc-typehints
 typehints_use_signature = True
 typehints_use_signature_return = True
 typehints_document_rtype = False
