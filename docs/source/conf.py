@@ -23,6 +23,7 @@ extensions = [
     "sphinx_immaterial",
     "nbsphinx",
     "numpydoc",
+    "sphinx_autodoc_typehints",
 ]
 
 templates_path = ["_templates"]
@@ -33,8 +34,12 @@ python_use_unqualified_type_names = True
 # -- API documentation
 autoclass_content = "class"
 autodoc_member_order = "bysource"
-autodoc_typehints = "signature"
 autodoc_preserve_defaults = True
+
+# -- sphinx-autodoc-typehints
+typehints_use_signature = True
+always_document_param_types = True
+typehints_defaults = "comma"
 
 
 def autodoc_process_signature(
@@ -61,9 +66,10 @@ def setup(app):
 
 
 # -- numpydoc
-numpydoc_xref_param_type = True
+numpydoc_xref_param_type = False
 numpydoc_class_members_toctree = False
 numpydoc_attributes_as_param_list = False
+numpydoc_show_class_members = False
 napoleon_include_special_with_doc = True
 
 

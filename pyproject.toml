@@ -69,6 +69,7 @@ docs = [
     "nbsphinx>=0.9.5",
     "numpydoc>=1.8.0",
     "sphinx-immaterial>=0.12.2",
+    "sphinx-autodoc-typehints>=1.24.0",
 ]
 examples = [
     "jupyter>=1.0.0",
