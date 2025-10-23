@@ -70,7 +70,7 @@ always_document_param_types = False
 
 # -- napoleon
 napoleon_include_special_with_doc = True
-napoleon_use_rtype = False
+napoleon_use_rtype = True
 
 # -- intersphinx
 intersphinx_mapping = {
