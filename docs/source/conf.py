@@ -85,7 +85,7 @@ html_theme = "sphinx_immaterial"
 html_static_path = ["_static"]
 
 html_theme_options = {
-    "repo_url": "https://github.com/leonlan/PyJobShop/",
+    "repo_url": "https://github.com/PyJobShop/PyJobShop/",
     "icon": {
         "repo": "fontawesome/brands/github",
         "edit": "material/file-edit-outline",
