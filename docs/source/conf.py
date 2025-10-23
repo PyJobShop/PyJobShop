@@ -51,7 +51,9 @@ def autodoc_process_signature(
 
 
 def setup(app):
-    app.connect("autodoc-process-signature", autodoc_process_signature)
+    app.connect(
+        "autodoc-process-signature", autodoc_process_signature, priority=0
+    )
     return {
         "version": "0.1",
         "parallel_read_safe": True,
@@ -65,7 +67,6 @@ typehints_use_signature = True
 typehints_use_signature_return = True
 typehints_document_rtype = False
 always_document_param_types = False
-typehints_defaults = None
 
 # -- napoleon
 napoleon_include_special_with_doc = True
