@@ -67,8 +67,8 @@ class Solution:
         """
         return self._tasks
 
-    def __eq__(self, other) -> bool:
-        return self.tasks == other.tasks
+    def __eq__(self, other: object) -> bool:
+        return isinstance(other, Solution) and self.tasks == other.tasks
 
     @property
     def makespan(self) -> int:

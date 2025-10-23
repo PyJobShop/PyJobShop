@@ -71,7 +71,7 @@ class Job:
         self._tasks = [] if tasks is None else tasks
         self._name = name
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: object) -> bool:
         return (
             isinstance(other, Job)
             and self.weight == other.weight
@@ -187,7 +187,7 @@ class Machine:
         self._no_idle = no_idle
         self._name = name
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: object) -> bool:
         return (
             isinstance(other, Machine)
             and self.breaks == other.breaks
@@ -257,7 +257,7 @@ class Renewable:
         self._breaks = breaks or []
         self._name = name
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: object) -> bool:
         return (
             isinstance(other, Renewable)
             and self.capacity == other.capacity
@@ -329,7 +329,7 @@ class Consumable:
         self._breaks = breaks or []
         self._name = name
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: object) -> bool:
         return (
             isinstance(other, Consumable)
             and self.capacity == other.capacity
@@ -424,7 +424,7 @@ class Task:
         self._optional = optional
         self._name = name
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: object) -> bool:
         return (
             isinstance(other, Task)
             and self.job == other.job
@@ -556,7 +556,7 @@ class Mode:
         self._demands = demands
         self._name = name
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: object) -> bool:
         return (
             isinstance(other, Mode)
             and self.task == other.task
@@ -1039,7 +1039,7 @@ class ProblemData:
             elif isinstance(resource, Consumable):
                 self._consumable_idcs.append(idx)
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: object) -> bool:
         return (
             isinstance(other, ProblemData)
             and self.jobs == other.jobs

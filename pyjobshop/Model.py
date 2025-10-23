@@ -1,4 +1,4 @@
-from typing import Sequence
+from typing import Literal, Sequence
 
 from pyjobshop.constants import MAX_VALUE
 from pyjobshop.ProblemData import (
@@ -602,7 +602,7 @@ class Model:
 
     def solve(
         self,
-        solver: str = "ortools",
+        solver: Literal["ortools", "cpoptimizer"] = "ortools",
         time_limit: float = float("inf"),
         display: bool = True,
         num_workers: int | None = None,
