@@ -67,8 +67,8 @@ dev = [
 docs = [
     "sphinx>=7.4.7",
     "nbsphinx>=0.9.5",
-    "numpydoc>=1.8.0",
     "sphinx-immaterial>=0.12.2",
+    "sphinx-autodoc-typehints>=2.0.0",
 ]
 examples = [
     "jupyter>=1.0.0",
@@ -87,6 +87,11 @@ module-root = ""
 
 [tool.mypy]
 ignore_missing_imports = true
+
+
+[[tool.mypy.overrides]]
+module = "tests.*"
+disable_error_code = ["arg-type"]  # typing solver param
 
 
 [tool.ruff]
@@ -112,6 +117,7 @@ known-third-party = ["ortools"]
 [tool.pytest.ini_options]
 addopts = "--cov=. --cov-report=xml"
 testpaths = ["tests"]
+
 
 [tool.coverage.run]
 omit = [

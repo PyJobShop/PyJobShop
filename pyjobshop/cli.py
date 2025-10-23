@@ -3,6 +3,7 @@ import warnings
 from functools import partial
 from multiprocessing import cpu_count
 from pathlib import Path
+from typing import Literal
 
 import numpy as np
 import tomli
@@ -110,7 +111,7 @@ def write_solution(instance_loc: Path, sol_dir: Path, result: Result):
 def _solve(
     instance_loc: Path,
     instance_format: InstanceFormat,
-    solver: str,
+    solver: Literal["ortools", "cpoptimizer"],
     time_limit: float,
     display: bool,
     num_workers_per_instance: int,

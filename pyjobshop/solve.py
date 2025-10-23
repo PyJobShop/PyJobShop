@@ -1,5 +1,6 @@
 import textwrap
 from importlib.metadata import version
+from typing import Literal
 
 from pyjobshop.ProblemData import ProblemData
 from pyjobshop.Result import Result
@@ -9,7 +10,7 @@ from pyjobshop.solvers.ortools import CPModel as ORToolsModel
 
 def solve(
     data: ProblemData,
-    solver: str = "ortools",
+    solver: Literal["ortools", "cpoptimizer"] = "ortools",
     time_limit: float = float("inf"),
     display: bool = False,
     num_workers: int | None = None,
