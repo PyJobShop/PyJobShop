@@ -91,155 +91,6 @@ class Model:
         """
         return self._objective
 
-    @classmethod
-    def from_data(cls, data: ProblemData):
-        """
-        Creates a Model instance from a ProblemData instance.
-        """
-        model = cls()
-
-        for job in data.jobs:
-            model.add_job(
-                job.weight,
-                job.release_date,
-                job.deadline,
-                job.due_date,
-                name=job.name,
-            )
-
-        for resource in data.resources:
-            if isinstance(resource, Machine):
-                model.add_machine(
-                    resource.breaks,
-                    resource.no_idle,
-                    name=resource.name,
-                )
-            elif isinstance(resource, Renewable):
-                model.add_renewable(
-                    resource.capacity,
-                    resource.breaks,
-                    name=resource.name,
-                )
-            elif isinstance(resource, Consumable):
-                model.add_consumable(
-                    resource.capacity,
-                    resource.breaks,
-                    name=resource.name,
-                )
-            else:
-                raise ValueError(f"Unknown resource type: {type(resource)}")
-
-        for task in data.tasks:
-            model.add_task(
-                model.jobs[task.job] if task.job is not None else None,
-                task.earliest_start,
-                task.latest_start,
-                task.earliest_end,
-                task.latest_end,
-                task.allow_idle,
-                task.allow_breaks,
-                task.optional,
-                name=task.name,
-            )
-
-        for mode in data.modes:
-            model.add_mode(
-                model.tasks[mode.task],
-                [model.resources[res] for res in mode.resources],
-                mode.duration,
-                mode.demands,
-                name=mode.name,
-            )
-
-        resources = model.resources
-        tasks = model.tasks
-
-        for idx1, idx2, delay in data.constraints.start_before_start:
-            model.add_start_before_start(tasks[idx1], tasks[idx2], delay)
-
-        for idx1, idx2, delay in data.constraints.start_before_end:
-            model.add_start_before_end(tasks[idx1], tasks[idx2], delay)
-
-        for idx1, idx2, delay in data.constraints.end_before_start:
-            model.add_end_before_start(tasks[idx1], tasks[idx2], delay)
-
-        for idx1, idx2, delay in data.constraints.end_before_end:
-            model.add_end_before_end(tasks[idx1], tasks[idx2], delay)
-
-        for idx1, idx2 in data.constraints.identical_resources:
-            model.add_identical_resources(tasks[idx1], tasks[idx2])
-
-        for idx1, idx2 in data.constraints.different_resources:
-            model.add_different_resources(tasks[idx1], tasks[idx2])
-
-        for idx1, idx2 in data.constraints.consecutive:
-            model.add_consecutive(tasks[idx1], tasks[idx2])
-
-        for idcs in data.constraints.same_sequence:
-            res_idx1, res_idx2, task_idcs1, task_idcs2 = idcs
-            model.add_same_sequence(
-                resources[res_idx1],
-                resources[res_idx2],
-                [tasks[idx] for idx in task_idcs1] if task_idcs1 else None,
-                [tasks[idx] for idx in task_idcs2] if task_idcs2 else None,
-            )
-
-        for res_idx, idx1, idx2, duration in data.constraints.setup_times:
-            model.add_setup_time(
-                machine=resources[res_idx],  # type: ignore
-                task1=tasks[idx1],
-                task2=tasks[idx2],
-                duration=duration,
-            )
-
-        for mode1, modes2 in data.constraints.mode_dependencies:
-            model.add_mode_dependency(
-                model.modes[mode1], [model.modes[m] for m in modes2]
-            )
-
-        for idcs, condition_idx in data.constraints.select_all_or_none:
-            model.add_select_all_or_none(
-                [tasks[idx] for idx in idcs],
-                tasks[condition_idx] if condition_idx is not None else None,
-            )
-
-        for idcs, condition_idx in data.constraints.select_at_least_one:
-            model.add_select_at_least_one(
-                [tasks[idx] for idx in idcs],
-                tasks[condition_idx] if condition_idx is not None else None,
-            )
-
-        for idcs, condition_idx in data.constraints.select_exactly_one:
-            model.add_select_exactly_one(
-                [tasks[idx] for idx in idcs],
-                tasks[condition_idx] if condition_idx is not None else None,
-            )
-
-        model.set_objective(
-            weight_makespan=data.objective.weight_makespan,
-            weight_tardy_jobs=data.objective.weight_tardy_jobs,
-            weight_total_tardiness=data.objective.weight_total_tardiness,
-            weight_total_flow_time=data.objective.weight_total_flow_time,
-            weight_total_earliness=data.objective.weight_total_earliness,
-            weight_max_tardiness=data.objective.weight_max_tardiness,
-            weight_total_setup_time=data.objective.weight_total_setup_time,
-        )
-
-        return model
-
-    def data(self) -> ProblemData:
-        """
-        Returns a ProblemData object containing the problem instance.
-        """
-        return ProblemData(
-            jobs=self.jobs,
-            resources=self.resources,
-            tasks=self.tasks,
-            modes=self.modes,
-            constraints=self.constraints,
-            objective=self.objective,
-        )
-
     def add_job(
         self,
         weight: int = 1,
@@ -599,6 +450,155 @@ class Model:
         the ProblemData instance created by the model.
         """
         return str(self.data())
+
+    @classmethod
+    def from_data(cls, data: ProblemData):
+        """
+        Creates a Model instance from a ProblemData instance.
+        """
+        model = cls()
+
+        for job in data.jobs:
+            model.add_job(
+                job.weight,
+                job.release_date,
+                job.deadline,
+                job.due_date,
+                name=job.name,
+            )
+
+        for resource in data.resources:
+            if isinstance(resource, Machine):
+                model.add_machine(
+                    resource.breaks,
+                    resource.no_idle,
+                    name=resource.name,
+                )
+            elif isinstance(resource, Renewable):
+                model.add_renewable(
+                    resource.capacity,
+                    resource.breaks,
+                    name=resource.name,
+                )
+            elif isinstance(resource, Consumable):
+                model.add_consumable(
+                    resource.capacity,
+                    resource.breaks,
+                    name=resource.name,
+                )
+            else:
+                raise ValueError(f"Unknown resource type: {type(resource)}")
+
+        for task in data.tasks:
+            model.add_task(
+                model.jobs[task.job] if task.job is not None else None,
+                task.earliest_start,
+                task.latest_start,
+                task.earliest_end,
+                task.latest_end,
+                task.allow_idle,
+                task.allow_breaks,
+                task.optional,
+                name=task.name,
+            )
+
+        for mode in data.modes:
+            model.add_mode(
+                model.tasks[mode.task],
+                [model.resources[res] for res in mode.resources],
+                mode.duration,
+                mode.demands,
+                name=mode.name,
+            )
+
+        resources = model.resources
+        tasks = model.tasks
+
+        for idx1, idx2, delay in data.constraints.start_before_start:
+            model.add_start_before_start(tasks[idx1], tasks[idx2], delay)
+
+        for idx1, idx2, delay in data.constraints.start_before_end:
+            model.add_start_before_end(tasks[idx1], tasks[idx2], delay)
+
+        for idx1, idx2, delay in data.constraints.end_before_start:
+            model.add_end_before_start(tasks[idx1], tasks[idx2], delay)
+
+        for idx1, idx2, delay in data.constraints.end_before_end:
+            model.add_end_before_end(tasks[idx1], tasks[idx2], delay)
+
+        for idx1, idx2 in data.constraints.identical_resources:
+            model.add_identical_resources(tasks[idx1], tasks[idx2])
+
+        for idx1, idx2 in data.constraints.different_resources:
+            model.add_different_resources(tasks[idx1], tasks[idx2])
+
+        for idx1, idx2 in data.constraints.consecutive:
+            model.add_consecutive(tasks[idx1], tasks[idx2])
+
+        for idcs in data.constraints.same_sequence:
+            res_idx1, res_idx2, task_idcs1, task_idcs2 = idcs
+            model.add_same_sequence(
+                resources[res_idx1],
+                resources[res_idx2],
+                [tasks[idx] for idx in task_idcs1] if task_idcs1 else None,
+                [tasks[idx] for idx in task_idcs2] if task_idcs2 else None,
+            )
+
+        for res_idx, idx1, idx2, duration in data.constraints.setup_times:
+            model.add_setup_time(
+                machine=resources[res_idx],  # type: ignore
+                task1=tasks[idx1],
+                task2=tasks[idx2],
+                duration=duration,
+            )
+
+        for mode1, modes2 in data.constraints.mode_dependencies:
+            model.add_mode_dependency(
+                model.modes[mode1], [model.modes[m] for m in modes2]
+            )
+
+        for idcs, condition_idx in data.constraints.select_all_or_none:
+            model.add_select_all_or_none(
+                [tasks[idx] for idx in idcs],
+                tasks[condition_idx] if condition_idx is not None else None,
+            )
+
+        for idcs, condition_idx in data.constraints.select_at_least_one:
+            model.add_select_at_least_one(
+                [tasks[idx] for idx in idcs],
+                tasks[condition_idx] if condition_idx is not None else None,
+            )
+
+        for idcs, condition_idx in data.constraints.select_exactly_one:
+            model.add_select_exactly_one(
+                [tasks[idx] for idx in idcs],
+                tasks[condition_idx] if condition_idx is not None else None,
+            )
+
+        model.set_objective(
+            weight_makespan=data.objective.weight_makespan,
+            weight_tardy_jobs=data.objective.weight_tardy_jobs,
+            weight_total_tardiness=data.objective.weight_total_tardiness,
+            weight_total_flow_time=data.objective.weight_total_flow_time,
+            weight_total_earliness=data.objective.weight_total_earliness,
+            weight_max_tardiness=data.objective.weight_max_tardiness,
+            weight_total_setup_time=data.objective.weight_total_setup_time,
+        )
+
+        return model
+
+    def data(self) -> ProblemData:
+        """
+        Returns a ProblemData object containing the problem instance.
+        """
+        return ProblemData(
+            jobs=self.jobs,
+            resources=self.resources,
+            tasks=self.tasks,
+            modes=self.modes,
+            constraints=self.constraints,
+            objective=self.objective,
+        )
 
     def solve(
         self,

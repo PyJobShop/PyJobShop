@@ -15,7 +15,6 @@ PyJobShop
       .. autosummary::
          :nosignatures:
 
-         ~Model.from_data
          ~Model.add_job
          ~Model.add_machine
          ~Model.add_renewable
@@ -37,6 +36,7 @@ PyJobShop
          ~Model.add_select_exactly_one
          ~Model.set_objective
          ~Model.summary
+         ~Model.from_data
          ~Model.data
          ~Model.solve
 
