@@ -22,7 +22,6 @@ extensions = [
     "sphinx.ext.napoleon",
     "sphinx_immaterial",
     "nbsphinx",
-    "numpydoc",
     "sphinx_autodoc_typehints",
 ]
 
@@ -35,11 +34,6 @@ python_use_unqualified_type_names = True
 autoclass_content = "class"
 autodoc_member_order = "bysource"
 autodoc_preserve_defaults = True
-
-# -- sphinx-autodoc-typehints
-typehints_use_signature = True
-always_document_param_types = True
-typehints_defaults = "comma"
 
 
 def autodoc_process_signature(
@@ -65,13 +59,17 @@ def setup(app):
     }
 
 
-# -- numpydoc
-numpydoc_xref_param_type = False
-numpydoc_class_members_toctree = False
-numpydoc_attributes_as_param_list = False
-numpydoc_show_class_members = False
-napoleon_include_special_with_doc = True
+# -- sphinx-autodoc-typehints
+# https://github.com/tox-dev/sphinx-autodoc-typehints
+typehints_use_signature = True
+typehints_use_signature_return = True
+typehints_document_rtype = False
+always_document_param_types = False
+typehints_defaults = None
 
+# -- napoleon
+napoleon_include_special_with_doc = True
+napoleon_use_rtype = False
 
 # -- intersphinx
 intersphinx_mapping = {
