@@ -35,10 +35,26 @@ python_use_unqualified_type_names = True
 autodoc_member_order = "bysource"
 autodoc_preserve_defaults = True
 
-# -- autosummary
-autosummary_generate = True
+# -- sphinx-autodoc-typehints
+typehints_use_signature = True
+typehints_use_signature_return = True
+typehints_document_rtype = False
+
+# -- intersphinx
+intersphinx_mapping = {
+    "python": ("https://docs.python.org/3/", None),
+    "sphinx": ("https://www.sphinx-doc.org/en/master/", None),
+    "numpy": ("https://numpy.org/doc/stable/", None),
+    "matplotlib": ("https://matplotlib.org/stable/", None),
+}
+intersphinx_disabled_domains = ["std"]
+
+# -- nbsphinx
+skip_notebooks = os.getenv("SKIP_NOTEBOOKS", False)
+nbsphinx_execute = "never" if skip_notebooks else "always"
 
 
+# -- custom
 def autodoc_process_signature(
     app, what, name, obj, options, signature, return_annot
 ):
@@ -62,25 +78,6 @@ def setup(app):
         "parallel_read_safe": True,
         "parallel_write_safe": True,
     }
-
-
-# -- sphinx-autodoc-typehints
-typehints_use_signature = True
-typehints_use_signature_return = True
-typehints_document_rtype = False
-
-# -- intersphinx
-intersphinx_mapping = {
-    "python": ("https://docs.python.org/3/", None),
-    "sphinx": ("https://www.sphinx-doc.org/en/master/", None),
-    "numpy": ("https://numpy.org/doc/stable/", None),
-    "matplotlib": ("https://matplotlib.org/stable/", None),
-}
-intersphinx_disabled_domains = ["std"]
-
-# -- nbsphinx
-skip_notebooks = os.getenv("SKIP_NOTEBOOKS", False)
-nbsphinx_execute = "never" if skip_notebooks else "always"
 
 
 # -- Options for HTML output -------------------------------------------------
