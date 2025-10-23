@@ -89,6 +89,11 @@ module-root = ""
 ignore_missing_imports = true
 
 
+[[tool.mypy.overrides]]
+module = "tests.*"
+disable_error_code = ["arg-type"]  # typing solver param
+
+
 [tool.ruff]
 line-length = 79
 extend-include = ["*.ipynb"]
@@ -112,6 +117,7 @@ known-third-party = ["ortools"]
 [tool.pytest.ini_options]
 addopts = "--cov=. --cov-report=xml"
 testpaths = ["tests"]
+
 
 [tool.coverage.run]
 omit = [
