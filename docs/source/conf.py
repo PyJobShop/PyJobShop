@@ -96,6 +96,8 @@ html_theme_options = {
     "features": [
         "navigation.expand",
         "navigation.top",
+        "navigation.sections",
+        "navigation.tracking",
         "content.code.copy",
     ],
     "palette": [
