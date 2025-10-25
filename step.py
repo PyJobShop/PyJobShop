@@ -29,7 +29,7 @@ class VarArraySolutionPrinter(CpSolverSolutionCallback):
 def step_function_sample_sat():
     model = CpModel()
 
-    # Declare our primary variable.
+    # Declare our primary variables: x and y.
     x = model.new_int_var(0, 20, "x")
     y = model.new_int_var(0, 3, "y")
 
@@ -75,4 +75,49 @@ def step_function_sample_sat():
     solver.solve(model, printer)
 
 
+def step_function(
+    model,
+    x: IntVar,
+    domains: list[Domain],
+    values: list[int],
+    y: None | IntVar = None,
+) -> IntVar:
+    """
+    Returns an integer variable that represents a step function of `x`.
+    """
+    if y is None:
+        y = model.new_int_var(min(values), max(values), "y")
+
+    selected = [model.new_bool_var("") for _ in range(len(domains))]
+    for var, domain, value in zip(selected, domains, values):
+        model.add_linear_expression_in_domain(x, domain).only_enforce_if(var)
+        model.add(y == value).only_enforce_if(var)
+
+    model.add_bool_or(selected)  # select at least one domain
+    return y
+
+
+def generalized():
+    model = CpModel()
+
+    x = model.new_int_var(0, 20, "x")
+    y = model.new_int_var(0, 3, "y")
+    domain0 = Domain.from_intervals([(5, 6), (8, 10)])
+    domain2 = Domain.from_intervals([(0, 1), (3, 4), (11, 20)])
+    domain3 = Domain.from_intervals([(7, 7)])
+    values = [0, 2, 3]
+    step_function(model, x, [domain0, domain2, domain3], values, y)
+
+    # Search for x values in increasing order.
+    model.add_decision_strategy([x], CHOOSE_FIRST, SELECT_MIN_VALUE)
+
+    solver = CpSolver()
+    solver.parameters.search_branching = FIXED_SEARCH
+    solver.parameters.enumerate_all_solutions = True
+
+    printer = VarArraySolutionPrinter([x, y])
+    solver.solve(model, printer)
+
+
 step_function_sample_sat()
+generalized()
