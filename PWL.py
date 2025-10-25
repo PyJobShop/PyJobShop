@@ -8,6 +8,8 @@ References
 - ortools/sat/samples/earliness_tardiness_cost_sample_sat.py
 """
 
+from dataclasses import dataclass
+
 from ortools.sat.python import cp_model
 from ortools.sat.python.cp_model import IntVar
 
@@ -44,6 +46,8 @@ def main():
     early_cost = 8
     late_date = 15
     late_cost = 12
+    very_late_date = 25
+    very_late_cost = 20
 
     model = cp_model.CpModel()
 
@@ -71,9 +75,17 @@ def main():
     b = -late_cost * late_date
     segment3 = segment_var(model, a, b, completion)
 
+    # Fourth segment - very late with higher penalty. This segment starts where
+    # segment3 would be at very_late_date.
+    # Cost at transition point: late_cost * (very_late_date - late_date)
+    transition_cost = late_cost * (very_late_date - late_date)
+    a = very_late_cost
+    b = transition_cost - very_late_cost * very_late_date
+    segment4 = segment_var(model, a, b, completion)
+
     # Link together the cost and the segments using a max equality. Because of
     # convexity, the cost takes on the right value of each segment.
-    segments = [segment1, segment2, segment3]
+    segments = [segment1, segment2, segment3, segment4]
     cost = pwl_var(model, segments, name="cost")
 
     # Search for x values in increasing order: this will show us nicely what
@@ -92,4 +104,56 @@ def main():
     solver.solve(model, printer)
 
 
+@dataclass
+class Breakpoint:
+    date: int
+    slope: int
+
+
+def quadratic_tardiness_approx():
+    model = cp_model.CpModel()
+
+    breakpoints = [
+        Breakpoint(date=0, slope=0),
+        Breakpoint(date=10, slope=10),
+        Breakpoint(date=20, slope=20),
+        Breakpoint(date=30, slope=40),
+    ]
+
+    completion = model.new_int_var(0, 40, "x")
+
+    segments = []
+    total = 0
+    prev_date = breakpoints[0].date
+    prev_slope = breakpoints[0].slope
+
+    for idx, point in enumerate(breakpoints):
+        if idx > 0:
+            total += prev_slope * (point.date - prev_date)
+            prev_date = point.date
+            prev_slope = point.slope
+
+        # Create segment: y = ax + b
+        a = point.slope
+        b = total - point.slope * point.date
+        segments.append(segment_var(model, a, b, completion))
+
+    cost = pwl_var(model, segments, name="cost")
+    # Search for x values in increasing order: this will show us nicely what
+    # the cost is for each x.
+    model.add_decision_strategy(
+        [completion],
+        cp_model.CHOOSE_FIRST,
+        cp_model.SELECT_MIN_VALUE,
+    )
+
+    solver = cp_model.CpSolver()
+    solver.parameters.search_branching = cp_model.FIXED_SEARCH
+    solver.parameters.enumerate_all_solutions = True
+
+    printer = VarArraySolutionPrinter([completion, cost])
+    solver.solve(model, printer)
+
+
 main()
+quadratic_tardiness_approx()
