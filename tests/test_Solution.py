@@ -76,12 +76,11 @@ def test_solution_eq(small):
     Tests the equality comparison of solutions.
     """
     tasks = [TaskData(0, [0], 0, 1), TaskData(0, [0], 1, 3)]
-    sol1 = Solution(small, tasks)
+    sol = Solution(small, tasks)
+    assert_equal(sol, Solution(small, tasks))
 
-    assert_equal(sol1, Solution(small, tasks))
-
-    other = [TaskData(0, [0], 2, 3), TaskData(1, [0], 0, 1)]
-    assert_(sol1 != Solution(small, other))
+    other = [*tasks, TaskData(0, [0], 3, 4)]
+    assert_(sol != Solution(small, other))
 
 
 def test_solution_makespan(small):
@@ -156,6 +155,43 @@ def test_solution_job_data():
     assert_equal(job2_data.tardiness, 0)
     assert_equal(job2_data.earliness, 2)
     assert_equal(job2_data.is_tardy, False)
+
+
+def test_solution_job_data_absent_tasks():
+    """
+    Tests that job data with some absent tasks is correctly computed.
+    """
+    jobs = [Job(weight=1, due_date=1, tasks=[0, 1])]
+    tasks = [Task(job=0), Task(job=0, optional=True)]
+    modes = [
+        Mode(task=0, resources=[0], duration=2),
+        Mode(task=1, resources=[0], duration=2),
+    ]
+
+    data = ProblemData(
+        jobs=jobs,
+        tasks=tasks,
+        modes=modes,
+        resources=[Machine()],
+        objective=Objective(),
+    )
+
+    task_data = [
+        TaskData(mode=0, resources=[0], start=0, end=2),
+        # Second task is absent so it should be ignored in job data,
+        # despite having scheduling data (for whatever reason).
+        TaskData(mode=0, resources=[], start=0, end=8, present=False),
+    ]
+    solution = Solution(data, task_data)
+    assert_equal(len(solution.jobs), 1)
+
+    job1_data = solution.jobs[0]
+    assert_equal(job1_data.start, 0)
+    assert_equal(job1_data.end, 2)
+    assert_equal(job1_data.flow_time, 2)
+    assert_equal(job1_data.tardiness, 1)
+    assert_equal(job1_data.earliness, 0)
+    assert_equal(job1_data.is_tardy, True)
 
 
 def test_solution_objective_components():

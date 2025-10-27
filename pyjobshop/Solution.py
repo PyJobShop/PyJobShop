@@ -134,7 +134,7 @@ class JobData:
 
 class Solution:
     """
-    Solution to the problem.
+    Solution to the scheduling problem.
 
     Parameters
     ----------

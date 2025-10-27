@@ -1563,7 +1563,7 @@ def test_task_allow_idle_and_breaks(solver):
 
 def test_task_optional_empty_solution(solver):
     """
-    Smoke test that checks that an instance with only optional tasks and
+    Smoke test that checks that an instance with only an optional task and
     without selection constraints results in the trivial solution.
     """
     model = Model()
