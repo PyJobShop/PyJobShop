@@ -1,7 +1,106 @@
 import pytest
 from numpy.testing import assert_equal
+from ortools.sat.python.cp_model import CpSolver
 
 from cpmodel.CpModelPlus import CpModelPlus
+
+
+class TestAllIdentical:
+    """
+    Tests for the add_all_identical() method.
+    """
+
+    def test_basic_constraint(self):
+        """
+        Tests that add_all_identical enforces all variables to have same value.
+        """
+        model = CpModelPlus()
+        var1 = model.new_int_var(0, 10, "var1")
+        var2 = model.new_int_var(0, 10, "var2")
+        var3 = model.new_int_var(0, 10, "var3")
+
+        model.add_all_identical([var1, var2, var3])
+        model.add(var1 == 5)
+
+        solver = CpSolver()
+        status = solver.solve(model)
+
+        assert status == 4  # OPTIMAL
+        assert_equal(solver.value(var1), 5)
+        assert_equal(solver.value(var2), 5)
+        assert_equal(solver.value(var3), 5)
+
+    def test_two_variables(self):
+        """
+        Tests add_all_identical with just two variables.
+        """
+        model = CpModelPlus()
+        var1 = model.new_int_var(0, 10, "var1")
+        var2 = model.new_int_var(0, 10, "var2")
+
+        model.add_all_identical([var1, var2])
+        model.add(var1 == 7)
+
+        solver = CpSolver()
+        status = solver.solve(model)
+
+        assert status == 4  # OPTIMAL
+        assert_equal(solver.value(var1), 7)
+        assert_equal(solver.value(var2), 7)
+
+    def test_many_variables(self):
+        """
+        Tests add_all_identical with many variables.
+        """
+        model = CpModelPlus()
+        variables = [model.new_int_var(0, 100, f"var{i}") for i in range(10)]
+
+        model.add_all_identical(variables)
+        model.add(variables[0] == 42)
+
+        solver = CpSolver()
+        status = solver.solve(model)
+
+        assert status == 4  # OPTIMAL
+        for var in variables:
+            assert_equal(solver.value(var), 42)
+
+    def test_constraints_added(self):
+        """
+        Tests that add_all_identical adds the correct number of constraints.
+        """
+        model = CpModelPlus()
+        variables = [model.new_int_var(0, 10, f"var{i}") for i in range(5)]
+
+        num_constraints_before = len(model.proto.constraints)
+        model.add_all_identical(variables)
+        num_constraints_after = len(model.proto.constraints)
+
+        # Should add n-1 constraints for n variables
+        assert_equal(num_constraints_after - num_constraints_before, 4)
+
+    def test_enforced_constraint(self):
+        """
+        Tests that all variables are forced to have identical values.
+        """
+        model = CpModelPlus()
+        var1 = model.new_int_var(0, 10, "var1")
+        var2 = model.new_int_var(5, 15, "var2")
+        var3 = model.new_int_var(3, 8, "var3")
+
+        model.add_all_identical([var1, var2, var3])
+
+        solver = CpSolver()
+        status = solver.solve(model)
+
+        assert status == 4  # OPTIMAL
+        # All must have same value within intersection [5, 8]
+        val1 = solver.value(var1)
+        val2 = solver.value(var2)
+        val3 = solver.value(var3)
+        assert_equal(val1, val2)
+        assert_equal(val2, val3)
+        assert 5 <= val1 <= 8
 
 
 def test_presence_of_optional_interval():

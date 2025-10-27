@@ -1,4 +1,11 @@
-from ortools.sat.python.cp_model import Constraint, CpModel, IntervalVar
+from itertools import pairwise
+
+from ortools.sat.python.cp_model import (
+    Constraint,
+    CpModel,
+    IntervalVar,
+    IntVar,
+)
 
 
 class CpModelPlus(CpModel):
@@ -9,9 +16,13 @@ class CpModelPlus(CpModel):
     similar to those available in IBM's docplex CP Modeler, see below:
     https://ibmdecisionoptimization.github.io/docplex-doc/cp/docplex.cp.modeler.py.html
 
+    Helpers
+    -------
+    - [x] add_all_identical(): Enforce identical values across variables
+    - [x] presence_of(): Extract presence literal from optional intervals
+
     Implementation Status
     ---------------------
-    - [x] presence_of(): Extract presence literal from optional intervals
     - [x] add_start_at_start(): Delay between starts of two intervals
     - [x] add_start_at_end(): Delay between start of one and end of another
     - [x] add_start_before_start(): Minimum delay between starts
@@ -32,10 +43,67 @@ class CpModelPlus(CpModel):
     - [x] add_alternative(): Alternative constraint with cardinality
     - [ ] add_synchronize(): Synchronization constraint between intervals
     - [ ] add_isomorphism(): Isomorphism constraint between interval sets
+
+    Inherited OR-Tools Methods
+    --------------------------
+    All methods from OR-Tools CpModel are available, including:
+
+    Constraint methods:
+    - add(): Add BoundedLinearExpression to model
+    - add_linear_constraint(): Add constraint lb <= expr <= ub
+    - add_linear_expression_in_domain(): Add expr in domain constraint
+    - add_all_different(): Force all expressions to have different values
+    - add_element(): Add element constraint expressions[index] == target
+    - add_allowed_assignments(): Constrain expressions to allowed tuples
+    - add_forbidden_assignments(): Forbid specified tuple assignments
+    - add_automaton(): Add automaton constraint
+    - add_inverse(): Add inverse constraint
+    - add_circuit(): Add circuit constraint from sparse list of arcs
+    - add_multiple_circuit(): Add VRP constraint (multiple circuits)
+    - add_reservoir_constraint(): Add reservoir/cumulative constraint
+    - add_reservoir_constraint_with_active(): Reservoir with active variables
+    - add_map_domain(): Map domain values
+
+    Boolean constraints:
+    - add_implication(): Add implication constraint
+    - add_bool_or(): Add disjunction constraint
+    - add_bool_and(): Add conjunction constraint
+    - add_bool_xor(): Add XOR constraint
+    - add_at_least_one(): At least one expression must be true
+    - add_at_most_one(): At most one expression can be true
+    - add_exactly_one(): Exactly one expression must be true
+
+    Arithmetic constraints:
+    - add_min_equality(): Target equals minimum of expressions
+    - add_max_equality(): Target equals maximum of expressions
+    - add_division_equality(): Add division equality constraint
+    - add_abs_equality(): Add absolute value equality constraint
+    - add_modulo_equality(): Add modulo equality constraint
+    - add_multiplication_equality(): Add multiplication equality constraint
+
+    Scheduling constraints:
+    - add_no_overlap(): Add no-overlap constraint for intervals
+    - add_no_overlap_2d(): Add 2D no-overlap constraint
+    - add_cumulative(): Add cumulative constraint
     """
 
     def __init__(self):
         super().__init__()
+
+    def add_all_identical(self, variables: list[IntVar]):
+        """
+        Enforces that all variables in the list have identical values.
+
+        Creates pairwise equality constraints between consecutive variables,
+        ensuring all variables must take the same value in any solution.
+
+        Parameters
+        ----------
+        variables
+            List of integer variables to be set equal.
+        """
+        for var1, var2 in pairwise(variables):
+            self.add(var1 == var2)
 
     def presence_of(self, interval: IntervalVar):
         """
@@ -66,6 +134,9 @@ class CpModelPlus(CpModel):
         pos_index = -idcs - 1
         return self.get_bool_var_from_proto_index(pos_index).negated()
 
+    # -------------------------------------------------------------------------
+    # CP Optimizer scheduling constraints
+    # -------------------------------------------------------------------------
     def add_start_at_start(
         self, first: IntervalVar, second: IntervalVar, delay: int = 0
     ) -> Constraint:
