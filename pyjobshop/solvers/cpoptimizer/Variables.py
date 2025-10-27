@@ -153,16 +153,14 @@ class Variables:
         init = self._model.create_empty_solution()
 
         for idx in range(data.num_jobs):
-            job = data.jobs[idx]
             job_var = self.job_vars[idx]
-            sol_tasks = [solution.tasks[task] for task in job.tasks]
-
-            present = any(task.present for task in sol_tasks)
-            job_start = min(task.start for task in sol_tasks if task.present)
-            job_end = max(task.end for task in sol_tasks if task.present)
+            sol_job = solution.jobs[idx]
 
             init.add_interval_var_solution(
-                job_var, presence=present, start=job_start, end=job_end
+                job_var,
+                presence=sol_job.present,
+                start=sol_job.start,
+                end=sol_job.end,
             )
 
         for idx in range(data.num_tasks):
