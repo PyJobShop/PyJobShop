@@ -75,31 +75,42 @@ class CpModelPlus(CpModel):
 
     def add_alternative(
         self,
-        interval: IntervalVar,
-        array: list[IntervalVar],
+        main: IntervalVar,
+        candidates: list[IntervalVar],
         cardinality: int = 1,
     ):
         """
         Creates an alternative constraint between interval variables.
 
-        Behavior:
-        - [ ] If main interval is present: exactly one interval from array is
-              selected (or cardinality count) with equal start/end times.
-        - [ ] If cardinality is omitted: unit cardinality (one interval) is
-              assumed (not yet implemented)
-        - [ ] Main interval is absent iff all intervals in array are absent
-              (not yet implemented)
+        When the main interval is present, exactly cardinality candidate
+        intervals must be selected (made present), and all selected intervals
+        must have identical start, size, and end times as the main interval.
+        The main interval is absent if and only if all candidate intervals are
+        absent. If cardinality is not specified, it defaults to 1, meaning
+        exactly one candidate is selected when the main interval is present.
 
         Parameters
         ----------
-        interval
+        main
             Master interval variable.
-        array
-            Array of alternative interval variables.
+        candidates
+            List of candidate interval variables to choose from.
         cardinality
-            Number of intervals to select (default None, meaning one).
+            Number of candidates to select (default 1).
         """
-        raise NotImplementedError
+        # Select ``cardinality`` intervals from candidates if main is present,
+        # otherwise zero.
+        presences = [self.presence_of(interval) for interval in candidates]
+        self.add(cardinality * self.presence_of(main) == sum(presences))
+
+        # Enforce start/end equality between main and selected candidates.
+        for candidate in candidates:
+            equal_start = main.start_expr() == candidate.start_expr()
+            equal_size = main.size_expr() == candidate.size_expr()
+            equal_end = main.end_expr() == candidate.end_expr()
+
+            for expr in [equal_start, equal_size, equal_end]:
+                self.add(expr).only_enforce_if(self.presence_of(candidate))
 
     def add_synchronize(
         self, main: IntervalVar, candidates: list[IntervalVar]
@@ -109,11 +120,9 @@ class CpModelPlus(CpModel):
 
         Behavior:
         - [ ] All present intervals in candidates start together with main
-              (not yet implemented)
         - [ ] All present intervals in candidates end together with main
-              (not yet implemented)
         - [ ] Creates tight synchronization with identical start/end times
-              when present (not yet implemented)
+              when present
 
         Parameters
         ----------
@@ -130,12 +139,9 @@ class CpModelPlus(CpModel):
         """
         Constrains the delay between the starts of two interval variables.
 
-        Behavior:
-        - [x] When both intervals are present: second must start exactly at
-              start_of(first) + delay
-        - [x] If either interval is absent: constraint is automatically
-              satisfied (not yet implemented)
-        - [x] Negative delays are permitted
+        When both intervals are present, the second interval must start exactly
+        at start_of(first) + delay. If either interval is absent, the
+        constraint is automatically satisfied. Negative delays are permitted.
 
         Parameters
         ----------
@@ -161,12 +167,9 @@ class CpModelPlus(CpModel):
         """
         Constrains delay between start of one interval and end of another.
 
-        Behavior:
-        - [x] When both intervals are present: second must end exactly at
-              start_of(first) + delay
-        - [x] If either interval is absent: constraint is automatically
-              satisfied
-        - [x] Negative delays are permitted
+        When both intervals are present, the second interval must end exactly
+        at start_of(first) + delay. If either interval is absent, the
+        constraint is automatically satisfied. Negative delays are permitted.
 
         Parameters
         ----------
@@ -192,13 +195,11 @@ class CpModelPlus(CpModel):
         """
         Constrains the minimum delay between starts of two intervals.
 
-        Behavior:
-        - [x] When both intervals are present: second cannot start before
-              start_of(first) + delay (minimum constraint, not exact)
-        - [x] If either interval is absent: constraint is automatically
-              satisfied
-        - [x] Negative delays allow second to start before first within the
-              specified bound
+        When both intervals are present, the second interval cannot start
+        before start_of(first) + delay. This establishes a minimum (rather than
+        exact) constraint. If either interval is absent, the constraint is
+        automatically satisfied. Negative delays allow the second interval to
+        start before the first within the specified bound.
 
         Parameters
         ----------
@@ -224,12 +225,10 @@ class CpModelPlus(CpModel):
         """
         Constrains minimum delay between start of one and end of another.
 
-        Behavior:
-        - [x] When both intervals are present: second cannot end before
-              start_of(first) + delay (minimum constraint for flexibility)
-        - [x] If either interval is absent: constraint is automatically
-              satisfied
-        - [x] Negative delays are permitted
+        When both intervals are present, the second interval cannot end before
+        start_of(first) + delay. This is a minimum constraint allowing
+        flexibility in scheduling. If either interval is absent, the constraint
+        is automatically satisfied. Negative delays are permitted.
 
         Parameters
         ----------
@@ -255,12 +254,10 @@ class CpModelPlus(CpModel):
         """
         Constrains delay between end of one interval and start of another.
 
-        Behavior:
-        - [x] When both intervals are present: second must start exactly at
-              end_of(first) + delay (precise sequencing constraint)
-        - [x] If either interval is absent: constraint is automatically
-              satisfied
-        - [x] Negative delays are permitted
+        When both intervals are present, the second interval must start
+        exactly at end_of(first) + delay. This creates a precise sequencing
+        constraint. If either interval is absent, the constraint is
+        automatically satisfied. Negative delays are permitted.
 
         Parameters
         ----------
@@ -286,12 +283,10 @@ class CpModelPlus(CpModel):
         """
         Constrains the delay between the ends of two interval variables.
 
-        Behavior:
-        - [x] When both intervals are present: second must end exactly at
-              end_of(first) + delay (precise synchronization of endpoints)
-        - [x] If either interval is absent: constraint is automatically
-              satisfied
-        - [x] Negative delays are permitted
+        When both intervals are present, the second interval must end exactly
+        at end_of(first) + delay. This provides precise synchronization of
+        endpoints. If either interval is absent, the constraint is
+        automatically satisfied. Negative delays are permitted.
 
         Parameters
         ----------
@@ -317,12 +312,11 @@ class CpModelPlus(CpModel):
         """
         Constrains minimum delay between end of one and start of another.
 
-        Behavior:
-        - [x] When both intervals are present: second cannot start before
-              end_of(first) + delay (minimum spacing requirement)
-        - [x] If either interval is absent: constraint is automatically
-              satisfied
-        - [x] Negative delays allow earlier starts within bounds
+        When both intervals are present, the second interval cannot start
+        before end_of(first) + delay. This establishes a minimum spacing
+        requirement. If either interval is absent, the constraint is
+        automatically satisfied. Negative delays allow earlier starts within
+        bounds.
 
         Parameters
         ----------
@@ -348,12 +342,10 @@ class CpModelPlus(CpModel):
         """
         Constrains the minimum delay between the ends of two intervals.
 
-        Behavior:
-        - [x] When both intervals are present: second cannot end before
-              end_of(first) + delay (minimum temporal separation)
-        - [x] If either interval is absent: constraint is automatically
-              satisfied
-        - [x] Negative delays are permitted
+        When both intervals are present, the second interval cannot end before
+        end_of(first) + delay. This enforces minimum temporal separation of
+        endpoints. If either interval is absent, the constraint is
+        automatically satisfied. Negative delays are permitted.
 
         Parameters
         ----------
@@ -379,8 +371,8 @@ class CpModelPlus(CpModel):
 
         Behavior:
         - [ ] Interval cannot start in regions where step function is non-zero
-              (not yet implemented)
-        - [ ] Step function defines forbidden time windows (not yet implemented)
+
+        - [ ] Step function defines forbidden time windows
 
         Parameters
         ----------
@@ -397,8 +389,8 @@ class CpModelPlus(CpModel):
 
         Behavior:
         - [ ] Interval cannot end in regions where step function is non-zero
-              (not yet implemented)
-        - [ ] Step function defines forbidden time windows (not yet implemented)
+
+        - [ ] Step function defines forbidden time windows
 
         Parameters
         ----------
@@ -415,8 +407,8 @@ class CpModelPlus(CpModel):
 
         Behavior:
         - [ ] Interval cannot overlap with regions where step function is
-              non-zero (not yet implemented)
-        - [ ] Step function defines forbidden time windows (not yet implemented)
+              non-zero
+        - [ ] Step function defines forbidden time windows
 
         Parameters
         ----------
@@ -433,9 +425,9 @@ class CpModelPlus(CpModel):
 
         Behavior:
         - [ ] Returns length of time during which both intervals are active
-              (not yet implemented)
-        - [ ] Returns zero if intervals do not overlap (not yet implemented)
-        - [ ] Handles absent intervals appropriately (not yet implemented)
+
+        - [ ] Returns zero if intervals do not overlap
+        - [ ] Handles absent intervals appropriately
 
         Parameters
         ----------
@@ -459,9 +451,9 @@ class CpModelPlus(CpModel):
 
         Behavior:
         - [ ] Evaluates segmented function at interval start time
-              (not yet implemented)
-        - [ ] Returns absent_value if interval is absent (not yet implemented)
-        - [ ] Function is piecewise-defined over time (not yet implemented)
+
+        - [ ] Returns absent_value if interval is absent
+        - [ ] Function is piecewise-defined over time
 
         Parameters
         ----------
@@ -485,9 +477,9 @@ class CpModelPlus(CpModel):
 
         Behavior:
         - [ ] Evaluates segmented function at interval end time
-              (not yet implemented)
-        - [ ] Returns absent_value if interval is absent (not yet implemented)
-        - [ ] Function is piecewise-defined over time (not yet implemented)
+
+        - [ ] Returns absent_value if interval is absent
+        - [ ] Function is piecewise-defined over time
 
         Parameters
         ----------
@@ -513,9 +505,9 @@ class CpModelPlus(CpModel):
 
         Behavior:
         - [ ] Evaluates segmented function based on interval size
-              (not yet implemented)
-        - [ ] Returns absent_value if interval is absent (not yet implemented)
-        - [ ] Function maps size values to outputs (not yet implemented)
+
+        - [ ] Returns absent_value if interval is absent
+        - [ ] Function maps size values to outputs
 
         Parameters
         ----------
@@ -541,9 +533,9 @@ class CpModelPlus(CpModel):
 
         Behavior:
         - [ ] Evaluates segmented function based on interval length
-              (not yet implemented)
-        - [ ] Returns absent_value if interval is absent (not yet implemented)
-        - [ ] Function maps length values to outputs (not yet implemented)
+
+        - [ ] Returns absent_value if interval is absent
+        - [ ] Function maps length values to outputs
 
         Parameters
         ----------
@@ -573,11 +565,11 @@ class CpModelPlus(CpModel):
 
         Behavior:
         - [ ] Ensures ordering and presence patterns match between arrays
-              (not yet implemented)
+
         - [ ] Optional mapping defines correspondence between intervals
-              (not yet implemented)
+
         - [ ] Absent intervals correspond between structures
-              (not yet implemented)
+
 
         Parameters
         ----------

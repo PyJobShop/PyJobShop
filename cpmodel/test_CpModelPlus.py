@@ -800,3 +800,225 @@ def test_presence_of_negated_literal():
     presence_lit = model.presence_of(interval)
 
     assert presence_lit is not None
+
+
+class TestAlternative:
+    """
+    Tests for the add_alternative() method.
+    """
+
+    def test_basic_constraint_cardinality_one(self):
+        """
+        Tests basic alternative constraint with cardinality=1.
+        """
+        model = CpModelPlus()
+        main = model.new_optional_interval_var(
+            0, 5, 5, model.new_bool_var("main_presence"), "main"
+        )
+        candidate1 = model.new_optional_interval_var(
+            0, 5, 5, model.new_bool_var("c1_presence"), "candidate1"
+        )
+        candidate2 = model.new_optional_interval_var(
+            0, 5, 5, model.new_bool_var("c2_presence"), "candidate2"
+        )
+
+        model.add_alternative(main, [candidate1, candidate2], cardinality=1)
+
+        # Constraint is added to the model
+        assert len(model.proto.constraints) > 0
+
+    def test_cardinality_one_enforced(self):
+        """
+        Tests that exactly one candidate is selected when main is present.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+
+        # Create main interval (force it to be present)
+        main_presence = model.new_bool_var("main_presence")
+        model.add(main_presence == 1)  # Force main to be present
+
+        main = model.new_optional_interval_var(0, 5, 5, main_presence, "main")
+
+        # Create three candidate intervals
+        candidate1 = model.new_optional_interval_var(
+            0, 5, 5, model.new_bool_var("c1_presence"), "candidate1"
+        )
+        candidate2 = model.new_optional_interval_var(
+            0, 5, 5, model.new_bool_var("c2_presence"), "candidate2"
+        )
+        candidate3 = model.new_optional_interval_var(
+            0, 5, 5, model.new_bool_var("c3_presence"), "candidate3"
+        )
+
+        candidates = [candidate1, candidate2, candidate3]
+
+        # Add alternative constraint with cardinality=1
+        model.add_alternative(main, candidates, cardinality=1)
+
+        # Solve
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+
+        # Verify exactly one candidate is selected
+        num_selected = sum(
+            1 for c in candidates if solver.boolean_value(model.presence_of(c))
+        )
+        assert num_selected == 1
+
+    def test_cardinality_two_enforced(self):
+        """
+        Tests that exactly two candidates are selected with cardinality=2.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+
+        # Create main interval (force it to be present)
+        main_presence = model.new_bool_var("main_presence")
+        model.add(main_presence == 1)
+
+        main = model.new_optional_interval_var(0, 5, 5, main_presence, "main")
+
+        # Create four candidate intervals
+        candidates = [
+            model.new_optional_interval_var(
+                0, 5, 5, model.new_bool_var(f"c{idx}_presence"), f"c{idx}"
+            )
+            for idx in range(4)
+        ]
+
+        # Add alternative constraint with cardinality=2
+        model.add_alternative(main, candidates, cardinality=2)
+
+        # Solve
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+
+        # Verify exactly two candidates are selected
+        num_selected = sum(
+            1 for c in candidates if solver.boolean_value(model.presence_of(c))
+        )
+        assert num_selected == 2
+
+    def test_main_absent_all_candidates_absent(self):
+        """
+        Tests that when main is absent, all candidates are absent.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+
+        # Create main interval (force it to be absent)
+        main_presence = model.new_bool_var("main_presence")
+        model.add(main_presence == 0)  # Force main to be absent
+
+        main = model.new_optional_interval_var(0, 5, 5, main_presence, "main")
+
+        # Create candidate intervals
+        candidates = [
+            model.new_optional_interval_var(
+                0, 5, 5, model.new_bool_var(f"c{idx}_presence"), f"c{idx}"
+            )
+            for idx in range(3)
+        ]
+
+        # Add alternative constraint
+        model.add_alternative(main, candidates, cardinality=1)
+
+        # Solve
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+
+        # Verify all candidates are absent
+        for c in candidates:
+            assert not solver.boolean_value(model.presence_of(c))
+
+    def test_selected_candidates_match_main_timing(self):
+        """
+        Tests that selected candidates have same start/end as main.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+
+        # Create main interval with fixed timing
+        main_presence = model.new_bool_var("main_presence")
+        model.add(main_presence == 1)
+
+        main = model.new_optional_interval_var(5, 3, 8, main_presence, "main")
+
+        # Create candidate intervals with flexible start but fixed size
+        candidates = []
+        for idx in range(3):
+            start = model.new_int_var(0, 10, f"c{idx}_start")
+            presence = model.new_bool_var(f"c{idx}_presence")
+            interval = model.new_optional_interval_var(
+                start, 3, start + 3, presence, f"c{idx}"
+            )
+            candidates.append(interval)
+
+        # Add alternative constraint
+        model.add_alternative(main, candidates, cardinality=1)
+
+        # Solve
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+
+        # Find the selected candidate
+        selected = [
+            c for c in candidates if solver.boolean_value(model.presence_of(c))
+        ]
+        assert len(selected) == 1
+
+        # Verify selected candidate has same start/end as main
+        selected_interval = selected[0]
+        assert_equal(solver.value(selected_interval.start_expr()), 5)
+        assert_equal(solver.value(selected_interval.size_expr()), 3)
+        assert_equal(solver.value(selected_interval.end_expr()), 8)
+
+    def test_default_cardinality(self):
+        """
+        Tests that cardinality defaults to 1 when not specified.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+
+        # Create main interval (force it to be present)
+        main_presence = model.new_bool_var("main_presence")
+        model.add(main_presence == 1)
+
+        main = model.new_optional_interval_var(0, 5, 5, main_presence, "main")
+
+        # Create candidate intervals
+        candidates = [
+            model.new_optional_interval_var(
+                0, 5, 5, model.new_bool_var(f"c{idx}_presence"), f"c{idx}"
+            )
+            for idx in range(3)
+        ]
+
+        # Add alternative constraint without specifying cardinality
+        model.add_alternative(main, candidates)
+
+        # Solve
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+
+        # Verify exactly one candidate is selected (default cardinality=1)
+        num_selected = sum(
+            1 for c in candidates if solver.boolean_value(model.presence_of(c))
+        )
+        assert num_selected == 1
