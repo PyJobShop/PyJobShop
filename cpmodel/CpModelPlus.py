@@ -8,6 +8,30 @@ class CpModelPlus(CpModel):
     This class extends OR-Tools' CpModel with additional scheduling methods
     similar to those available in IBM's docplex CP Modeler, see below:
     https://ibmdecisionoptimization.github.io/docplex-doc/cp/docplex.cp.modeler.py.html
+
+    Implementation Status
+    ---------------------
+    - [x] presence_of(): Extract presence literal from optional intervals
+    - [x] add_start_at_start(): Delay between starts of two intervals
+    - [x] add_start_at_end(): Delay between start of one and end of another
+    - [x] add_start_before_start(): Minimum delay between starts
+    - [x] add_start_before_end(): Minimum delay between start and end
+    - [x] add_end_at_start(): Delay between end of one and start of another
+    - [x] add_end_at_end(): Delay between ends of two intervals
+    - [x] add_end_before_start(): Minimum delay between end and start
+    - [x] add_end_before_end(): Minimum delay between ends
+    - [ ] add_forbid_start(): Forbid interval starts in specified regions
+    - [ ] add_forbid_end(): Forbid interval ends in specified regions
+    - [ ] add_forbid_extent(): Forbid interval overlap with regions
+    - [ ] add_overlap_length(): Compute overlap length between intervals
+    - [ ] add_start_eval(): Evaluate function at interval start
+    - [ ] add_end_eval(): Evaluate function at interval end
+    - [ ] add_size_eval(): Evaluate function on interval size
+    - [ ] add_length_eval(): Evaluate function on interval length
+    - [-] add_span(): Span constraint (missing absent interval handling)
+    - [x] add_alternative(): Alternative constraint with cardinality
+    - [ ] add_synchronize(): Synchronization constraint between intervals
+    - [ ] add_isomorphism(): Isomorphism constraint between interval sets
     """
 
     def __init__(self):
@@ -41,97 +65,6 @@ class CpModelPlus(CpModel):
 
         pos_index = -idcs - 1
         return self.get_bool_var_from_proto_index(pos_index).negated()
-
-    def add_span(
-        self, main: IntervalVar, candidates: list[IntervalVar]
-    ) -> tuple[Constraint, Constraint]:
-        """
-        Creates a span constraint over interval variables.
-
-        Behavior:
-        - [x] When main interval is present: its start equals the minimum
-              start of all present candidate intervals
-        - [x] When main interval is present: its end equals the maximum end
-              of all present candidate intervals
-        - [ ] Handling of absent main and candidate intervals.
-
-        Parameters
-        ----------
-        main
-            Spanning interval variable.
-        candidates
-            List of interval variables to be spanned.
-
-        Returns
-        -------
-        tuple[Constraint, Constraint]
-            The start and end span constraints.
-        """
-        starts = [candidate.start_expr() for candidate in candidates]
-        ends = [candidate.end_expr() for candidate in candidates]
-        cons1 = self.add_min_equality(main.start_expr(), starts)
-        cons2 = self.add_max_equality(main.end_expr(), ends)
-        return cons1, cons2
-
-    def add_alternative(
-        self,
-        main: IntervalVar,
-        candidates: list[IntervalVar],
-        cardinality: int = 1,
-    ):
-        """
-        Creates an alternative constraint between interval variables.
-
-        When the main interval is present, exactly cardinality candidate
-        intervals must be selected (made present), and all selected intervals
-        must have identical start, size, and end times as the main interval.
-        The main interval is absent if and only if all candidate intervals are
-        absent. If cardinality is not specified, it defaults to 1, meaning
-        exactly one candidate is selected when the main interval is present.
-
-        Parameters
-        ----------
-        main
-            Master interval variable.
-        candidates
-            List of candidate interval variables to choose from.
-        cardinality
-            Number of candidates to select (default 1).
-        """
-        # Select ``cardinality`` intervals from candidates if main is present,
-        # otherwise zero.
-        presences = [self.presence_of(interval) for interval in candidates]
-        self.add(cardinality * self.presence_of(main) == sum(presences))
-
-        # Enforce start/end equality between main and selected candidates.
-        for candidate in candidates:
-            equal_start = main.start_expr() == candidate.start_expr()
-            equal_size = main.size_expr() == candidate.size_expr()
-            equal_end = main.end_expr() == candidate.end_expr()
-
-            for expr in [equal_start, equal_size, equal_end]:
-                self.add(expr).only_enforce_if(self.presence_of(candidate))
-
-    def add_synchronize(
-        self, main: IntervalVar, candidates: list[IntervalVar]
-    ):
-        """
-        Creates a synchronization constraint between interval variables.
-
-        Behavior:
-        - [ ] All present intervals in candidates start together with main
-        - [ ] All present intervals in candidates end together with main
-        - [ ] Creates tight synchronization with identical start/end times
-              when present
-
-        Parameters
-        ----------
-        main
-            Main interval variable to synchronize with.
-        candidates
-            List of candidate interval variables to synchronize.
-        """
-        raise NotImplementedError
 
     def add_start_at_start(
         self, first: IntervalVar, second: IntervalVar, delay: int = 0
@@ -550,6 +483,97 @@ class CpModelPlus(CpModel):
         -------
         float
             Float expression representing the evaluated value.
+        """
+        raise NotImplementedError
+
+    def add_span(
+        self, main: IntervalVar, candidates: list[IntervalVar]
+    ) -> tuple[Constraint, Constraint]:
+        """
+        Creates a span constraint over interval variables.
+
+        Behavior:
+        - [x] When main interval is present: its start equals the minimum
+              start of all present candidate intervals
+        - [x] When main interval is present: its end equals the maximum end
+              of all present candidate intervals
+        - [ ] Handling of absent main and candidate intervals.
+
+        Parameters
+        ----------
+        main
+            Spanning interval variable.
+        candidates
+            List of interval variables to be spanned.
+
+        Returns
+        -------
+        tuple[Constraint, Constraint]
+            The start and end span constraints.
+        """
+        starts = [candidate.start_expr() for candidate in candidates]
+        ends = [candidate.end_expr() for candidate in candidates]
+        cons1 = self.add_min_equality(main.start_expr(), starts)
+        cons2 = self.add_max_equality(main.end_expr(), ends)
+        return cons1, cons2
+
+    def add_alternative(
+        self,
+        main: IntervalVar,
+        candidates: list[IntervalVar],
+        cardinality: int = 1,
+    ):
+        """
+        Creates an alternative constraint between interval variables.
+
+        When the main interval is present, exactly cardinality candidate
+        intervals must be selected (made present), and all selected intervals
+        must have identical start, size, and end times as the main interval.
+        The main interval is absent if and only if all candidate intervals are
+        absent. If cardinality is not specified, it defaults to 1, meaning
+        exactly one candidate is selected when the main interval is present.
+
+        Parameters
+        ----------
+        main
+            Master interval variable.
+        candidates
+            List of candidate interval variables to choose from.
+        cardinality
+            Number of candidates to select (default 1).
+        """
+        # Select ``cardinality`` intervals from candidates if main is present,
+        # otherwise zero.
+        presences = [self.presence_of(interval) for interval in candidates]
+        self.add(cardinality * self.presence_of(main) == sum(presences))
+
+        # Enforce start/end equality between main and selected candidates.
+        for candidate in candidates:
+            equal_start = main.start_expr() == candidate.start_expr()
+            equal_size = main.size_expr() == candidate.size_expr()
+            equal_end = main.end_expr() == candidate.end_expr()
+
+            for expr in [equal_start, equal_size, equal_end]:
+                self.add(expr).only_enforce_if(self.presence_of(candidate))
+
+    def add_synchronize(
+        self, main: IntervalVar, candidates: list[IntervalVar]
+    ):
+        """
+        Creates a synchronization constraint between interval variables.
+
+        Behavior:
+        - [ ] All present intervals in candidates start together with main
+        - [ ] All present intervals in candidates end together with main
+        - [ ] Creates tight synchronization with identical start/end times
+              when present
+
+        Parameters
+        ----------
+        main
+            Main interval variable to synchronize with.
+        candidates
+            List of candidate interval variables to synchronize.
         """
         raise NotImplementedError
 

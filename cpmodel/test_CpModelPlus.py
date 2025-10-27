@@ -4,6 +4,72 @@ from numpy.testing import assert_equal
 from cpmodel.CpModelPlus import CpModelPlus
 
 
+def test_presence_of_optional_interval():
+    """
+    Tests presence_of returns the presence literal for optional intervals.
+    """
+    model = CpModelPlus()
+    start = model.new_int_var(0, 10, "start")
+    presence = model.new_bool_var("presence")
+
+    # Create an optional interval
+    interval = model.new_optional_interval_var(
+        start=start,
+        size=5,
+        end=start + 5,
+        is_present=presence,
+        name="optional_interval",
+    )
+
+    # Get the presence literal back
+    presence_lit = model.presence_of(interval)
+
+    assert presence_lit is not None
+    # The presence literal should be the same variable (or its negation)
+    assert (
+        presence_lit.index == presence.index
+        or presence_lit.index == -presence.index - 1
+    )
+
+
+def test_presence_of_non_optional_interval():
+    """
+    Tests presence_of returns constant True for non-optional intervals.
+    """
+    model = CpModelPlus()
+    interval = model.new_interval_var(0, 10, 5, "interval")
+
+    presence_lit = model.presence_of(interval)
+
+    assert presence_lit is not None
+    # For non-optional intervals, should return a constant True
+    # We can verify this by checking that it's a valid bool var
+    assert hasattr(presence_lit, "index")
+
+
+def test_presence_of_negated_literal():
+    """
+    Tests presence_of handles negated presence literals correctly.
+    """
+    model = CpModelPlus()
+    start = model.new_int_var(0, 10, "start")
+    presence = model.new_bool_var("presence")
+
+    # Create an optional interval with negated presence
+    interval = model.new_optional_interval_var(
+        start=start,
+        size=5,
+        end=start + 5,
+        is_present=presence.negated(),
+        name="optional_interval",
+    )
+
+    # Get the presence literal back
+    presence_lit = model.presence_of(interval)
+
+    assert presence_lit is not None
+
+
 class TestStartAtStart:
     """
     Tests for the add_start_at_start() method.
@@ -734,72 +800,6 @@ def test_add_span_multiple_candidates():
     assert cons2 is not None
     num_constraints_after = len(model.proto.constraints)
     assert_equal(num_constraints_after - num_constraints_before, 2)
-
-
-def test_presence_of_optional_interval():
-    """
-    Tests presence_of returns the presence literal for optional intervals.
-    """
-    model = CpModelPlus()
-    start = model.new_int_var(0, 10, "start")
-    presence = model.new_bool_var("presence")
-
-    # Create an optional interval
-    interval = model.new_optional_interval_var(
-        start=start,
-        size=5,
-        end=start + 5,
-        is_present=presence,
-        name="optional_interval",
-    )
-
-    # Get the presence literal back
-    presence_lit = model.presence_of(interval)
-
-    assert presence_lit is not None
-    # The presence literal should be the same variable (or its negation)
-    assert (
-        presence_lit.index == presence.index
-        or presence_lit.index == -presence.index - 1
-    )
-
-
-def test_presence_of_non_optional_interval():
-    """
-    Tests presence_of returns constant True for non-optional intervals.
-    """
-    model = CpModelPlus()
-    interval = model.new_interval_var(0, 10, 5, "interval")
-
-    presence_lit = model.presence_of(interval)
-
-    assert presence_lit is not None
-    # For non-optional intervals, should return a constant True
-    # We can verify this by checking that it's a valid bool var
-    assert hasattr(presence_lit, "index")
-
-
-def test_presence_of_negated_literal():
-    """
-    Tests presence_of handles negated presence literals correctly.
-    """
-    model = CpModelPlus()
-    start = model.new_int_var(0, 10, "start")
-    presence = model.new_bool_var("presence")
-
-    # Create an optional interval with negated presence
-    interval = model.new_optional_interval_var(
-        start=start,
-        size=5,
-        end=start + 5,
-        is_present=presence.negated(),
-        name="optional_interval",
-    )
-
-    # Get the presence literal back
-    presence_lit = model.presence_of(interval)
-
-    assert presence_lit is not None
 
 
 class TestAlternative:
