@@ -5,21 +5,21 @@ from ortools.sat.python.cp_model import CpSolver
 from cpmodel.CpModelPlus import CpModelPlus
 
 
-class TestAllIdentical:
+class TestAllEqual:
     """
-    Tests for the add_all_identical() method.
+    Tests for the add_all_equal() method.
     """
 
     def test_basic_constraint(self):
         """
-        Tests that add_all_identical enforces all variables to have same value.
+        Tests that add_all_equal enforces all variables to have same value.
         """
         model = CpModelPlus()
         var1 = model.new_int_var(0, 10, "var1")
         var2 = model.new_int_var(0, 10, "var2")
         var3 = model.new_int_var(0, 10, "var3")
 
-        model.add_all_identical([var1, var2, var3])
+        model.add_all_equal([var1, var2, var3])
         model.add(var1 == 5)
 
         solver = CpSolver()
@@ -32,13 +32,13 @@ class TestAllIdentical:
 
     def test_two_variables(self):
         """
-        Tests add_all_identical with just two variables.
+        Tests add_all_equal with just two variables.
         """
         model = CpModelPlus()
         var1 = model.new_int_var(0, 10, "var1")
         var2 = model.new_int_var(0, 10, "var2")
 
-        model.add_all_identical([var1, var2])
+        model.add_all_equal([var1, var2])
         model.add(var1 == 7)
 
         solver = CpSolver()
@@ -50,12 +50,12 @@ class TestAllIdentical:
 
     def test_many_variables(self):
         """
-        Tests add_all_identical with many variables.
+        Tests add_all_equal with many variables.
         """
         model = CpModelPlus()
         variables = [model.new_int_var(0, 100, f"var{i}") for i in range(10)]
 
-        model.add_all_identical(variables)
+        model.add_all_equal(variables)
         model.add(variables[0] == 42)
 
         solver = CpSolver()
@@ -67,13 +67,13 @@ class TestAllIdentical:
 
     def test_constraints_added(self):
         """
-        Tests that add_all_identical adds the correct number of constraints.
+        Tests that add_all_equal adds the correct number of constraints.
         """
         model = CpModelPlus()
         variables = [model.new_int_var(0, 10, f"var{i}") for i in range(5)]
 
         num_constraints_before = len(model.proto.constraints)
-        model.add_all_identical(variables)
+        model.add_all_equal(variables)
         num_constraints_after = len(model.proto.constraints)
 
         # Should add n-1 constraints for n variables
@@ -88,7 +88,7 @@ class TestAllIdentical:
         var2 = model.new_int_var(5, 15, "var2")
         var3 = model.new_int_var(3, 8, "var3")
 
-        model.add_all_identical([var1, var2, var3])
+        model.add_all_equal([var1, var2, var3])
 
         solver = CpSolver()
         status = solver.solve(model)
@@ -1121,3 +1121,230 @@ class TestAlternative:
             1 for c in candidates if solver.boolean_value(model.presence_of(c))
         )
         assert num_selected == 1
+
+
+class TestSynchronize:
+    """
+    Tests for the add_synchronize() method.
+    """
+
+    def test_basic_constraint(self):
+        """
+        Tests that add_synchronize creates constraints in the model.
+        """
+        model = CpModelPlus()
+        main = model.new_interval_var(0, 5, 5, "main")
+        candidate1 = model.new_interval_var(0, 5, 5, "candidate1")
+        candidate2 = model.new_interval_var(0, 5, 5, "candidate2")
+
+        num_constraints_before = len(model.proto.constraints)
+        model.add_synchronize(main, [candidate1, candidate2])
+        num_constraints_after = len(model.proto.constraints)
+
+        # Should add 3 constraints per candidate (start + size + end)
+        assert_equal(num_constraints_after - num_constraints_before, 6)
+
+    def test_both_present_synchronized(self):
+        """
+        Tests that synchronized intervals have identical start and end times.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+
+        # Create main interval at flexible position
+        main_start = model.new_int_var(0, 10, "main_start")
+        main = model.new_interval_var(main_start, 5, main_start + 5, "main")
+
+        # Create candidate with flexible position
+        cand_start = model.new_int_var(0, 10, "cand_start")
+        candidate = model.new_interval_var(
+            cand_start, 5, cand_start + 5, "candidate"
+        )
+
+        # Add synchronization constraint
+        model.add_synchronize(main, [candidate])
+
+        # Add some objective to force a specific solution
+        model.minimize(main_start)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+
+        # Verify both intervals have identical timing
+        main_start_val = solver.value(main.start_expr())
+        main_end_val = solver.value(main.end_expr())
+        cand_start_val = solver.value(candidate.start_expr())
+        cand_end_val = solver.value(candidate.end_expr())
+
+        assert_equal(main_start_val, cand_start_val)
+        assert_equal(main_end_val, cand_end_val)
+
+    def test_single_candidate(self):
+        """
+        Tests synchronization with a single candidate.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        main = model.new_interval_var(5, 3, 8, "main")
+        candidate = model.new_int_var(0, 10, "cand_start")
+        cand_interval = model.new_interval_var(
+            candidate, 3, candidate + 3, "candidate"
+        )
+
+        model.add_synchronize(main, [cand_interval])
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(candidate), 5)
+
+    def test_multiple_candidates(self):
+        """
+        Tests that all candidates are synchronized with the main interval.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+
+        # Fixed main interval
+        main = model.new_interval_var(3, 4, 7, "main")
+
+        # Multiple candidates with flexible start
+        candidates = []
+        for idx in range(3):
+            start = model.new_int_var(0, 10, f"c{idx}_start")
+            interval = model.new_interval_var(start, 4, start + 4, f"c{idx}")
+            candidates.append((start, interval))
+
+        model.add_synchronize(main, [c[1] for c in candidates])
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+
+        # All candidates should start at 3
+        for start_var, _ in candidates:
+            assert_equal(solver.value(start_var), 3)
+
+    def test_with_optional_both_present(self):
+        """
+        Tests synchronization with optional intervals, both present.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+
+        # Optional main interval
+        main_start = model.new_int_var(0, 10, "main_start")
+        main_pres = model.new_bool_var("main_pres")
+        main = model.new_optional_interval_var(
+            main_start, 5, main_start + 5, main_pres, "main"
+        )
+
+        # Optional candidate
+        cand_start = model.new_int_var(0, 10, "cand_start")
+        cand_pres = model.new_bool_var("cand_pres")
+        candidate = model.new_optional_interval_var(
+            cand_start, 5, cand_start + 5, cand_pres, "candidate"
+        )
+
+        # Both must be present
+        model.add(main_pres == 1)
+        model.add(cand_pres == 1)
+
+        model.add_synchronize(main, [candidate])
+        model.minimize(main_start)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(
+            solver.value(main.start_expr()),
+            solver.value(candidate.start_expr()),
+        )
+        assert_equal(
+            solver.value(main.end_expr()), solver.value(candidate.end_expr())
+        )
+
+    def test_with_optional_one_absent(self):
+        """
+        Tests that synchronization is not enforced when one interval is absent.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+
+        # Optional main interval (present)
+        main_start = model.new_int_var(0, 10, "main_start")
+        main_pres = model.new_bool_var("main_pres")
+        main = model.new_optional_interval_var(
+            main_start, 5, main_start + 5, main_pres, "main"
+        )
+
+        # Optional candidate (absent)
+        cand_start = model.new_int_var(0, 10, "cand_start")
+        cand_pres = model.new_bool_var("cand_pres")
+        candidate = model.new_optional_interval_var(
+            cand_start, 5, cand_start + 5, cand_pres, "candidate"
+        )
+
+        model.add(main_pres == 1)
+        model.add(cand_pres == 0)  # Candidate is absent
+
+        model.add_synchronize(main, [candidate])
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        # Should be feasible even though candidate is absent
+        assert_equal(status, cp_model.OPTIMAL)
+
+    def test_different_durations_infeasible(self):
+        """
+        Tests that intervals with different durations cannot synchronize.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+
+        # Main interval with duration 5
+        main = model.new_interval_var(0, 5, 5, "main")
+
+        # Candidate with duration 3 (different from main)
+        candidate = model.new_interval_var(0, 3, 3, "candidate")
+
+        model.add_synchronize(main, [candidate])
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        # Should be infeasible because durations differ
+        assert_equal(status, cp_model.INFEASIBLE)
+
+    def test_constraints_added(self):
+        """
+        Tests that the correct number of constraints are added.
+        """
+        model = CpModelPlus()
+        main = model.new_interval_var(0, 5, 5, "main")
+        candidates = [
+            model.new_interval_var(0, 5, 5, f"c{i}") for i in range(5)
+        ]
+
+        num_constraints_before = len(model.proto.constraints)
+        model.add_synchronize(main, candidates)
+        num_constraints_after = len(model.proto.constraints)
+
+        # Should add 3 constraints per candidate (start + size + end)
+        expected_constraints = 3 * len(candidates)
+        assert_equal(
+            num_constraints_after - num_constraints_before,
+            expected_constraints,
+        )

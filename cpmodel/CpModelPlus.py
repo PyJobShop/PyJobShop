@@ -5,6 +5,7 @@ from ortools.sat.python.cp_model import (
     CpModel,
     IntervalVar,
     IntVar,
+    LinearExprT,
 )
 
 
@@ -16,9 +17,10 @@ class CpModelPlus(CpModel):
     similar to those available in IBM's docplex CP Modeler, see below:
     https://ibmdecisionoptimization.github.io/docplex-doc/cp/docplex.cp.modeler.py.html
 
+
     Helpers
     -------
-    - [x] add_all_identical(): Enforce identical values across variables
+    - [x] add_all_equal(): Enforce identical values across variables
     - [x] presence_of(): Extract presence literal from optional intervals
 
     Implementation Status
@@ -41,7 +43,7 @@ class CpModelPlus(CpModel):
     - [ ] add_length_eval(): Evaluate function on interval length
     - [-] add_span(): Span constraint (missing absent interval handling)
     - [x] add_alternative(): Alternative constraint with cardinality
-    - [ ] add_synchronize(): Synchronization constraint between intervals
+    - [x] add_synchronize(): Synchronization constraint between intervals
     - [ ] add_isomorphism(): Isomorphism constraint between interval sets
 
     Inherited OR-Tools Methods
@@ -85,12 +87,19 @@ class CpModelPlus(CpModel):
     - add_no_overlap(): Add no-overlap constraint for intervals
     - add_no_overlap_2d(): Add 2D no-overlap constraint
     - add_cumulative(): Add cumulative constraint
+
+    Other resources
+    ---------------
+    - Scheduling documentation
+      https://github.com/google/or-tools/blob/main/ortools/sat/docs/scheduling.md
+    - Integer arithmetic documentation
+      https://github.com/google/or-tools/blob/main/ortools/sat/docs/integer_arithmetic.md
     """
 
     def __init__(self):
         super().__init__()
 
-    def add_all_identical(self, variables: list[IntVar]):
+    def add_all_equal(self, variables: list[IntVar | LinearExprT]):
         """
         Enforces that all variables in the list have identical values.
 
@@ -423,15 +432,16 @@ class CpModelPlus(CpModel):
         """
         raise NotImplementedError
 
-    def add_overlap_length(self, a: IntervalVar, b: IntervalVar):
+    def add_overlap_length(self, a: IntervalVar, b: IntervalVar) -> IntVar:
         """
         Computes the length of overlap between two interval variables.
 
-        Behavior:
-        - [ ] Returns length of time during which both intervals are active
-
-        - [ ] Returns zero if intervals do not overlap
-        - [ ] Handles absent intervals appropriately
+        The overlap length is calculated as the maximum of zero and the
+        difference between the minimum of the two end times and the maximum
+        of the two start times. When both intervals are present, this gives
+        the duration during which both are active simultaneously. If the
+        intervals do not overlap, or if either interval is absent, the
+        overlap length is zero.
 
         Parameters
         ----------
@@ -633,11 +643,10 @@ class CpModelPlus(CpModel):
         """
         Creates a synchronization constraint between interval variables.
 
-        Behavior:
-        - [ ] All present intervals in candidates start together with main
-        - [ ] All present intervals in candidates end together with main
-        - [ ] Creates tight synchronization with identical start/end times
-              when present
+        When both the main interval and a candidate interval are present, they
+        must start and end at exactly the same times. This creates perfect
+        temporal alignment between synchronized intervals. If either interval
+        is absent, the synchronization constraint is not enforced.
 
         Parameters
         ----------
@@ -646,7 +655,18 @@ class CpModelPlus(CpModel):
         candidates
             List of candidate interval variables to synchronize.
         """
-        raise NotImplementedError
+        for candidate in candidates:
+            both_present = [
+                self.presence_of(main),
+                self.presence_of(candidate),
+            ]
+
+            equal_start = main.start_expr() == candidate.start_expr()
+            equal_size = main.size_expr() == candidate.size_expr()
+            equal_end = main.end_expr() == candidate.end_expr()
+
+            for expr in [equal_start, equal_size, equal_end]:
+                self.add(expr).only_enforce_if(both_present)
 
     def add_isomorphism(
         self,
