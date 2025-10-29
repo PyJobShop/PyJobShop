@@ -1348,3 +1348,681 @@ class TestSynchronize:
             num_constraints_after - num_constraints_before,
             expected_constraints,
         )
+
+
+class TestProductVar:
+    """
+    Tests for the new_product_var() method.
+    """
+
+    def test_bool_int_product(self):
+        """
+        Tests Boolean x Integer product using optimized encoding.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        b = model.new_bool_var("b")
+        x = model.new_int_var(2, 5, "x")
+
+        p = model.new_product_var(b, x)
+
+        # Verify product variable was created
+        assert p is not None
+        assert hasattr(p, "proto")
+
+        # Test with b=1, x=3
+        model.add(b == 1)
+        model.add(x == 3)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(p), 3)
+
+    def test_bool_int_product_when_bool_false(self):
+        """
+        Tests Boolean x Integer product when Boolean is false.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        b = model.new_bool_var("b")
+        x = model.new_int_var(2, 5, "x")
+
+        p = model.new_product_var(b, x)
+
+        # Test with b=0
+        model.add(b == 0)
+        model.add(x == 4)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(p), 0)
+
+    def test_int_bool_product(self):
+        """
+        Tests Integer x Boolean product (reversed order).
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        x = model.new_int_var(5, 10, "x")
+        b = model.new_bool_var("b")
+
+        p = model.new_product_var(x, b)
+
+        # Test with x=7, b=1
+        model.add(x == 7)
+        model.add(b == 1)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(p), 7)
+
+    def test_int_bool_product_when_bool_false(self):
+        """
+        Tests Integer x Boolean product when Boolean is false.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        x = model.new_int_var(5, 10, "x")
+        b = model.new_bool_var("b")
+
+        p = model.new_product_var(x, b)
+
+        # Test with b=0
+        model.add(x == 9)
+        model.add(b == 0)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(p), 0)
+
+    def test_int_int_product(self):
+        """
+        Tests Integer x Integer product using general encoding.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        x = model.new_int_var(2, 4, "x")
+        y = model.new_int_var(3, 5, "y")
+
+        p = model.new_product_var(x, y)
+
+        # Test with x=3, y=4
+        model.add(x == 3)
+        model.add(y == 4)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(p), 12)
+
+    def test_bool_int_product_with_domain(self):
+        """
+        Tests Boolean x Integer product with non-contiguous domain.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        b = model.new_bool_var("b")
+        x = model.new_int_var_from_domain(
+            cp_model.Domain.from_values([1, 3, 5, 7]), "x"
+        )
+
+        p = model.new_product_var(b, x)
+
+        # Enumerate all solutions
+        solver = cp_model.CpSolver()
+        solver.parameters.enumerate_all_solutions = True
+
+        class SolutionCollector(cp_model.CpSolverSolutionCallback):
+            def __init__(self):
+                cp_model.CpSolverSolutionCallback.__init__(self)
+                self.solutions = []
+
+            def on_solution_callback(self):
+                self.solutions.append(
+                    {
+                        "b": self.value(b),
+                        "x": self.value(x),
+                        "p": self.value(p),
+                    }
+                )
+
+        collector = SolutionCollector()
+        solver.solve(model, collector)
+
+        # Verify all solutions have correct product
+        for sol in collector.solutions:
+            expected = sol["b"] * sol["x"]
+            actual = sol["p"]
+            assert_equal(actual, expected)
+
+        # Should have 8 solutions: 4 x-values * 2 b-values
+        assert len(collector.solutions) == 8
+
+    def test_product_var_domain(self):
+        """
+        Tests that product variable has correct domain.
+        """
+
+        model = CpModelPlus()
+        b = model.new_bool_var("b")
+        x = model.new_int_var(3, 7, "x")
+
+        p = model.new_product_var(b, x)
+
+        # Product domain should be union of x's domain [3,7] and {0}
+        domain_values = []
+        for idx in range(0, len(p.proto.domain), 2):
+            lb = p.proto.domain[idx]
+            ub = p.proto.domain[idx + 1]
+            domain_values.extend(range(lb, ub + 1))
+
+        # Should include 0 and values from 3 to 7
+        assert 0 in domain_values
+        for val in range(3, 8):
+            assert val in domain_values
+
+    def test_int_int_product_bounds(self):
+        """
+        Tests that Integer x Integer product has correct bounds.
+        """
+
+        model = CpModelPlus()
+        x = model.new_int_var(2, 3, "x")
+        y = model.new_int_var(4, 6, "y")
+
+        p = model.new_product_var(x, y)
+
+        # Product should be in range [2*4, 3*6] = [8, 18]
+        assert p.proto.domain[0] == 8
+        assert p.proto.domain[-1] == 18
+
+    def test_product_with_zero_in_domain(self):
+        """
+        Tests product when one variable can be zero.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        x = model.new_int_var(0, 3, "x")
+        y = model.new_int_var(2, 5, "y")
+
+        p = model.new_product_var(x, y)
+
+        # Test with x=0
+        model.add(x == 0)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(p), 0)
+
+    def test_product_with_negative_values(self):
+        """
+        Tests product with negative integer values.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        x = model.new_int_var(-3, -1, "x")
+        y = model.new_int_var(2, 4, "y")
+
+        p = model.new_product_var(x, y)
+
+        # Test with x=-2, y=3
+        model.add(x == -2)
+        model.add(y == 3)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(p), -6)
+
+    def test_bool_int_product_all_solutions(self):
+        """
+        Tests that all solutions for Boolean x Integer are correct.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        b = model.new_bool_var("b")
+        x = model.new_int_var(5, 7, "x")
+
+        p = model.new_product_var(b, x)
+
+        solver = cp_model.CpSolver()
+        solver.parameters.enumerate_all_solutions = True
+
+        class SolutionCollector(cp_model.CpSolverSolutionCallback):
+            def __init__(self):
+                cp_model.CpSolverSolutionCallback.__init__(self)
+                self.solutions = []
+
+            def on_solution_callback(self):
+                self.solutions.append(
+                    (self.value(b), self.value(x), self.value(p))
+                )
+
+        collector = SolutionCollector()
+        solver.solve(model, collector)
+
+        # Should have 6 solutions: 3 x-values * 2 b-values
+        assert len(collector.solutions) == 6
+
+        # Verify each solution
+        for b_val, x_val, p_val in collector.solutions:
+            assert_equal(p_val, b_val * x_val)
+
+    def test_bool_bool_product(self):
+        """
+        Tests Boolean x Boolean product (both are [0,1] domain).
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        b1 = model.new_bool_var("b1")
+        b2 = model.new_bool_var("b2")
+
+        p = model.new_product_var(b1, b2)
+
+        # Test with b1=1, b2=1
+        model.add(b1 == 1)
+        model.add(b2 == 1)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(p), 1)
+
+    def test_product_in_constraint(self):
+        """
+        Tests using product variable in other constraints.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        b = model.new_bool_var("b")
+        x = model.new_int_var(1, 5, "x")
+        p = model.new_product_var(b, x)
+
+        # Add constraint: p >= 3
+        model.add(p >= 3)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+
+        # If p >= 3, then b must be 1 and x >= 3
+        assert solver.value(b) == 1
+        assert solver.value(x) >= 3
+        assert solver.value(p) >= 3
+
+    @pytest.mark.parametrize(
+        "x_lb,x_ub,y_lb,y_ub",
+        [
+            (1, 3, 2, 4),
+            (0, 5, 1, 3),
+            (-2, 2, 3, 5),
+            (5, 10, -3, -1),
+        ],
+    )
+    def test_int_int_product_various_ranges(self, x_lb, x_ub, y_lb, y_ub):
+        """
+        Tests Integer x Integer product with various ranges.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        x = model.new_int_var(x_lb, x_ub, "x")
+        y = model.new_int_var(y_lb, y_ub, "y")
+
+        p = model.new_product_var(x, y)
+
+        # Pick middle values
+        x_val = (x_lb + x_ub) // 2
+        y_val = (y_lb + y_ub) // 2
+
+        model.add(x == x_val)
+        model.add(y == y_val)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(p), x_val * y_val)
+
+    def test_bool_bool_product_all_solutions(self):
+        """
+        Tests Boolean x Boolean product for all 4 possible combinations.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        b1 = model.new_bool_var("b1")
+        b2 = model.new_bool_var("b2")
+
+        p = model.new_product_var(b1, b2)
+
+        solver = cp_model.CpSolver()
+        solver.parameters.enumerate_all_solutions = True
+
+        class SolutionCollector(cp_model.CpSolverSolutionCallback):
+            def __init__(self):
+                cp_model.CpSolverSolutionCallback.__init__(self)
+                self.solutions = []
+
+            def on_solution_callback(self):
+                self.solutions.append(
+                    (self.value(b1), self.value(b2), self.value(p))
+                )
+
+        collector = SolutionCollector()
+        solver.solve(model, collector)
+
+        # Should have 4 solutions
+        assert len(collector.solutions) == 4
+
+        # Verify each solution
+        for b1_val, b2_val, p_val in collector.solutions:
+            assert_equal(p_val, b1_val * b2_val)
+
+    def test_bool_bool_product_false_false(self):
+        """
+        Tests Boolean x Boolean product when both are false.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        b1 = model.new_bool_var("b1")
+        b2 = model.new_bool_var("b2")
+
+        p = model.new_product_var(b1, b2)
+
+        model.add(b1 == 0)
+        model.add(b2 == 0)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(p), 0)
+
+    def test_bool_bool_product_true_false(self):
+        """
+        Tests Boolean x Boolean product when one is true, one is false.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        b1 = model.new_bool_var("b1")
+        b2 = model.new_bool_var("b2")
+
+        p = model.new_product_var(b1, b2)
+
+        model.add(b1 == 1)
+        model.add(b2 == 0)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(p), 0)
+
+    def test_bool_bool_product_enforces_and_logic(self):
+        """
+        Tests Boolean x Boolean product is equivalent to AND operation.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        b1 = model.new_bool_var("b1")
+        b2 = model.new_bool_var("b2")
+
+        p = model.new_product_var(b1, b2)
+
+        # Product should equal 1 only when both are 1
+        model.add(p == 1)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(b1), 1)
+        assert_equal(solver.value(b2), 1)
+
+    def test_int_int_product_with_negative_bounds(self):
+        """
+        Tests Integer x Integer product with both negative bounds.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        x = model.new_int_var(-5, -2, "x")
+        y = model.new_int_var(-4, -1, "y")
+
+        p = model.new_product_var(x, y)
+
+        # Test with x=-3, y=-2
+        model.add(x == -3)
+        model.add(y == -2)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(p), 6)
+
+    def test_int_int_product_spanning_zero(self):
+        """
+        Tests Integer x Integer product with ranges spanning zero.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        x = model.new_int_var(-3, 3, "x")
+        y = model.new_int_var(-2, 2, "y")
+
+        p = model.new_product_var(x, y)
+
+        # Test with x=2, y=-2
+        model.add(x == 2)
+        model.add(y == -2)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(p), -4)
+
+    def test_bool_int_product_with_negative_domain(self):
+        """
+        Tests Boolean x Integer product with negative integer domain.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        b = model.new_bool_var("b")
+        x = model.new_int_var(-10, -5, "x")
+
+        p = model.new_product_var(b, x)
+
+        # Test with b=1, x=-7
+        model.add(b == 1)
+        model.add(x == -7)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(p), -7)
+
+    def test_bool_int_product_domain_includes_zero(self):
+        """
+        Tests Boolean x Integer product domain includes zero.
+        """
+
+        model = CpModelPlus()
+        b = model.new_bool_var("b")
+        x = model.new_int_var(5, 10, "x")
+
+        p = model.new_product_var(b, x)
+
+        # Product domain should include 0 and [5, 10]
+        domain_values = []
+        for idx in range(0, len(p.proto.domain), 2):
+            lb = p.proto.domain[idx]
+            ub = p.proto.domain[idx + 1]
+            domain_values.extend(range(lb, ub + 1))
+
+        assert 0 in domain_values
+        for val in range(5, 11):
+            assert val in domain_values
+
+    def test_product_var_constraints_added(self):
+        """
+        Tests that new_product_var adds appropriate constraints.
+        """
+
+        model = CpModelPlus()
+
+        # Boolean x Boolean case
+        b1 = model.new_bool_var("b1")
+        b2 = model.new_bool_var("b2")
+        constraints_before = len(model.proto.constraints)
+        model.new_product_var(b1, b2)
+        constraints_after = len(model.proto.constraints)
+        # Should add 2 constraints for boolean product
+        assert constraints_after - constraints_before == 2
+
+        # Boolean x Integer case
+        model2 = CpModelPlus()
+        b = model2.new_bool_var("b")
+        x = model2.new_int_var(1, 5, "x")
+        constraints_before = len(model2.proto.constraints)
+        model2.new_product_var(b, x)
+        constraints_after = len(model2.proto.constraints)
+        # Should add 2 constraints for bool x int
+        assert constraints_after - constraints_before == 2
+
+        # Integer x Integer case
+        model3 = CpModelPlus()
+        x = model3.new_int_var(1, 5, "x")
+        y = model3.new_int_var(2, 6, "y")
+        constraints_before = len(model3.proto.constraints)
+        model3.new_product_var(x, y)
+        constraints_after = len(model3.proto.constraints)
+        # Should add 1 constraint for int x int
+        assert constraints_after - constraints_before == 1
+
+    def test_product_commutative(self):
+        """
+        Tests that product is commutative: var1 * var2 == var2 * var1.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        x = model.new_int_var(2, 5, "x")
+        y = model.new_int_var(3, 7, "y")
+
+        p1 = model.new_product_var(x, y)
+        p2 = model.new_product_var(y, x)
+
+        # Force both products to be equal
+        model.add(p1 == p2)
+
+        # Set specific values
+        model.add(x == 3)
+        model.add(y == 4)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(p1), 12)
+        assert_equal(solver.value(p2), 12)
+
+    def test_product_with_single_value_domain(self):
+        """
+        Tests product when one variable has a single-value domain.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        x = model.new_int_var(5, 5, "x")  # Single value
+        y = model.new_int_var(2, 4, "y")
+
+        p = model.new_product_var(x, y)
+
+        model.add(y == 3)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(p), 15)
+
+    def test_product_used_in_optimization(self):
+        """
+        Tests product variable used in objective function.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        x = model.new_int_var(1, 5, "x")
+        y = model.new_int_var(1, 5, "y")
+
+        p = model.new_product_var(x, y)
+
+        # Minimize the product
+        model.minimize(p)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        # Minimum should be 1*1 = 1
+        assert_equal(solver.value(p), 1)
+        assert_equal(solver.value(x), 1)
+        assert_equal(solver.value(y), 1)
+
+    def test_product_maximize_objective(self):
+        """
+        Tests product variable maximized in objective.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        x = model.new_int_var(1, 5, "x")
+        y = model.new_int_var(2, 4, "y")
+
+        p = model.new_product_var(x, y)
+
+        # Maximize the product
+        model.maximize(p)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        # Maximum should be 5*4 = 20
+        assert_equal(solver.value(p), 20)
+        assert_equal(solver.value(x), 5)
+        assert_equal(solver.value(y), 4)
