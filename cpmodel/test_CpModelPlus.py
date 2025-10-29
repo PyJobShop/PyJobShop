@@ -1909,8 +1909,8 @@ class TestProductVar:
         constraints_before = len(model.proto.constraints)
         model.new_product_var(b1, b2)
         constraints_after = len(model.proto.constraints)
-        # Should add 2 constraints for boolean product
-        assert constraints_after - constraints_before == 2
+        # Should add 3 constraints for boolean product
+        assert constraints_after - constraints_before == 3
 
         # Boolean x Integer case
         model2 = CpModelPlus()

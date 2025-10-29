@@ -725,8 +725,9 @@ class CpModelPlus(CpModel):
 
         if is_bool_var(var1) and is_bool_var(var2):
             product_var = self.new_bool_var("")
-            self.add_bool_and([var1, var2]).only_enforce_if(product_var)
-            self.add_bool_or([~var1, ~var2]).only_enforce_if(~product_var)
+            self.add_bool_or(~var1, ~var2, product_var)
+            self.add_implication(product_var, var1)
+            self.add_implication(product_var, var2)
             return product_var
 
         if not is_bool_var(var1) and not is_bool_var(var2):  # int x int
@@ -735,7 +736,10 @@ class CpModelPlus(CpModel):
             min2, max2 = domain2[0], domain2[-1]
             corners = [min1 * min2, min1 * max2, max1 * min2, max1 * max2]
             product_var = self.new_int_var(
-                max(min(corners), -MAX_VALUE), min(max(corners), MAX_VALUE), ""
+                # This protects against overflows.
+                max(min(corners), -MAX_VALUE),
+                min(max(corners), MAX_VALUE),
+                "",
             )
             self.add_multiplication_equality(product_var, [var1, var2])
             return product_var
@@ -744,7 +748,7 @@ class CpModelPlus(CpModel):
         # See https://github.com/google/or-tools/blob/main/ortools/sat/docs/integer_arithmetic.md#product-of-a-boolean-variable-and-an-integer-variable # noqa: E501
         int_var, bool_var = (var2, var1) if is_bool_var(var1) else (var1, var2)
         domain = Domain.from_flat_intervals(int_var.proto.domain)
-        domain = domain.union_with(Domain(0, 0))
+        domain = domain.union_with(Domain(0, 0))  # if bool is false
         product_var = self.new_int_var_from_domain(domain, "")
         self.add(product_var == int_var).only_enforce_if(bool_var)
         self.add(product_var == 0).only_enforce_if(~bool_var)
