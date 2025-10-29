@@ -753,3 +753,24 @@ class CpModelPlus(CpModel):
         self.add(product_var == int_var).only_enforce_if(bool_var)
         self.add(product_var == 0).only_enforce_if(~bool_var)
         return product_var
+
+    def add_if_then_else(
+        self,
+        condition: IntVar,
+        then_expr: LinearExprT,
+        else_expr: LinearExprT,
+    ):
+        """
+        Adds an if-then-else constraint to the model.
+
+        Parameters
+        ----------
+        condition
+            Boolean variable determining which expression to enforce.
+        then_expr
+            Expression enforced if condition is true.
+        else_expr
+            Expression enforced if condition is false.
+        """
+        self.add(then_expr).only_enforce_if(condition)
+        self.add(else_expr).only_enforce_if(~condition)

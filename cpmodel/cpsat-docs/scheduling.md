@@ -285,7 +285,7 @@ Modeling a non zero min profile can be done using fixed (interval, demand) on
 the complementary cumulative constraint.
 
 ### Python code
-
+  
 ```python
 # Snippet from ortools/sat/samples/cumulative_variable_profile_sample_sat.py
 """Solves a scheduling problem with a min and max profile for the work load."""
@@ -560,7 +560,6 @@ if __name__ == '__main__':
   app.run(main)
 ```
 
-## Alternative resources for one interval
 
 ## Ranking tasks in a disjunctive resource
 

@@ -2026,3 +2026,370 @@ class TestProductVar:
         assert_equal(solver.value(p), 20)
         assert_equal(solver.value(x), 5)
         assert_equal(solver.value(y), 4)
+
+
+class TestIfThenElse:
+    """
+    Tests for the add_if_then_else() method.
+    """
+
+    def test_condition_true_enforces_then(self):
+        """
+        Tests that when condition is true, then_expr is enforced.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        y = model.new_int_var(0, 10, "y")
+        condition = model.new_bool_var("condition")
+
+        # If condition, then y == 5, else y == 0
+        model.add_if_then_else(condition, y == 5, y == 0)
+
+        # Force condition to be true
+        model.add(condition == 1)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(y), 5)
+
+    def test_condition_false_enforces_else(self):
+        """
+        Tests that when condition is false, else_expr is enforced.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        y = model.new_int_var(0, 10, "y")
+        condition = model.new_bool_var("condition")
+
+        # If condition, then y == 5, else y == 0
+        model.add_if_then_else(condition, y == 5, y == 0)
+
+        # Force condition to be false
+        model.add(condition == 0)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(y), 0)
+
+    def test_with_linear_expressions(self):
+        """
+        Tests if-then-else with linear expressions.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        x = model.new_int_var(0, 10, "x")
+        y = model.new_int_var(0, 10, "y")
+        condition = model.new_bool_var("condition")
+
+        # If condition, then y == 10 - x, else y == 0
+        model.add_if_then_else(condition, y == 10 - x, y == 0)
+
+        # Set x and condition
+        model.add(x == 3)
+        model.add(condition == 1)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(x), 3)
+        assert_equal(solver.value(y), 7)
+
+    def test_with_inequality_constraints(self):
+        """
+        Tests if-then-else with inequality constraints.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        y = model.new_int_var(0, 10, "y")
+        condition = model.new_bool_var("condition")
+
+        # If condition, then y >= 5, else y <= 2
+        model.add_if_then_else(condition, y >= 5, y <= 2)
+
+        # Force condition to be true
+        model.add(condition == 1)
+
+        # Minimize y
+        model.minimize(y)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(y), 5)
+
+    def test_nested_conditions(self):
+        """
+        Tests multiple if-then-else constraints on same variable.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        x = model.new_int_var(0, 10, "x")
+        y = model.new_int_var(0, 10, "y")
+        cond1 = model.new_bool_var("cond1")
+        cond2 = model.new_bool_var("cond2")
+
+        # If cond1, then y == 5, else y == 0
+        model.add_if_then_else(cond1, y == 5, y == 0)
+
+        # If cond2, then x == 3, else x == 7
+        model.add_if_then_else(cond2, x == 3, x == 7)
+
+        # Set conditions
+        model.add(cond1 == 1)
+        model.add(cond2 == 0)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(y), 5)
+        assert_equal(solver.value(x), 7)
+
+    def test_condition_derived_from_constraint(self):
+        """
+        Tests condition that is derived from another constraint.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        x = model.new_int_var(0, 10, "x")
+        y = model.new_int_var(0, 10, "y")
+        condition = model.new_bool_var("condition")
+
+        # Condition represents x >= 5
+        model.add(x >= 5).only_enforce_if(condition)
+        model.add(x < 5).only_enforce_if(~condition)
+
+        # If condition (x >= 5), then y == 10 - x, else y == 0
+        model.add_if_then_else(condition, y == 10 - x, y == 0)
+
+        # Set x = 7
+        model.add(x == 7)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(x), 7)
+        assert_equal(solver.value(y), 3)
+
+    def test_infeasible_then_branch(self):
+        """
+        Tests that infeasible then branch forces condition false.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        y = model.new_int_var(0, 10, "y")
+        condition = model.new_bool_var("condition")
+
+        # If condition, then y == 5, else y == 0
+        model.add_if_then_else(condition, y == 5, y == 0)
+
+        # Force y to be in range that conflicts with then branch
+        model.add(y <= 3)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        # Condition must be false since y == 5 is infeasible
+        assert_equal(solver.value(condition), 0)
+        assert_equal(solver.value(y), 0)
+
+    def test_infeasible_else_branch(self):
+        """
+        Tests that infeasible else branch forces condition true.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        y = model.new_int_var(0, 10, "y")
+        condition = model.new_bool_var("condition")
+
+        # If condition, then y == 5, else y == 0
+        model.add_if_then_else(condition, y == 5, y == 0)
+
+        # Force y to value that conflicts with else branch
+        model.add(y >= 4)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        # Condition must be true since y == 0 is infeasible
+        assert_equal(solver.value(condition), 1)
+        assert_equal(solver.value(y), 5)
+
+    def test_with_sum_expressions(self):
+        """
+        Tests if-then-else with sum expressions.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        x = model.new_int_var(0, 5, "x")
+        y = model.new_int_var(0, 5, "y")
+        z = model.new_int_var(0, 10, "z")
+        condition = model.new_bool_var("condition")
+
+        # If condition, then z == x + y, else z == 0
+        model.add_if_then_else(condition, z == x + y, z == 0)
+
+        # Set values
+        model.add(x == 3)
+        model.add(y == 4)
+        model.add(condition == 1)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(z), 7)
+
+    def test_with_product_expressions(self):
+        """
+        Tests if-then-else with multiplication expressions.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        x = model.new_int_var(2, 5, "x")
+        y = model.new_int_var(0, 20, "y")
+        condition = model.new_bool_var("condition")
+
+        # If condition, then y == 2 * x, else y == 0
+        model.add_if_then_else(condition, y == 2 * x, y == 0)
+
+        # Set values
+        model.add(x == 4)
+        model.add(condition == 1)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(y), 8)
+
+    def test_all_solutions_enumeration(self):
+        """
+        Tests enumerating all solutions with if-then-else.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        x = model.new_int_var(0, 3, "x")
+        y = model.new_int_var(0, 10, "y")
+        condition = model.new_bool_var("condition")
+
+        # If x >= 2, then y == 5, else y == 0
+        model.add(x >= 2).only_enforce_if(condition)
+        model.add(x < 2).only_enforce_if(~condition)
+        model.add_if_then_else(condition, y == 5, y == 0)
+
+        solver = cp_model.CpSolver()
+        solver.parameters.enumerate_all_solutions = True
+
+        class SolutionCollector(cp_model.CpSolverSolutionCallback):
+            def __init__(self):
+                cp_model.CpSolverSolutionCallback.__init__(self)
+                self.solutions = []
+
+            def on_solution_callback(self):
+                self.solutions.append(
+                    (self.value(x), self.value(y), self.value(condition))
+                )
+
+        collector = SolutionCollector()
+        solver.solve(model, collector)
+
+        # Should have 4 solutions (x in [0,3])
+        assert len(collector.solutions) == 4
+
+        # Verify each solution
+        for x_val, y_val, cond_val in collector.solutions:
+            if x_val >= 2:
+                assert cond_val == 1
+                assert y_val == 5
+            else:
+                assert cond_val == 0
+                assert y_val == 0
+
+    def test_constraints_added(self):
+        """
+        Tests that add_if_then_else adds exactly 2 constraints.
+        """
+
+        model = CpModelPlus()
+        y = model.new_int_var(0, 10, "y")
+        condition = model.new_bool_var("condition")
+
+        num_constraints_before = len(model.proto.constraints)
+        model.add_if_then_else(condition, y == 5, y == 0)
+        num_constraints_after = len(model.proto.constraints)
+
+        # Should add exactly 2 constraints (one for then, one for else)
+        assert_equal(num_constraints_after - num_constraints_before, 2)
+
+    def test_with_optimization_objective(self):
+        """
+        Tests if-then-else with optimization objective.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        x = model.new_int_var(0, 10, "x")
+        y = model.new_int_var(0, 10, "y")
+        condition = model.new_bool_var("condition")
+
+        # If condition, then y == x + 5, else y == 0
+        model.add_if_then_else(condition, y == x + 5, y == 0)
+
+        # Maximize y
+        model.maximize(y)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        # To maximize y, condition should be true and x should be max
+        assert_equal(solver.value(condition), 1)
+        assert_equal(solver.value(x), 5)  # x + 5 <= 10, so x <= 5
+        assert_equal(solver.value(y), 10)
+
+    def test_minimize_with_conditional(self):
+        """
+        Tests minimization with if-then-else constraint.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        x = model.new_int_var(0, 10, "x")
+        y = model.new_int_var(0, 10, "y")
+        condition = model.new_bool_var("condition")
+
+        # If condition, then y == x + 5, else y == 10
+        model.add_if_then_else(condition, y == x + 5, y == 10)
+
+        # Minimize y
+        model.minimize(y)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        # To minimize y, condition should be true and x should be 0
+        assert_equal(solver.value(condition), 1)
+        assert_equal(solver.value(x), 0)
+        assert_equal(solver.value(y), 5)
