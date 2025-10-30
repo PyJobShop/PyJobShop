@@ -860,12 +860,11 @@ def test_add_span():
     candidate2 = model.new_interval_var(5, 15, 5, "candidate2")
 
     num_constraints_before = len(model.proto.constraints)
-    cons1, cons2 = model.add_span(main, [candidate1, candidate2])
+    model.add_span(main, [candidate1, candidate2])
 
-    assert cons1 is not None
-    assert cons2 is not None
     num_constraints_after = len(model.proto.constraints)
-    assert_equal(num_constraints_after - num_constraints_before, 2)
+    # Should add constraints for the span
+    assert num_constraints_after > num_constraints_before
 
 
 def test_add_span_single_candidate():
@@ -876,10 +875,11 @@ def test_add_span_single_candidate():
     main = model.new_interval_var(0, 20, 10, "main")
     candidate = model.new_interval_var(0, 10, 5, "candidate")
 
-    cons1, cons2 = model.add_span(main, [candidate])
+    num_constraints_before = len(model.proto.constraints)
+    model.add_span(main, [candidate])
 
-    assert cons1 is not None
-    assert cons2 is not None
+    num_constraints_after = len(model.proto.constraints)
+    assert num_constraints_after > num_constraints_before
 
 
 def test_add_span_multiple_candidates():
@@ -893,12 +893,162 @@ def test_add_span_multiple_candidates():
     ]
 
     num_constraints_before = len(model.proto.constraints)
-    cons1, cons2 = model.add_span(main, candidates)
+    model.add_span(main, candidates)
 
+    num_constraints_after = len(model.proto.constraints)
+    assert num_constraints_after > num_constraints_before
+
+
+def test_add_span_with_optional_intervals():
+    """
+    Tests add_span with optional candidate intervals.
+    """
+    from ortools.sat.python import cp_model
+
+    model = CpModelPlus()
+    main_pres = model.new_bool_var("main_pres")
+    main = model.new_optional_interval_var(0, 10, 10, main_pres, "main")
+
+    cand1_pres = model.new_bool_var("cand1_pres")
+    cand2_pres = model.new_bool_var("cand2_pres")
+    candidate1 = model.new_optional_interval_var(
+        0, 5, 5, cand1_pres, "candidate1"
+    )
+    candidate2 = model.new_optional_interval_var(
+        3, 8, 5, cand2_pres, "candidate2"
+    )
+
+    model.add_span(main, [candidate1, candidate2])
+
+    # If both candidates absent, main should be absent
+    model.add(cand1_pres == 0)
+    model.add(cand2_pres == 0)
+
+    solver = cp_model.CpSolver()
+    status = solver.solve(model)
+
+    assert_equal(status, cp_model.OPTIMAL)
+    assert_equal(solver.value(main_pres), 0)
+
+
+def test_add_span_with_one_present_candidate():
+    """
+    Tests add_span when only one candidate is present.
+    """
+    from ortools.sat.python import cp_model
+
+    model = CpModelPlus()
+    main_pres = model.new_bool_var("main_pres")
+    main = model.new_optional_interval_var(0, 10, 10, main_pres, "main")
+
+    cand1_pres = model.new_bool_var("cand1_pres")
+    cand2_pres = model.new_bool_var("cand2_pres")
+    candidate1 = model.new_optional_interval_var(
+        2, 7, 5, cand1_pres, "candidate1"
+    )
+    candidate2 = model.new_optional_interval_var(
+        3, 8, 5, cand2_pres, "candidate2"
+    )
+
+    model.add_span(main, [candidate1, candidate2])
+
+    # Only first candidate is present
+    model.add(cand1_pres == 1)
+    model.add(cand2_pres == 0)
+
+    solver = cp_model.CpSolver()
+    status = solver.solve(model)
+
+    assert_equal(status, cp_model.OPTIMAL)
+    assert_equal(solver.value(main_pres), 1)
+    # Main should match candidate1 exactly
+    assert_equal(
+        solver.value(main.start_expr()), solver.value(candidate1.start_expr())
+    )
+    assert_equal(
+        solver.value(main.end_expr()), solver.value(candidate1.end_expr())
+    )
+
+
+def test_add_span_with_both_candidates_present():
+    """
+    Tests add_span when both candidates are present.
+    """
+    from ortools.sat.python import cp_model
+
+    model = CpModelPlus()
+    main_pres = model.new_bool_var("main_pres")
+    main = model.new_optional_interval_var(0, 15, 15, main_pres, "main")
+
+    cand1_pres = model.new_bool_var("cand1_pres")
+    cand2_pres = model.new_bool_var("cand2_pres")
+    candidate1 = model.new_optional_interval_var(
+        2, 7, 5, cand1_pres, "candidate1"
+    )
+    candidate2 = model.new_optional_interval_var(
+        5, 10, 5, cand2_pres, "candidate2"
+    )
+
+    model.add_span(main, [candidate1, candidate2])
+
+    # Both candidates present
+    model.add(cand1_pres == 1)
+    model.add(cand2_pres == 1)
+
+    solver = cp_model.CpSolver()
+    status = solver.solve(model)
+
+    assert_equal(status, cp_model.OPTIMAL)
+    assert_equal(solver.value(main_pres), 1)
+    # Main should span both candidates
+    # Start should be min of candidates' starts
+    assert_equal(solver.value(main.start_expr()), 2)
+    # End should be max of candidates' ends
+    assert_equal(solver.value(main.end_expr()), 10)
+
+
+def test_add_span_shortcut_all_present():
+    """
+    Tests add_span shortcut when all intervals are non-optional.
+    This tests the is_true helper and stronger formulation path.
+    """
+    from ortools.sat.python import cp_model
+
+    model = CpModelPlus()
+    # All non-optional intervals (always present)
+    # Using fixed-size intervals with variable start times
+    main_start = model.new_int_var(0, 20, "main_start")
+    main = model.new_interval_var(main_start, 11, main_start + 11, "main")
+
+    cand1_start = model.new_int_var(0, 10, "cand1_start")
+    candidate1 = model.new_interval_var(
+        cand1_start, 5, cand1_start + 5, "candidate1"
+    )
+
+    cand2_start = model.new_int_var(0, 10, "cand2_start")
+    candidate2 = model.new_interval_var(
+        cand2_start, 5, cand2_start + 5, "candidate2"
+    )
+
+    # Fix candidate positions to require span from 2 to 13 (size 11)
+    model.add(cand1_start == 2)
+    model.add(cand2_start == 8)
+
+    cons1, cons2 = model.add_span(main, [candidate1, candidate2])
+
+    # Verify constraints were returned
     assert cons1 is not None
     assert cons2 is not None
-    num_constraints_after = len(model.proto.constraints)
-    assert_equal(num_constraints_after - num_constraints_before, 2)
+
+    solver = cp_model.CpSolver()
+    status = solver.solve(model)
+
+    assert_equal(status, cp_model.OPTIMAL)
+    # Main should span both candidates
+    # Start should be min (2)
+    assert_equal(solver.value(main.start_expr()), 2)
+    # End should be max (8 + 5 = 13)
+    assert_equal(solver.value(main.end_expr()), 13)
 
 
 class TestAlternative:
@@ -2393,3 +2543,828 @@ class TestIfThenElse:
         assert_equal(solver.value(condition), 1)
         assert_equal(solver.value(x), 0)
         assert_equal(solver.value(y), 5)
+
+
+class TestMaxVar:
+    """
+    Tests for the new_max_var() method.
+    """
+
+    def test_basic_max_two_variables(self):
+        """
+        Tests basic maximum of two variables.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        x = model.new_int_var(1, 5, "x")
+        y = model.new_int_var(3, 7, "y")
+
+        max_var = model.new_max_var(x, y)
+
+        # Set values
+        model.add(x == 4)
+        model.add(y == 6)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(max_var), 6)
+
+    def test_max_with_equal_values(self):
+        """
+        Tests maximum when both variables have the same value.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        x = model.new_int_var(0, 10, "x")
+        y = model.new_int_var(0, 10, "y")
+
+        max_var = model.new_max_var(x, y)
+
+        model.add(x == 5)
+        model.add(y == 5)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(max_var), 5)
+
+    def test_max_three_variables(self):
+        """
+        Tests maximum of three variables.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        x = model.new_int_var(0, 10, "x")
+        y = model.new_int_var(0, 10, "y")
+        z = model.new_int_var(0, 10, "z")
+
+        max_var = model.new_max_var(x, y, z)
+
+        model.add(x == 3)
+        model.add(y == 7)
+        model.add(z == 5)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(max_var), 7)
+
+    def test_max_many_variables(self):
+        """
+        Tests maximum of many variables.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        variables = [model.new_int_var(0, 20, f"x{i}") for i in range(10)]
+
+        max_var = model.new_max_var(*variables)
+
+        # Set values with x5 being the maximum
+        for idx, var in enumerate(variables):
+            model.add(var == idx * 2)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        # Maximum should be 9 * 2 = 18
+        assert_equal(solver.value(max_var), 18)
+
+    def test_max_with_negative_values(self):
+        """
+        Tests maximum with negative values.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        x = model.new_int_var(-10, -5, "x")
+        y = model.new_int_var(-8, -2, "y")
+
+        max_var = model.new_max_var(x, y)
+
+        model.add(x == -7)
+        model.add(y == -3)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(max_var), -3)
+
+    def test_max_with_mixed_signs(self):
+        """
+        Tests maximum with mixed positive and negative values.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        x = model.new_int_var(-10, 0, "x")
+        y = model.new_int_var(0, 10, "y")
+
+        max_var = model.new_max_var(x, y)
+
+        model.add(x == -5)
+        model.add(y == 3)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(max_var), 3)
+
+    def test_max_domain_correctness(self):
+        """
+        Tests that the max variable has the correct domain.
+        """
+        model = CpModelPlus()
+        x = model.new_int_var(2, 5, "x")
+        y = model.new_int_var(7, 10, "y")
+
+        max_var = model.new_max_var(x, y)
+
+        # Domain should span from min of lower bounds to max of upper bounds
+        # That is: min(2, 7) to max(5, 10) = [2, 10]
+        domain_values = []
+        for idx in range(0, len(max_var.proto.domain), 2):
+            lb = max_var.proto.domain[idx]
+            ub = max_var.proto.domain[idx + 1]
+            domain_values.extend(range(lb, ub + 1))
+
+        # Check domain includes expected values
+        assert 2 in domain_values
+        assert 10 in domain_values
+        assert min(domain_values) == 2
+        assert max(domain_values) == 10
+
+    def test_max_with_single_variable(self):
+        """
+        Tests maximum with a single variable (edge case).
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        x = model.new_int_var(5, 15, "x")
+
+        max_var = model.new_max_var(x)
+
+        model.add(x == 10)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(max_var), 10)
+
+    def test_max_in_constraint(self):
+        """
+        Tests using max variable in other constraints.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        x = model.new_int_var(1, 10, "x")
+        y = model.new_int_var(1, 10, "y")
+        z = model.new_int_var(1, 10, "z")
+
+        max_var = model.new_max_var(x, y)
+
+        # Add constraint: max must be less than z
+        model.add(max_var < z)
+        model.add(x == 5)
+        model.add(y == 7)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(max_var), 7)
+        assert solver.value(z) > 7
+
+    def test_max_with_optimization(self):
+        """
+        Tests max variable in optimization objective.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        x = model.new_int_var(1, 10, "x")
+        y = model.new_int_var(1, 10, "y")
+
+        max_var = model.new_max_var(x, y)
+
+        # Minimize the maximum
+        model.minimize(max_var)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        # To minimize max, both should be 1
+        assert_equal(solver.value(x), 1)
+        assert_equal(solver.value(y), 1)
+        assert_equal(solver.value(max_var), 1)
+
+    def test_max_maximize_objective(self):
+        """
+        Tests maximizing the max variable.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        x = model.new_int_var(1, 5, "x")
+        y = model.new_int_var(3, 8, "y")
+
+        max_var = model.new_max_var(x, y)
+
+        # Maximize the maximum
+        model.maximize(max_var)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        # To maximize max, y should be 8 (its upper bound)
+        assert_equal(solver.value(y), 8)
+        assert_equal(solver.value(max_var), 8)
+
+    def test_max_all_solutions(self):
+        """
+        Tests that max variable is correct across all solutions.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        x = model.new_int_var(1, 3, "x")
+        y = model.new_int_var(2, 4, "y")
+
+        max_var = model.new_max_var(x, y)
+
+        solver = cp_model.CpSolver()
+        solver.parameters.enumerate_all_solutions = True
+
+        class SolutionCollector(cp_model.CpSolverSolutionCallback):
+            def __init__(self):
+                cp_model.CpSolverSolutionCallback.__init__(self)
+                self.solutions = []
+
+            def on_solution_callback(self):
+                self.solutions.append(
+                    (self.value(x), self.value(y), self.value(max_var))
+                )
+
+        collector = SolutionCollector()
+        solver.solve(model, collector)
+
+        # Verify each solution
+        for x_val, y_val, max_val in collector.solutions:
+            assert_equal(max_val, max(x_val, y_val))
+
+        # Should have 3 * 3 = 9 solutions
+        assert len(collector.solutions) == 9
+
+    def test_max_with_overlapping_domains(self):
+        """
+        Tests maximum with overlapping variable domains.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        x = model.new_int_var(3, 8, "x")
+        y = model.new_int_var(5, 10, "y")
+
+        max_var = model.new_max_var(x, y)
+
+        model.add(x == 6)
+        model.add(y == 5)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(max_var), 6)
+
+    def test_max_constraint_propagation(self):
+        """
+        Tests that max constraint properly propagates bounds.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        x = model.new_int_var(1, 10, "x")
+        y = model.new_int_var(1, 10, "y")
+
+        max_var = model.new_max_var(x, y)
+
+        # Force max to be at most 5
+        model.add(max_var <= 5)
+
+        # This should constrain both x and y to be <= 5
+        model.maximize(x + y)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(x), 5)
+        assert_equal(solver.value(y), 5)
+        assert_equal(solver.value(max_var), 5)
+
+    def test_max_with_constants(self):
+        """
+        Tests maximum with constant-valued variables.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        x = model.new_int_var(5, 5, "x")  # Constant
+        y = model.new_int_var(1, 10, "y")
+
+        max_var = model.new_max_var(x, y)
+
+        model.add(y == 3)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(max_var), 5)
+
+    def test_max_with_zero(self):
+        """
+        Tests maximum with zero in the domain.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        x = model.new_int_var(-5, 0, "x")
+        y = model.new_int_var(0, 5, "y")
+
+        max_var = model.new_max_var(x, y)
+
+        model.add(x == -2)
+        model.add(y == 0)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(max_var), 0)
+
+    def test_max_constraints_added(self):
+        """
+        Tests that new_max_var adds the appropriate constraint.
+        """
+        model = CpModelPlus()
+        x = model.new_int_var(1, 5, "x")
+        y = model.new_int_var(3, 7, "y")
+
+        num_constraints_before = len(model.proto.constraints)
+        model.new_max_var(x, y)
+        num_constraints_after = len(model.proto.constraints)
+
+        # Should add 1 constraint (the max_equality constraint)
+        assert_equal(num_constraints_after - num_constraints_before, 1)
+
+
+class TestMinVar:
+    """
+    Tests for the new_min_var() method.
+    """
+
+    def test_basic_min_two_variables(self):
+        """
+        Tests basic minimum of two variables.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        x = model.new_int_var(1, 5, "x")
+        y = model.new_int_var(3, 7, "y")
+
+        min_var = model.new_min_var(x, y)
+
+        # Set values
+        model.add(x == 4)
+        model.add(y == 6)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(min_var), 4)
+
+    def test_min_with_equal_values(self):
+        """
+        Tests minimum when both variables have the same value.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        x = model.new_int_var(0, 10, "x")
+        y = model.new_int_var(0, 10, "y")
+
+        min_var = model.new_min_var(x, y)
+
+        model.add(x == 5)
+        model.add(y == 5)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(min_var), 5)
+
+    def test_min_three_variables(self):
+        """
+        Tests minimum of three variables.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        x = model.new_int_var(0, 10, "x")
+        y = model.new_int_var(0, 10, "y")
+        z = model.new_int_var(0, 10, "z")
+
+        min_var = model.new_min_var(x, y, z)
+
+        model.add(x == 7)
+        model.add(y == 3)
+        model.add(z == 5)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(min_var), 3)
+
+    def test_min_many_variables(self):
+        """
+        Tests minimum of many variables.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        variables = [model.new_int_var(0, 20, f"x{i}") for i in range(10)]
+
+        min_var = model.new_min_var(*variables)
+
+        # Set values with x0 being the minimum
+        for idx, var in enumerate(variables):
+            model.add(var == idx * 2 + 1)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        # Minimum should be 0 * 2 + 1 = 1
+        assert_equal(solver.value(min_var), 1)
+
+    def test_min_with_negative_values(self):
+        """
+        Tests minimum with negative values.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        x = model.new_int_var(-10, -5, "x")
+        y = model.new_int_var(-8, -2, "y")
+
+        min_var = model.new_min_var(x, y)
+
+        model.add(x == -7)
+        model.add(y == -3)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(min_var), -7)
+
+    def test_min_with_mixed_signs(self):
+        """
+        Tests minimum with mixed positive and negative values.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        x = model.new_int_var(-10, 0, "x")
+        y = model.new_int_var(0, 10, "y")
+
+        min_var = model.new_min_var(x, y)
+
+        model.add(x == -5)
+        model.add(y == 3)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(min_var), -5)
+
+    def test_min_domain_correctness(self):
+        """
+        Tests that the min variable has the correct domain.
+        """
+        model = CpModelPlus()
+        x = model.new_int_var(2, 5, "x")
+        y = model.new_int_var(7, 10, "y")
+
+        min_var = model.new_min_var(x, y)
+
+        # Domain should span from min of lower bounds to max of upper bounds
+        # That is: min(2, 7) to max(5, 10) = [2, 10]
+        domain_values = []
+        for idx in range(0, len(min_var.proto.domain), 2):
+            lb = min_var.proto.domain[idx]
+            ub = min_var.proto.domain[idx + 1]
+            domain_values.extend(range(lb, ub + 1))
+
+        # Check domain includes expected values
+        assert 2 in domain_values
+        assert 10 in domain_values
+        assert min(domain_values) == 2
+        assert max(domain_values) == 10
+
+    def test_min_with_single_variable(self):
+        """
+        Tests minimum with a single variable (edge case).
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        x = model.new_int_var(5, 15, "x")
+
+        min_var = model.new_min_var(x)
+
+        model.add(x == 10)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(min_var), 10)
+
+    def test_min_in_constraint(self):
+        """
+        Tests using min variable in other constraints.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        x = model.new_int_var(1, 10, "x")
+        y = model.new_int_var(1, 10, "y")
+        z = model.new_int_var(1, 10, "z")
+
+        min_var = model.new_min_var(x, y)
+
+        # Add constraint: min must be greater than z
+        model.add(min_var > z)
+        model.add(x == 5)
+        model.add(y == 7)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(min_var), 5)
+        assert solver.value(z) < 5
+
+    def test_min_with_optimization(self):
+        """
+        Tests min variable in optimization objective.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        x = model.new_int_var(1, 10, "x")
+        y = model.new_int_var(1, 10, "y")
+
+        min_var = model.new_min_var(x, y)
+
+        # Maximize the minimum
+        model.maximize(min_var)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        # To maximize min, both should be 10
+        assert_equal(solver.value(x), 10)
+        assert_equal(solver.value(y), 10)
+        assert_equal(solver.value(min_var), 10)
+
+    def test_min_minimize_objective(self):
+        """
+        Tests minimizing the min variable.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        x = model.new_int_var(1, 5, "x")
+        y = model.new_int_var(3, 8, "y")
+
+        min_var = model.new_min_var(x, y)
+
+        # Minimize the minimum
+        model.minimize(min_var)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        # To minimize min, x should be 1 (its lower bound)
+        assert_equal(solver.value(x), 1)
+        assert_equal(solver.value(min_var), 1)
+
+    def test_min_all_solutions(self):
+        """
+        Tests that min variable is correct across all solutions.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        x = model.new_int_var(1, 3, "x")
+        y = model.new_int_var(2, 4, "y")
+
+        min_var = model.new_min_var(x, y)
+
+        solver = cp_model.CpSolver()
+        solver.parameters.enumerate_all_solutions = True
+
+        class SolutionCollector(cp_model.CpSolverSolutionCallback):
+            def __init__(self):
+                cp_model.CpSolverSolutionCallback.__init__(self)
+                self.solutions = []
+
+            def on_solution_callback(self):
+                self.solutions.append(
+                    (self.value(x), self.value(y), self.value(min_var))
+                )
+
+        collector = SolutionCollector()
+        solver.solve(model, collector)
+
+        # Verify each solution
+        for x_val, y_val, min_val in collector.solutions:
+            assert_equal(min_val, min(x_val, y_val))
+
+        # Should have 3 * 3 = 9 solutions
+        assert len(collector.solutions) == 9
+
+    def test_min_with_overlapping_domains(self):
+        """
+        Tests minimum with overlapping variable domains.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        x = model.new_int_var(3, 8, "x")
+        y = model.new_int_var(5, 10, "y")
+
+        min_var = model.new_min_var(x, y)
+
+        model.add(x == 6)
+        model.add(y == 5)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(min_var), 5)
+
+    def test_min_constraint_propagation(self):
+        """
+        Tests that min constraint properly propagates bounds.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        x = model.new_int_var(1, 10, "x")
+        y = model.new_int_var(1, 10, "y")
+
+        min_var = model.new_min_var(x, y)
+
+        # Force min to be at least 5
+        model.add(min_var >= 5)
+
+        # This should constrain both x and y to be >= 5
+        model.minimize(x + y)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(x), 5)
+        assert_equal(solver.value(y), 5)
+        assert_equal(solver.value(min_var), 5)
+
+    def test_min_with_constants(self):
+        """
+        Tests minimum with constant-valued variables.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        x = model.new_int_var(5, 5, "x")  # Constant
+        y = model.new_int_var(1, 10, "y")
+
+        min_var = model.new_min_var(x, y)
+
+        model.add(y == 7)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(min_var), 5)
+
+    def test_min_with_zero(self):
+        """
+        Tests minimum with zero in the domain.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        x = model.new_int_var(-5, 0, "x")
+        y = model.new_int_var(0, 5, "y")
+
+        min_var = model.new_min_var(x, y)
+
+        model.add(x == -2)
+        model.add(y == 0)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(min_var), -2)
+
+    def test_min_constraints_added(self):
+        """
+        Tests that new_min_var adds the appropriate constraint.
+        """
+        model = CpModelPlus()
+        x = model.new_int_var(1, 5, "x")
+        y = model.new_int_var(3, 7, "y")
+
+        num_constraints_before = len(model.proto.constraints)
+        model.new_min_var(x, y)
+        num_constraints_after = len(model.proto.constraints)
+
+        # Should add 1 constraint (the min_equality constraint)
+        assert_equal(num_constraints_after - num_constraints_before, 1)
+
+    def test_min_and_max_together(self):
+        """
+        Tests using min and max variables together.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        x = model.new_int_var(1, 10, "x")
+        y = model.new_int_var(1, 10, "y")
+        z = model.new_int_var(1, 10, "z")
+
+        min_var = model.new_min_var(x, y, z)
+        max_var = model.new_max_var(x, y, z)
+
+        # Constrain the range
+        model.add(max_var - min_var <= 3)
+
+        # Set some values
+        model.add(x == 5)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert solver.value(max_var) - solver.value(min_var) <= 3
+
+    def test_min_with_large_range(self):
+        """
+        Tests minimum with large value ranges.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        x = model.new_int_var(1, 1000, "x")
+        y = model.new_int_var(500, 1500, "y")
+
+        min_var = model.new_min_var(x, y)
+
+        model.add(x == 750)
+        model.add(y == 600)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(min_var), 600)

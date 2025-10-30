@@ -49,6 +49,13 @@ class CpModelPlus(CpModel):
     - [x] add_synchronize(): Synchronization constraint between intervals
     - [ ] add_isomorphism(): Isomorphism constraint between interval sets
 
+    Other
+    ----
+    - [x] new_product_var(): Create new variable for product of two int vars
+    - [x] new_max_var(): Create new variable for maximum of int vars
+    - [x] new_min_var(): Create new variable for minimum of int vars
+    - [x] add_if_then_else(): If-then-else constraint for expressions
+
     Inherited OR-Tools Methods
     --------------------------
     All methods from OR-Tools CpModel are available, including:
@@ -137,6 +144,12 @@ class CpModelPlus(CpModel):
         literals = interval.proto.enforcement_literal
         if len(literals) == 0:  # not an optional
             return self.new_constant(True)
+
+        if len(literals) > 1:  # don't support intervals with multiple literals
+            raise NotImplementedError(
+                "Intervals with multiple enforcement literals are not "
+                "supported."
+            )
 
         # Get the index of the presence literal (first enforcement literal)
         idcs = literals[0]
@@ -570,6 +583,7 @@ class CpModelPlus(CpModel):
         """
         raise NotImplementedError
 
+    # https://www.ibm.com/docs/en/icos/22.1.1?topic=scheduling-constraints-groups-interval-variables
     def add_span(
         self, main: IntervalVar, candidates: list[IntervalVar]
     ) -> tuple[Constraint, Constraint]:
@@ -595,10 +609,42 @@ class CpModelPlus(CpModel):
         tuple[Constraint, Constraint]
             The start and end span constraints.
         """
-        starts = [candidate.start_expr() for candidate in candidates]
-        ends = [candidate.end_expr() for candidate in candidates]
-        cons1 = self.add_min_equality(main.start_expr(), starts)
-        cons2 = self.add_max_equality(main.end_expr(), ends)
+
+        def is_true(var: IntVar) -> bool:
+            return list(var.proto.domain) == [1, 1]
+
+        # Shortcut if all intervals are present - this is much stronger.
+        main_pres = self.presence_of(main)
+        cand_pres = [self.presence_of(cand) for cand in candidates]
+
+        if all(is_true(x) for x in [main_pres, *cand_pres]):
+            starts = [candidate.start_expr() for candidate in candidates]
+            ends = [candidate.end_expr() for candidate in candidates]
+            cons1 = self.add_min_equality(main.start_expr(), starts)
+            cons2 = self.add_max_equality(main.end_expr(), ends)
+            return cons1, cons2
+
+        # Main is present <=> at least one candidate is present.
+        self.add(main_pres <= sum(cand_pres))
+        self.add(len(candidates) * main_pres >= sum(cand_pres))
+
+        # Introduce sentinel min/max values to handle absent candidates.
+        min_value = self.new_int_var(-MAX_VALUE, MAX_VALUE, "")
+        max_value = self.new_int_var(-MAX_VALUE, MAX_VALUE, "")
+
+        for candidate in candidates:
+            both_present = [main_pres, self.presence_of(candidate)]
+            bound_lower = min_value <= candidate.start_expr()
+            self.add(bound_lower).only_enforce_if(both_present)
+            bound_upper = max_value >= candidate.end_expr()
+            self.add(bound_upper).only_enforce_if(both_present)
+
+        cons1 = self.add(main.start_expr() == min_value).only_enforce_if(
+            main_pres
+        )
+        cons2 = self.add(main.end_expr() == max_value).only_enforce_if(
+            main_pres
+        )
         return cons1, cons2
 
     def add_alternative(
@@ -753,6 +799,28 @@ class CpModelPlus(CpModel):
         self.add(product_var == int_var).only_enforce_if(bool_var)
         self.add(product_var == 0).only_enforce_if(~bool_var)
         return product_var
+
+    def new_max_var(self, *variables: IntVar) -> IntVar:
+        """
+        Creates a new integer variable representing the maximum of given
+        integer variables.
+        """
+        intervals = [value for var in variables for value in var.proto.domain]
+        domain = Domain.from_flat_intervals(intervals)
+        max_var = self.new_int_var_from_domain(domain, "")
+        self.add_max_equality(max_var, list(variables))
+        return max_var
+
+    def new_min_var(self, *variables: IntVar) -> IntVar:
+        """
+        Creates a new integer variable representing the minimum of given
+        integer variables.
+        """
+        intervals = [value for var in variables for value in var.proto.domain]
+        domain = Domain.from_flat_intervals(intervals)
+        min_var = self.new_int_var_from_domain(domain, "")
+        self.add_min_equality(min_var, list(variables))
+        return min_var
 
     def add_if_then_else(
         self,
