@@ -1053,6 +1053,33 @@ class CpModelPlus(CpModel):
 
         return has_overlap
 
+    def new_conditional_var(self, x: IntVar, *condition: BoolVarT) -> IntVar:
+        """
+        Creates a new variable that conditionally equals another variable.
+
+        When all conditions are true, the new variable equals x. When any
+        condition is false, the new variable is unconstrained within its
+        domain (same domain as x).
+
+        Parameters
+        ----------
+        x
+            The source variable to conditionally sync with.
+        *condition
+            One or more Boolean variables. The new variable equals x if and
+            only if all conditions are true (AND logic).
+
+        Returns
+        -------
+        IntVar
+            A new integer variable with the same domain as x, constrained
+            to equal x when all conditions are true.
+        """
+        domain = Domain.from_flat_intervals(x.proto.domain)
+        y = self.new_int_var_from_domain(domain, "")
+        self.add(y == x).only_enforce_if(condition)
+        return y
+
     def add_if_then_else(
         self,
         condition: BoolVarT | list[BoolVarT],

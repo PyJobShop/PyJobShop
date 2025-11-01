@@ -2055,6 +2055,253 @@ class TestIfThenElse:
         assert_equal(solver.value(y), expected_y)
 
 
+class TestConditionalVar:
+    """
+    Tests for the new_conditional_var() method.
+    """
+
+    def test_single_condition_true(self):
+        """
+        Tests that when condition is true, y equals x.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        x = model.new_int_var(0, 10, "x")
+        condition = model.new_bool_var("condition")
+
+        y = model.new_conditional_var(x, condition)
+
+        # Set values
+        model.add(x == 5)
+        model.add(condition == 1)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(x), 5)
+        assert_equal(solver.value(y), 5)
+
+    def test_single_condition_false(self):
+        """
+        Tests that when condition is false, y is unconstrained.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        x = model.new_int_var(0, 10, "x")
+        condition = model.new_bool_var("condition")
+
+        y = model.new_conditional_var(x, condition)
+
+        # Set x and condition
+        model.add(x == 5)
+        model.add(condition == 0)
+
+        # Force y to a different value
+        model.add(y == 8)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(x), 5)
+        assert_equal(solver.value(y), 8)  # y can differ from x
+
+    def test_multiple_conditions_all_true(self):
+        """
+        Tests with multiple conditions when all are true.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        x = model.new_int_var(0, 10, "x")
+        cond1 = model.new_bool_var("cond1")
+        cond2 = model.new_bool_var("cond2")
+        cond3 = model.new_bool_var("cond3")
+
+        y = model.new_conditional_var(x, cond1, cond2, cond3)
+
+        # Set all conditions true
+        model.add(x == 7)
+        model.add(cond1 == 1)
+        model.add(cond2 == 1)
+        model.add(cond3 == 1)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(y), 7)
+
+    def test_multiple_conditions_one_false(self):
+        """
+        Tests with multiple conditions when one is false.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        x = model.new_int_var(0, 10, "x")
+        cond1 = model.new_bool_var("cond1")
+        cond2 = model.new_bool_var("cond2")
+
+        y = model.new_conditional_var(x, cond1, cond2)
+
+        # Set one condition false
+        model.add(x == 4)
+        model.add(cond1 == 1)
+        model.add(cond2 == 0)  # False
+
+        # Force y to different value
+        model.add(y == 9)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(x), 4)
+        assert_equal(solver.value(y), 9)  # y can differ
+
+    def test_domain_preserved(self):
+        """
+        Tests that the new variable has the same domain as x.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        # Create x with specific domain
+        x = model.new_int_var(5, 15, "x")
+        condition = model.new_bool_var("condition")
+
+        y = model.new_conditional_var(x, condition)
+
+        # When condition is false, y should still be in domain [5, 15]
+        model.add(condition == 0)
+        model.add(x == 10)
+
+        # Try to maximize y
+        model.maximize(y)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        # y should be at most 15 (domain bound)
+        assert_equal(solver.value(y), 15)
+
+    def test_with_optimization(self):
+        """
+        Tests conditional variable in optimization context.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        x = model.new_int_var(0, 10, "x")
+        condition = model.new_bool_var("condition")
+
+        y = model.new_conditional_var(x, condition)
+
+        # Maximize y
+        model.maximize(y)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        # To maximize y, condition should be false (y unconstrained)
+        # or condition true with x=10
+        assert_equal(solver.value(y), 10)
+
+    def test_forces_condition_value(self):
+        """
+        Tests that y != x forces condition to be false.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        x = model.new_int_var(0, 10, "x")
+        condition = model.new_bool_var("condition")
+
+        y = model.new_conditional_var(x, condition)
+
+        # Force x and y to different values
+        model.add(x == 2)
+        model.add(y == 7)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        # Condition must be false since y != x
+        assert_equal(solver.value(condition), 0)
+
+    @pytest.mark.parametrize(
+        "cond1_val,cond2_val,x_val,can_differ",
+        [
+            (True, True, 5, False),  # Both true -> y must equal x
+            (True, False, 5, True),  # One false -> y can differ
+            (False, True, 5, True),  # One false -> y can differ
+            (False, False, 5, True),  # Both false -> y can differ
+        ],
+    )
+    def test_all_combinations(self, cond1_val, cond2_val, x_val, can_differ):
+        """
+        Tests all combinations of two conditions.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        x = model.new_int_var(0, 10, "x")
+        cond1 = model.new_bool_var("cond1")
+        cond2 = model.new_bool_var("cond2")
+
+        y = model.new_conditional_var(x, cond1, cond2)
+
+        model.add(x == x_val)
+        model.add(cond1 == (1 if cond1_val else 0))
+        model.add(cond2 == (1 if cond2_val else 0))
+
+        if can_differ:
+            # Try to set y to different value
+            different_val = (x_val + 3) % 11
+            model.add(y == different_val)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+
+        if can_differ:
+            # Should be able to set y to different value
+            assert_equal(solver.value(y), (x_val + 3) % 11)
+        else:
+            # y must equal x
+            assert_equal(solver.value(y), x_val)
+
+    def test_with_negative_domain(self):
+        """
+        Tests conditional variable with negative values in domain.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        x = model.new_int_var(-10, 10, "x")
+        condition = model.new_bool_var("condition")
+
+        y = model.new_conditional_var(x, condition)
+
+        # Set x to negative value, condition true
+        model.add(x == -5)
+        model.add(condition == 1)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(y), -5)
+
+
 class TestMaxVar:
     """
     Tests for the new_max_var() method.
