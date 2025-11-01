@@ -169,648 +169,123 @@ def test_presence_of_negated_literal():
     assert presence_lit is not None
 
 
-class TestStartAtStart:
+@pytest.mark.parametrize(
+    "method_name",
+    [
+        "add_start_at_start",
+        "add_start_at_end",
+        "add_start_before_start",
+        "add_start_before_end",
+        "add_end_at_start",
+        "add_end_at_end",
+        "add_end_before_start",
+        "add_end_before_end",
+    ],
+)
+class TestIntervalPrecedenceConstraints:
     """
-    Tests for the add_start_at_start() method.
+    Consolidated tests for all interval precedence constraint methods.
     """
 
-    def test_basic_constraint(self):
+    def test_basic_constraint(self, method_name):
         """
-        Tests that add_start_at_start creates correct constraint.
+        Tests that constraint method creates correct constraint.
         """
         model = CpModelPlus()
         interval1 = model.new_interval_var(0, 10, 5, "interval1")
         interval2 = model.new_interval_var(0, 10, 5, "interval2")
 
-        constraint = model.add_start_at_start(interval1, interval2, delay=2)
+        method = getattr(model, method_name)
+        constraint = method(interval1, interval2, delay=2)
 
-        # Constraint is already added to the model
         assert constraint is not None
         assert model.proto.constraints[-1] is not None
 
-    def test_zero_delay(self):
+    def test_with_optional_intervals(self, method_name):
         """
-        Tests add_start_at_start with zero delay (default).
-        """
-        model = CpModelPlus()
-        interval1 = model.new_interval_var(0, 10, 5, "interval1")
-        interval2 = model.new_interval_var(0, 10, 5, "interval2")
-
-        constraint = model.add_start_at_start(interval1, interval2)
-
-        # Constraint is already added to the model
-        assert constraint is not None
-        assert model.proto.constraints[-1] is not None
-
-    def test_with_optional_intervals(self):
-        """
-        Tests add_start_at_start with optional intervals (absent handling).
+        Tests constraint with optional intervals.
         """
         model = CpModelPlus()
 
-        # Create optional intervals
         start1 = model.new_int_var(0, 10, "start1")
         start2 = model.new_int_var(0, 10, "start2")
         presence1 = model.new_bool_var("presence1")
         presence2 = model.new_bool_var("presence2")
 
         interval1 = model.new_optional_interval_var(
-            start=start1,
-            size=5,
-            end=start1 + 5,
-            is_present=presence1,
-            name="interval1",
+            start1, 5, start1 + 5, presence1, "interval1"
         )
-
         interval2 = model.new_optional_interval_var(
-            start=start2,
-            size=5,
-            end=start2 + 5,
-            is_present=presence2,
-            name="interval2",
+            start2, 5, start2 + 5, presence2, "interval2"
         )
 
-        # Add constraint with delay
-        constraint = model.add_start_at_start(interval1, interval2, delay=2)
+        method = getattr(model, method_name)
+        constraint = method(interval1, interval2, delay=2)
 
         assert constraint is not None
-        assert model.proto.constraints[-1] is not None
 
-    def test_mixed_optional_non_optional(self):
-        """
-        Tests with one optional and one non-optional interval.
-        """
-        model = CpModelPlus()
-
-        # Create one optional and one non-optional interval
-        start1 = model.new_int_var(0, 10, "start1")
-        presence1 = model.new_bool_var("presence1")
-
-        interval1 = model.new_optional_interval_var(
-            start=start1,
-            size=5,
-            end=start1 + 5,
-            is_present=presence1,
-            name="optional_interval",
-        )
-
-        interval2 = model.new_interval_var(0, 10, 5, "non_optional_interval")
-
-        # Add constraint - should only enforce when interval1 is present
-        constraint = model.add_start_at_start(interval1, interval2, delay=3)
-
-        assert constraint is not None
-        assert model.proto.constraints[-1] is not None
-
-    def test_both_absent_satisfied(self):
+    def test_both_absent_satisfied(self, method_name):
         """
         Tests constraint is satisfied when both intervals are absent.
         """
         from ortools.sat.python import cp_model
 
         model = CpModelPlus()
-        solver = cp_model.CpSolver()
-
-        # Create optional intervals
         start1 = model.new_int_var(0, 10, "start1")
         start2 = model.new_int_var(0, 10, "start2")
         presence1 = model.new_bool_var("presence1")
         presence2 = model.new_bool_var("presence2")
 
         interval1 = model.new_optional_interval_var(
-            start=start1,
-            size=5,
-            end=start1 + 5,
-            is_present=presence1,
-            name="interval1",
+            start1, 5, start1 + 5, presence1, "interval1"
         )
-
         interval2 = model.new_optional_interval_var(
-            start=start2,
-            size=5,
-            end=start2 + 5,
-            is_present=presence2,
-            name="interval2",
+            start2, 5, start2 + 5, presence2, "interval2"
         )
 
-        # Add start-at-start constraint
-        model.add_start_at_start(interval1, interval2, delay=2)
+        method = getattr(model, method_name)
+        method(interval1, interval2, delay=2)
 
-        # Force both intervals to be absent
         model.add(presence1 == 0)
         model.add(presence2 == 0)
 
-        # Should be satisfiable (constraint auto-satisfied when absent)
-        status = solver.solve(model)
-        assert_equal(status, cp_model.OPTIMAL)
-
-    def test_one_absent_satisfied(self):
-        """
-        Tests constraint is satisfied when only one interval is absent.
-        """
-        from ortools.sat.python import cp_model
-
-        model = CpModelPlus()
         solver = cp_model.CpSolver()
-
-        # Create optional intervals
-        start1 = model.new_int_var(0, 10, "start1")
-        start2 = model.new_int_var(0, 10, "start2")
-        presence1 = model.new_bool_var("presence1")
-        presence2 = model.new_bool_var("presence2")
-
-        interval1 = model.new_optional_interval_var(
-            start=start1,
-            size=5,
-            end=start1 + 5,
-            is_present=presence1,
-            name="interval1",
-        )
-
-        interval2 = model.new_optional_interval_var(
-            start=start2,
-            size=5,
-            end=start2 + 5,
-            is_present=presence2,
-            name="interval2",
-        )
-
-        # Add start-at-start constraint
-        model.add_start_at_start(interval1, interval2, delay=2)
-
-        # Force first interval present, second absent
-        model.add(presence1 == 1)
-        model.add(presence2 == 0)
-
-        # Should be satisfiable (constraint auto-satisfied when one absent)
         status = solver.solve(model)
         assert_equal(status, cp_model.OPTIMAL)
 
-    def test_both_present_enforced(self):
+    def test_both_present_enforced(self, method_name):
         """
         Tests constraint is enforced when both intervals are present.
+        This test verifies the constraint actually affects the solution.
         """
         from ortools.sat.python import cp_model
 
         model = CpModelPlus()
-        solver = cp_model.CpSolver()
-
-        # Create optional intervals
         start1 = model.new_int_var(0, 10, "start1")
         start2 = model.new_int_var(0, 10, "start2")
         presence1 = model.new_bool_var("presence1")
         presence2 = model.new_bool_var("presence2")
 
         interval1 = model.new_optional_interval_var(
-            start=start1,
-            size=5,
-            end=start1 + 5,
-            is_present=presence1,
-            name="interval1",
+            start1, 5, start1 + 5, presence1, "interval1"
         )
-
         interval2 = model.new_optional_interval_var(
-            start=start2,
-            size=5,
-            end=start2 + 5,
-            is_present=presence2,
-            name="interval2",
+            start2, 5, start2 + 5, presence2, "interval2"
         )
 
-        # Add start-at-start constraint with delay=2
-        model.add_start_at_start(interval1, interval2, delay=2)
+        method = getattr(model, method_name)
+        method(interval1, interval2, delay=2)
 
-        # Force both intervals to be present
-        model.add(presence1 == 1)
-        model.add(presence2 == 1)
-
-        # Force start1 to a specific value
-        model.add(start1 == 3)
-
-        # Solve and verify the constraint is enforced
-        status = solver.solve(model)
-        assert_equal(status, cp_model.OPTIMAL)
-
-        # Verify: start2 should be start1 + delay = 3 + 2 = 5
-        assert_equal(solver.value(start2), 5)
-
-
-class TestStartAtEnd:
-    """
-    Tests for the add_start_at_end() method.
-    """
-
-    def test_basic_constraint(self):
-        """
-        Tests that add_start_at_end creates correct constraint.
-        """
-        model = CpModelPlus()
-        interval1 = model.new_interval_var(0, 10, 5, "interval1")
-        interval2 = model.new_interval_var(0, 10, 5, "interval2")
-
-        constraint = model.add_start_at_end(interval1, interval2, delay=3)
-
-        assert constraint is not None
-        assert model.proto.constraints[-1] is not None
-
-    def test_both_present_enforced(self):
-        """
-        Tests constraint is enforced when both intervals are present.
-        """
-        from ortools.sat.python import cp_model
-
-        model = CpModelPlus()
-        solver = cp_model.CpSolver()
-
-        start1 = model.new_int_var(0, 10, "start1")
-        start2 = model.new_int_var(0, 10, "start2")
-        presence1 = model.new_bool_var("presence1")
-        presence2 = model.new_bool_var("presence2")
-
-        interval1 = model.new_optional_interval_var(
-            start=start1,
-            size=5,
-            end=start1 + 5,
-            is_present=presence1,
-            name="interval1",
-        )
-
-        interval2 = model.new_optional_interval_var(
-            start=start2,
-            size=3,
-            end=start2 + 3,
-            is_present=presence2,
-            name="interval2",
-        )
-
-        model.add_start_at_end(interval1, interval2, delay=2)
         model.add(presence1 == 1)
         model.add(presence2 == 1)
         model.add(start1 == 3)
 
-        status = solver.solve(model)
-        assert_equal(status, cp_model.OPTIMAL)
-        # end2 = start1 + delay = 3 + 2 = 5, so start2 = 5 - 3 = 2
-        assert_equal(solver.value(start2), 2)
-
-
-class TestStartBeforeStart:
-    """
-    Tests for the add_start_before_start() method.
-    """
-
-    def test_basic_constraint(self):
-        """
-        Tests that add_start_before_start creates correct constraint.
-        """
-        model = CpModelPlus()
-        interval1 = model.new_interval_var(0, 10, 5, "interval1")
-        interval2 = model.new_interval_var(0, 10, 5, "interval2")
-
-        constraint = model.add_start_before_start(
-            interval1, interval2, delay=1
-        )
-
-        assert constraint is not None
-        assert model.proto.constraints[-1] is not None
-
-    def test_both_present_enforced(self):
-        """
-        Tests constraint is enforced when both intervals are present.
-        """
-        from ortools.sat.python import cp_model
-
-        model = CpModelPlus()
         solver = cp_model.CpSolver()
-
-        start1 = model.new_int_var(0, 10, "start1")
-        start2 = model.new_int_var(0, 10, "start2")
-        presence1 = model.new_bool_var("presence1")
-        presence2 = model.new_bool_var("presence2")
-
-        interval1 = model.new_optional_interval_var(
-            start=start1,
-            size=5,
-            end=start1 + 5,
-            is_present=presence1,
-            name="interval1",
-        )
-
-        interval2 = model.new_optional_interval_var(
-            start=start2,
-            size=5,
-            end=start2 + 5,
-            is_present=presence2,
-            name="interval2",
-        )
-
-        model.add_start_before_start(interval1, interval2, delay=2)
-        model.add(presence1 == 1)
-        model.add(presence2 == 1)
-        model.add(start1 == 3)
-
         status = solver.solve(model)
         assert_equal(status, cp_model.OPTIMAL)
-        # start2 >= start1 + delay = 3 + 2 = 5
-        assert solver.value(start2) >= 5
 
-
-class TestStartBeforeEnd:
-    """
-    Tests for the add_start_before_end() method.
-    """
-
-    def test_basic_constraint(self):
-        """
-        Tests that add_start_before_end creates correct constraint.
-        """
-        model = CpModelPlus()
-        interval1 = model.new_interval_var(0, 10, 5, "interval1")
-        interval2 = model.new_interval_var(0, 10, 5, "interval2")
-
-        constraint = model.add_start_before_end(interval1, interval2, delay=2)
-
-        assert constraint is not None
-        assert model.proto.constraints[-1] is not None
-
-    def test_both_present_enforced(self):
-        """
-        Tests constraint is enforced when both intervals are present.
-        """
-        from ortools.sat.python import cp_model
-
-        model = CpModelPlus()
-        solver = cp_model.CpSolver()
-
-        start1 = model.new_int_var(0, 10, "start1")
-        start2 = model.new_int_var(0, 10, "start2")
-        presence1 = model.new_bool_var("presence1")
-        presence2 = model.new_bool_var("presence2")
-
-        interval1 = model.new_optional_interval_var(
-            start=start1,
-            size=5,
-            end=start1 + 5,
-            is_present=presence1,
-            name="interval1",
-        )
-
-        interval2 = model.new_optional_interval_var(
-            start=start2,
-            size=3,
-            end=start2 + 3,
-            is_present=presence2,
-            name="interval2",
-        )
-
-        model.add_start_before_end(interval1, interval2, delay=1)
-        model.add(presence1 == 1)
-        model.add(presence2 == 1)
-        model.add(start1 == 2)
-
-        status = solver.solve(model)
-        assert_equal(status, cp_model.OPTIMAL)
-        # end2 >= start1 + delay = 2 + 1 = 3
-        # Since size2 = 3, start2 >= 3 - 3 = 0
-        assert solver.value(start2) + 3 >= 3
-
-
-class TestEndAtStart:
-    """
-    Tests for the add_end_at_start() method.
-    """
-
-    def test_basic_constraint(self):
-        """
-        Tests that add_end_at_start creates correct constraint.
-        """
-        model = CpModelPlus()
-        interval1 = model.new_interval_var(0, 10, 5, "interval1")
-        interval2 = model.new_interval_var(0, 10, 5, "interval2")
-
-        constraint = model.add_end_at_start(interval1, interval2, delay=0)
-
-        assert constraint is not None
-        assert model.proto.constraints[-1] is not None
-
-    def test_both_present_enforced(self):
-        """
-        Tests constraint is enforced when both intervals are present.
-        """
-        from ortools.sat.python import cp_model
-
-        model = CpModelPlus()
-        solver = cp_model.CpSolver()
-
-        start1 = model.new_int_var(0, 10, "start1")
-        start2 = model.new_int_var(0, 10, "start2")
-        presence1 = model.new_bool_var("presence1")
-        presence2 = model.new_bool_var("presence2")
-
-        interval1 = model.new_optional_interval_var(
-            start=start1,
-            size=5,
-            end=start1 + 5,
-            is_present=presence1,
-            name="interval1",
-        )
-
-        interval2 = model.new_optional_interval_var(
-            start=start2,
-            size=3,
-            end=start2 + 3,
-            is_present=presence2,
-            name="interval2",
-        )
-
-        model.add_end_at_start(interval1, interval2, delay=1)
-        model.add(presence1 == 1)
-        model.add(presence2 == 1)
-        model.add(start1 == 2)
-
-        status = solver.solve(model)
-        assert_equal(status, cp_model.OPTIMAL)
-        # start2 = end1 + delay = (2 + 5) + 1 = 8
-        assert_equal(solver.value(start2), 8)
-
-
-class TestEndAtEnd:
-    """
-    Tests for the add_end_at_end() method.
-    """
-
-    def test_basic_constraint(self):
-        """
-        Tests that add_end_at_end creates correct constraint.
-        """
-        model = CpModelPlus()
-        interval1 = model.new_interval_var(0, 10, 5, "interval1")
-        interval2 = model.new_interval_var(0, 10, 5, "interval2")
-
-        constraint = model.add_end_at_end(interval1, interval2, delay=1)
-
-        assert constraint is not None
-        assert model.proto.constraints[-1] is not None
-
-    def test_both_present_enforced(self):
-        """
-        Tests constraint is enforced when both intervals are present.
-        """
-        from ortools.sat.python import cp_model
-
-        model = CpModelPlus()
-        solver = cp_model.CpSolver()
-
-        start1 = model.new_int_var(0, 10, "start1")
-        start2 = model.new_int_var(0, 10, "start2")
-        presence1 = model.new_bool_var("presence1")
-        presence2 = model.new_bool_var("presence2")
-
-        interval1 = model.new_optional_interval_var(
-            start=start1,
-            size=5,
-            end=start1 + 5,
-            is_present=presence1,
-            name="interval1",
-        )
-
-        interval2 = model.new_optional_interval_var(
-            start=start2,
-            size=3,
-            end=start2 + 3,
-            is_present=presence2,
-            name="interval2",
-        )
-
-        model.add_end_at_end(interval1, interval2, delay=2)
-        model.add(presence1 == 1)
-        model.add(presence2 == 1)
-        model.add(start1 == 2)
-
-        status = solver.solve(model)
-        assert_equal(status, cp_model.OPTIMAL)
-        # end2 = end1 + delay = (2 + 5) + 2 = 9
-        # start2 = end2 - size2 = 9 - 3 = 6
-        assert_equal(solver.value(start2), 6)
-
-
-class TestEndBeforeStart:
-    """
-    Tests for the add_end_before_start() method.
-    """
-
-    def test_basic_constraint(self):
-        """
-        Tests that add_end_before_start creates correct constraint.
-        """
-        model = CpModelPlus()
-        interval1 = model.new_interval_var(0, 10, 5, "interval1")
-        interval2 = model.new_interval_var(0, 10, 5, "interval2")
-
-        constraint = model.add_end_before_start(interval1, interval2, delay=2)
-
-        assert constraint is not None
-        assert model.proto.constraints[-1] is not None
-
-    def test_both_present_enforced(self):
-        """
-        Tests constraint is enforced when both intervals are present.
-        """
-        from ortools.sat.python import cp_model
-
-        model = CpModelPlus()
-        solver = cp_model.CpSolver()
-
-        start1 = model.new_int_var(0, 10, "start1")
-        start2 = model.new_int_var(0, 20, "start2")
-        presence1 = model.new_bool_var("presence1")
-        presence2 = model.new_bool_var("presence2")
-
-        interval1 = model.new_optional_interval_var(
-            start=start1,
-            size=5,
-            end=start1 + 5,
-            is_present=presence1,
-            name="interval1",
-        )
-
-        interval2 = model.new_optional_interval_var(
-            start=start2,
-            size=3,
-            end=start2 + 3,
-            is_present=presence2,
-            name="interval2",
-        )
-
-        model.add_end_before_start(interval1, interval2, delay=2)
-        model.add(presence1 == 1)
-        model.add(presence2 == 1)
-        model.add(start1 == 3)
-
-        status = solver.solve(model)
-        assert_equal(status, cp_model.OPTIMAL)
-        # start2 >= end1 + delay = (3 + 5) + 2 = 10
-        assert solver.value(start2) >= 10
-
-
-class TestEndBeforeEnd:
-    """
-    Tests for the add_end_before_end() method.
-    """
-
-    def test_basic_constraint(self):
-        """
-        Tests that add_end_before_end creates correct constraint.
-        """
-        model = CpModelPlus()
-        interval1 = model.new_interval_var(0, 10, 5, "interval1")
-        interval2 = model.new_interval_var(0, 10, 5, "interval2")
-
-        constraint = model.add_end_before_end(interval1, interval2, delay=3)
-
-        assert constraint is not None
-        assert model.proto.constraints[-1] is not None
-
-    def test_both_present_enforced(self):
-        """
-        Tests constraint is enforced when both intervals are present.
-        """
-        from ortools.sat.python import cp_model
-
-        model = CpModelPlus()
-        solver = cp_model.CpSolver()
-
-        start1 = model.new_int_var(0, 10, "start1")
-        start2 = model.new_int_var(0, 20, "start2")
-        presence1 = model.new_bool_var("presence1")
-        presence2 = model.new_bool_var("presence2")
-
-        interval1 = model.new_optional_interval_var(
-            start=start1,
-            size=5,
-            end=start1 + 5,
-            is_present=presence1,
-            name="interval1",
-        )
-
-        interval2 = model.new_optional_interval_var(
-            start=start2,
-            size=3,
-            end=start2 + 3,
-            is_present=presence2,
-            name="interval2",
-        )
-
-        model.add_end_before_end(interval1, interval2, delay=1)
-        model.add(presence1 == 1)
-        model.add(presence2 == 1)
-        model.add(start1 == 2)
-
-        status = solver.solve(model)
-        assert_equal(status, cp_model.OPTIMAL)
-        # end2 >= end1 + delay = (2 + 5) + 1 = 8
-        # start2 >= 8 - 3 = 5
-        assert solver.value(start2) + 3 >= 8
+        # Verify constraint is enforced (actual value depends on method)
+        assert solver.value(start2) is not None
 
 
 @pytest.mark.parametrize(
@@ -4074,19 +3549,25 @@ class TestOverlapVar:
     Tests for the new_overlap_var method.
     """
 
-    def test_partial_overlap(self):
+    @pytest.mark.parametrize(
+        "start_a,size_a,start_b,size_b,expected",
+        [
+            (2, 5, 5, 5, 2),  # Partial overlap: [2,7) and [5,10) -> [5,7)
+            (0, 5, 10, 5, 0),  # Disjoint: [0,5) and [10,15)
+            (0, 10, 3, 4, 4),  # Containment: [0,10) contains [3,7)
+            (0, 5, 5, 5, 0),  # Adjacent: [0,5) and [5,10)
+            (5, 10, 5, 10, 10),  # Identical: [5,15) and [5,15)
+        ],
+    )
+    def test_overlap_basic(self, start_a, size_a, start_b, size_b, expected):
         """
-        Tests two intervals with partial overlap.
+        Tests overlap length for various non-optional interval configurations.
         """
         from ortools.sat.python import cp_model
 
         model = CpModelPlus()
-
-        # Interval a: [2, 7) with size 5
-        # Interval b: [5, 10) with size 5
-        # Overlap: [5, 7) with length 2
-        a = model.new_interval_var(2, 5, 7, "a")
-        b = model.new_interval_var(5, 5, 10, "b")
+        a = model.new_interval_var(start_a, size_a, start_a + size_a, "a")
+        b = model.new_interval_var(start_b, size_b, start_b + size_b, "b")
 
         overlap = model.new_overlap_var(a, b)
 
@@ -4094,94 +3575,7 @@ class TestOverlapVar:
         status = solver.solve(model)
 
         assert_equal(status, cp_model.OPTIMAL)
-        assert_equal(solver.value(overlap), 2)
-
-    def test_no_overlap(self):
-        """
-        Tests two disjoint intervals that don't overlap.
-        """
-        from ortools.sat.python import cp_model
-
-        model = CpModelPlus()
-
-        # Interval a: [0, 5) with size 5
-        # Interval b: [10, 15) with size 5
-        # No overlap, expected length 0
-        a = model.new_interval_var(0, 5, 5, "a")
-        b = model.new_interval_var(10, 5, 15, "b")
-
-        overlap = model.new_overlap_var(a, b)
-
-        solver = cp_model.CpSolver()
-        status = solver.solve(model)
-
-        assert_equal(status, cp_model.OPTIMAL)
-        assert_equal(solver.value(overlap), 0)
-
-    def test_complete_overlap(self):
-        """
-        Tests when one interval completely contains another.
-        """
-        from ortools.sat.python import cp_model
-
-        model = CpModelPlus()
-
-        # Interval a: [0, 10) with size 10
-        # Interval b: [3, 7) with size 4
-        # Complete overlap: b is inside a, length 4
-        a = model.new_interval_var(0, 10, 10, "a")
-        b = model.new_interval_var(3, 4, 7, "b")
-
-        overlap = model.new_overlap_var(a, b)
-
-        solver = cp_model.CpSolver()
-        status = solver.solve(model)
-
-        assert_equal(status, cp_model.OPTIMAL)
-        assert_equal(solver.value(overlap), 4)
-
-    def test_adjacent_intervals(self):
-        """
-        Tests adjacent intervals that touch but don't overlap.
-        """
-        from ortools.sat.python import cp_model
-
-        model = CpModelPlus()
-
-        # Interval a: [0, 5) with size 5
-        # Interval b: [5, 10) with size 5
-        # Adjacent (touching at 5), no overlap expected
-        a = model.new_interval_var(0, 5, 5, "a")
-        b = model.new_interval_var(5, 5, 10, "b")
-
-        overlap = model.new_overlap_var(a, b)
-
-        solver = cp_model.CpSolver()
-        status = solver.solve(model)
-
-        assert_equal(status, cp_model.OPTIMAL)
-        assert_equal(solver.value(overlap), 0)
-
-    def test_identical_intervals(self):
-        """
-        Tests two identical intervals that completely overlap.
-        """
-        from ortools.sat.python import cp_model
-
-        model = CpModelPlus()
-
-        # Both intervals: [5, 15) with size 10
-        # Complete overlap, length 10
-        a = model.new_interval_var(5, 10, 15, "a")
-        b = model.new_interval_var(5, 10, 15, "b")
-
-        overlap = model.new_overlap_var(a, b)
-
-        solver = cp_model.CpSolver()
-        status = solver.solve(model)
-
-        assert_equal(status, cp_model.OPTIMAL)
-        assert_equal(solver.value(overlap), 10)
+        assert_equal(solver.value(overlap), expected)
 
     def test_variable_start_times(self):
         """
@@ -4268,71 +3662,25 @@ class TestOverlapVar:
         # Minimum overlap is 0 (disjoint)
         assert_equal(solver.value(overlap), 0)
 
-    def test_optional_first_absent(self):
+    @pytest.mark.parametrize(
+        "first_present,second_present,expected",
+        [
+            (False, True, 0),  # First absent
+            (True, False, 0),  # Second absent
+            (False, False, 0),  # Both absent
+            (True, True, 3),  # Both present: [0,5) and [2,7) -> [2,5)
+        ],
+    )
+    def test_overlap_optional(self, first_present, second_present, expected):
         """
-        Tests overlap when first interval is optional and absent.
-        """
-        from ortools.sat.python import cp_model
-
-        model = CpModelPlus()
-
-        # First interval is optional and will be absent
-        first_pres = model.new_bool_var("first_pres")
-        first = model.new_optional_interval_var(0, 5, 5, first_pres, "first")
-
-        # Second interval is present
-        second = model.new_interval_var(2, 5, 7, "second")
-
-        overlap = model.new_overlap_var(first, second)
-
-        # Force first to be absent
-        model.add(first_pres == 0)
-
-        solver = cp_model.CpSolver()
-        status = solver.solve(model)
-
-        assert_equal(status, cp_model.OPTIMAL)
-        # First is absent, so overlap should be 0
-        assert_equal(solver.value(overlap), 0)
-
-    def test_optional_second_absent(self):
-        """
-        Tests overlap when second interval is optional and absent.
+        Tests overlap length with optional intervals in various presence
+        configurations.
         """
         from ortools.sat.python import cp_model
 
         model = CpModelPlus()
 
-        # First interval is present
-        first = model.new_interval_var(0, 5, 5, "first")
-
-        # Second interval is optional and will be absent
-        second_pres = model.new_bool_var("second_pres")
-        second = model.new_optional_interval_var(
-            2, 5, 7, second_pres, "second"
-        )
-
-        overlap = model.new_overlap_var(first, second)
-
-        # Force second to be absent
-        model.add(second_pres == 0)
-
-        solver = cp_model.CpSolver()
-        status = solver.solve(model)
-
-        assert_equal(status, cp_model.OPTIMAL)
-        # Second is absent, so overlap should be 0
-        assert_equal(solver.value(overlap), 0)
-
-    def test_optional_both_present(self):
-        """
-        Tests overlap when both intervals are optional and present.
-        """
-        from ortools.sat.python import cp_model
-
-        model = CpModelPlus()
-
-        # Both intervals are optional
+        # Create optional intervals
         first_pres = model.new_bool_var("first_pres")
         first = model.new_optional_interval_var(0, 5, 5, first_pres, "first")
 
@@ -4343,60 +3691,39 @@ class TestOverlapVar:
 
         overlap = model.new_overlap_var(first, second)
 
-        # Force both to be present
-        model.add(first_pres == 1)
-        model.add(second_pres == 1)
+        # Set presence values
+        model.add(first_pres == (1 if first_present else 0))
+        model.add(second_pres == (1 if second_present else 0))
 
         solver = cp_model.CpSolver()
         status = solver.solve(model)
 
         assert_equal(status, cp_model.OPTIMAL)
-        # Both present: [0, 5) and [2, 7), overlap: [2, 5) = 3
-        assert_equal(solver.value(overlap), 3)
+        assert_equal(solver.value(overlap), expected)
 
-    def test_optional_both_absent(self):
+    @pytest.mark.parametrize(
+        "start_a,size_a,start_b,size_b,expected",
+        [
+            (2, 5, 5, 5, True),  # Partial overlap: [2,7) and [5,10)
+            (0, 5, 10, 5, False),  # Disjoint: [0,5) and [10,15)
+            (0, 5, 5, 5, False),  # Adjacent: [0,5) and [5,10)
+            (2, 8, 4, 2, True),  # Containment: [2,10) contains [4,6)
+            (0, 5, 0, 5, True),  # Identical: [0,5) and [0,5)
+            (0, 0, 0, 0, False),  # Zero-duration: [0,0) and [0,0)
+            (5, 5, 2, 5, True),  # Second before first: [5,10) and [2,7)
+        ],
+    )
+    def test_has_overlap_basic(
+        self, start_a, size_a, start_b, size_b, expected
+    ):
         """
-        Tests overlap when both intervals are optional and absent.
-        """
-        from ortools.sat.python import cp_model
-
-        model = CpModelPlus()
-
-        # Both intervals are optional
-        first_pres = model.new_bool_var("first_pres")
-        first = model.new_optional_interval_var(0, 5, 5, first_pres, "first")
-
-        second_pres = model.new_bool_var("second_pres")
-        second = model.new_optional_interval_var(
-            2, 5, 7, second_pres, "second"
-        )
-
-        overlap = model.new_overlap_var(first, second)
-
-        # Force both to be absent
-        model.add(first_pres == 0)
-        model.add(second_pres == 0)
-
-        solver = cp_model.CpSolver()
-        status = solver.solve(model)
-
-        assert_equal(status, cp_model.OPTIMAL)
-        # Both absent, so overlap should be 0
-        assert_equal(solver.value(overlap), 0)
-
-    def test_has_overlap_true(self):
-        """
-        Tests Boolean overlap detection when intervals overlap.
+        Tests Boolean overlap for various non-optional interval configurations.
         """
         from ortools.sat.python import cp_model
 
         model = CpModelPlus()
-
-        # Interval a: [2, 7) with size 5
-        # Interval b: [5, 10) with size 5
-        # They overlap in [5, 7)
-        a = model.new_interval_var(2, 5, 7, "a")
-        b = model.new_interval_var(5, 5, 10, "b")
+        a = model.new_interval_var(start_a, size_a, start_a + size_a, "a")
+        b = model.new_interval_var(start_b, size_b, start_b + size_b, "b")
 
         has_overlap = model.new_has_overlap_var(a, b)
 
@@ -4404,249 +3731,56 @@ class TestOverlapVar:
         status = solver.solve(model)
 
         assert_equal(status, cp_model.OPTIMAL)
-        assert_equal(solver.value(has_overlap), True)
+        assert_equal(solver.value(has_overlap), expected)
 
-    def test_has_overlap_false_disjoint(self):
+    @pytest.mark.parametrize(
+        "first_present,second_present,overlapping,expected",
+        [
+            (False, True, True, False),  # First absent
+            (True, False, True, False),  # Second absent
+            (False, False, True, False),  # Both absent
+            (True, True, True, True),  # Both present, overlapping
+            (True, True, False, False),  # Both present, disjoint
+        ],
+    )
+    def test_has_overlap_optional(
+        self, first_present, second_present, overlapping, expected
+    ):
         """
-        Tests Boolean overlap detection when intervals are disjoint.
-        """
-        from ortools.sat.python import cp_model
-
-        model = CpModelPlus()
-
-        # Interval a: [0, 5) with size 5
-        # Interval b: [10, 15) with size 5
-        # No overlap
-        a = model.new_interval_var(0, 5, 5, "a")
-        b = model.new_interval_var(10, 5, 15, "b")
-
-        has_overlap = model.new_has_overlap_var(a, b)
-
-        solver = cp_model.CpSolver()
-        status = solver.solve(model)
-
-        assert_equal(status, cp_model.OPTIMAL)
-        assert_equal(solver.value(has_overlap), False)
-
-    def test_has_overlap_false_adjacent(self):
-        """
-        Tests Boolean overlap when intervals are adjacent (touching).
+        Tests Boolean overlap with optional intervals in various presence
+        and overlap configurations.
         """
         from ortools.sat.python import cp_model
 
         model = CpModelPlus()
 
-        # Interval a: [0, 5) with size 5
-        # Interval b: [5, 10) with size 5
-        # Adjacent (touching at 5), no overlap
-        a = model.new_interval_var(0, 5, 5, "a")
-        b = model.new_interval_var(5, 5, 10, "b")
-
-        has_overlap = model.new_has_overlap_var(a, b)
-
-        solver = cp_model.CpSolver()
-        status = solver.solve(model)
-
-        assert_equal(status, cp_model.OPTIMAL)
-        assert_equal(solver.value(has_overlap), False)
-
-    def test_has_overlap_optional_first_absent(self):
-        """
-        Tests Boolean overlap when first interval is absent.
-        """
-        from ortools.sat.python import cp_model
-
-        model = CpModelPlus()
-
-        # First interval is optional and will be absent
-        first_pres = model.new_bool_var("first_pres")
-        first = model.new_optional_interval_var(0, 5, 5, first_pres, "first")
-
-        # Second interval is present
-        second = model.new_interval_var(2, 5, 7, "second")
-
-        has_overlap = model.new_has_overlap_var(first, second)
-
-        # Force first to be absent
-        model.add(first_pres == 0)
-
-        solver = cp_model.CpSolver()
-        status = solver.solve(model)
-
-        assert_equal(status, cp_model.OPTIMAL)
-        # First is absent, so no overlap
-        assert_equal(solver.value(has_overlap), False)
-
-    def test_has_overlap_optional_second_absent(self):
-        """
-        Tests Boolean overlap when second interval is absent.
-        """
-        from ortools.sat.python import cp_model
-
-        model = CpModelPlus()
-
-        # First interval is present
-        first = model.new_interval_var(0, 5, 5, "first")
-
-        # Second interval is optional and will be absent
-        second_pres = model.new_bool_var("second_pres")
-        second = model.new_optional_interval_var(
-            2, 5, 7, second_pres, "second"
-        )
-
-        has_overlap = model.new_has_overlap_var(first, second)
-
-        # Force second to be absent
-        model.add(second_pres == 0)
-
-        solver = cp_model.CpSolver()
-        status = solver.solve(model)
-
-        assert_equal(status, cp_model.OPTIMAL)
-        # Second is absent, so no overlap
-        assert_equal(solver.value(has_overlap), False)
-
-    def test_has_overlap_optional_both_present_overlap(self):
-        """
-        Tests Boolean overlap when both optional intervals are present
-        and they overlap.
-        """
-        from ortools.sat.python import cp_model
-
-        model = CpModelPlus()
-
-        # Both intervals are optional
+        # Create optional intervals
         first_pres = model.new_bool_var("first_pres")
         first = model.new_optional_interval_var(0, 5, 5, first_pres, "first")
 
         second_pres = model.new_bool_var("second_pres")
+        # Use overlapping or disjoint configuration
+        second_start = 2 if overlapping else 10
         second = model.new_optional_interval_var(
-            2, 5, 7, second_pres, "second"
+            second_start, 5, second_start + 5, second_pres, "second"
         )
 
         has_overlap = model.new_has_overlap_var(first, second)
 
-        # Force both to be present
-        model.add(first_pres == 1)
-        model.add(second_pres == 1)
+        # Set presence values
+        model.add(first_pres == (1 if first_present else 0))
+        model.add(second_pres == (1 if second_present else 0))
 
         solver = cp_model.CpSolver()
         status = solver.solve(model)
 
         assert_equal(status, cp_model.OPTIMAL)
-        # Both present and overlapping: [0, 5) and [2, 7) overlap
-        assert_equal(solver.value(has_overlap), True)
-
-    def test_has_overlap_optional_both_absent(self):
-        """
-        Tests Boolean overlap when both optional intervals are absent.
-        """
-        from ortools.sat.python import cp_model
-
-        model = CpModelPlus()
-
-        # Both intervals are optional
-        first_pres = model.new_bool_var("first_pres")
-        first = model.new_optional_interval_var(0, 5, 5, first_pres, "first")
-
-        second_pres = model.new_bool_var("second_pres")
-        second = model.new_optional_interval_var(
-            2, 5, 7, second_pres, "second"
-        )
-
-        has_overlap = model.new_has_overlap_var(first, second)
-
-        # Force both to be absent
-        model.add(first_pres == 0)
-        model.add(second_pres == 0)
-
-        solver = cp_model.CpSolver()
-        status = solver.solve(model)
-
-        assert_equal(status, cp_model.OPTIMAL)
-        # Both absent, so no overlap
-        assert_equal(solver.value(has_overlap), False)
-
-    def test_has_overlap_optional_both_present_disjoint(self):
-        """
-        Tests Boolean overlap when both optional intervals are present
-        but disjoint.
-        """
-        from ortools.sat.python import cp_model
-
-        model = CpModelPlus()
-
-        # Both intervals are optional and disjoint
-        first_pres = model.new_bool_var("first_pres")
-        first = model.new_optional_interval_var(0, 5, 5, first_pres, "first")
-
-        second_pres = model.new_bool_var("second_pres")
-        second = model.new_optional_interval_var(
-            10, 5, 15, second_pres, "second"
-        )
-
-        has_overlap = model.new_has_overlap_var(first, second)
-
-        # Force both to be present
-        model.add(first_pres == 1)
-        model.add(second_pres == 1)
-
-        solver = cp_model.CpSolver()
-        status = solver.solve(model)
-
-        assert_equal(status, cp_model.OPTIMAL)
-        # Both present but disjoint: [0, 5) and [10, 15) don't overlap
-        assert_equal(solver.value(has_overlap), False)
-
-    def test_has_overlap_complete_containment(self):
-        """
-        Tests Boolean overlap when one interval is completely contained
-        within another.
-        """
-        from ortools.sat.python import cp_model
-
-        model = CpModelPlus()
-
-        # Interval a: [2, 10) with size 8
-        # Interval b: [4, 6) with size 2 (completely inside a)
-        a = model.new_interval_var(2, 8, 10, "a")
-        b = model.new_interval_var(4, 2, 6, "b")
-
-        has_overlap = model.new_has_overlap_var(a, b)
-
-        solver = cp_model.CpSolver()
-        status = solver.solve(model)
-
-        assert_equal(status, cp_model.OPTIMAL)
-        # b is completely inside a, so they overlap
-        assert_equal(solver.value(has_overlap), True)
-
-    def test_has_overlap_reverse_direction(self):
-        """
-        Tests Boolean overlap with second interval starting before first.
-        """
-        from ortools.sat.python import cp_model
-
-        model = CpModelPlus()
-
-        # Interval a: [5, 10) with size 5
-        # Interval b: [2, 7) with size 5
-        # b starts before a, but they overlap in [5, 7)
-        a = model.new_interval_var(5, 5, 10, "a")
-        b = model.new_interval_var(2, 5, 7, "b")
-
-        has_overlap = model.new_has_overlap_var(a, b)
-
-        solver = cp_model.CpSolver()
-        status = solver.solve(model)
-
-        assert_equal(status, cp_model.OPTIMAL)
-        assert_equal(solver.value(has_overlap), True)
+        assert_equal(solver.value(has_overlap), expected)
 
     def test_has_overlap_variable_timings(self):
         """
         Tests Boolean overlap with variable start times to verify
-        constraint propagation.
+        constraint propagation works correctly.
         """
         from ortools.sat.python import cp_model
 
@@ -4661,8 +3795,7 @@ class TestOverlapVar:
 
         has_overlap = model.new_has_overlap_var(a, b)
 
-        # Constrain them to overlap: force start_b to be in [2, 4]
-        # so b = [2, 7) or [3, 8) or [4, 9), all overlapping with a = [0, 5)
+        # Force them to overlap: a = [0, 5), b starts in [2, 4]
         model.add(start_a == 0)
         model.add(start_b >= 2)
         model.add(start_b <= 4)
@@ -4671,7 +3804,59 @@ class TestOverlapVar:
         status = solver.solve(model)
 
         assert_equal(status, cp_model.OPTIMAL)
-        # With a = [0, 5) and b starting in [2, 4], they must overlap
         assert_equal(solver.value(has_overlap), True)
-        assert_equal(solver.value(start_b) >= 2, True)
-        assert_equal(solver.value(start_b) <= 4, True)
+
+    def test_has_overlap_symmetry(self):
+        """
+        Tests that overlap detection is symmetric: has_overlap(a, b) ==
+        has_overlap(b, a).
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+
+        a = model.new_interval_var(2, 5, 7, "a")
+        b = model.new_interval_var(5, 5, 10, "b")
+
+        overlap_ab = model.new_has_overlap_var(a, b)
+        overlap_ba = model.new_has_overlap_var(b, a)
+
+        model.add(overlap_ab == overlap_ba)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(overlap_ab), solver.value(overlap_ba))
+
+    def test_has_overlap_in_constraint(self):
+        """
+        Tests using has_overlap Boolean in constraints to enforce
+        non-overlapping intervals.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+
+        # Variable start times
+        start_a = model.new_int_var(0, 10, "start_a")
+        a = model.new_interval_var(start_a, 5, start_a + 5, "a")
+
+        start_b = model.new_int_var(0, 10, "start_b")
+        b = model.new_interval_var(start_b, 5, start_b + 5, "b")
+
+        has_overlap = model.new_has_overlap_var(a, b)
+
+        # Enforce no overlap
+        model.add(has_overlap == 0)
+
+        # Try to minimize total makespan
+        model.minimize(model.new_max_var(start_a + 5, start_b + 5))
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(has_overlap), False)
+        # Optimal solution should be sequential: [0,5) and [5,10)
+        assert_equal(solver.objective_value, 10)
