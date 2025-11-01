@@ -40,7 +40,6 @@ class CpModelPlus(CpModel):
     - [ ] add_forbid_start(): Forbid interval starts in specified regions
     - [ ] add_forbid_end(): Forbid interval ends in specified regions
     - [ ] add_forbid_extent(): Forbid interval overlap with regions
-    - [ ] add_overlap_length(): Compute overlap length between intervals
     - [ ] add_start_eval(): Evaluate function at interval start
     - [ ] add_end_eval(): Evaluate function at interval end
     - [ ] add_size_eval(): Evaluate function on interval size
@@ -51,10 +50,15 @@ class CpModelPlus(CpModel):
     - [ ] add_isomorphism(): Isomorphism constraint between interval sets
 
     Other
-    ----
+    -----
     - [x] new_product_var(): Create new variable for product of two int vars
     - [x] new_max_var(): Create new variable for maximum of int vars
     - [x] new_min_var(): Create new variable for minimum of int vars
+    - [x] new_step_var(): Create piecewise constant (step) function var
+    - [x] new_convex_pwl_var(): Create convex piecewise linear function var
+    - [x] new_overlap_var(): Create overlap length variable
+    - [x] new_has_overlap_var(): Create Boolean for interval overlap
+    - [x] new_conditional_var(): Create conditionally equal variable
     - [x] add_if_then_else(): If-then-else constraint for expressions
 
     Inherited OR-Tools Methods
@@ -446,31 +450,6 @@ class CpModelPlus(CpModel):
             The interval variable.
         function
             Step function defining forbidden regions.
-        """
-        raise NotImplementedError
-
-    def add_overlap_length(self, a: IntervalVar, b: IntervalVar) -> IntVar:
-        """
-        Computes the length of overlap between two interval variables.
-
-        The overlap length is calculated as the maximum of zero and the
-        difference between the minimum of the two end times and the maximum
-        of the two start times. When both intervals are present, this gives
-        the duration during which both are active simultaneously. If the
-        intervals do not overlap, or if either interval is absent, the
-        overlap length is zero.
-
-        Parameters
-        ----------
-        a
-            First interval variable.
-        b
-            Second interval variable.
-
-        Returns
-        -------
-        int
-            Integer expression representing overlap length.
         """
         raise NotImplementedError
 
@@ -947,11 +926,10 @@ class CpModelPlus(CpModel):
 
         # Each segment variable represent the value of a linear function f(x)
         # as defined by the rates and intercepts.
-        segment_vars = []
-        for rate, intercept in zip(rates, intercepts):
-            segment = self.new_int_var(-MAX_VALUE, MAX_VALUE, "")
-            self.add(segment == rate * x + intercept)
-            segment_vars.append(segment)
+        segment_vars = [
+            self.new_conditional_var(rate * x + intercept)
+            for rate, intercept in zip(rates, intercepts)
+        ]
 
         # The piecewise linear function is convex by design, so at any point x,
         # the maximum value across all segments gives the correct PWL value.
@@ -985,17 +963,10 @@ class CpModelPlus(CpModel):
         min_end = self.new_min_var(first.end_expr(), second.end_expr())
         max_start = self.new_max_var(first.start_expr(), second.start_expr())
 
-        # Distinguish between raw and actual overlap to account for presence.
-        raw_overlap = self.new_max_var(0, min_end - max_start)
-        overlap = self.new_int_var(0, MAX_VALUE, "")
-
-        # When both present: overlap = raw_overlap, otherwise overlap = 0.
+        # both present => overlap = raw_overlap | otherwise overlap = 0.
+        overlap = self.new_max_var(0, min_end - max_start)
         both_present = [self.presence_of(first), self.presence_of(second)]
-        self.add(overlap == raw_overlap).only_enforce_if(both_present)
-        self.add(overlap == 0).only_enforce_if(~self.presence_of(first))
-        self.add(overlap == 0).only_enforce_if(~self.presence_of(second))
-
-        return overlap
+        return self.new_conditional_var(overlap, both_present, absent_value=0)
 
     def new_has_overlap_var(
         self, first: IntervalVar, second: IntervalVar
@@ -1057,25 +1028,25 @@ class CpModelPlus(CpModel):
 
     def new_conditional_var(
         self,
-        x: LinearExprT,
-        *condition: BoolVarT,
+        expr: LinearExprT,
+        condition: BoolVarT | list[BoolVarT] = True,
         absent_value: int | None = None,
     ) -> IntVar:
         """
         Creates a new variable that conditionally equals an expression.
 
-        When all conditions are true, the new variable equals x. When any
-        condition is false, the new variable is unconstrained within its
-        domain.
+        When all conditions are true, the new variable equals the expression.
+        When any condition is false, the new variable is unconstrained within
+        its domain.
 
         Parameters
         ----------
-        x
+        expr
             The source variable or linear expression to conditionally sync
             with.
-        *condition
-            One or more Boolean variables. The new variable equals x if and
-            only if all conditions are true (AND logic).
+        condition
+            Boolean variable or list of Boolean variables. The new variable
+            equals x if and only if all conditions are true (AND logic).
         absent_value
             Value to assign when condition is false. If None, the new variable
             is unconstrained within the domain of x.
@@ -1089,9 +1060,11 @@ class CpModelPlus(CpModel):
         y = self.new_int_var(-MAX_VALUE, MAX_VALUE, "")
 
         if absent_value is not None:
-            self.add_if_then_else(condition, y == x, y == absent_value)
+            self.add_if_then_else(condition, y == expr, y == absent_value)
         else:
-            self.add(y == x).only_enforce_if(condition)
+            if isinstance(condition, BoolVarT):
+                condition = [condition]
+            self.add(y == expr).only_enforce_if(condition)
 
         return y
 

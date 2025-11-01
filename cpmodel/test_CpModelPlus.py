@@ -2277,7 +2277,7 @@ class TestConditionalVar:
         cond2 = model.new_bool_var("cond2")
         cond3 = model.new_bool_var("cond3")
 
-        y = model.new_conditional_var(x, cond1, cond2, cond3)
+        y = model.new_conditional_var(x, [cond1, cond2, cond3])
 
         # Set all conditions true
         model.add(x == 7)
@@ -2300,7 +2300,7 @@ class TestConditionalVar:
         cond1 = model.new_bool_var("cond1")
         cond2 = model.new_bool_var("cond2")
 
-        y = model.new_conditional_var(x, cond1, cond2)
+        y = model.new_conditional_var(x, [cond1, cond2])
 
         # Set one condition false
         model.add(x == 4)
@@ -2356,7 +2356,7 @@ class TestConditionalVar:
         cond1 = model.new_bool_var("cond1")
         cond2 = model.new_bool_var("cond2")
 
-        y = model.new_conditional_var(x, cond1, cond2)
+        y = model.new_conditional_var(x, [cond1, cond2])
 
         model.add(x == x_val)
         model.add(cond1 == (1 if cond1_val else 0))
@@ -2474,7 +2474,7 @@ class TestConditionalVar:
         cond1 = model.new_bool_var("cond1")
         cond2 = model.new_bool_var("cond2")
 
-        y = model.new_conditional_var(x + 10, cond1, cond2)
+        y = model.new_conditional_var(x + 10, [cond1, cond2])
 
         # Both conditions true
         model.add(x == 5)
@@ -2613,7 +2613,7 @@ class TestConditionalVar:
         cond1 = model.new_bool_var("cond1")
         cond2 = model.new_bool_var("cond2")
 
-        y = model.new_conditional_var(x, cond1, cond2, absent_value=50)
+        y = model.new_conditional_var(x, [cond1, cond2], absent_value=50)
 
         model.add(x == 7)
         model.add(cond1 == 1)
@@ -2634,7 +2634,7 @@ class TestConditionalVar:
         cond1 = model.new_bool_var("cond1")
         cond2 = model.new_bool_var("cond2")
 
-        y = model.new_conditional_var(x, cond1, cond2, absent_value=50)
+        y = model.new_conditional_var(x, [cond1, cond2], absent_value=50)
 
         model.add(x == 7)
         model.add(cond1 == 1)
@@ -2666,7 +2666,7 @@ class TestConditionalVar:
         cond1 = model.new_bool_var("cond1")
         cond2 = model.new_bool_var("cond2")
 
-        y = model.new_conditional_var(x, cond1, cond2, absent_value=42)
+        y = model.new_conditional_var(x, [cond1, cond2], absent_value=42)
 
         model.add(x == 8)
         model.add(cond1 == (1 if cond1_val else 0))
