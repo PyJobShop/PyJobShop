@@ -863,6 +863,101 @@ class CpModelPlus(CpModel):
         self.add_bool_or(selected)
         return y
 
+    def new_convex_pwl_var(
+        self,
+        x: IntVar,
+        breakpoints: list[int],
+        rates: list[int],
+        initial_value: int = 0,
+    ) -> IntVar:
+        """
+        Creates a new integer variable representing a convex piecewise linear
+        function.
+
+        This method creates a convex PWL function by specifying breakpoints
+        (where the rate changes) and the rate (slope) in each segment.
+        The function is continuous across all breakpoints.
+
+        A convex piecewise linear function can be expressed as:
+        ``f(x) = max{a₁*x + b₁, a₂*x + b₂, ..., aₘ*x + bₘ}``
+        where ``a₁ ≤ a₂ ≤ ... ≤ aₘ`` (non-decreasing rates).
+
+        For non-convex piecewise functions, use new_step_var() instead.
+
+        Parameters
+        ----------
+        x
+            The input variable for the piecewise linear function.
+        breakpoints
+            List of x-values where the rate changes. Must have the same
+            length as rates. The function starts at breakpoints[0].
+        rates
+            List of rates (slopes) for each segment. rates[i] is the rate
+            from breakpoints[i] onwards. Must be non-decreasing for convexity.
+        initial_value
+            The value of the function at breakpoints[0]. Defaults to 0.
+
+        Returns
+        -------
+        IntVar
+            New integer variable representing the convex PWL function value.
+
+        Raises
+        ------
+        ValueError
+            If rates are not non-decreasing (non-convex function).
+        ValueError
+            If lengths of breakpoints and rates don't match.
+
+        Examples
+        --------
+        Earliness-tardiness cost function with due date window [5, 15],
+        earliness cost 8 and tardiness cost 12.
+
+        >>> x = model.new_int_var(0, 20, "completion")
+        >>> cost = model.new_convex_pwl_var(
+        ...     x,
+        ...     breakpoints=[0, 5, 15],
+        ...     rates=[-8, 0, 12]
+        ... )
+
+        Absolute value function |x|:
+
+        >>> x = model.new_int_var(-10, 10, "x")
+        >>> abs_x = model.new_convex_pwl_var(
+        ...     x,
+        ...     breakpoints=[-10, 0],
+        ...     rates=[-1, 1],
+        ...     initial_value=10
+        ... )
+        """
+        if len(breakpoints) != len(rates):
+            msg = "breakpoints and rates must have the same length"
+            raise ValueError(msg)
+
+        for rate1, rate2 in pairwise(rates):
+            if rate1 > rate2:
+                raise ValueError("Rates must be non-decreasing to be convex.")
+
+        # Compute intercepts to ensure continuity at each breakpoint.
+        intercepts = [initial_value - rates[0] * breakpoints[0]]
+        for idx in range(len(rates) - 1):
+            bp = breakpoints[idx + 1]
+            intercept = (rates[idx] - rates[idx + 1]) * bp + intercepts[idx]
+            intercepts.append(intercept)
+
+        # Each segment variable represent the value of a linear function f(x)
+        # as defined by the rates and intercepts.
+        segment_vars = []
+        for rate, intercept in zip(rates, intercepts):
+            segment = self.new_int_var(-MAX_VALUE, MAX_VALUE, "")
+            self.add(segment == rate * x + intercept)
+            segment_vars.append(segment)
+
+        # The piecewise linear function is convex by design, so at any point x,
+        # the maximum value across all segments gives the correct PWL value.
+        return self.new_max_var(*segment_vars)
+
     def add_if_then_else(
         self,
         condition: IntVar,

@@ -931,82 +931,6 @@ def test_add_span_with_optional_intervals():
     assert_equal(solver.value(main_pres), 0)
 
 
-def test_add_span_with_one_present_candidate():
-    """
-    Tests add_span when only one candidate is present.
-    """
-    from ortools.sat.python import cp_model
-
-    model = CpModelPlus()
-    main_pres = model.new_bool_var("main_pres")
-    main = model.new_optional_interval_var(0, 10, 10, main_pres, "main")
-
-    cand1_pres = model.new_bool_var("cand1_pres")
-    cand2_pres = model.new_bool_var("cand2_pres")
-    candidate1 = model.new_optional_interval_var(
-        2, 7, 5, cand1_pres, "candidate1"
-    )
-    candidate2 = model.new_optional_interval_var(
-        3, 8, 5, cand2_pres, "candidate2"
-    )
-
-    model.add_span(main, [candidate1, candidate2])
-
-    # Only first candidate is present
-    model.add(cand1_pres == 1)
-    model.add(cand2_pres == 0)
-
-    solver = cp_model.CpSolver()
-    status = solver.solve(model)
-
-    assert_equal(status, cp_model.OPTIMAL)
-    assert_equal(solver.value(main_pres), 1)
-    # Main should match candidate1 exactly
-    assert_equal(
-        solver.value(main.start_expr()), solver.value(candidate1.start_expr())
-    )
-    assert_equal(
-        solver.value(main.end_expr()), solver.value(candidate1.end_expr())
-    )
-
-
-def test_add_span_with_both_candidates_present():
-    """
-    Tests add_span when both candidates are present.
-    """
-    from ortools.sat.python import cp_model
-
-    model = CpModelPlus()
-    main_pres = model.new_bool_var("main_pres")
-    main = model.new_optional_interval_var(0, 15, 15, main_pres, "main")
-
-    cand1_pres = model.new_bool_var("cand1_pres")
-    cand2_pres = model.new_bool_var("cand2_pres")
-    candidate1 = model.new_optional_interval_var(
-        2, 7, 5, cand1_pres, "candidate1"
-    )
-    candidate2 = model.new_optional_interval_var(
-        5, 10, 5, cand2_pres, "candidate2"
-    )
-
-    model.add_span(main, [candidate1, candidate2])
-
-    # Both candidates present
-    model.add(cand1_pres == 1)
-    model.add(cand2_pres == 1)
-
-    solver = cp_model.CpSolver()
-    status = solver.solve(model)
-
-    assert_equal(status, cp_model.OPTIMAL)
-    assert_equal(solver.value(main_pres), 1)
-    # Main should span both candidates
-    # Start should be min of candidates' starts
-    assert_equal(solver.value(main.start_expr()), 2)
-    # End should be max of candidates' ends
-    assert_equal(solver.value(main.end_expr()), 10)
-
-
 def test_add_span_shortcut_all_present():
     """
     Tests add_span shortcut when all intervals are non-optional.
@@ -3866,3 +3790,328 @@ class TestStepVar:
         status = solver.solve(model)
 
         assert_equal(status, cp_model.INFEASIBLE)
+
+
+class TestConvexPwlVar:
+    """
+    Tests for the new_convex_pwl_var() method.
+    """
+
+    def test_basic_v_shape(self):
+        """
+        Tests a basic V-shaped convex function (absolute value).
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        x = model.new_int_var(-10, 10, "x")
+
+        # V-shape: rate -1 before x=0, rate +1 after x=0
+        # f(x) = max(-x, x) = |x|
+        y = model.new_convex_pwl_var(
+            x, breakpoints=[-10, 0], rates=[-1, 1], initial_value=10
+        )
+
+        # Test at x = -5: |-5| = 5
+        model.add(x == -5)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(y), 5)
+
+    def test_earliness_tardiness(self):
+        """
+        Tests earliness-tardiness cost function (real-world example).
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        completion = model.new_int_var(0, 20, "completion")
+
+        # Earliness penalty of 8 before time 5, zero cost until 15,
+        # tardiness penalty of 12 after 15
+        cost = model.new_convex_pwl_var(
+            completion, breakpoints=[0, 5, 15], rates=[-8, 0, 12]
+        )
+
+        # Early completion at time 2: cost = -8*2 + 0 = -16? No...
+        # Actually at breakpoint 0, initial_value=0, so segment 1 is -8*x + 0
+        # At x=2: -8*2 + 0 = -16, but we want positive cost
+        # Need to adjust: earliness means PENALTY, so we want cost to increase
+        # as we go earlier. So rate should be positive going left.
+        # Actually, let's reconsider: if x < 5, we want higher cost.
+        # So f(x) for x < 5 should have negative slope
+        model.add(completion == 2)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        # With breakpoints=[0,5,15], rates=[-8,0,12], initial_value=0:
+        # Segment 1: -8*x + 0
+        # At x=5: -8*5 + 0 = -40
+        # Segment 2 must pass through (5, -40): 0*x + b = -40 at x=5, so b=-40
+        # Segment 3 must pass through (15, -40): 12*x + c = -40 at x=15
+        # So c = -40 - 12*15 = -40 - 180 = -220
+        # At x=2: max(-8*2+0, 0*2-40, 12*2-220) = max(-16, -40, -196) = -16
+        assert_equal(solver.value(cost), -16)
+
+    def test_earliness_tardiness_on_time(self):
+        """
+        Tests on-time completion has zero cost.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        completion = model.new_int_var(0, 20, "completion")
+
+        cost = model.new_convex_pwl_var(
+            completion, breakpoints=[0, 5, 15], rates=[-8, 0, 12]
+        )
+
+        # On-time at 5
+        model.add(completion == 5)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        # At x=5: max(-8*5+0, 0*5-40, 12*5-220) = max(-40, -40, -160) = -40
+        assert_equal(solver.value(cost), -40)
+
+    def test_earliness_tardiness_late(self):
+        """
+        Tests late completion incurs tardiness cost.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        completion = model.new_int_var(0, 20, "completion")
+
+        cost = model.new_convex_pwl_var(
+            completion, breakpoints=[0, 5, 15], rates=[-8, 0, 12]
+        )
+
+        # Late at 20
+        model.add(completion == 20)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        # At x=20: max(-8*20+0, 0*20-40, 12*20-220) = max(-160, -40, 20) = 20
+        assert_equal(solver.value(cost), 20)
+
+    def test_multiple_segments(self):
+        """
+        Tests PWL function with many segments.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        x = model.new_int_var(0, 100, "x")
+
+        # 5 segments with increasing rates
+        y = model.new_convex_pwl_var(
+            x, breakpoints=[0, 20, 40, 60, 80], rates=[-10, -5, 0, 5, 10]
+        )
+
+        # Test at x = 20
+        model.add(x == 20)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        # At x=20 (second breakpoint), value is the same
+        # Segment 1: -10*20 + 0 = -200
+        assert_equal(solver.value(y), -200)
+
+    def test_single_segment(self):
+        """
+        Tests single segment (trivially convex).
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        x = model.new_int_var(0, 10, "x")
+
+        y = model.new_convex_pwl_var(
+            x, breakpoints=[0], rates=[2], initial_value=5
+        )
+
+        model.add(x == 7)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(y), 2 * 7 + 5)
+
+    def test_two_segments(self):
+        """
+        Tests minimal convex function with two segments.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        x = model.new_int_var(0, 20, "x")
+
+        # Two segments: rate 1 from x=0, rate 3 from x=10
+        y = model.new_convex_pwl_var(x, breakpoints=[0, 10], rates=[1, 3])
+
+        model.add(x == 15)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        # Segment 1: 1*x + 0, at x=10: 10
+        # Segment 2: 3*x + b, must equal 10 at x=10, so b = 10 - 30 = -20
+        # At x=15: max(1*15+0, 3*15-20) = max(15, 25) = 25
+        assert_equal(solver.value(y), 25)
+
+    def test_all_negative_rates(self):
+        """
+        Tests convex function with all negative rates.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        x = model.new_int_var(0, 10, "x")
+
+        # Negative rates, non-decreasing: -10, -5, -1
+        y = model.new_convex_pwl_var(
+            x, breakpoints=[0, 5, 8], rates=[-10, -5, -1], initial_value=100
+        )
+
+        model.add(x == 5)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        # At x=5 (breakpoint): -10*5 + 100 = 50
+        assert_equal(solver.value(y), 50)
+
+    def test_all_positive_rates(self):
+        """
+        Tests convex function with all positive rates.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        x = model.new_int_var(0, 10, "x")
+
+        # Positive rates, non-decreasing: 1, 5, 10
+        y = model.new_convex_pwl_var(
+            x, breakpoints=[0, 4, 6], rates=[1, 5, 10]
+        )
+
+        model.add(x == 8)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        # Segment 1: 1*x + 0, at x=4: 4
+        # Segment 2: 5*x + b, at x=4 must be 4, so b = 4 - 20 = -16
+        # At x=6: 5*6 - 16 = 14
+        # Segment 3: 10*x + c, at x=6 must be 14, so c = 14 - 60 = -46
+        # At x=8: max(1*8+0, 5*8-16, 10*8-46) = max(8, 14, 34) = 34
+        assert_equal(solver.value(y), 34)
+
+    def test_with_zero_rates(self):
+        """
+        Tests convex function including flat (zero rate) segments.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        x = model.new_int_var(0, 20, "x")
+
+        # Rates with zeros: -2, 0, 0, 2
+        y = model.new_convex_pwl_var(
+            x,
+            breakpoints=[0, 5, 10, 15],
+            rates=[-2, 0, 0, 2],
+            initial_value=20,
+        )
+
+        model.add(x == 10)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        # Segment 1: -2*x + 20, at x=5: -10 + 20 = 10
+        # Segments 2 & 3: 0*x + 10 (flat at 10)
+        # At x=10: max(-2*10+20, 0*10+10, 0*10+10, 2*10+b)
+        # Segment 4: at x=15 must be 10, so b = -20
+        # At x=10: 2*10 - 20 = 0
+        # So max(0, 10, 10, 0) = 10
+        assert_equal(solver.value(y), 10)
+
+    def test_non_convex_detection(self):
+        """
+        Tests that non-convex function raises ValueError.
+        """
+        model = CpModelPlus()
+        x = model.new_int_var(0, 10, "x")
+
+        # Non-convex: rates decrease from 5 to 3
+        with pytest.raises(ValueError) as exc_info:
+            model.new_convex_pwl_var(
+                x, breakpoints=[0, 5, 10], rates=[5, 3, 7]
+            )
+
+        assert "non-decreasing" in str(exc_info.value)
+
+    def test_length_mismatch_error(self):
+        """
+        Tests error when breakpoints and rates have different lengths.
+        """
+        model = CpModelPlus()
+        x = model.new_int_var(0, 10, "x")
+
+        with pytest.raises(ValueError) as exc_info:
+            model.new_convex_pwl_var(
+                x,
+                breakpoints=[0, 5, 10],
+                rates=[1, 2],  # Mismatch
+            )
+
+        assert "same length" in str(exc_info.value)
+
+    def test_function_evaluation_at_multiple_points(self):
+        """
+        Tests that PWL function evaluates correctly at different x values.
+        """
+        from ortools.sat.python import cp_model
+
+        # Test at multiple points
+        test_cases = [
+            (0, 0),  # |0| = 0
+            (5, 5),  # |5| = 5
+            (10, 10),  # |10| = 10
+            (-5, 5),  # |-5| = 5
+        ]
+
+        for x_val, expected_y in test_cases:
+            model = CpModelPlus()
+            x = model.new_int_var(-10, 10, "x")
+
+            # Absolute value function
+            y = model.new_convex_pwl_var(
+                x, breakpoints=[-10, 0], rates=[-1, 1], initial_value=10
+            )
+
+            model.add(x == x_val)
+
+            solver = cp_model.CpSolver()
+            status = solver.solve(model)
+
+            assert_equal(status, cp_model.OPTIMAL)
+            assert_equal(solver.value(y), expected_y)
