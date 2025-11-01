@@ -1,5 +1,6 @@
 import pytest
 from numpy.testing import assert_equal
+from ortools.sat.python import cp_model
 from ortools.sat.python.cp_model import CpSolver
 
 from cpmodel.CpModelPlus import CpModelPlus
@@ -103,70 +104,73 @@ class TestAllEqual:
         assert 5 <= val1 <= 8
 
 
-def test_presence_of_optional_interval():
+class TestPresenceOf:
     """
-    Tests presence_of returns the presence literal for optional intervals.
+    Tests for the presence_of() method.
     """
-    model = CpModelPlus()
-    start = model.new_int_var(0, 10, "start")
-    presence = model.new_bool_var("presence")
 
-    # Create an optional interval
-    interval = model.new_optional_interval_var(
-        start=start,
-        size=5,
-        end=start + 5,
-        is_present=presence,
-        name="optional_interval",
-    )
+    def test_optional_interval(self):
+        """
+        Tests presence_of returns the presence literal for optional intervals.
+        """
+        model = CpModelPlus()
+        start = model.new_int_var(0, 10, "start")
+        presence = model.new_bool_var("presence")
 
-    # Get the presence literal back
-    presence_lit = model.presence_of(interval)
+        # Create an optional interval
+        interval = model.new_optional_interval_var(
+            start=start,
+            size=5,
+            end=start + 5,
+            is_present=presence,
+            name="optional_interval",
+        )
 
-    assert presence_lit is not None
-    # The presence literal should be the same variable (or its negation)
-    assert (
-        presence_lit.index == presence.index
-        or presence_lit.index == -presence.index - 1
-    )
+        # Get the presence literal back
+        presence_lit = model.presence_of(interval)
 
+        assert presence_lit is not None
+        # The presence literal should be the same variable (or its negation)
+        assert (
+            presence_lit.index == presence.index
+            or presence_lit.index == -presence.index - 1
+        )
 
-def test_presence_of_non_optional_interval():
-    """
-    Tests presence_of returns constant True for non-optional intervals.
-    """
-    model = CpModelPlus()
-    interval = model.new_interval_var(0, 10, 5, "interval")
+    def test_non_optional_interval(self):
+        """
+        Tests presence_of returns constant True for non-optional intervals.
+        """
+        model = CpModelPlus()
+        interval = model.new_interval_var(0, 10, 5, "interval")
 
-    presence_lit = model.presence_of(interval)
+        presence_lit = model.presence_of(interval)
 
-    assert presence_lit is not None
-    # For non-optional intervals, should return a constant True
-    # We can verify this by checking that it's a valid bool var
-    assert hasattr(presence_lit, "index")
+        assert presence_lit is not None
+        # For non-optional intervals, should return a constant True
+        # We can verify this by checking that it's a valid bool var
+        assert hasattr(presence_lit, "index")
 
+    def test_negated_literal(self):
+        """
+        Tests presence_of handles negated presence literals correctly.
+        """
+        model = CpModelPlus()
+        start = model.new_int_var(0, 10, "start")
+        presence = model.new_bool_var("presence")
 
-def test_presence_of_negated_literal():
-    """
-    Tests presence_of handles negated presence literals correctly.
-    """
-    model = CpModelPlus()
-    start = model.new_int_var(0, 10, "start")
-    presence = model.new_bool_var("presence")
+        # Create an optional interval with negated presence
+        interval = model.new_optional_interval_var(
+            start=start,
+            size=5,
+            end=start + 5,
+            is_present=presence.negated(),
+            name="optional_interval",
+        )
 
-    # Create an optional interval with negated presence
-    interval = model.new_optional_interval_var(
-        start=start,
-        size=5,
-        end=start + 5,
-        is_present=presence.negated(),
-        name="optional_interval",
-    )
+        # Get the presence literal back
+        presence_lit = model.presence_of(interval)
 
-    # Get the presence literal back
-    presence_lit = model.presence_of(interval)
-
-    assert presence_lit is not None
+        assert presence_lit is not None
 
 
 @pytest.mark.parametrize(
@@ -228,8 +232,6 @@ class TestIntervalPrecedenceConstraints:
         """
         Tests constraint is satisfied when both intervals are absent.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         start1 = model.new_int_var(0, 10, "start1")
         start2 = model.new_int_var(0, 10, "start2")
@@ -258,8 +260,6 @@ class TestIntervalPrecedenceConstraints:
         Tests constraint is enforced when both intervals are present.
         This test verifies the constraint actually affects the solution.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         start1 = model.new_int_var(0, 10, "start1")
         start2 = model.new_int_var(0, 10, "start2")
@@ -325,129 +325,403 @@ def test_constraint_methods_with_various_delays(method_name, delay):
     assert model.proto.constraints[-1] is not None
 
 
-def test_add_span():
+class TestSpan:
     """
-    Tests that add_span creates correct constraints.
+    Tests for the add_span() method.
     """
-    model = CpModelPlus()
-    main = model.new_interval_var(0, 20, 10, "main")
-    candidate1 = model.new_interval_var(0, 10, 5, "candidate1")
-    candidate2 = model.new_interval_var(5, 15, 5, "candidate2")
 
-    num_constraints_before = len(model.proto.constraints)
-    model.add_span(main, [candidate1, candidate2])
+    def test_basic_constraint(self):
+        """
+        Tests that add_span creates correct constraints.
+        """
+        model = CpModelPlus()
+        main = model.new_interval_var(0, 20, 10, "main")
+        candidate1 = model.new_interval_var(0, 10, 5, "candidate1")
+        candidate2 = model.new_interval_var(5, 15, 5, "candidate2")
 
-    num_constraints_after = len(model.proto.constraints)
-    # Should add constraints for the span
-    assert num_constraints_after > num_constraints_before
+        num_constraints_before = len(model.proto.constraints)
+        model.add_span(main, [candidate1, candidate2])
 
+        num_constraints_after = len(model.proto.constraints)
+        # Should add constraints for the span
+        assert num_constraints_after > num_constraints_before
 
-def test_add_span_single_candidate():
-    """
-    Tests add_span with a single candidate interval.
-    """
-    model = CpModelPlus()
-    main = model.new_interval_var(0, 20, 10, "main")
-    candidate = model.new_interval_var(0, 10, 5, "candidate")
+    def test_single_candidate(self):
+        """
+        Tests add_span with a single candidate interval.
+        """
+        model = CpModelPlus()
+        main = model.new_interval_var(0, 20, 10, "main")
+        candidate = model.new_interval_var(0, 10, 5, "candidate")
 
-    num_constraints_before = len(model.proto.constraints)
-    model.add_span(main, [candidate])
+        num_constraints_before = len(model.proto.constraints)
+        model.add_span(main, [candidate])
 
-    num_constraints_after = len(model.proto.constraints)
-    assert num_constraints_after > num_constraints_before
+        num_constraints_after = len(model.proto.constraints)
+        assert num_constraints_after > num_constraints_before
 
+    def test_multiple_candidates(self):
+        """
+        Tests add_span with multiple candidate intervals.
+        """
+        model = CpModelPlus()
+        main = model.new_interval_var(0, 30, 15, "main")
+        candidates = [
+            model.new_interval_var(0, 10, 5, f"candidate{i}") for i in range(5)
+        ]
 
-def test_add_span_multiple_candidates():
-    """
-    Tests add_span with multiple candidate intervals.
-    """
-    model = CpModelPlus()
-    main = model.new_interval_var(0, 30, 15, "main")
-    candidates = [
-        model.new_interval_var(0, 10, 5, f"candidate{i}") for i in range(5)
-    ]
+        num_constraints_before = len(model.proto.constraints)
+        model.add_span(main, candidates)
 
-    num_constraints_before = len(model.proto.constraints)
-    model.add_span(main, candidates)
+        num_constraints_after = len(model.proto.constraints)
+        assert num_constraints_after > num_constraints_before
 
-    num_constraints_after = len(model.proto.constraints)
-    assert num_constraints_after > num_constraints_before
+    def test_with_optional_intervals(self):
+        """
+        Tests add_span with optional candidate intervals.
+        """
+        model = CpModelPlus()
+        main_pres = model.new_bool_var("main_pres")
+        main = model.new_optional_interval_var(0, 10, 10, main_pres, "main")
 
+        # Both candidates absent
+        candidate1 = model.new_optional_interval_var(
+            0, 5, 5, model.new_constant(False), "candidate1"
+        )
+        candidate2 = model.new_optional_interval_var(
+            3, 8, 5, model.new_constant(False), "candidate2"
+        )
 
-def test_add_span_with_optional_intervals():
-    """
-    Tests add_span with optional candidate intervals.
-    """
-    from ortools.sat.python import cp_model
+        model.add_span(main, [candidate1, candidate2])
 
-    model = CpModelPlus()
-    main_pres = model.new_bool_var("main_pres")
-    main = model.new_optional_interval_var(0, 10, 10, main_pres, "main")
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
 
-    cand1_pres = model.new_bool_var("cand1_pres")
-    cand2_pres = model.new_bool_var("cand2_pres")
-    candidate1 = model.new_optional_interval_var(
-        0, 5, 5, cand1_pres, "candidate1"
-    )
-    candidate2 = model.new_optional_interval_var(
-        3, 8, 5, cand2_pres, "candidate2"
-    )
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(main_pres), 0)
 
-    model.add_span(main, [candidate1, candidate2])
+    def test_shortcut_all_present(self):
+        """
+        Tests add_span shortcut when all intervals are non-optional.
+        This tests the is_true helper and stronger formulation path.
+        """
+        model = CpModelPlus()
+        # All non-optional intervals (always present)
+        # Using fixed-size intervals with variable start times
+        main_start = model.new_int_var(0, 20, "main_start")
+        main = model.new_interval_var(main_start, 11, main_start + 11, "main")
 
-    # If both candidates absent, main should be absent
-    model.add(cand1_pres == 0)
-    model.add(cand2_pres == 0)
+        cand1_start = model.new_int_var(0, 10, "cand1_start")
+        candidate1 = model.new_interval_var(
+            cand1_start, 5, cand1_start + 5, "candidate1"
+        )
 
-    solver = cp_model.CpSolver()
-    status = solver.solve(model)
+        cand2_start = model.new_int_var(0, 10, "cand2_start")
+        candidate2 = model.new_interval_var(
+            cand2_start, 5, cand2_start + 5, "candidate2"
+        )
 
-    assert_equal(status, cp_model.OPTIMAL)
-    assert_equal(solver.value(main_pres), 0)
+        # Fix candidate positions to require span from 2 to 13 (size 11)
+        model.add(cand1_start == 2)
+        model.add(cand2_start == 8)
 
+        model.add_span(main, [candidate1, candidate2])
 
-def test_add_span_shortcut_all_present():
-    """
-    Tests add_span shortcut when all intervals are non-optional.
-    This tests the is_true helper and stronger formulation path.
-    """
-    from ortools.sat.python import cp_model
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
 
-    model = CpModelPlus()
-    # All non-optional intervals (always present)
-    # Using fixed-size intervals with variable start times
-    main_start = model.new_int_var(0, 20, "main_start")
-    main = model.new_interval_var(main_start, 11, main_start + 11, "main")
+        assert_equal(status, cp_model.OPTIMAL)
+        # Main should span both candidates
+        # Start should be min (2)
+        assert_equal(solver.value(main.start_expr()), 2)
+        # End should be max (8 + 5 = 13)
+        assert_equal(solver.value(main.end_expr()), 13)
 
-    cand1_start = model.new_int_var(0, 10, "cand1_start")
-    candidate1 = model.new_interval_var(
-        cand1_start, 5, cand1_start + 5, "candidate1"
-    )
+    def test_only_one_candidate_present(self):
+        """
+        Tests add_span when only one of multiple candidates is present.
+        """
+        model = CpModelPlus()
+        main_start = model.new_int_var(0, 20, "main_start")
+        main_size = model.new_int_var(0, 20, "main_end")
+        main_end = model.new_int_var(0, 20, "main_end")
+        main_pres = model.new_bool_var("main_pres")
+        main = model.new_optional_interval_var(
+            main_start, main_size, main_end, main_pres, "main"
+        )
 
-    cand2_start = model.new_int_var(0, 10, "cand2_start")
-    candidate2 = model.new_interval_var(
-        cand2_start, 5, cand2_start + 5, "candidate2"
-    )
+        # Only candidate1 is present
+        candidate1 = model.new_optional_interval_var(
+            2, 5, 7, model.new_constant(True), "candidate1"
+        )
+        candidate2 = model.new_optional_interval_var(
+            8, 5, 13, model.new_constant(False), "candidate2"
+        )
 
-    # Fix candidate positions to require span from 2 to 13 (size 11)
-    model.add(cand1_start == 2)
-    model.add(cand2_start == 8)
+        model.add_span(main, [candidate1, candidate2])
 
-    cons1, cons2 = model.add_span(main, [candidate1, candidate2])
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+        assert_equal(status, cp_model.OPTIMAL)
 
-    # Verify constraints were returned
-    assert cons1 is not None
-    assert cons2 is not None
+        # Main should be present and span only candidate1
+        assert_equal(solver.value(main_pres), 1)
+        assert_equal(solver.value(main.start_expr()), 2)
+        assert_equal(solver.value(main.end_expr()), 7)  # 2 + 5
 
-    solver = cp_model.CpSolver()
-    status = solver.solve(model)
+    def test_multiple_candidates_present(self):
+        """
+        Tests add_span when some candidates are present and some absent.
+        """
+        model = CpModelPlus()
+        main_start = model.new_int_var(0, 30, "main_start")
+        main = model.new_interval_var(main_start, 20, main_start + 20, "main")
 
-    assert_equal(status, cp_model.OPTIMAL)
-    # Main should span both candidates
-    # Start should be min (2)
-    assert_equal(solver.value(main.start_expr()), 2)
-    # End should be max (8 + 5 = 13)
-    assert_equal(solver.value(main.end_expr()), 13)
+        # candidate1 and candidate3 present, candidate2 absent
+        candidate1 = model.new_optional_interval_var(
+            1, 2, 3, model.new_constant(True), "candidate1"
+        )
+        candidate2 = model.new_optional_interval_var(
+            5, 3, 8, model.new_constant(False), "candidate2"
+        )
+        candidate3 = model.new_optional_interval_var(
+            10, 11, 21, model.new_constant(True), "candidate3"
+        )
+
+        model.add_span(main, [candidate1, candidate2, candidate3])
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        # Main should span from candidate1 start (1) to candidate3 end (21)
+        assert_equal(solver.value(main.start_expr()), 1)
+        assert_equal(solver.value(main.end_expr()), 21)
+
+    def test_correct_span_computation(self):
+        """
+        Tests that add_span correctly computes min start and max end.
+        """
+        model = CpModelPlus()
+        main_start = model.new_int_var(0, 20, "main_start")
+        main = model.new_interval_var(main_start, 9, main_start + 9, "main")
+
+        # Create candidates with variable starts
+        cand1_start = model.new_int_var(0, 10, "cand1_start")
+        cand2_start = model.new_int_var(0, 10, "cand2_start")
+        cand3_start = model.new_int_var(0, 10, "cand3_start")
+
+        candidate1 = model.new_interval_var(
+            cand1_start, 3, cand1_start + 3, "candidate1"
+        )
+        candidate2 = model.new_interval_var(
+            cand2_start, 4, cand2_start + 4, "candidate2"
+        )
+        candidate3 = model.new_interval_var(
+            cand3_start, 2, cand3_start + 2, "candidate3"
+        )
+
+        model.add_span(main, [candidate1, candidate2, candidate3])
+
+        # Fix specific positions
+        model.add(cand1_start == 5)  # Ends at 8
+        model.add(cand2_start == 1)  # Ends at 5
+        model.add(cand3_start == 8)  # Ends at 10
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        # Main should start at min(5, 1, 8) = 1
+        assert_equal(solver.value(main.start_expr()), 1)
+        # Main should end at max(8, 5, 10) = 10
+        assert_equal(solver.value(main.end_expr()), 10)
+
+    def test_main_present_forces_candidate(self):
+        """
+        Tests that if main is present, at least one candidate must be present.
+        """
+        model = CpModelPlus()
+        main_start = model.new_int_var(0, 20, "main_start")
+        main = model.new_interval_var(main_start, 6, main_start + 6, "main")
+
+        cand1_pres = model.new_bool_var("cand1_pres")
+        cand2_pres = model.new_bool_var("cand2_pres")
+        candidate1 = model.new_optional_interval_var(
+            2, 3, 5, cand1_pres, "candidate1"
+        )
+        candidate2 = model.new_optional_interval_var(
+            4, 4, 8, cand2_pres, "candidate2"
+        )
+
+        model.add_span(main, [candidate1, candidate2])
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        # At least one candidate must be present
+        total_present = solver.value(cand1_pres) + solver.value(cand2_pres)
+        assert total_present >= 1
+
+    def test_with_overlapping_candidates(self):
+        """
+        Tests add_span with overlapping candidate intervals.
+        """
+        model = CpModelPlus()
+        main_start = model.new_int_var(0, 20, "main_start")
+        main = model.new_interval_var(main_start, 8, main_start + 8, "main")
+
+        # Overlapping intervals
+        candidate1 = model.new_interval_var(2, 5, 7, "candidate1")  # 2-7
+        candidate2 = model.new_interval_var(4, 6, 10, "candidate2")  # 4-10
+        candidate3 = model.new_interval_var(6, 4, 10, "candidate3")  # 6-10
+
+        model.add_span(main, [candidate1, candidate2, candidate3])
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        # Main should span from 2 to 10
+        assert_equal(solver.value(main.start_expr()), 2)
+        assert_equal(solver.value(main.end_expr()), 10)
+
+    def test_all_candidates_absent(self):
+        """
+        Tests that main is absent when all candidates are absent.
+        """
+        model = CpModelPlus()
+        main_pres = model.new_bool_var("main_pres")
+        main = model.new_optional_interval_var(0, 10, 10, main_pres, "main")
+
+        # All candidates absent
+        candidate1 = model.new_optional_interval_var(
+            0, 5, 5, model.new_constant(False), "candidate1"
+        )
+        candidate2 = model.new_optional_interval_var(
+            3, 8, 5, model.new_constant(False), "candidate2"
+        )
+
+        model.add_span(main, [candidate1, candidate2])
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        # Main must be absent
+        assert_equal(solver.value(main_pres), 0)
+
+    def test_optional_main_non_optional_candidates(self):
+        """
+        Tests add_span with optional main and non-optional candidates.
+        """
+        model = CpModelPlus()
+        main_pres = model.new_bool_var("main_pres")
+        main_start = model.new_int_var(0, 20, "main_start")
+        main = model.new_optional_interval_var(
+            main_start, 6, main_start + 6, main_pres, "main"
+        )
+
+        # All candidates are non-optional (always present)
+        candidate1 = model.new_interval_var(2, 3, 5, "candidate1")  # 2-5
+        candidate2 = model.new_interval_var(6, 2, 8, "candidate2")  # 6-8
+
+        model.add_span(main, [candidate1, candidate2])
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        # Main must be present since at least one candidate is present
+        assert_equal(solver.value(main_pres), 1)
+        # Main should span from 2 to 8 (size 6)
+        assert_equal(solver.value(main.start_expr()), 2)
+        assert_equal(solver.value(main.end_expr()), 8)
+
+    def test_infeasible_main_present_candidates_absent(self):
+        """
+        Tests main present with all candidates absent is infeasible.
+        """
+        model = CpModelPlus()
+        # Main present but all candidates absent (infeasible)
+        main = model.new_optional_interval_var(
+            0, 10, 10, model.new_constant(True), "main"
+        )
+
+        candidate1 = model.new_optional_interval_var(
+            0, 5, 5, model.new_constant(False), "candidate1"
+        )
+        candidate2 = model.new_optional_interval_var(
+            3, 8, 5, model.new_constant(False), "candidate2"
+        )
+
+        model.add_span(main, [candidate1, candidate2])
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.INFEASIBLE)
+
+    def test_infeasible_main_absent_candidates_present(self):
+        """
+        Tests main absent with candidates present is infeasible.
+        """
+        model = CpModelPlus()
+        # Main absent but at least one candidate present (infeasible)
+        main = model.new_optional_interval_var(
+            0, 10, 10, model.new_constant(False), "main"
+        )
+
+        candidate1 = model.new_optional_interval_var(
+            0, 5, 5, model.new_constant(True), "candidate1"
+        )
+        candidate2 = model.new_interval_var(3, 8, 5, "candidate2")
+
+        model.add_span(main, [candidate1, candidate2])
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.INFEASIBLE)
+
+    def test_variable_size_main(self):
+        """
+        Tests add_span with a variable-size main interval.
+        """
+        model = CpModelPlus()
+        main_start = model.new_int_var(0, 20, "main_start")
+        main_size = model.new_int_var(5, 15, "main_size")
+        main_end = model.new_int_var(0, 30, "main_end")
+        main = model.new_interval_var(main_start, main_size, main_end, "main")
+
+        # Candidates at fixed positions
+        candidate1 = model.new_interval_var(3, 4, 7, "candidate1")  # 3-7
+        candidate2 = model.new_interval_var(10, 3, 13, "candidate2")  # 10-13
+
+        model.add_span(main, [candidate1, candidate2])
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        # Main should span from 3 to 13 (size 10)
+        assert_equal(solver.value(main.start_expr()), 3)
+        assert_equal(solver.value(main.end_expr()), 13)
+        assert_equal(solver.value(main.size_expr()), 10)
+
+    def test_empty_candidates(self):
+        """
+        Tests add_span with empty candidates list raises ValueError.
+        """
+        model = CpModelPlus()
+        main = model.new_interval_var(0, 10, 10, "main")
+
+        # Should raise ValueError for empty candidates
+        with pytest.raises(
+            ValueError, match="[Cc]andidates.*empty|empty.*candidates"
+        ):
+            model.add_span(main, [])
 
 
 class TestAlternative:
@@ -479,8 +753,6 @@ class TestAlternative:
         """
         Tests that exactly one candidate is selected when main is present.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
 
         # Create main interval (force it to be present)
@@ -521,8 +793,6 @@ class TestAlternative:
         """
         Tests that exactly two candidates are selected with cardinality=2.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
 
         # Create main interval (force it to be present)
@@ -558,8 +828,6 @@ class TestAlternative:
         """
         Tests that when main is absent, all candidates are absent.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
 
         # Create main interval (force it to be absent)
@@ -593,8 +861,6 @@ class TestAlternative:
         """
         Tests that selected candidates have same start/end as main.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
 
         # Create main interval with fixed timing
@@ -638,8 +904,6 @@ class TestAlternative:
         """
         Tests that cardinality defaults to 1 when not specified.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
 
         # Create main interval (force it to be present)
@@ -697,8 +961,6 @@ class TestSynchronize:
         """
         Tests that synchronized intervals have identical start and end times.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
 
         # Create main interval at flexible position
@@ -735,8 +997,6 @@ class TestSynchronize:
         """
         Tests synchronization with a single candidate.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         main = model.new_interval_var(5, 3, 8, "main")
         candidate = model.new_int_var(0, 10, "cand_start")
@@ -756,8 +1016,6 @@ class TestSynchronize:
         """
         Tests that all candidates are synchronized with the main interval.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
 
         # Fixed main interval
@@ -785,27 +1043,22 @@ class TestSynchronize:
         """
         Tests synchronization with optional intervals, both present.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
 
-        # Optional main interval
+        # Both intervals present
         main_start = model.new_int_var(0, 10, "main_start")
-        main_pres = model.new_bool_var("main_pres")
         main = model.new_optional_interval_var(
-            main_start, 5, main_start + 5, main_pres, "main"
+            main_start, 5, main_start + 5, model.new_constant(True), "main"
         )
 
-        # Optional candidate
         cand_start = model.new_int_var(0, 10, "cand_start")
-        cand_pres = model.new_bool_var("cand_pres")
         candidate = model.new_optional_interval_var(
-            cand_start, 5, cand_start + 5, cand_pres, "candidate"
+            cand_start,
+            5,
+            cand_start + 5,
+            model.new_constant(True),
+            "candidate",
         )
-
-        # Both must be present
-        model.add(main_pres == 1)
-        model.add(cand_pres == 1)
 
         model.add_synchronize(main, [candidate])
         model.minimize(main_start)
@@ -826,26 +1079,22 @@ class TestSynchronize:
         """
         Tests that synchronization is not enforced when one interval is absent.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
 
-        # Optional main interval (present)
+        # Main interval present, candidate absent
         main_start = model.new_int_var(0, 10, "main_start")
-        main_pres = model.new_bool_var("main_pres")
         main = model.new_optional_interval_var(
-            main_start, 5, main_start + 5, main_pres, "main"
+            main_start, 5, main_start + 5, model.new_constant(True), "main"
         )
 
-        # Optional candidate (absent)
         cand_start = model.new_int_var(0, 10, "cand_start")
-        cand_pres = model.new_bool_var("cand_pres")
         candidate = model.new_optional_interval_var(
-            cand_start, 5, cand_start + 5, cand_pres, "candidate"
+            cand_start,
+            5,
+            cand_start + 5,
+            model.new_constant(False),
+            "candidate",
         )
-
-        model.add(main_pres == 1)
-        model.add(cand_pres == 0)  # Candidate is absent
 
         model.add_synchronize(main, [candidate])
 
@@ -859,8 +1108,6 @@ class TestSynchronize:
         """
         Tests that intervals with different durations cannot synchronize.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
 
         # Main interval with duration 5
@@ -908,8 +1155,6 @@ class TestProductVar:
         """
         Tests Boolean x Integer product using optimized encoding.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         b = model.new_bool_var("b")
         x = model.new_int_var(2, 5, "x")
@@ -934,8 +1179,6 @@ class TestProductVar:
         """
         Tests Boolean x Integer product when Boolean is false.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         b = model.new_bool_var("b")
         x = model.new_int_var(2, 5, "x")
@@ -956,8 +1199,6 @@ class TestProductVar:
         """
         Tests Integer x Boolean product (reversed order).
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         x = model.new_int_var(5, 10, "x")
         b = model.new_bool_var("b")
@@ -978,8 +1219,6 @@ class TestProductVar:
         """
         Tests Integer x Boolean product when Boolean is false.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         x = model.new_int_var(5, 10, "x")
         b = model.new_bool_var("b")
@@ -1000,8 +1239,6 @@ class TestProductVar:
         """
         Tests Integer x Integer product using general encoding.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         x = model.new_int_var(2, 4, "x")
         y = model.new_int_var(3, 5, "y")
@@ -1022,8 +1259,6 @@ class TestProductVar:
         """
         Tests Boolean x Integer product with non-contiguous domain.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         b = model.new_bool_var("b")
         x = model.new_int_var_from_domain(
@@ -1066,7 +1301,6 @@ class TestProductVar:
         """
         Tests that product variable has correct domain.
         """
-
         model = CpModelPlus()
         b = model.new_bool_var("b")
         x = model.new_int_var(3, 7, "x")
@@ -1089,7 +1323,6 @@ class TestProductVar:
         """
         Tests that Integer x Integer product has correct bounds.
         """
-
         model = CpModelPlus()
         x = model.new_int_var(2, 3, "x")
         y = model.new_int_var(4, 6, "y")
@@ -1104,8 +1337,6 @@ class TestProductVar:
         """
         Tests product when one variable can be zero.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         x = model.new_int_var(0, 3, "x")
         y = model.new_int_var(2, 5, "y")
@@ -1125,8 +1356,6 @@ class TestProductVar:
         """
         Tests product with negative integer values.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         x = model.new_int_var(-3, -1, "x")
         y = model.new_int_var(2, 4, "y")
@@ -1147,8 +1376,6 @@ class TestProductVar:
         """
         Tests that all solutions for Boolean x Integer are correct.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         b = model.new_bool_var("b")
         x = model.new_int_var(5, 7, "x")
@@ -1182,8 +1409,6 @@ class TestProductVar:
         """
         Tests Boolean x Boolean product (both are [0,1] domain).
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         b1 = model.new_bool_var("b1")
         b2 = model.new_bool_var("b2")
@@ -1204,8 +1429,6 @@ class TestProductVar:
         """
         Tests using product variable in other constraints.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         b = model.new_bool_var("b")
         x = model.new_int_var(1, 5, "x")
@@ -1237,8 +1460,6 @@ class TestProductVar:
         """
         Tests Integer x Integer product with various ranges.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         x = model.new_int_var(x_lb, x_ub, "x")
         y = model.new_int_var(y_lb, y_ub, "y")
@@ -1262,8 +1483,6 @@ class TestProductVar:
         """
         Tests Boolean x Boolean product for all 4 possible combinations.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         b1 = model.new_bool_var("b1")
         b2 = model.new_bool_var("b2")
@@ -1297,8 +1516,6 @@ class TestProductVar:
         """
         Tests Boolean x Boolean product when both are false.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         b1 = model.new_bool_var("b1")
         b2 = model.new_bool_var("b2")
@@ -1318,8 +1535,6 @@ class TestProductVar:
         """
         Tests Boolean x Boolean product when one is true, one is false.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         b1 = model.new_bool_var("b1")
         b2 = model.new_bool_var("b2")
@@ -1339,8 +1554,6 @@ class TestProductVar:
         """
         Tests Boolean x Boolean product is equivalent to AND operation.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         b1 = model.new_bool_var("b1")
         b2 = model.new_bool_var("b2")
@@ -1361,8 +1574,6 @@ class TestProductVar:
         """
         Tests Integer x Integer product with both negative bounds.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         x = model.new_int_var(-5, -2, "x")
         y = model.new_int_var(-4, -1, "y")
@@ -1383,8 +1594,6 @@ class TestProductVar:
         """
         Tests Integer x Integer product with ranges spanning zero.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         x = model.new_int_var(-3, 3, "x")
         y = model.new_int_var(-2, 2, "y")
@@ -1405,8 +1614,6 @@ class TestProductVar:
         """
         Tests Boolean x Integer product with negative integer domain.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         b = model.new_bool_var("b")
         x = model.new_int_var(-10, -5, "x")
@@ -1427,7 +1634,6 @@ class TestProductVar:
         """
         Tests Boolean x Integer product domain includes zero.
         """
-
         model = CpModelPlus()
         b = model.new_bool_var("b")
         x = model.new_int_var(5, 10, "x")
@@ -1449,7 +1655,6 @@ class TestProductVar:
         """
         Tests that new_product_var adds appropriate constraints.
         """
-
         model = CpModelPlus()
 
         # Boolean x Boolean case
@@ -1485,8 +1690,6 @@ class TestProductVar:
         """
         Tests that product is commutative: var1 * var2 == var2 * var1.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         x = model.new_int_var(2, 5, "x")
         y = model.new_int_var(3, 7, "y")
@@ -1512,8 +1715,6 @@ class TestProductVar:
         """
         Tests product when one variable has a single-value domain.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         x = model.new_int_var(5, 5, "x")  # Single value
         y = model.new_int_var(2, 4, "y")
@@ -1532,8 +1733,6 @@ class TestProductVar:
         """
         Tests product variable used in objective function.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         x = model.new_int_var(1, 5, "x")
         y = model.new_int_var(1, 5, "y")
@@ -1556,8 +1755,6 @@ class TestProductVar:
         """
         Tests product variable maximized in objective.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         x = model.new_int_var(1, 5, "x")
         y = model.new_int_var(2, 4, "y")
@@ -1586,8 +1783,6 @@ class TestIfThenElse:
         """
         Tests that when condition is true, then_expr is enforced.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         y = model.new_int_var(0, 10, "y")
         condition = model.new_bool_var("condition")
@@ -1608,8 +1803,6 @@ class TestIfThenElse:
         """
         Tests that when condition is false, else_expr is enforced.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         y = model.new_int_var(0, 10, "y")
         condition = model.new_bool_var("condition")
@@ -1630,8 +1823,6 @@ class TestIfThenElse:
         """
         Tests if-then-else with linear expressions.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         x = model.new_int_var(0, 10, "x")
         y = model.new_int_var(0, 10, "y")
@@ -1655,8 +1846,6 @@ class TestIfThenElse:
         """
         Tests if-then-else with inequality constraints.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         y = model.new_int_var(0, 10, "y")
         condition = model.new_bool_var("condition")
@@ -1680,8 +1869,6 @@ class TestIfThenElse:
         """
         Tests multiple if-then-else constraints on same variable.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         x = model.new_int_var(0, 10, "x")
         y = model.new_int_var(0, 10, "y")
@@ -1709,8 +1896,6 @@ class TestIfThenElse:
         """
         Tests condition that is derived from another constraint.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         x = model.new_int_var(0, 10, "x")
         y = model.new_int_var(0, 10, "y")
@@ -1737,8 +1922,6 @@ class TestIfThenElse:
         """
         Tests that infeasible then branch forces condition false.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         y = model.new_int_var(0, 10, "y")
         condition = model.new_bool_var("condition")
@@ -1761,8 +1944,6 @@ class TestIfThenElse:
         """
         Tests that infeasible else branch forces condition true.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         y = model.new_int_var(0, 10, "y")
         condition = model.new_bool_var("condition")
@@ -1785,8 +1966,6 @@ class TestIfThenElse:
         """
         Tests if-then-else with sum expressions.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         x = model.new_int_var(0, 5, "x")
         y = model.new_int_var(0, 5, "y")
@@ -1811,8 +1990,6 @@ class TestIfThenElse:
         """
         Tests if-then-else with multiplication expressions.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         x = model.new_int_var(2, 5, "x")
         y = model.new_int_var(0, 20, "y")
@@ -1835,8 +2012,6 @@ class TestIfThenElse:
         """
         Tests enumerating all solutions with if-then-else.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         x = model.new_int_var(0, 3, "x")
         y = model.new_int_var(0, 10, "y")
@@ -1879,7 +2054,6 @@ class TestIfThenElse:
         """
         Tests that add_if_then_else adds exactly 2 constraints.
         """
-
         model = CpModelPlus()
         y = model.new_int_var(0, 10, "y")
         condition = model.new_bool_var("condition")
@@ -1895,8 +2069,6 @@ class TestIfThenElse:
         """
         Tests if-then-else with optimization objective.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         x = model.new_int_var(0, 10, "x")
         y = model.new_int_var(0, 10, "y")
@@ -1921,8 +2093,6 @@ class TestIfThenElse:
         """
         Tests minimization with if-then-else constraint.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         x = model.new_int_var(0, 10, "x")
         y = model.new_int_var(0, 10, "y")
@@ -1947,8 +2117,6 @@ class TestIfThenElse:
         """
         Tests if-then-else with multiple conditions (AND logic) when all true.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         y = model.new_int_var(0, 10, "y")
         cond1 = model.new_bool_var("cond1")
@@ -1973,8 +2141,6 @@ class TestIfThenElse:
         """
         Tests if-then-else with multiple conditions when one is false.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         y = model.new_int_var(0, 10, "y")
         cond1 = model.new_bool_var("cond1")
@@ -2000,8 +2166,6 @@ class TestIfThenElse:
         """
         Tests if-then-else with multiple conditions when all are false.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         y = model.new_int_var(0, 10, "y")
         cond1 = model.new_bool_var("cond1")
@@ -2035,8 +2199,6 @@ class TestIfThenElse:
         """
         Tests all combinations of two conditions with AND logic.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         y = model.new_int_var(0, 10, "y")
         cond1 = model.new_bool_var("cond1")
@@ -2064,8 +2226,6 @@ class TestConditionalVar:
         """
         Tests that when condition is true, y equals x.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         x = model.new_int_var(0, 10, "x")
         condition = model.new_bool_var("condition")
@@ -2087,8 +2247,6 @@ class TestConditionalVar:
         """
         Tests that when condition is false, y is unconstrained.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         x = model.new_int_var(0, 10, "x")
         condition = model.new_bool_var("condition")
@@ -2113,8 +2271,6 @@ class TestConditionalVar:
         """
         Tests with multiple conditions when all are true.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         x = model.new_int_var(0, 10, "x")
         cond1 = model.new_bool_var("cond1")
@@ -2139,8 +2295,6 @@ class TestConditionalVar:
         """
         Tests with multiple conditions when one is false.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         x = model.new_int_var(0, 10, "x")
         cond1 = model.new_bool_var("cond1")
@@ -2163,62 +2317,10 @@ class TestConditionalVar:
         assert_equal(solver.value(x), 4)
         assert_equal(solver.value(y), 9)  # y can differ
 
-    def test_domain_preserved(self):
-        """
-        Tests that the new variable has the same domain as x.
-        """
-        from ortools.sat.python import cp_model
-
-        model = CpModelPlus()
-        # Create x with specific domain
-        x = model.new_int_var(5, 15, "x")
-        condition = model.new_bool_var("condition")
-
-        y = model.new_conditional_var(x, condition)
-
-        # When condition is false, y should still be in domain [5, 15]
-        model.add(condition == 0)
-        model.add(x == 10)
-
-        # Try to maximize y
-        model.maximize(y)
-
-        solver = cp_model.CpSolver()
-        status = solver.solve(model)
-
-        assert_equal(status, cp_model.OPTIMAL)
-        # y should be at most 15 (domain bound)
-        assert_equal(solver.value(y), 15)
-
-    def test_with_optimization(self):
-        """
-        Tests conditional variable in optimization context.
-        """
-        from ortools.sat.python import cp_model
-
-        model = CpModelPlus()
-        x = model.new_int_var(0, 10, "x")
-        condition = model.new_bool_var("condition")
-
-        y = model.new_conditional_var(x, condition)
-
-        # Maximize y
-        model.maximize(y)
-
-        solver = cp_model.CpSolver()
-        status = solver.solve(model)
-
-        assert_equal(status, cp_model.OPTIMAL)
-        # To maximize y, condition should be false (y unconstrained)
-        # or condition true with x=10
-        assert_equal(solver.value(y), 10)
-
     def test_forces_condition_value(self):
         """
         Tests that y != x forces condition to be false.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         x = model.new_int_var(0, 10, "x")
         condition = model.new_bool_var("condition")
@@ -2249,8 +2351,6 @@ class TestConditionalVar:
         """
         Tests all combinations of two conditions.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         x = model.new_int_var(0, 10, "x")
         cond1 = model.new_bool_var("cond1")
@@ -2283,8 +2383,6 @@ class TestConditionalVar:
         """
         Tests conditional variable with negative values in domain.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         x = model.new_int_var(-10, 10, "x")
         condition = model.new_bool_var("condition")
@@ -2301,6 +2399,285 @@ class TestConditionalVar:
         assert_equal(status, cp_model.OPTIMAL)
         assert_equal(solver.value(y), -5)
 
+    def test_with_linear_expression(self):
+        """
+        Tests conditional variable with linear expression (x + 5).
+        """
+        model = CpModelPlus()
+        x = model.new_int_var(0, 10, "x")
+        condition = model.new_bool_var("condition")
+
+        # Create conditional var from expression
+        y = model.new_conditional_var(x + 5, condition)
+
+        # When condition is true, y should equal x + 5
+        model.add(x == 3)
+        model.add(condition == 1)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(y), 8)  # x + 5 = 3 + 5
+
+    def test_with_expression_condition_false(self):
+        """
+        Tests expression-based conditional var is unconstrained when false.
+        """
+        model = CpModelPlus()
+        x = model.new_int_var(0, 10, "x")
+        condition = model.new_bool_var("condition")
+
+        y = model.new_conditional_var(2 * x, condition)
+
+        # When condition is false, y is unconstrained
+        model.add(x == 4)
+        model.add(condition == 0)
+        model.add(y == 100)  # Can be anything
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(x), 4)
+        assert_equal(solver.value(y), 100)
+
+    def test_with_complex_expression(self):
+        """
+        Tests conditional variable with complex expression.
+        """
+        model = CpModelPlus()
+        x = model.new_int_var(0, 5, "x")
+        z = model.new_int_var(0, 5, "z")
+        condition = model.new_bool_var("condition")
+
+        # Create conditional var from complex expression
+        y = model.new_conditional_var(2 * x + z, condition)
+
+        # When condition is true
+        model.add(x == 2)
+        model.add(z == 3)
+        model.add(condition == 1)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(y), 7)  # 2*2 + 3 = 7
+
+    def test_expression_with_multiple_conditions(self):
+        """
+        Tests expression with multiple conditions.
+        """
+        model = CpModelPlus()
+        x = model.new_int_var(0, 10, "x")
+        cond1 = model.new_bool_var("cond1")
+        cond2 = model.new_bool_var("cond2")
+
+        y = model.new_conditional_var(x + 10, cond1, cond2)
+
+        # Both conditions true
+        model.add(x == 5)
+        model.add(cond1 == 1)
+        model.add(cond2 == 1)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(y), 15)  # x + 10 = 5 + 10
+
+    def test_absent_value_condition_true(self):
+        """
+        Tests that absent_value is ignored when condition is true.
+        """
+        model = CpModelPlus()
+        x = model.new_int_var(0, 10, "x")
+        condition = model.new_bool_var("condition")
+
+        y = model.new_conditional_var(x, condition, absent_value=99)
+
+        # When condition is true, y should equal x regardless of absent_value
+        model.add(x == 5)
+        model.add(condition == 1)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(y), 5)  # y == x, not absent_value
+
+    def test_absent_value_condition_false(self):
+        """
+        Tests that absent_value is used when condition is false.
+        """
+        model = CpModelPlus()
+        x = model.new_int_var(0, 10, "x")
+        condition = model.new_bool_var("condition")
+
+        y = model.new_conditional_var(x, condition, absent_value=99)
+
+        # When condition is false, y should equal absent_value
+        model.add(x == 5)
+        model.add(condition == 0)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(y), 99)  # y == absent_value
+
+    def test_absent_value_zero(self):
+        """
+        Tests absent_value=0 works correctly.
+        """
+        model = CpModelPlus()
+        x = model.new_int_var(5, 15, "x")
+        condition = model.new_bool_var("condition")
+
+        y = model.new_conditional_var(x, condition, absent_value=0)
+
+        model.add(x == 10)
+        model.add(condition == 0)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(y), 0)
+
+    def test_absent_value_negative(self):
+        """
+        Tests negative absent_value.
+        """
+        model = CpModelPlus()
+        x = model.new_int_var(0, 10, "x")
+        condition = model.new_bool_var("condition")
+
+        y = model.new_conditional_var(x, condition, absent_value=-100)
+
+        model.add(condition == 0)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(y), -100)
+
+    def test_absent_value_with_expression(self):
+        """
+        Tests absent_value with linear expression.
+        """
+        model = CpModelPlus()
+        x = model.new_int_var(0, 10, "x")
+        condition = model.new_bool_var("condition")
+
+        y = model.new_conditional_var(2 * x + 5, condition, absent_value=0)
+
+        # When condition is true
+        model.add(x == 3)
+        model.add(condition == 1)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(y), 11)  # 2*3 + 5
+
+    def test_absent_value_with_expression_false(self):
+        """
+        Tests absent_value with linear expression when condition false.
+        """
+        model = CpModelPlus()
+        x = model.new_int_var(0, 10, "x")
+        condition = model.new_bool_var("condition")
+
+        y = model.new_conditional_var(2 * x + 5, condition, absent_value=0)
+
+        # When condition is false
+        model.add(x == 3)
+        model.add(condition == 0)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(y), 0)  # absent_value, not 2*3+5
+
+    def test_absent_value_multiple_conditions_all_true(self):
+        """
+        Tests absent_value with multiple conditions all true.
+        """
+        model = CpModelPlus()
+        x = model.new_int_var(0, 10, "x")
+        cond1 = model.new_bool_var("cond1")
+        cond2 = model.new_bool_var("cond2")
+
+        y = model.new_conditional_var(x, cond1, cond2, absent_value=50)
+
+        model.add(x == 7)
+        model.add(cond1 == 1)
+        model.add(cond2 == 1)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(y), 7)  # All conditions true, use x
+
+    def test_absent_value_multiple_conditions_one_false(self):
+        """
+        Tests absent_value with multiple conditions, one false.
+        """
+        model = CpModelPlus()
+        x = model.new_int_var(0, 10, "x")
+        cond1 = model.new_bool_var("cond1")
+        cond2 = model.new_bool_var("cond2")
+
+        y = model.new_conditional_var(x, cond1, cond2, absent_value=50)
+
+        model.add(x == 7)
+        model.add(cond1 == 1)
+        model.add(cond2 == 0)  # One false
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(y), 50)  # Any condition false, use absent
+
+    @pytest.mark.parametrize(
+        "cond1_val,cond2_val,expected",
+        [
+            (True, True, 8),  # Both true -> x value
+            (True, False, 42),  # One false -> absent_value
+            (False, True, 42),  # One false -> absent_value
+            (False, False, 42),  # Both false -> absent_value
+        ],
+    )
+    def test_absent_value_all_combinations(
+        self, cond1_val, cond2_val, expected
+    ):
+        """
+        Tests absent_value with all condition combinations.
+        """
+        model = CpModelPlus()
+        x = model.new_int_var(0, 10, "x")
+        cond1 = model.new_bool_var("cond1")
+        cond2 = model.new_bool_var("cond2")
+
+        y = model.new_conditional_var(x, cond1, cond2, absent_value=42)
+
+        model.add(x == 8)
+        model.add(cond1 == (1 if cond1_val else 0))
+        model.add(cond2 == (1 if cond2_val else 0))
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(y), expected)
+
 
 class TestMaxVar:
     """
@@ -2311,8 +2688,6 @@ class TestMaxVar:
         """
         Tests basic maximum of two variables.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         x = model.new_int_var(1, 5, "x")
         y = model.new_int_var(3, 7, "y")
@@ -2333,8 +2708,6 @@ class TestMaxVar:
         """
         Tests maximum when both variables have the same value.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         x = model.new_int_var(0, 10, "x")
         y = model.new_int_var(0, 10, "y")
@@ -2354,8 +2727,6 @@ class TestMaxVar:
         """
         Tests maximum of three variables.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         x = model.new_int_var(0, 10, "x")
         y = model.new_int_var(0, 10, "y")
@@ -2377,8 +2748,6 @@ class TestMaxVar:
         """
         Tests maximum of many variables.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         variables = [model.new_int_var(0, 20, f"x{i}") for i in range(10)]
 
@@ -2399,8 +2768,6 @@ class TestMaxVar:
         """
         Tests maximum with negative values.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         x = model.new_int_var(-10, -5, "x")
         y = model.new_int_var(-8, -2, "y")
@@ -2420,8 +2787,6 @@ class TestMaxVar:
         """
         Tests maximum with mixed positive and negative values.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         x = model.new_int_var(-10, 0, "x")
         y = model.new_int_var(0, 10, "y")
@@ -2441,8 +2806,6 @@ class TestMaxVar:
         """
         Tests maximum with a single variable (edge case).
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         x = model.new_int_var(5, 15, "x")
 
@@ -2460,8 +2823,6 @@ class TestMaxVar:
         """
         Tests using max variable in other constraints.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         x = model.new_int_var(1, 10, "x")
         y = model.new_int_var(1, 10, "y")
@@ -2485,8 +2846,6 @@ class TestMaxVar:
         """
         Tests max variable in optimization objective.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         x = model.new_int_var(1, 10, "x")
         y = model.new_int_var(1, 10, "y")
@@ -2509,8 +2868,6 @@ class TestMaxVar:
         """
         Tests maximizing the max variable.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         x = model.new_int_var(1, 5, "x")
         y = model.new_int_var(3, 8, "y")
@@ -2532,8 +2889,6 @@ class TestMaxVar:
         """
         Tests that max variable is correct across all solutions.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         x = model.new_int_var(1, 3, "x")
         y = model.new_int_var(2, 4, "y")
@@ -2567,8 +2922,6 @@ class TestMaxVar:
         """
         Tests maximum with overlapping variable domains.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         x = model.new_int_var(3, 8, "x")
         y = model.new_int_var(5, 10, "y")
@@ -2588,8 +2941,6 @@ class TestMaxVar:
         """
         Tests that max constraint properly propagates bounds.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         x = model.new_int_var(1, 10, "x")
         y = model.new_int_var(1, 10, "y")
@@ -2614,8 +2965,6 @@ class TestMaxVar:
         """
         Tests maximum with constant-valued variables.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         x = model.new_int_var(5, 5, "x")  # Constant
         y = model.new_int_var(1, 10, "y")
@@ -2634,8 +2983,6 @@ class TestMaxVar:
         """
         Tests maximum with zero in the domain.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         x = model.new_int_var(-5, 0, "x")
         y = model.new_int_var(0, 5, "y")
@@ -2676,8 +3023,6 @@ class TestMinVar:
         """
         Tests basic minimum of two variables.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         x = model.new_int_var(1, 5, "x")
         y = model.new_int_var(3, 7, "y")
@@ -2698,8 +3043,6 @@ class TestMinVar:
         """
         Tests minimum when both variables have the same value.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         x = model.new_int_var(0, 10, "x")
         y = model.new_int_var(0, 10, "y")
@@ -2719,8 +3062,6 @@ class TestMinVar:
         """
         Tests minimum of three variables.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         x = model.new_int_var(0, 10, "x")
         y = model.new_int_var(0, 10, "y")
@@ -2742,8 +3083,6 @@ class TestMinVar:
         """
         Tests minimum of many variables.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         variables = [model.new_int_var(0, 20, f"x{i}") for i in range(10)]
 
@@ -2764,8 +3103,6 @@ class TestMinVar:
         """
         Tests minimum with negative values.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         x = model.new_int_var(-10, -5, "x")
         y = model.new_int_var(-8, -2, "y")
@@ -2785,8 +3122,6 @@ class TestMinVar:
         """
         Tests minimum with mixed positive and negative values.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         x = model.new_int_var(-10, 0, "x")
         y = model.new_int_var(0, 10, "y")
@@ -2806,8 +3141,6 @@ class TestMinVar:
         """
         Tests minimum with a single variable (edge case).
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         x = model.new_int_var(5, 15, "x")
 
@@ -2825,8 +3158,6 @@ class TestMinVar:
         """
         Tests using min variable in other constraints.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         x = model.new_int_var(1, 10, "x")
         y = model.new_int_var(1, 10, "y")
@@ -2850,8 +3181,6 @@ class TestMinVar:
         """
         Tests min variable in optimization objective.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         x = model.new_int_var(1, 10, "x")
         y = model.new_int_var(1, 10, "y")
@@ -2874,8 +3203,6 @@ class TestMinVar:
         """
         Tests minimizing the min variable.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         x = model.new_int_var(1, 5, "x")
         y = model.new_int_var(3, 8, "y")
@@ -2897,8 +3224,6 @@ class TestMinVar:
         """
         Tests that min variable is correct across all solutions.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         x = model.new_int_var(1, 3, "x")
         y = model.new_int_var(2, 4, "y")
@@ -2932,8 +3257,6 @@ class TestMinVar:
         """
         Tests minimum with overlapping variable domains.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         x = model.new_int_var(3, 8, "x")
         y = model.new_int_var(5, 10, "y")
@@ -2953,8 +3276,6 @@ class TestMinVar:
         """
         Tests that min constraint properly propagates bounds.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         x = model.new_int_var(1, 10, "x")
         y = model.new_int_var(1, 10, "y")
@@ -2979,8 +3300,6 @@ class TestMinVar:
         """
         Tests minimum with constant-valued variables.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         x = model.new_int_var(5, 5, "x")  # Constant
         y = model.new_int_var(1, 10, "y")
@@ -2999,8 +3318,6 @@ class TestMinVar:
         """
         Tests minimum with zero in the domain.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         x = model.new_int_var(-5, 0, "x")
         y = model.new_int_var(0, 5, "y")
@@ -3035,8 +3352,6 @@ class TestMinVar:
         """
         Tests using min and max variables together.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         x = model.new_int_var(1, 10, "x")
         y = model.new_int_var(1, 10, "y")
@@ -3061,8 +3376,6 @@ class TestMinVar:
         """
         Tests minimum with large value ranges.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         x = model.new_int_var(1, 1000, "x")
         y = model.new_int_var(500, 1500, "y")
@@ -3088,8 +3401,6 @@ class TestStepVar:
         """
         Tests a basic step function with two domains.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         x = model.new_int_var(0, 20, "x")
 
@@ -3111,8 +3422,6 @@ class TestStepVar:
         """
         Tests the second domain of a basic step function.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         x = model.new_int_var(0, 20, "x")
 
@@ -3134,8 +3443,6 @@ class TestStepVar:
         """
         Tests a step function with three domains.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         x = model.new_int_var(0, 30, "x")
 
@@ -3160,8 +3467,6 @@ class TestStepVar:
         """
         Tests a step function with many domains (stress test).
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         x = model.new_int_var(0, 100, "x")
 
@@ -3185,8 +3490,6 @@ class TestStepVar:
         """
         Tests step function with gaps between domains.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         x = model.new_int_var(0, 50, "x")
 
@@ -3212,8 +3515,6 @@ class TestStepVar:
         """
         Tests step function with negative domain ranges.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         x = model.new_int_var(-20, 10, "x")
 
@@ -3238,8 +3539,6 @@ class TestStepVar:
         """
         Tests step function with negative output values.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         x = model.new_int_var(0, 20, "x")
 
@@ -3259,8 +3558,6 @@ class TestStepVar:
         """
         Tests step function with both positive and negative output values.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         x = model.new_int_var(0, 30, "x")
 
@@ -3285,8 +3582,6 @@ class TestStepVar:
         """
         Tests step function with just one domain (edge case).
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         x = model.new_int_var(0, 10, "x")
 
@@ -3306,8 +3601,6 @@ class TestStepVar:
         """
         Tests behavior at lower domain boundary.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         x = model.new_int_var(0, 20, "x")
 
@@ -3328,8 +3621,6 @@ class TestStepVar:
         """
         Tests behavior at upper domain boundary.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         x = model.new_int_var(0, 20, "x")
 
@@ -3350,8 +3641,6 @@ class TestStepVar:
         """
         Tests boundary between two domains.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         x = model.new_int_var(0, 20, "x")
 
@@ -3372,8 +3661,6 @@ class TestStepVar:
         """
         Tests error handling for mismatched domain and value lengths.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         x = model.new_int_var(0, 20, "x")
 
@@ -3387,8 +3674,6 @@ class TestStepVar:
         """
         Verifies the output variable has correct bounds.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         x = model.new_int_var(0, 30, "x")
 
@@ -3421,8 +3706,6 @@ class TestStepVar:
         """
         Tests step function with discrete (non-contiguous) domain values.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         x = model.new_int_var(0, 20, "x")
 
@@ -3447,8 +3730,6 @@ class TestStepVar:
         """
         Tests the second discrete domain.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         x = model.new_int_var(0, 20, "x")
 
@@ -3474,8 +3755,6 @@ class TestStepVar:
         When x is forced into a gap between domains, model should be
         INFEASIBLE.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         x = model.new_int_var(0, 50, "x")
 
@@ -3500,8 +3779,6 @@ class TestStepVar:
         """
         When x is forced outside all domains, model should be INFEASIBLE.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         x = model.new_int_var(0, 50, "x")
 
@@ -3522,8 +3799,6 @@ class TestStepVar:
         """
         When x is unconstrained, solver should only choose values in domains.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         x = model.new_int_var(0, 50, "x")
 
@@ -3555,8 +3830,6 @@ class TestStepVar:
         """
         With discrete domains, values between them should be infeasible.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         x = model.new_int_var(0, 20, "x")
 
@@ -3586,8 +3859,6 @@ class TestConvexPwlVar:
         """
         Tests a basic V-shaped convex function (absolute value).
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         x = model.new_int_var(-10, 10, "x")
 
@@ -3610,8 +3881,6 @@ class TestConvexPwlVar:
         """
         Tests earliness-tardiness cost function (real-world example).
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         completion = model.new_int_var(0, 20, "completion")
 
@@ -3647,8 +3916,6 @@ class TestConvexPwlVar:
         """
         Tests on-time completion has zero cost.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         completion = model.new_int_var(0, 20, "completion")
 
@@ -3670,8 +3937,6 @@ class TestConvexPwlVar:
         """
         Tests late completion incurs tardiness cost.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         completion = model.new_int_var(0, 20, "completion")
 
@@ -3693,8 +3958,6 @@ class TestConvexPwlVar:
         """
         Tests PWL function with many segments.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         x = model.new_int_var(0, 100, "x")
 
@@ -3718,8 +3981,6 @@ class TestConvexPwlVar:
         """
         Tests single segment (trivially convex).
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         x = model.new_int_var(0, 10, "x")
 
@@ -3739,8 +4000,6 @@ class TestConvexPwlVar:
         """
         Tests minimal convex function with two segments.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         x = model.new_int_var(0, 20, "x")
 
@@ -3762,8 +4021,6 @@ class TestConvexPwlVar:
         """
         Tests convex function with all negative rates.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         x = model.new_int_var(0, 10, "x")
 
@@ -3785,8 +4042,6 @@ class TestConvexPwlVar:
         """
         Tests convex function with all positive rates.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         x = model.new_int_var(0, 10, "x")
 
@@ -3812,8 +4067,6 @@ class TestConvexPwlVar:
         """
         Tests convex function including flat (zero rate) segments.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         x = model.new_int_var(0, 20, "x")
 
@@ -3874,8 +4127,6 @@ class TestConvexPwlVar:
         """
         Tests that PWL function evaluates correctly at different x values.
         """
-        from ortools.sat.python import cp_model
-
         # Test at multiple points
         test_cases = [
             (0, 0),  # |0| = 0
@@ -3921,8 +4172,6 @@ class TestOverlapVar:
         """
         Tests overlap length for various non-optional interval configurations.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         a = model.new_interval_var(start_a, size_a, start_a + size_a, "a")
         b = model.new_interval_var(start_b, size_b, start_b + size_b, "b")
@@ -3939,8 +4188,6 @@ class TestOverlapVar:
         """
         Tests overlap with variable start times determined by solver.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
 
         # Create intervals with variable start times
@@ -3968,8 +4215,6 @@ class TestOverlapVar:
         """
         Tests that solver can maximize overlap between intervals.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
 
         # Create intervals with variable start times
@@ -3996,8 +4241,6 @@ class TestOverlapVar:
         """
         Tests that solver can minimize overlap between intervals.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
 
         # Create intervals with variable start times
@@ -4034,8 +4277,6 @@ class TestOverlapVar:
         Tests overlap length with optional intervals in various presence
         configurations.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
 
         # Create optional intervals
@@ -4077,8 +4318,6 @@ class TestOverlapVar:
         """
         Tests Boolean overlap for various non-optional interval configurations.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
         a = model.new_interval_var(start_a, size_a, start_a + size_a, "a")
         b = model.new_interval_var(start_b, size_b, start_b + size_b, "b")
@@ -4108,8 +4347,6 @@ class TestOverlapVar:
         Tests Boolean overlap with optional intervals in various presence
         and overlap configurations.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
 
         # Create optional intervals
@@ -4140,8 +4377,6 @@ class TestOverlapVar:
         Tests Boolean overlap with variable start times to verify
         constraint propagation works correctly.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
 
         # Create intervals with variable start times
@@ -4169,8 +4404,6 @@ class TestOverlapVar:
         Tests that overlap detection is symmetric: has_overlap(a, b) ==
         has_overlap(b, a).
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
 
         a = model.new_interval_var(2, 5, 7, "a")
@@ -4192,8 +4425,6 @@ class TestOverlapVar:
         Tests using has_overlap Boolean in constraints to enforce
         non-overlapping intervals.
         """
-        from ortools.sat.python import cp_model
-
         model = CpModelPlus()
 
         # Variable start times

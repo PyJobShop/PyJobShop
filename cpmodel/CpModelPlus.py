@@ -45,7 +45,7 @@ class CpModelPlus(CpModel):
     - [ ] add_end_eval(): Evaluate function at interval end
     - [ ] add_size_eval(): Evaluate function on interval size
     - [ ] add_length_eval(): Evaluate function on interval length
-    - [-] add_span(): Span constraint (missing absent interval handling)
+    - [x] add_span(): Span constraint
     - [x] add_alternative(): Alternative constraint with cardinality
     - [x] add_synchronize(): Synchronization constraint between intervals
     - [ ] add_isomorphism(): Isomorphism constraint between interval sets
@@ -584,69 +584,71 @@ class CpModelPlus(CpModel):
         """
         raise NotImplementedError
 
-    # https://www.ibm.com/docs/en/icos/22.1.1?topic=scheduling-constraints-groups-interval-variables
-    def add_span(
-        self, main: IntervalVar, candidates: list[IntervalVar]
-    ) -> tuple[Constraint, Constraint]:
+    def add_span(self, main: IntervalVar, candidates: list[IntervalVar]):
         """
         Creates a span constraint over interval variables.
 
-        Behavior:
-        - [x] When main interval is present: its start equals the minimum
-              start of all present candidate intervals
-        - [x] When main interval is present: its end equals the maximum end
-              of all present candidate intervals
-        - [ ] Handling of absent main and candidate intervals.
+        The span constraint ensures that when the main interval is present,
+        it spans exactly from the earliest start to the latest end of all
+        present candidate intervals. The main interval is present if and
+        only if at least one candidate interval is present.
 
         Parameters
         ----------
         main
-            Spanning interval variable.
+            Spanning interval variable that covers all present candidates.
         candidates
             List of interval variables to be spanned.
 
-        Returns
-        -------
-        tuple[Constraint, Constraint]
-            The start and end span constraints.
+        Raises
+        ------
+        ValueError
+            If candidates list is empty.
         """
+        if not candidates:
+            raise ValueError("Candidates list cannot be empty")
 
         def is_true(var: IntVar) -> bool:
             return list(var.proto.domain) == [1, 1]
 
-        # Shortcut if all intervals are present - this is much stronger.
         main_pres = self.presence_of(main)
         cand_pres = [self.presence_of(cand) for cand in candidates]
+        starts = [cand.start_expr() for cand in candidates]
+        ends = [cand.end_expr() for cand in candidates]
 
         if all(is_true(x) for x in [main_pres, *cand_pres]):
-            starts = [candidate.start_expr() for candidate in candidates]
-            ends = [candidate.end_expr() for candidate in candidates]
-            cons1 = self.add_min_equality(main.start_expr(), starts)
-            cons2 = self.add_max_equality(main.end_expr(), ends)
-            return cons1, cons2
+            # Shortcut: All intervals are always present.
+            # This uses a simpler and more efficient formulation.
+            self.add_min_equality(main.start_expr(), starts)
+            self.add_max_equality(main.end_expr(), ends)
+            return
 
-        # Main is present <=> at least one candidate is present.
+        # Main present <=> at least one candidate present.
         self.add(main_pres <= sum(cand_pres))
         self.add(len(candidates) * main_pres >= sum(cand_pres))
 
-        # Introduce sentinel min/max values to handle absent candidates.
-        min_value = self.new_int_var(-MAX_VALUE, MAX_VALUE, "")
-        max_value = self.new_int_var(-MAX_VALUE, MAX_VALUE, "")
+        # Use conditional variables to handle absence in min/max constraints.
+        start_var = self.new_conditional_var(main.start_expr(), main_pres)
+        start_vars = [
+            self.new_conditional_var(
+                cand.start_expr(),
+                self.presence_of(cand),
+                absent_value=MAX_VALUE,
+            )
+            for cand in candidates
+        ]
+        self.add_min_equality(start_var, start_vars)
 
-        for candidate in candidates:
-            both_present = [main_pres, self.presence_of(candidate)]
-            bound_lower = min_value <= candidate.start_expr()
-            self.add(bound_lower).only_enforce_if(both_present)
-            bound_upper = max_value >= candidate.end_expr()
-            self.add(bound_upper).only_enforce_if(both_present)
-
-        cons1 = self.add(main.start_expr() == min_value).only_enforce_if(
-            main_pres
-        )
-        cons2 = self.add(main.end_expr() == max_value).only_enforce_if(
-            main_pres
-        )
-        return cons1, cons2
+        end_var = self.new_conditional_var(main.end_expr(), main_pres)
+        end_vars = [
+            self.new_conditional_var(
+                cand.end_expr(),
+                self.presence_of(cand),
+                absent_value=-MAX_VALUE,
+            )
+            for cand in candidates
+        ]
+        self.add_max_equality(end_var, end_vars)
 
     def add_alternative(
         self,
@@ -1053,31 +1055,44 @@ class CpModelPlus(CpModel):
 
         return has_overlap
 
-    def new_conditional_var(self, x: IntVar, *condition: BoolVarT) -> IntVar:
+    def new_conditional_var(
+        self,
+        x: LinearExprT,
+        *condition: BoolVarT,
+        absent_value: int | None = None,
+    ) -> IntVar:
         """
-        Creates a new variable that conditionally equals another variable.
+        Creates a new variable that conditionally equals an expression.
 
         When all conditions are true, the new variable equals x. When any
         condition is false, the new variable is unconstrained within its
-        domain (same domain as x).
+        domain.
 
         Parameters
         ----------
         x
-            The source variable to conditionally sync with.
+            The source variable or linear expression to conditionally sync
+            with.
         *condition
             One or more Boolean variables. The new variable equals x if and
             only if all conditions are true (AND logic).
+        absent_value
+            Value to assign when condition is false. If None, the new variable
+            is unconstrained within the domain of x.
 
         Returns
         -------
         IntVar
-            A new integer variable with the same domain as x, constrained
-            to equal x when all conditions are true.
+            A new integer variable constrained to equal x when all conditions
+            are true.
         """
-        domain = Domain.from_flat_intervals(x.proto.domain)
-        y = self.new_int_var_from_domain(domain, "")
-        self.add(y == x).only_enforce_if(condition)
+        y = self.new_int_var(-MAX_VALUE, MAX_VALUE, "")
+
+        if absent_value is not None:
+            self.add_if_then_else(condition, y == x, y == absent_value)
+        else:
+            self.add(y == x).only_enforce_if(condition)
+
         return y
 
     def add_if_then_else(
