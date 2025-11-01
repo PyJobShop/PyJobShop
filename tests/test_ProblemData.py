@@ -107,6 +107,10 @@ def test_job_equality():
     job2 = Job(1, 2, 3, 4, [5], name="Job")
     assert_equal(job1, job2)
 
+    class TestJob(Job): ...
+
+    assert_(Job() != TestJob())
+
 
 def test_machine_attributes():
     """
@@ -158,6 +162,10 @@ def test_machine_equality():
     machine2 = Machine([(10, 20)], False, name="M1")
     assert_equal(machine1, machine2)
 
+    class TestMachine(Machine): ...
+
+    assert_(Machine() != TestMachine())
+
 
 def test_renewable_attributes():
     """
@@ -207,6 +215,11 @@ def test_renewable_equality():
 
     renewable2 = Renewable(5, [(10, 20)], name="R1")
     assert_equal(renewable1, renewable2)
+
+    class TestRenewable(Renewable): ...
+
+    assert_(Renewable(0) != TestRenewable(0))
+    assert_(TestRenewable(0) != Renewable(0))
 
 
 def test_consumable_attributes():
@@ -258,6 +271,11 @@ def test_consumable_equality():
 
     consumable2 = Consumable(5, [(10, 20)], name="R1")
     assert_equal(consumable1, consumable2)
+
+    class TestConsumable(Consumable): ...
+
+    assert_(Consumable(0) != TestConsumable(0))
+    assert_(TestConsumable(0) != Consumable(0))
 
 
 def test_task_attributes():
@@ -342,6 +360,10 @@ def test_task_equality():
     task2 = Task(1, 0, 100, 0, 100, False, False, name="T1")
     assert_equal(task1, task2)
 
+    class TestTask(Task): ...
+
+    assert_(Task() != TestTask())
+
 
 def test_mode_attributes():
     """
@@ -387,13 +409,18 @@ def test_mode_equality():
     """
     Tests that equality comparison works correctly for Mode objects.
     """
-    assert_equal(Mode(0, [0], 1), Mode(0, [0], 1))
+    args = (0, [0], 1)
+    assert_equal(Mode(*args), Mode(*args))
 
     mode1 = Mode(0, [1, 2], 10, [5, 3], name="M1")
-    assert_(mode1 != Mode(0, [0], 1))
+    assert_(mode1 != Mode(*args))
 
     mode2 = Mode(0, [1, 2], 10, [5, 3], name="M1")
     assert_equal(mode1, mode2)
+
+    class TestMode(Mode): ...
+
+    assert_(Mode(*args) != TestMode(*args))
 
 
 def test_mode_dependency_must_have_at_least_one_succesor_mode():
@@ -594,6 +621,13 @@ def test_problem_data_default_values():
 
     assert_equal(data.constraints, Constraints())
     assert_equal(data.objective, Objective(weight_makespan=1))
+
+    class TestConstraints(Constraints): ...
+
+    class TestObjective(Objective): ...
+
+    assert_(data.constraints != TestConstraints())
+    assert_(data.objective != TestObjective(weight_makespan=1))
 
 
 def test_problem_data_str():
@@ -1143,6 +1177,10 @@ def test_problem_data_equality():
 
     data2 = ProblemData(jobs, resources, tasks, modes)
     assert_equal(data1, data2)
+
+    class TestProblemData(ProblemData): ...
+
+    assert_(ProblemData([], [], [], []) != TestProblemData([], [], [], []))
 
 
 # --- Tests that involve checking solver correctness of problem data. ---
