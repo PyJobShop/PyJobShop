@@ -966,7 +966,6 @@ class CpModelPlus(CpModel):
         active simultaneously. It is computed as:
         ``max(0, min(end_first, end_second) - max(start_first, start_second))``
 
-        When both intervals are present, the overlap is calculated normally.
         If either interval is absent, the overlap is 0.
 
         Parameters
@@ -995,6 +994,64 @@ class CpModelPlus(CpModel):
         self.add(overlap == 0).only_enforce_if(~self.presence_of(second))
 
         return overlap
+
+    def new_has_overlap_var(
+        self, first: IntervalVar, second: IntervalVar
+    ) -> BoolVarT:
+        """
+        Creates a new Boolean variable indicating whether two intervals
+        overlap.
+
+        Two intervals overlap if they are both active at the same time,
+        meaning neither starts after the other ends. The overlap Boolean
+        is true when: ``start_first < end_second AND start_second < end_first``
+
+        This implements the pattern from OR-Tools documentation using three
+        Boolean variables linked by clauses and implications for efficient
+        propagation.
+
+        If either interval is absent, the result is False (no overlap).
+
+        Parameters
+        ----------
+        first
+            First interval variable.
+        second
+            Second interval variable.
+
+        Returns
+        -------
+        BoolVarT
+            Boolean variable that is True if intervals overlap, False
+            otherwise.
+        """
+        after = self.new_bool_var("")  # first after second
+        true_expr = first.start_expr() >= second.end_expr()
+        false_expr = first.start_expr() < second.end_expr()
+        self.add_if_then_else(after, true_expr, false_expr)
+
+        before = self.new_bool_var("")  # first before second
+        true_expr = first.end_expr() <= second.start_expr()
+        false_expr = first.end_expr() > second.start_expr()
+        self.add_if_then_else(before, true_expr, false_expr)
+
+        # Define ``has_overlap`` by linking with ``after`` and ``before``,
+        # but only if both intervals are present.
+        has_overlap = self.new_bool_var("")
+        both_present = [self.presence_of(first), self.presence_of(second)]
+
+        for constraint in [
+            self.add_bool_or(after, before, has_overlap),
+            self.add_implication(after, ~has_overlap),
+            self.add_implication(before, ~has_overlap),
+        ]:
+            constraint.only_enforce_if(both_present)
+
+        # Otherwise, ``has_overlap`` should just be false.
+        self.add(has_overlap <= self.presence_of(first))
+        self.add(has_overlap <= self.presence_of(second))
+
+        return has_overlap
 
     def add_if_then_else(
         self,

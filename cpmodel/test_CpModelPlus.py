@@ -4383,3 +4383,295 @@ class TestOverlapVar:
         assert_equal(status, cp_model.OPTIMAL)
         # Both absent, so overlap should be 0
         assert_equal(solver.value(overlap), 0)
+
+    def test_has_overlap_true(self):
+        """
+        Tests Boolean overlap detection when intervals overlap.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+
+        # Interval a: [2, 7) with size 5
+        # Interval b: [5, 10) with size 5
+        # They overlap in [5, 7)
+        a = model.new_interval_var(2, 5, 7, "a")
+        b = model.new_interval_var(5, 5, 10, "b")
+
+        has_overlap = model.new_has_overlap_var(a, b)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(has_overlap), True)
+
+    def test_has_overlap_false_disjoint(self):
+        """
+        Tests Boolean overlap detection when intervals are disjoint.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+
+        # Interval a: [0, 5) with size 5
+        # Interval b: [10, 15) with size 5
+        # No overlap
+        a = model.new_interval_var(0, 5, 5, "a")
+        b = model.new_interval_var(10, 5, 15, "b")
+
+        has_overlap = model.new_has_overlap_var(a, b)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(has_overlap), False)
+
+    def test_has_overlap_false_adjacent(self):
+        """
+        Tests Boolean overlap when intervals are adjacent (touching).
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+
+        # Interval a: [0, 5) with size 5
+        # Interval b: [5, 10) with size 5
+        # Adjacent (touching at 5), no overlap
+        a = model.new_interval_var(0, 5, 5, "a")
+        b = model.new_interval_var(5, 5, 10, "b")
+
+        has_overlap = model.new_has_overlap_var(a, b)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(has_overlap), False)
+
+    def test_has_overlap_optional_first_absent(self):
+        """
+        Tests Boolean overlap when first interval is absent.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+
+        # First interval is optional and will be absent
+        first_pres = model.new_bool_var("first_pres")
+        first = model.new_optional_interval_var(0, 5, 5, first_pres, "first")
+
+        # Second interval is present
+        second = model.new_interval_var(2, 5, 7, "second")
+
+        has_overlap = model.new_has_overlap_var(first, second)
+
+        # Force first to be absent
+        model.add(first_pres == 0)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        # First is absent, so no overlap
+        assert_equal(solver.value(has_overlap), False)
+
+    def test_has_overlap_optional_second_absent(self):
+        """
+        Tests Boolean overlap when second interval is absent.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+
+        # First interval is present
+        first = model.new_interval_var(0, 5, 5, "first")
+
+        # Second interval is optional and will be absent
+        second_pres = model.new_bool_var("second_pres")
+        second = model.new_optional_interval_var(
+            2, 5, 7, second_pres, "second"
+        )
+
+        has_overlap = model.new_has_overlap_var(first, second)
+
+        # Force second to be absent
+        model.add(second_pres == 0)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        # Second is absent, so no overlap
+        assert_equal(solver.value(has_overlap), False)
+
+    def test_has_overlap_optional_both_present_overlap(self):
+        """
+        Tests Boolean overlap when both optional intervals are present
+        and they overlap.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+
+        # Both intervals are optional
+        first_pres = model.new_bool_var("first_pres")
+        first = model.new_optional_interval_var(0, 5, 5, first_pres, "first")
+
+        second_pres = model.new_bool_var("second_pres")
+        second = model.new_optional_interval_var(
+            2, 5, 7, second_pres, "second"
+        )
+
+        has_overlap = model.new_has_overlap_var(first, second)
+
+        # Force both to be present
+        model.add(first_pres == 1)
+        model.add(second_pres == 1)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        # Both present and overlapping: [0, 5) and [2, 7) overlap
+        assert_equal(solver.value(has_overlap), True)
+
+    def test_has_overlap_optional_both_absent(self):
+        """
+        Tests Boolean overlap when both optional intervals are absent.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+
+        # Both intervals are optional
+        first_pres = model.new_bool_var("first_pres")
+        first = model.new_optional_interval_var(0, 5, 5, first_pres, "first")
+
+        second_pres = model.new_bool_var("second_pres")
+        second = model.new_optional_interval_var(
+            2, 5, 7, second_pres, "second"
+        )
+
+        has_overlap = model.new_has_overlap_var(first, second)
+
+        # Force both to be absent
+        model.add(first_pres == 0)
+        model.add(second_pres == 0)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        # Both absent, so no overlap
+        assert_equal(solver.value(has_overlap), False)
+
+    def test_has_overlap_optional_both_present_disjoint(self):
+        """
+        Tests Boolean overlap when both optional intervals are present
+        but disjoint.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+
+        # Both intervals are optional and disjoint
+        first_pres = model.new_bool_var("first_pres")
+        first = model.new_optional_interval_var(0, 5, 5, first_pres, "first")
+
+        second_pres = model.new_bool_var("second_pres")
+        second = model.new_optional_interval_var(
+            10, 5, 15, second_pres, "second"
+        )
+
+        has_overlap = model.new_has_overlap_var(first, second)
+
+        # Force both to be present
+        model.add(first_pres == 1)
+        model.add(second_pres == 1)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        # Both present but disjoint: [0, 5) and [10, 15) don't overlap
+        assert_equal(solver.value(has_overlap), False)
+
+    def test_has_overlap_complete_containment(self):
+        """
+        Tests Boolean overlap when one interval is completely contained
+        within another.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+
+        # Interval a: [2, 10) with size 8
+        # Interval b: [4, 6) with size 2 (completely inside a)
+        a = model.new_interval_var(2, 8, 10, "a")
+        b = model.new_interval_var(4, 2, 6, "b")
+
+        has_overlap = model.new_has_overlap_var(a, b)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        # b is completely inside a, so they overlap
+        assert_equal(solver.value(has_overlap), True)
+
+    def test_has_overlap_reverse_direction(self):
+        """
+        Tests Boolean overlap with second interval starting before first.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+
+        # Interval a: [5, 10) with size 5
+        # Interval b: [2, 7) with size 5
+        # b starts before a, but they overlap in [5, 7)
+        a = model.new_interval_var(5, 5, 10, "a")
+        b = model.new_interval_var(2, 5, 7, "b")
+
+        has_overlap = model.new_has_overlap_var(a, b)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(has_overlap), True)
+
+    def test_has_overlap_variable_timings(self):
+        """
+        Tests Boolean overlap with variable start times to verify
+        constraint propagation.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+
+        # Create intervals with variable start times
+        start_a = model.new_int_var(0, 10, "start_a")
+        a = model.new_interval_var(start_a, 5, start_a + 5, "a")
+
+        start_b = model.new_int_var(0, 10, "start_b")
+        b = model.new_interval_var(start_b, 5, start_b + 5, "b")
+
+        has_overlap = model.new_has_overlap_var(a, b)
+
+        # Constrain them to overlap: force start_b to be in [2, 4]
+        # so b = [2, 7) or [3, 8) or [4, 9), all overlapping with a = [0, 5)
+        model.add(start_a == 0)
+        model.add(start_b >= 2)
+        model.add(start_b <= 4)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        # With a = [0, 5) and b starting in [2, 4], they must overlap
+        assert_equal(solver.value(has_overlap), True)
+        assert_equal(solver.value(start_b) >= 2, True)
+        assert_equal(solver.value(start_b) <= 4, True)
