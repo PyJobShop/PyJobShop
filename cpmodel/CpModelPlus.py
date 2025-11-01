@@ -1,6 +1,7 @@
 from itertools import pairwise
 
 from ortools.sat.python.cp_model import (
+    BoolVarT,
     Constraint,
     CpModel,
     Domain,
@@ -800,26 +801,22 @@ class CpModelPlus(CpModel):
         self.add(product_var == 0).only_enforce_if(~bool_var)
         return product_var
 
-    def new_max_var(self, *variables: IntVar) -> IntVar:
+    def new_max_var(self, *exprs: LinearExprT) -> IntVar:
         """
         Creates a new integer variable representing the maximum of given
-        integer variables.
+        expressions.
         """
-        intervals = [value for var in variables for value in var.proto.domain]
-        domain = Domain.from_flat_intervals(intervals)
-        max_var = self.new_int_var_from_domain(domain, "")
-        self.add_max_equality(max_var, list(variables))
+        max_var = self.new_int_var(-MAX_VALUE, MAX_VALUE, "")
+        self.add_max_equality(max_var, list(exprs))
         return max_var
 
-    def new_min_var(self, *variables: IntVar) -> IntVar:
+    def new_min_var(self, *exprs: LinearExprT) -> IntVar:
         """
         Creates a new integer variable representing the minimum of given
-        integer variables.
+        expressions.
         """
-        intervals = [value for var in variables for value in var.proto.domain]
-        domain = Domain.from_flat_intervals(intervals)
-        min_var = self.new_int_var_from_domain(domain, "")
-        self.add_min_equality(min_var, list(variables))
+        min_var = self.new_int_var(-MAX_VALUE, MAX_VALUE, "")
+        self.add_min_equality(min_var, list(exprs))
         return min_var
 
     def new_step_var(
@@ -958,9 +955,50 @@ class CpModelPlus(CpModel):
         # the maximum value across all segments gives the correct PWL value.
         return self.new_max_var(*segment_vars)
 
+    def new_overlap_var(
+        self, first: IntervalVar, second: IntervalVar
+    ) -> IntVar:
+        """
+        Creates a new integer variable representing the overlap length
+        between two intervals.
+
+        The overlap length is the duration during which both intervals are
+        active simultaneously. It is computed as:
+        ``max(0, min(end_first, end_second) - max(start_first, start_second))``
+
+        When both intervals are present, the overlap is calculated normally.
+        If either interval is absent, the overlap is 0.
+
+        Parameters
+        ----------
+        first
+            First interval variable.
+        second
+            Second interval variable.
+
+        Returns
+        -------
+        IntVar
+            New integer variable representing the overlap length (>= 0).
+        """
+        min_end = self.new_min_var(first.end_expr(), second.end_expr())
+        max_start = self.new_max_var(first.start_expr(), second.start_expr())
+
+        # Distinguish between raw and actual overlap to account for presence.
+        raw_overlap = self.new_max_var(0, min_end - max_start)
+        overlap = self.new_int_var(0, MAX_VALUE, "")
+
+        # When both present: overlap = raw_overlap, otherwise overlap = 0.
+        both_present = [self.presence_of(first), self.presence_of(second)]
+        self.add(overlap == raw_overlap).only_enforce_if(both_present)
+        self.add(overlap == 0).only_enforce_if(~self.presence_of(first))
+        self.add(overlap == 0).only_enforce_if(~self.presence_of(second))
+
+        return overlap
+
     def add_if_then_else(
         self,
-        condition: IntVar,
+        condition: BoolVarT,
         then_expr: LinearExprT,
         else_expr: LinearExprT,
     ):

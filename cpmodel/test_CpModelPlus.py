@@ -2604,30 +2604,6 @@ class TestMaxVar:
         assert_equal(status, cp_model.OPTIMAL)
         assert_equal(solver.value(max_var), 3)
 
-    def test_max_domain_correctness(self):
-        """
-        Tests that the max variable has the correct domain.
-        """
-        model = CpModelPlus()
-        x = model.new_int_var(2, 5, "x")
-        y = model.new_int_var(7, 10, "y")
-
-        max_var = model.new_max_var(x, y)
-
-        # Domain should span from min of lower bounds to max of upper bounds
-        # That is: min(2, 7) to max(5, 10) = [2, 10]
-        domain_values = []
-        for idx in range(0, len(max_var.proto.domain), 2):
-            lb = max_var.proto.domain[idx]
-            ub = max_var.proto.domain[idx + 1]
-            domain_values.extend(range(lb, ub + 1))
-
-        # Check domain includes expected values
-        assert 2 in domain_values
-        assert 10 in domain_values
-        assert min(domain_values) == 2
-        assert max(domain_values) == 10
-
     def test_max_with_single_variable(self):
         """
         Tests maximum with a single variable (edge case).
@@ -2992,30 +2968,6 @@ class TestMinVar:
 
         assert_equal(status, cp_model.OPTIMAL)
         assert_equal(solver.value(min_var), -5)
-
-    def test_min_domain_correctness(self):
-        """
-        Tests that the min variable has the correct domain.
-        """
-        model = CpModelPlus()
-        x = model.new_int_var(2, 5, "x")
-        y = model.new_int_var(7, 10, "y")
-
-        min_var = model.new_min_var(x, y)
-
-        # Domain should span from min of lower bounds to max of upper bounds
-        # That is: min(2, 7) to max(5, 10) = [2, 10]
-        domain_values = []
-        for idx in range(0, len(min_var.proto.domain), 2):
-            lb = min_var.proto.domain[idx]
-            ub = min_var.proto.domain[idx + 1]
-            domain_values.extend(range(lb, ub + 1))
-
-        # Check domain includes expected values
-        assert 2 in domain_values
-        assert 10 in domain_values
-        assert min(domain_values) == 2
-        assert max(domain_values) == 10
 
     def test_min_with_single_variable(self):
         """
@@ -4115,3 +4067,319 @@ class TestConvexPwlVar:
 
             assert_equal(status, cp_model.OPTIMAL)
             assert_equal(solver.value(y), expected_y)
+
+
+class TestOverlapVar:
+    """
+    Tests for the new_overlap_var method.
+    """
+
+    def test_partial_overlap(self):
+        """
+        Tests two intervals with partial overlap.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+
+        # Interval a: [2, 7) with size 5
+        # Interval b: [5, 10) with size 5
+        # Overlap: [5, 7) with length 2
+        a = model.new_interval_var(2, 5, 7, "a")
+        b = model.new_interval_var(5, 5, 10, "b")
+
+        overlap = model.new_overlap_var(a, b)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(overlap), 2)
+
+    def test_no_overlap(self):
+        """
+        Tests two disjoint intervals that don't overlap.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+
+        # Interval a: [0, 5) with size 5
+        # Interval b: [10, 15) with size 5
+        # No overlap, expected length 0
+        a = model.new_interval_var(0, 5, 5, "a")
+        b = model.new_interval_var(10, 5, 15, "b")
+
+        overlap = model.new_overlap_var(a, b)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(overlap), 0)
+
+    def test_complete_overlap(self):
+        """
+        Tests when one interval completely contains another.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+
+        # Interval a: [0, 10) with size 10
+        # Interval b: [3, 7) with size 4
+        # Complete overlap: b is inside a, length 4
+        a = model.new_interval_var(0, 10, 10, "a")
+        b = model.new_interval_var(3, 4, 7, "b")
+
+        overlap = model.new_overlap_var(a, b)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(overlap), 4)
+
+    def test_adjacent_intervals(self):
+        """
+        Tests adjacent intervals that touch but don't overlap.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+
+        # Interval a: [0, 5) with size 5
+        # Interval b: [5, 10) with size 5
+        # Adjacent (touching at 5), no overlap expected
+        a = model.new_interval_var(0, 5, 5, "a")
+        b = model.new_interval_var(5, 5, 10, "b")
+
+        overlap = model.new_overlap_var(a, b)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(overlap), 0)
+
+    def test_identical_intervals(self):
+        """
+        Tests two identical intervals that completely overlap.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+
+        # Both intervals: [5, 15) with size 10
+        # Complete overlap, length 10
+        a = model.new_interval_var(5, 10, 15, "a")
+        b = model.new_interval_var(5, 10, 15, "b")
+
+        overlap = model.new_overlap_var(a, b)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(overlap), 10)
+
+    def test_variable_start_times(self):
+        """
+        Tests overlap with variable start times determined by solver.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+
+        # Create intervals with variable start times
+        start_a = model.new_int_var(0, 10, "start_a")
+        start_b = model.new_int_var(0, 10, "start_b")
+
+        # Both have size 5
+        a = model.new_interval_var(start_a, 5, start_a + 5, "a")
+        b = model.new_interval_var(start_b, 5, start_b + 5, "b")
+
+        overlap = model.new_overlap_var(a, b)
+
+        # Force specific start times: a at 2, b at 4
+        model.add(start_a == 2)
+        model.add(start_b == 4)
+        # a: [2, 7), b: [4, 9), overlap: [4, 7) = 3
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(overlap), 3)
+
+    def test_maximize_overlap(self):
+        """
+        Tests that solver can maximize overlap between intervals.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+
+        # Create intervals with variable start times
+        start_a = model.new_int_var(0, 10, "start_a")
+        start_b = model.new_int_var(0, 10, "start_b")
+
+        # Both have size 5
+        a = model.new_interval_var(start_a, 5, start_a + 5, "a")
+        b = model.new_interval_var(start_b, 5, start_b + 5, "b")
+
+        overlap = model.new_overlap_var(a, b)
+
+        # Maximize overlap
+        model.maximize(overlap)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        # Maximum overlap is when intervals are identical: 5
+        assert_equal(solver.value(overlap), 5)
+
+    def test_minimize_overlap(self):
+        """
+        Tests that solver can minimize overlap between intervals.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+
+        # Create intervals with variable start times
+        start_a = model.new_int_var(0, 20, "start_a")
+        start_b = model.new_int_var(0, 20, "start_b")
+
+        # Both have size 5
+        a = model.new_interval_var(start_a, 5, start_a + 5, "a")
+        b = model.new_interval_var(start_b, 5, start_b + 5, "b")
+
+        overlap = model.new_overlap_var(a, b)
+
+        # Minimize overlap
+        model.minimize(overlap)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        # Minimum overlap is 0 (disjoint)
+        assert_equal(solver.value(overlap), 0)
+
+    def test_optional_first_absent(self):
+        """
+        Tests overlap when first interval is optional and absent.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+
+        # First interval is optional and will be absent
+        first_pres = model.new_bool_var("first_pres")
+        first = model.new_optional_interval_var(0, 5, 5, first_pres, "first")
+
+        # Second interval is present
+        second = model.new_interval_var(2, 5, 7, "second")
+
+        overlap = model.new_overlap_var(first, second)
+
+        # Force first to be absent
+        model.add(first_pres == 0)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        # First is absent, so overlap should be 0
+        assert_equal(solver.value(overlap), 0)
+
+    def test_optional_second_absent(self):
+        """
+        Tests overlap when second interval is optional and absent.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+
+        # First interval is present
+        first = model.new_interval_var(0, 5, 5, "first")
+
+        # Second interval is optional and will be absent
+        second_pres = model.new_bool_var("second_pres")
+        second = model.new_optional_interval_var(
+            2, 5, 7, second_pres, "second"
+        )
+
+        overlap = model.new_overlap_var(first, second)
+
+        # Force second to be absent
+        model.add(second_pres == 0)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        # Second is absent, so overlap should be 0
+        assert_equal(solver.value(overlap), 0)
+
+    def test_optional_both_present(self):
+        """
+        Tests overlap when both intervals are optional and present.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+
+        # Both intervals are optional
+        first_pres = model.new_bool_var("first_pres")
+        first = model.new_optional_interval_var(0, 5, 5, first_pres, "first")
+
+        second_pres = model.new_bool_var("second_pres")
+        second = model.new_optional_interval_var(
+            2, 5, 7, second_pres, "second"
+        )
+
+        overlap = model.new_overlap_var(first, second)
+
+        # Force both to be present
+        model.add(first_pres == 1)
+        model.add(second_pres == 1)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        # Both present: [0, 5) and [2, 7), overlap: [2, 5) = 3
+        assert_equal(solver.value(overlap), 3)
+
+    def test_optional_both_absent(self):
+        """
+        Tests overlap when both intervals are optional and absent.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+
+        # Both intervals are optional
+        first_pres = model.new_bool_var("first_pres")
+        first = model.new_optional_interval_var(0, 5, 5, first_pres, "first")
+
+        second_pres = model.new_bool_var("second_pres")
+        second = model.new_optional_interval_var(
+            2, 5, 7, second_pres, "second"
+        )
+
+        overlap = model.new_overlap_var(first, second)
+
+        # Force both to be absent
+        model.add(first_pres == 0)
+        model.add(second_pres == 0)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        # Both absent, so overlap should be 0
+        assert_equal(solver.value(overlap), 0)

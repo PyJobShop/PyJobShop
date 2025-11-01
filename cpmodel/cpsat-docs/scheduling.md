@@ -1272,5 +1272,3 @@ def sequences_in_no_overlap_sample_sat():
 
 sequences_in_no_overlap_sample_sat()
 ```
-
-## Convex hull of a set of intervals
