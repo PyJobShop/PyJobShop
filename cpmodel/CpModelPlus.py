@@ -822,6 +822,47 @@ class CpModelPlus(CpModel):
         self.add_min_equality(min_var, list(variables))
         return min_var
 
+    def new_step_var(
+        self, x: IntVar, domains: list[Domain], values: list[int]
+    ) -> IntVar:
+        """
+        Creates a new integer variable representing a step function of x, i.e.,
+        a piecewise constant function.
+
+        A step function maps ranges of input values to specific output values.
+        This method creates a variable y such that:
+        - When x is in domains[0], then y = values[0]
+        - When x is in domains[1], then y = values[1]
+        - And so on...
+
+        Parameters
+        ----------
+        x
+            Integer variable to evaluate.
+        domains
+            List of domains defining the step function.
+        values
+            List of values corresponding to each domain.
+
+        Returns
+        -------
+        IntVar
+            New integer variable representing the step function value.
+        """
+        if len(domains) != len(values):
+            raise ValueError("domains and values must have the same length")
+
+        y = self.new_int_var_from_domain(Domain.from_values(values), "")
+        selected = [self.new_bool_var("") for _ in range(len(domains))]
+
+        for var, domain, value in zip(selected, domains, values):
+            cons = self.add_linear_expression_in_domain(x, domain)
+            cons.only_enforce_if(var)
+            self.add(y == value).only_enforce_if(var)
+
+        self.add_bool_or(selected)
+        return y
+
     def add_if_then_else(
         self,
         condition: IntVar,

@@ -3368,3 +3368,501 @@ class TestMinVar:
 
         assert_equal(status, cp_model.OPTIMAL)
         assert_equal(solver.value(min_var), 600)
+
+
+class TestStepVar:
+    """
+    Tests for the new_step_var() method.
+    """
+
+    def test_basic_two_domains(self):
+        """
+        Tests a basic step function with two domains.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        x = model.new_int_var(0, 20, "x")
+
+        # If x in [0, 10], y = 100; if x in [11, 20], y = 200
+        domains = [cp_model.Domain(0, 10), cp_model.Domain(11, 20)]
+        values = [100, 200]
+        y = model.new_step_var(x, domains, values)
+
+        # Test first domain
+        model.add(x == 5)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(y), 100)
+
+    def test_basic_two_domains_second_range(self):
+        """
+        Tests the second domain of a basic step function.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        x = model.new_int_var(0, 20, "x")
+
+        # If x in [0, 10], y = 100; if x in [11, 20], y = 200
+        domains = [cp_model.Domain(0, 10), cp_model.Domain(11, 20)]
+        values = [100, 200]
+        y = model.new_step_var(x, domains, values)
+
+        # Test second domain
+        model.add(x == 15)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(y), 200)
+
+    def test_three_domains(self):
+        """
+        Tests a step function with three domains.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        x = model.new_int_var(0, 30, "x")
+
+        domains = [
+            cp_model.Domain(0, 10),
+            cp_model.Domain(11, 20),
+            cp_model.Domain(21, 30),
+        ]
+        values = [10, 20, 30]
+        y = model.new_step_var(x, domains, values)
+
+        # Test middle domain
+        model.add(x == 15)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(y), 20)
+
+    def test_many_domains(self):
+        """
+        Tests a step function with many domains (stress test).
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        x = model.new_int_var(0, 100, "x")
+
+        # Create 10 domains, each of width 10
+        domains = [
+            cp_model.Domain(i * 10, (i + 1) * 10 - 1) for i in range(10)
+        ]
+        values = [i * 100 for i in range(10)]
+        y = model.new_step_var(x, domains, values)
+
+        # Test domain 7 (x in [70, 79], y = 700)
+        model.add(x == 75)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(y), 700)
+
+    def test_non_contiguous_domains(self):
+        """
+        Tests step function with gaps between domains.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        x = model.new_int_var(0, 50, "x")
+
+        # Domains with gaps: [0,5], [10,15], [20,25]
+        domains = [
+            cp_model.Domain(0, 5),
+            cp_model.Domain(10, 15),
+            cp_model.Domain(20, 25),
+        ]
+        values = [1, 2, 3]
+        y = model.new_step_var(x, domains, values)
+
+        # Test second domain
+        model.add(x == 12)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(y), 2)
+
+    def test_negative_domains(self):
+        """
+        Tests step function with negative domain ranges.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        x = model.new_int_var(-20, 10, "x")
+
+        domains = [
+            cp_model.Domain(-20, -10),
+            cp_model.Domain(-9, 0),
+            cp_model.Domain(1, 10),
+        ]
+        values = [100, 200, 300]
+        y = model.new_step_var(x, domains, values)
+
+        # Test negative domain
+        model.add(x == -15)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(y), 100)
+
+    def test_negative_output_values(self):
+        """
+        Tests step function with negative output values.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        x = model.new_int_var(0, 20, "x")
+
+        domains = [cp_model.Domain(0, 10), cp_model.Domain(11, 20)]
+        values = [-100, -50]
+        y = model.new_step_var(x, domains, values)
+
+        model.add(x == 5)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(y), -100)
+
+    def test_mixed_sign_values(self):
+        """
+        Tests step function with both positive and negative output values.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        x = model.new_int_var(0, 30, "x")
+
+        domains = [
+            cp_model.Domain(0, 10),
+            cp_model.Domain(11, 20),
+            cp_model.Domain(21, 30),
+        ]
+        values = [-50, 0, 50]
+        y = model.new_step_var(x, domains, values)
+
+        # Test zero value
+        model.add(x == 15)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(y), 0)
+
+    def test_single_domain(self):
+        """
+        Tests step function with just one domain (edge case).
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        x = model.new_int_var(0, 10, "x")
+
+        domains = [cp_model.Domain(0, 10)]
+        values = [42]
+        y = model.new_step_var(x, domains, values)
+
+        model.add(x == 7)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(y), 42)
+
+    def test_domain_boundary_lower(self):
+        """
+        Tests behavior at lower domain boundary.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        x = model.new_int_var(0, 20, "x")
+
+        domains = [cp_model.Domain(0, 10), cp_model.Domain(11, 20)]
+        values = [100, 200]
+        y = model.new_step_var(x, domains, values)
+
+        # Test at lower boundary of first domain
+        model.add(x == 0)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(y), 100)
+
+    def test_domain_boundary_upper(self):
+        """
+        Tests behavior at upper domain boundary.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        x = model.new_int_var(0, 20, "x")
+
+        domains = [cp_model.Domain(0, 10), cp_model.Domain(11, 20)]
+        values = [100, 200]
+        y = model.new_step_var(x, domains, values)
+
+        # Test at upper boundary of first domain
+        model.add(x == 10)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(y), 100)
+
+    def test_domain_boundary_between(self):
+        """
+        Tests boundary between two domains.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        x = model.new_int_var(0, 20, "x")
+
+        domains = [cp_model.Domain(0, 10), cp_model.Domain(11, 20)]
+        values = [100, 200]
+        y = model.new_step_var(x, domains, values)
+
+        # Test at lower boundary of second domain
+        model.add(x == 11)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(y), 200)
+
+    def test_invalid_mismatched_lengths(self):
+        """
+        Tests error handling for mismatched domain and value lengths.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        x = model.new_int_var(0, 20, "x")
+
+        domains = [cp_model.Domain(0, 10), cp_model.Domain(11, 20)]
+        values = [100]  # Too few values
+
+        with pytest.raises(ValueError):
+            model.new_step_var(x, domains, values)
+
+    def test_output_variable_bounds(self):
+        """
+        Verifies the output variable has correct bounds.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        x = model.new_int_var(0, 30, "x")
+
+        domains = [
+            cp_model.Domain(0, 10),
+            cp_model.Domain(11, 20),
+            cp_model.Domain(21, 30),
+        ]
+        values = [5, 15, 25]
+        y = model.new_step_var(x, domains, values)
+
+        # The output variable should have domain containing exactly {5, 15, 25}
+        proto = model.proto
+        y_var = proto.variables[y.index]
+        y_domain = cp_model.Domain.from_flat_intervals(y_var.domain)
+
+        # Check that the domain contains exactly the values
+        for value in values:
+            assert y_domain.contains(value)
+
+        # Check bounds
+        assert_equal(min(y_var.domain), 5)
+        assert_equal(max(y_var.domain), 25)
+
+        # Verify it's a discrete domain (not continuous [5, 25])
+        # The domain should be {5, 15, 25}, not all values from 5 to 25
+        assert_equal(list(y_var.domain), [5, 5, 15, 15, 25, 25])
+
+    def test_discrete_domain_values(self):
+        """
+        Tests step function with discrete (non-contiguous) domain values.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        x = model.new_int_var(0, 20, "x")
+
+        # Domain with specific discrete values
+        domains = [
+            cp_model.Domain.from_values([1, 3, 5, 7]),
+            cp_model.Domain.from_values([2, 4, 6, 8]),
+        ]
+        values = [100, 200]
+        y = model.new_step_var(x, domains, values)
+
+        # Test odd value (first domain)
+        model.add(x == 7)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(y), 100)
+
+    def test_discrete_domain_values_even(self):
+        """
+        Tests the second discrete domain.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        x = model.new_int_var(0, 20, "x")
+
+        # Domain with specific discrete values
+        domains = [
+            cp_model.Domain.from_values([1, 3, 5, 7]),
+            cp_model.Domain.from_values([2, 4, 6, 8]),
+        ]
+        values = [100, 200]
+        y = model.new_step_var(x, domains, values)
+
+        # Test even value (second domain)
+        model.add(x == 4)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(y), 200)
+
+    def test_gap_should_be_infeasible(self):
+        """
+        When x is forced into a gap between domains, model should be
+        INFEASIBLE.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        x = model.new_int_var(0, 50, "x")
+
+        # Domains with gaps: [0,5], [10,15], [20,25]
+        domains = [
+            cp_model.Domain(0, 5),
+            cp_model.Domain(10, 15),
+            cp_model.Domain(20, 25),
+        ]
+        values = [1, 2, 3]
+        _ = model.new_step_var(x, domains, values)
+
+        # Force x into a gap (7 is not in any domain)
+        model.add(x == 7)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.INFEASIBLE)
+
+    def test_outside_all_domains_infeasible(self):
+        """
+        When x is forced outside all domains, model should be INFEASIBLE.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        x = model.new_int_var(0, 50, "x")
+
+        # Domains: [0,10], [20,30]
+        domains = [cp_model.Domain(0, 10), cp_model.Domain(20, 30)]
+        values = [100, 200]
+        _ = model.new_step_var(x, domains, values)
+
+        # Force x outside all domains
+        model.add(x == 40)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.INFEASIBLE)
+
+    def test_unconstrained_x_stays_in_domains(self):
+        """
+        When x is unconstrained, solver should only choose values in domains.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        x = model.new_int_var(0, 50, "x")
+
+        # Domains with gaps: [0,5], [10,15], [20,25]
+        domains = [
+            cp_model.Domain(0, 5),
+            cp_model.Domain(10, 15),
+            cp_model.Domain(20, 25),
+        ]
+        values = [1, 2, 3]
+        _ = model.new_step_var(x, domains, values)
+
+        # Don't constrain x, but verify it's in one of the domains
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        x_val = solver.value(x)
+
+        # Verify x is in one of the domains
+        in_first = 0 <= x_val <= 5
+        in_second = 10 <= x_val <= 15
+        in_third = 20 <= x_val <= 25
+        in_domain = in_first or in_second or in_third
+
+        assert in_domain, f"x={x_val} should be in one of the domains"
+
+    def test_discrete_domain_gap_infeasible(self):
+        """
+        With discrete domains, values between them should be infeasible.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        x = model.new_int_var(0, 20, "x")
+
+        # Discrete domains: {1,3,5,7} and {2,4,6,8}
+        domains = [
+            cp_model.Domain.from_values([1, 3, 5, 7]),
+            cp_model.Domain.from_values([2, 4, 6, 8]),
+        ]
+        values = [100, 200]
+        _ = model.new_step_var(x, domains, values)
+
+        # Force x to a value not in any domain
+        model.add(x == 9)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.INFEASIBLE)
