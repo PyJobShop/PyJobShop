@@ -1943,6 +1943,117 @@ class TestIfThenElse:
         assert_equal(solver.value(x), 0)
         assert_equal(solver.value(y), 5)
 
+    def test_multiple_conditions_all_true(self):
+        """
+        Tests if-then-else with multiple conditions (AND logic) when all true.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        y = model.new_int_var(0, 10, "y")
+        cond1 = model.new_bool_var("cond1")
+        cond2 = model.new_bool_var("cond2")
+        cond3 = model.new_bool_var("cond3")
+
+        # If ALL conditions true, then y == 7, else y == 0
+        model.add_if_then_else([cond1, cond2, cond3], y == 7, y == 0)
+
+        # Force all conditions to be true
+        model.add(cond1 == 1)
+        model.add(cond2 == 1)
+        model.add(cond3 == 1)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(y), 7)
+
+    def test_multiple_conditions_one_false(self):
+        """
+        Tests if-then-else with multiple conditions when one is false.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        y = model.new_int_var(0, 10, "y")
+        cond1 = model.new_bool_var("cond1")
+        cond2 = model.new_bool_var("cond2")
+        cond3 = model.new_bool_var("cond3")
+
+        # If ALL conditions true, then y == 7, else y == 0
+        model.add_if_then_else([cond1, cond2, cond3], y == 7, y == 0)
+
+        # Force one condition to be false
+        model.add(cond1 == 1)
+        model.add(cond2 == 0)  # This one is false
+        model.add(cond3 == 1)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        # Since one condition is false, else branch should be enforced
+        assert_equal(solver.value(y), 0)
+
+    def test_multiple_conditions_all_false(self):
+        """
+        Tests if-then-else with multiple conditions when all are false.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        y = model.new_int_var(0, 10, "y")
+        cond1 = model.new_bool_var("cond1")
+        cond2 = model.new_bool_var("cond2")
+
+        # If ALL conditions true, then y == 5, else y == 2
+        model.add_if_then_else([cond1, cond2], y == 5, y == 2)
+
+        # Force all conditions to be false
+        model.add(cond1 == 0)
+        model.add(cond2 == 0)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(y), 2)
+
+    @pytest.mark.parametrize(
+        "cond1_val,cond2_val,expected_y",
+        [
+            (True, True, 10),  # Both true -> then branch
+            (True, False, 0),  # One false -> else branch
+            (False, True, 0),  # One false -> else branch
+            (False, False, 0),  # Both false -> else branch
+        ],
+    )
+    def test_multiple_conditions_all_combinations(
+        self, cond1_val, cond2_val, expected_y
+    ):
+        """
+        Tests all combinations of two conditions with AND logic.
+        """
+        from ortools.sat.python import cp_model
+
+        model = CpModelPlus()
+        y = model.new_int_var(0, 10, "y")
+        cond1 = model.new_bool_var("cond1")
+        cond2 = model.new_bool_var("cond2")
+
+        # If BOTH conditions true, then y == 10, else y == 0
+        model.add_if_then_else([cond1, cond2], y == 10, y == 0)
+
+        model.add(cond1 == (1 if cond1_val else 0))
+        model.add(cond2 == (1 if cond2_val else 0))
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(y), expected_y)
+
 
 class TestMaxVar:
     """

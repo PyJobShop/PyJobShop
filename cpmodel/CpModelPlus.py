@@ -1055,7 +1055,7 @@ class CpModelPlus(CpModel):
 
     def add_if_then_else(
         self,
-        condition: BoolVarT,
+        condition: BoolVarT | list[BoolVarT],
         then_expr: LinearExprT,
         else_expr: LinearExprT,
     ):
@@ -1065,11 +1065,17 @@ class CpModelPlus(CpModel):
         Parameters
         ----------
         condition
-            Boolean variable determining which expression to enforce.
+            One or more Boolean variables. If multiple, then it evaluates
+            True iff all variables are True (using AND logic).
         then_expr
             Expression enforced if condition is true.
         else_expr
             Expression enforced if condition is false.
         """
+        if isinstance(condition, BoolVarT):
+            condition = [condition]
+
         self.add(then_expr).only_enforce_if(condition)
-        self.add(else_expr).only_enforce_if(~condition)
+
+        for var in condition:  # enforce else branch if one var is False
+            self.add(else_expr).only_enforce_if(~var)
