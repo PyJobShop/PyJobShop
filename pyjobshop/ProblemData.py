@@ -2,14 +2,62 @@ from collections import Counter, defaultdict
 from copy import deepcopy
 from dataclasses import dataclass, field, fields
 from itertools import pairwise
-from typing import Sequence, TypeAlias, TypeVar
+from typing import Protocol, Sequence, TypeAlias, TypeVar
 
 from pyjobshop.constants import MAX_VALUE
 
 _T = TypeVar("_T")
 
-
 MISSING: Sequence = ()
+
+Break: TypeAlias = tuple[int, int]
+Breaks: TypeAlias = Sequence[Break]
+
+
+class HasPostInit(Protocol):
+    """
+    Specify the presence of a ``__post_init__()`` method in a class (or
+    indeed in a superclass).  Used for dataclass validation in the mixins
+    below.
+    """
+
+    def __post_init__(self): ...
+
+
+class CheckCapacityMixin(HasPostInit, Protocol):
+    """
+    Specify the presence of a ``capacity`` field, and provide a validation
+    check for it.
+    """
+
+    capacity: int
+
+    def __post_init__(self):
+        super().__post_init__()
+        if self.capacity < 0:
+            raise ValueError("Capacity must be non-negative.")
+
+
+class CheckBreaksMixin(HasPostInit, Protocol):
+    """
+    Specify the presence of a ``breaks`` field, and provide a validation
+    check for it.
+    """
+
+    breaks: Breaks
+
+    def __post_init__(self):
+        super().__post_init__()
+        if self.breaks is MISSING:
+            object.__setattr__(self, "breaks", [])
+        else:
+            for start, end in self.breaks:
+                if start < 0 or start >= end:
+                    raise ValueError("Break start < 0 or start >= end.")
+
+            for interval1, interval2 in pairwise(sorted(self.breaks)):
+                if interval1[1] > interval2[0]:
+                    raise ValueError("Break intervals must not overlap.")
 
 
 @dataclass(frozen=True)
@@ -78,12 +126,8 @@ class Job:
         self.tasks.append(idx)
 
 
-Break: TypeAlias = tuple[int, int]
-Breaks: TypeAlias = Sequence[Break]
-
-
 @dataclass(frozen=True)
-class Machine:
+class Machine(CheckBreaksMixin):
     """
     A resource that processes tasks only one at a time and can enforce
     sequencing constraints.
@@ -114,23 +158,14 @@ class Machine:
     name: str = field(default="", kw_only=True)
 
     def __post_init__(self):
-        if self.breaks is MISSING:
-            object.__setattr__(self, "breaks", [])
-        else:
-            for start, end in self.breaks:
-                if start < 0 or start >= end:
-                    raise ValueError("Break start < 0 or start >= end.")
-
-            for interval1, interval2 in pairwise(sorted(self.breaks)):
-                if interval1[1] > interval2[0]:
-                    raise ValueError("Break intervals must not overlap.")
+        super().__post_init__()
 
         if self.breaks and self.no_idle:
             raise ValueError("Breaks not allowed with no_idle=True.")
 
 
 @dataclass(frozen=True)
-class Renewable:
+class Renewable(CheckBreaksMixin, CheckCapacityMixin):
     """
     A resource that replenishes its capacity after each task completion.
 
@@ -152,22 +187,11 @@ class Renewable:
     name: str = field(default="", kw_only=True)
 
     def __post_init__(self):
-        if self.capacity < 0:
-            raise ValueError("Capacity must be non-negative.")
-        if self.breaks is MISSING:
-            object.__setattr__(self, "breaks", [])
-        else:
-            for start, end in self.breaks:
-                if start < 0 or start >= end:
-                    raise ValueError("Break start < 0 or start >= end.")
-
-            for interval1, interval2 in pairwise(sorted(self.breaks)):
-                if interval1[1] > interval2[0]:
-                    raise ValueError("Break intervals must not overlap.")
+        super().__post_init__()
 
 
 @dataclass(frozen=True)
-class Consumable:
+class Consumable(CheckBreaksMixin, CheckCapacityMixin):
     """
     A resource with finite capacity that is permanently consumed by tasks.
     Unlike renewable resources, consumed capacity is never replenished during
@@ -191,18 +215,7 @@ class Consumable:
     name: str = field(default="", kw_only=True)
 
     def __post_init__(self):
-        if self.capacity < 0:
-            raise ValueError("Capacity must be non-negative.")
-        if self.breaks is MISSING:
-            object.__setattr__(self, "breaks", [])
-        else:
-            for start, end in self.breaks:
-                if start < 0 or start >= end:
-                    raise ValueError("Break start < 0 or start >= end.")
-
-            for interval1, interval2 in pairwise(sorted(self.breaks)):
-                if interval1[1] > interval2[0]:
-                    raise ValueError("Break intervals must not overlap.")
+        super().__post_init__()
 
 
 Resource = Machine | Renewable | Consumable
