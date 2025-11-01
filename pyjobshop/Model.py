@@ -2,6 +2,8 @@ from typing import Literal, Sequence
 
 from pyjobshop.constants import MAX_VALUE
 from pyjobshop.ProblemData import (
+    MISSING,
+    Breaks,
     Consecutive,
     Constraints,
     Consumable,
@@ -112,7 +114,7 @@ class Model:
 
     def add_machine(
         self,
-        breaks: list[tuple[int, int]] | None = None,
+        breaks: Breaks = MISSING,
         no_idle: bool = False,
         *,
         name: str = "",
@@ -130,7 +132,7 @@ class Model:
     def add_renewable(
         self,
         capacity: int,
-        breaks: list[tuple[int, int]] | None = None,
+        breaks: Breaks = MISSING,
         *,
         name: str = "",
     ) -> Renewable:
@@ -147,7 +149,7 @@ class Model:
     def add_consumable(
         self,
         capacity: int,
-        breaks: list[tuple[int, int]] | None = None,
+        breaks: Breaks = MISSING,
         *,
         name: str = "",
     ) -> Consumable:
@@ -204,7 +206,7 @@ class Model:
         task: Task,
         resources: Resource | Sequence[Resource],
         duration: int,
-        demands: int | list[int] | None = None,
+        demands: int | Sequence[int] = MISSING,
         *,
         name: str = "",
     ) -> Mode:
