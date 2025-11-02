@@ -563,7 +563,12 @@ class CpModelPlus(CpModel):
         """
         raise NotImplementedError
 
-    def add_span(self, main: IntervalVar, candidates: list[IntervalVar]):
+    def add_span(
+        self,
+        main: IntervalVar,
+        candidates: list[IntervalVar],
+        assume_present: bool = False,
+    ):
         """
         Creates a span constraint over interval variables.
 
@@ -578,6 +583,9 @@ class CpModelPlus(CpModel):
             Spanning interval variable that covers all present candidates.
         candidates
             List of interval variables to be spanned.
+        assume_present
+            Assumes that all intervals are present, which uses a more efficient
+            formulation.
 
         Raises
         ------
@@ -595,9 +603,9 @@ class CpModelPlus(CpModel):
         starts = [cand.start_expr() for cand in candidates]
         ends = [cand.end_expr() for cand in candidates]
 
-        if all(is_true(x) for x in [main_pres, *cand_pres]):
-            # Shortcut: All intervals are always present.
-            # This uses a simpler and more efficient formulation.
+        if assume_present or all(is_true(x) for x in [main_pres, *cand_pres]):
+            # Shortcut when all intervals are always present. This uses a
+            # more efficient formulation.
             self.add_min_equality(main.start_expr(), starts)
             self.add_max_equality(main.end_expr(), ends)
             return
