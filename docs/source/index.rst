@@ -18,11 +18,6 @@ To install it, simply run:
    pip install pyjobshop
 
 
-.. hint::
-
-    If you are new to scheduling or constraint programming, you might benefit from first reading the :doc:`introduction to scheduling <setup/intro_to_scheduling>` and :doc:`introduction to CP <setup/intro_to_cp>` pages.
-    To set up an installation from source, or to run the examples listed below yourself, please have a look at the :doc:`installation instructions <setup/installation>`.
-
 Contents
 --------
 
