@@ -6,7 +6,8 @@ authors = [
     { name = "Leon Lan", email = "leon.lanyidong@gmail.com" },
     { name = "Joost Berkhout", email = "joost.berkhout@vu.nl" }
 ]
-license = { text = "MIT License" }
+license = "MIT"
+license-files = ["LICENSE.md"]
 readme = "README.md"
 keywords = [
     "scheduling",
