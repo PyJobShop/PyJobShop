@@ -15,20 +15,21 @@ MAX_VALUE = 2**53
 
 class CpModelPlus(CpModel):
     """
-    Extended CP Model with scheduling constraint methods from docplex.
+    Extended CP Model with scheduling constraint methods from various sources.
 
-    This class extends OR-Tools' CpModel with additional scheduling methods
-    similar to those available in IBM's docplex CP Modeler, see below:
-    https://ibmdecisionoptimization.github.io/docplex-doc/cp/docplex.cp.modeler.py.html
-
+    - https://xiang.es/posts/cp-sat/
+    - https://github.com/d-krupke/cpsat-primer
+    - https://www.hakank.org/or_tools/cp_sat_utils.py
+    - https://ibmdecisionoptimization.github.io/docplex-doc/cp/docplex.cp.modeler.py.html
+    - https://github.com/jiayi9/cp/tree/main/scheduling
 
     Helpers
     -------
     - [x] add_all_equal(): Enforce identical values across variables
     - [x] presence_of(): Extract presence literal from optional intervals
 
-    Implementation Status
-    ---------------------
+    CP Optimizer's API
+    ------------------
     - [x] add_start_at_start(): Delay between starts of two intervals
     - [x] add_start_at_end(): Delay between start of one and end of another
     - [x] add_start_before_start(): Minimum delay between starts
@@ -59,6 +60,7 @@ class CpModelPlus(CpModel):
     - [x] new_overlap_var(): Create overlap length variable
     - [x] new_has_overlap_var(): Create Boolean for interval overlap
     - [x] new_conditional_var(): Create conditionally equal variable
+    - [x] new_count_var(): Create count variable for value occurrences
     - [x] add_if_then_else(): If-then-else constraint for expressions
 
     Inherited OR-Tools Methods
