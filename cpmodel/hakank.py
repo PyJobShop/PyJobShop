@@ -5,734 +5,253 @@
 # This package was created by Hakan Kjellerstrand (hakank@gmail.com)
 # See my other Google OR-tools models: http://www.hakank.org/or_tools/
 #
-from ortools.sat.python import cp_model as cp
+from ortools.sat.python.cp_model import (
+    CpModel,
+    IntVar,
+)
 
 
-class SimpleSolutionPrinter(cp.CpSolverSolutionCallback):
+def new_count_var(
+    model: CpModel, array: list[IntVar], val: int | IntVar
+) -> IntVar:
     """
-    SimpleSolutionPrinter: Print solution in one line.
+    # NOTE: keep this!
+    Creates a new integer variable representing the number of occurrences of
+    a value in an array.
 
-    Example:
-        # model = ...
-        solution_printer = SimpleSolutionPrinter(variables)
-        status = solver.SearchForAllSolutions(model, solution_printer)
-        # ...
-        print()
-        print('Solutions found : %i' % solution_printer.SolutionCount())
-        # ...
+    Parameters
+    ----------
+    model
+        The CP model.
+    array
+        Array of variables to search.
+    value
+        Value to count (can be constant or variable).
     """
+    size = len(array)
+    count_var = model.new_int_var(0, size, "count")
+    is_equal = [model.new_bool_var(f"b[{i}]") for i in range(size)]
 
-    def __init__(self, variables):
-        cp.CpSolverSolutionCallback.__init__(self)
-        self.__variables = variables
-        self.__solution_count = 0
+    for idx in range(size):
+        model.add(array[idx] == val).only_enforce_if(is_equal[idx])
+        model.add(array[idx] != val).only_enforce_if(~is_equal[idx])
 
-    def OnSolutionCallback(self):
-        self.__solution_count += 1
-        for v in self.__variables:
-            print("%s = %i" % (v, self.Value(v)), end=" ")
-        print()
-
-    def SolutionCount(self):
-        return self.__solution_count
+    model.add(count_var == sum(is_equal))
+    return count_var
 
 
-class SimpleSolutionPrinter2(cp.CpSolverSolutionCallback):
+def at_most(model: CpModel, val: int | IntVar, x: list[IntVar], n: int):
     """
-    SimpleSolutionPrinter2: Print vars in each line.
+    Constrain at most n occurrences of value val in array x.
 
-    Example:
-        # model = ...
-        solution_printer = SimpleSolutionPrinter([variables])
-        status = solver.SearchForAllSolutions(model, solution_printer)
-        # ...
-        print()
-        print('Solutions found : %i' % solution_printer.SolutionCount())
-        # ...
+    Parameters
+    ----------
+    model
+        The CP model.
+    val
+        Value to count.
+    x
+        Array of variables.
+    n
+        Maximum number of occurrences.
     """
-
-    def __init__(self, variables):
-        cp.CpSolverSolutionCallback.__init__(self)
-        self.__variables = variables
-        self.__solution_count = 0
-
-    def OnSolutionCallback(self):
-        self.__solution_count += 1
-        for vars in self.__variables:
-            if type(vars) in (list,):
-                print([self.Value(v) for v in vars])
-            else:
-                print(vars, ":", self.Value(vars))
-        print()
-
-    def SolutionCount(self):
-        return self.__solution_count
+    count_var = new_count_var(model, x, val)
+    model.add(count_var <= n)
 
 
-class ListPrinter(cp.CpSolverSolutionCallback):
+def at_least(model: CpModel, val: int | IntVar, x: list[IntVar], n: int):
     """
-    ListPrinter(variables)
-    Print solutions just as list of integers.
+    Constrain at least n occurrences of value val in array x.
+
+    Parameters
+    ----------
+    model
+        The CP model.
+    val
+        Value to count.
+    x
+        Array of variables.
+    n
+        Minimum number of occurrences.
     """
-
-    def __init__(self, variables, limit=0):
-        cp.CpSolverSolutionCallback.__init__(self)
-        self.__variables = variables
-        self.__limit = limit
-        self.__solution_count = 0
-
-    def OnSolutionCallback(self):
-        self.__solution_count += 1
-        print([self.Value(v) for v in self.__variables])
-        if self.__limit > 0 and self.__solution_count >= self.__limit:
-            self.StopSearch()
-
-    def SolutionCount(self):
-        return self.__solution_count
+    count_var = new_count_var(model, x, val)
+    model.add(count_var >= n)
 
 
-class SimpleSolutionCounter(cp.CpSolverSolutionCallback):
+def exactly(model: CpModel, val: int | IntVar, x: list[IntVar], n: int):
     """
-    SolutionCounter: Just count the number of solutions.
+    Constrain exactly n occurrences of value val in array x.
 
-    Example:
-      # model = ...
-      solution_printer = SolutionCounter(variables)
-      status = solver.SearchForAllSolutions(model, solution_printer)
-      # ...
-      print()
-      print('Solutions found : %i' % solution_printer.SolutionCount())
-      # ...
+    Parameters
+    ----------
+    model
+        The CP model.
+    val
+        Value to count.
+    x
+        Array of variables.
+    n
+        Exact number of occurrences.
     """
-
-    def __init__(self, variables):
-        cp.CpSolverSolutionCallback.__init__(self)
-        self.__variables = variables
-        self.__solution_count = 0
-
-    def OnSolutionCallback(self):
-        self.__solution_count += 1
-
-    def SolutionCount(self):
-        return self.__solution_count
+    count_var = new_count_var(model, x, val)
+    model.add(count_var == n)
 
 
-def count_vars(model, x, val, c):
+def all_different_except_0(model: CpModel, a: list[IntVar]):
     """
-    count_vars(model, x, val, c)
+    Ensure all non-zero values are distinct.
 
-    `c` is the number of occurrences of `val` in array `x`
+    All values in array a that are not equal to 0 must be different
+    from each other. Values equal to 0 can repeat.
 
-    c = sum([x[i] == val for i in range(len(x))])
-    """
-    n = len(x)
-    b = [model.NewBoolVar(f"b[{i}]") for i in range(n)]
-    for i in range(n):
-        model.Add((x[i] == val)).OnlyEnforceIf(b[i])
-        model.Add((x[i] != val)).OnlyEnforceIf(b[i].Not())
-    model.Add(c == sum(b))
-
-
-def atmost(model, val, x, n):
-    """
-    atmost(model,val,x,n)
-
-    Atmost n occurrences of value val in array x
-    """
-    c = model.NewIntVar(0, len(x), "c")
-    count_vars(model, x, val, c)
-    model.Add(c <= n)
-
-
-def atleast(model, val, x, n):
-    """
-    atleast(model,val,x,n)
-
-    Atleast n occurrences of value val in array x
-    """
-    c = model.NewIntVar(0, len(x), "c")
-    count_vars(model, x, val, c)
-    model.Add(c >= n)
-
-
-def exactly(model, val, x, n):
-    """
-    exactly(model,val,x,n)
-
-    Exactly n occurrences of value val in array x
-    """
-    c = model.NewIntVar(0, len(x), "c")
-    count_vars(model, x, val, c)
-    model.Add(c == n)
-
-
-def increasing(model, x):
-    """
-    increasing(model, x)
-
-    Ensure that x is in increasing order
-    """
-    n = len(x)
-    for i in range(1, n):
-        model.Add(x[i - 1] <= x[i])
-
-
-def increasing_strict(model, x):
-    """
-    increasing_strict(model, x)
-
-    Ensure that x is in strict increasing order
-    """
-    n = len(x)
-    for i in range(1, n):
-        model.Add(x[i - 1] < x[i])
-
-
-def decreasing(model, x):
-    """
-    decreasing(model, x)
-
-    Ensure that x is in decreasing order
-    """
-    n = len(x)
-    for i in range(1, n):
-        model.Add(x[i - 1] >= x[i])
-
-
-def decreasing_strict(model, x):
-    """
-    decreasing_strict(model, x)
-
-    Ensure that x is in strict decreasing order
-    """
-    n = len(x)
-    for i in range(1, n):
-        model.Add(x[i - 1] > x[i])
-
-
-def alldifferent_except_0(model, a):
-    """
-    alldifferent_except_0(model, a)
-
-    Ensure that all values except 0 are distinct
+    Parameters
+    ----------
+    model
+        The CP model.
+    a
+        Array of variables.
     """
     n = len(a)
     # ba[i] <=> a[i] != 0
-    ba = [model.NewBoolVar("ba[%i]" % (i)) for i in range(n)]
+    ba = [model.new_bool_var(f"ba[{i}]") for i in range(n)]
     for i in range(n):
-        model.Add(a[i] != 0).OnlyEnforceIf(ba[i])
-        model.Add(a[i] == 0).OnlyEnforceIf(ba[i].Not())
+        model.add(a[i] != 0).only_enforce_if(ba[i])
+        model.add(a[i] == 0).only_enforce_if(~ba[i])
 
     for i in range(n):
         for j in range(i):
-            # ba[i] && ba[j] -> x[i] != x[j]
-            b = model.NewBoolVar("b[%i,%i]" % (i, j))
-            model.AddBoolAnd([ba[i], ba[j]]).OnlyEnforceIf(b)
-            model.AddBoolOr([ba[i].Not(), ba[j].Not()]).OnlyEnforceIf(b.Not())
+            # ba[i] && ba[j] -> a[i] != a[j]
+            b = model.new_bool_var(f"b[{i},{j}]")
+            model.add_bool_and([ba[i], ba[j]]).only_enforce_if(b)
+            model.add_bool_or([~ba[i], ~ba[j]]).only_enforce_if(~b)
+            model.add(a[i] != a[j]).only_enforce_if(b)
 
-            model.Add(a[i] != a[j]).OnlyEnforceIf(b)
 
-
-def reif(model, expr):
+def scalar_product(
+    model: CpModel, x: list[IntVar], y: list[IntVar], s: IntVar
+):
     """
-    reif(model, expr, not_expr b)
+    Constrain s to equal the scalar product of x and y.
 
-    Return the boolean variable b to express the implication
-    b => expr
-    Note that there are no negation of b here.
-    Also note that this should be considered experimental.
-    """
-    b = model.NewBoolVar("b " + str(expr))
-    model.Add(expr).OnlyEnforceIf(b)
-    return b
+    Implements s = sum(x[i] * y[i] for i in range(n)).
+    Both x and y can be decision variables.
 
-
-def reif2(model, expr, not_expr):
-    """
-    reif2(model, expr, not_expr b)
-
-    Return the boolean variable b to express
-    b => expr
-    !b => not_expr
-
-    Note: This should be considered experimental.
-    """
-    b = model.NewBoolVar("b expr:" + str(expr) + " neg: " + str(not_expr))
-    model.Add(expr).OnlyEnforceIf(b)
-    model.Add(not_expr).OnlyEnforceIf(b.Not())
-    return b
-
-
-def flatten(a):
-    """
-    flatten(a)
-
-    Return a flattened list of the sublists in a.
-    """
-    return [item for sublist in a for item in sublist]
-
-
-def array_values(model, x):
-    """
-    array_values(model,x)
-
-    Return the evaluated values in array x.
-    model is either the model's <model> or SolutionPrinter's <self>
-    """
-    return [model.Value(x[i]) for i in range(len(x))]
-
-
-def circuit(model, x):
-    """
-    circuit(model, x)
-    constraints x to be an circuit
-    Note: This assumes that x is has the domain 0..len(x)-1,
-          i.e. 0-based.
-    """
-
-    n = len(x)
-    z = [model.NewIntVar(0, n - 1, "z%i" % i) for i in range(n)]
-
-    model.AddAllDifferent(x)
-    model.AddAllDifferent(z)
-
-    # put the orbit of x[0] in in z[0..n-1]
-    model.Add(z[0] == x[0])
-    for i in range(1, n - 1):
-        model.AddElement(z[i - 1], x, z[i])
-
-    #
-    # Note: At least one of the following two constraint must be set.
-    #
-    # may not be 0 for i < n-1
-    for i in range(1, n - 1):
-        model.Add(z[i] != 0)
-
-    # when i = n-1 it must be 0
-    model.Add(z[n - 1] == 0)
-
-
-def circuit_path(model, x, z):
-    """
-    circuit(model, x, z)
-    constraints x to be an circuit. z is the visiting path.
-
-    Note: This assumes that x is has the domain 0..len(x)-1,
-          i.e. 0-based.
+    Parameters
+    ----------
+    model
+        The CP model.
+    x
+        First array of variables.
+    y
+        Second array of variables.
+    s
+        Variable that will equal the scalar product.
     """
     n = len(x)
-    # z = [model.NewIntVar(0, n - 1, "z%i" % i) for i in range(n)]
-
-    model.AddAllDifferent(x)
-    model.AddAllDifferent(z)
-
-    # put the orbit of x[0] in in z[0..n-1]
-    model.Add(z[0] == x[0])
-    for i in range(1, n - 1):
-        model.AddElement(z[i - 1], x, z[i])
-
-    #
-    # Note: At least one of the following two constraint must be set.
-    #
-    # may not be 0 for i < n-1
-    for i in range(1, n - 1):
-        model.Add(z[i] != 0)
-
-    # when i = n-1 it must be 0
-    model.Add(z[n - 1] == 0)
-
-
-def scalar_product(model, x, y, s):
-    """
-    scalar_product(model, x, y, s, ub)
-
-    Scalar product of `x` and `y`: `s` = sum(x .* y)
-
-    Both `x` and `y` can be decision variables.
-
-    `lb` and `ub` are the lower/upper bound of the temporary
-    variables in the array `t`.
-    """
-    n = len(x)
-    slb, sub = s.Proto().domain
-    t = [model.NewIntVar(slb, sub, "") for i in range(n)]
+    slb, sub = s.proto.domain
+    t = [model.new_int_var(slb, sub, "") for _ in range(n)]
     for i in range(n):
-        model.AddMultiplicationEquality(t[i], [x[i], y[i]])
-    model.Add(s == sum(t))
+        model.add_multiplication_equality(t[i], [x[i], y[i]])
+    model.add(s == sum(t))
 
 
-def memberOf(model, x, val):
+def my_cumulative(
+    model: CpModel,
+    s: list[IntVar],
+    d: list[int],
+    r: list[int],
+    b: IntVar | int,
+):
     """
-    memberOf(model, x, val)
+    Decomposition of cumulative constraint.
 
-    Ensures that the value `val` is in the array `x`.
+    Enforces that for each job i:
+    - s[i] is the start time
+    - d[i] is the duration
+    - r[i] is the resource requirement
+
+    b is the resource limit. The constraint ensures that at no point in time
+    the total resource usage exceeds b.
+
+    Inspired by the MiniZinc implementation. See:
+    - http://www.cs.mu.oz.au/~pjs/rcpsp/papers/cp09-cu.pdf
+    - http://www.cs.mu.oz.au/~pjs/rcpsp/cumu_lazyfd.pdf
+
+    Parameters
+    ----------
+    model
+        The CP model.
+    s
+        Start time variables.
+    d
+        Durations (array of integers).
+    r
+        Resource requirements (array of integers).
+    b
+        Resource limit (variable or constant).
     """
-    n = len(x)
-    cc = model.NewIntVar(0, n, "cc")
-    count_vars(model, x, val, cc)
-    model.Add(cc > 0)
-    return cc
-
-
-# converts a number (s) <-> an array of numbers (t) in the specific base.
-def toNum(model, a, n, base=10):
-    """
-    toNum(model, a, n, base)
-
-    converts a number (`n`) <-> an array of numbers (`t`) in the
-    specific base (`base`, default 10).
-    """
-    alen = len(a)
-    model.Add(n == sum([(base ** (alen - i - 1)) * a[i] for i in range(alen)]))
-
-
-#
-# Decompositon of cumulative.
-#
-# Inspired by the MiniZinc implementation:
-# http://www.g12.csse.unimelb.edu.au/wiki/doku.php?id=g12:zinc:lib:minizinc:std:cumulative.mzn&s[]=cumulative
-# The MiniZinc decomposition is discussed in the paper:
-# A. Schutt, T. Feydy, P.J. Stuckey, and M. G. Wallace.
-# 'Why cumulative decomposition is not as bad as it sounds.'
-# Download:
-# http://www.cs.mu.oz.au/%7Epjs/rcpsp/papers/cp09-cu.pdf
-# http://www.cs.mu.oz.au/%7Epjs/rcpsp/cumu_lazyfd.pdf
-#
-#
-# Parameters:
-#
-# s: start_times    assumption: array of IntVar
-# d: durations      assumption: array of int
-# r: resources      assumption: array of int
-# b: resource limit assumption: IntVar or int
-#
-def my_cumulative(model, s, d, r, b):
-    """
-    my_cumulative(model, s, d, r, b)
-
-    Enforces that for each job i,
-    `s[i]` represents the start time, `d[i] represents the
-    duration, and `r[i]` represents the units of resources needed.
-    `b` is the limit on the units of resources available at any time.
-    This constraint ensures that the limit cannot be exceeded at any time.
-
-    Parameters:
-
-    `s`: start_times    assumption: array of IntVar
-
-    `d`: durations      assumption: array of int
-
-    `r`: resources      assumption: array of int
-
-    `b`: resource limit assumption: IntVar or int
-    """
-
-    max_r = max(r)  # max resource
+    max_r = max(r)
 
     tasks = [i for i in range(len(s)) if r[i] > 0 and d[i] > 0]
 
-    # CP-SAT solver don't have var.Min() or var.Max() as the
-    # old SAT solver, but it does have var.Proto().domain which
-    # is the lower and upper bounds of the variable ([lb,ub])
-    # See
-    # https://stackoverflow.com/questions/66264938/does-or-tools-cp-sat-solver-supports-reflection-methods-such-as-x-min-and-x
-    lb = [s[i].Proto().domain[0] for i in tasks]
-    ub = [s[i].Proto().domain[1] for i in tasks]
+    # CP-SAT uses var.proto.domain for lower/upper bounds
+    lb = [s[i].proto.domain[0] for i in tasks]
+    ub = [s[i].proto.domain[1] for i in tasks]
 
     times_min = min(lb)
     times_max = max(ub)
+
     for t in range(times_min, times_max + 1):
         bb = []
         for i in tasks:
-            # s[i] < t
-            b1 = model.NewBoolVar("")
-            model.Add(s[i] <= t).OnlyEnforceIf(b1)
-            model.Add(s[i] > t).OnlyEnforceIf(b1.Not())
+            # s[i] <= t
+            b1 = model.new_bool_var("")
+            model.add(s[i] <= t).only_enforce_if(b1)
+            model.add(s[i] > t).only_enforce_if(~b1)
 
             # t < s[i] + d[i]
-            b2 = model.NewBoolVar("")
-            model.Add(t < s[i] + d[i]).OnlyEnforceIf(b2)
-            model.Add(t >= s[i] + d[i]).OnlyEnforceIf(b2.Not())
+            b2 = model.new_bool_var("")
+            model.add(t < s[i] + d[i]).only_enforce_if(b2)
+            model.add(t >= s[i] + d[i]).only_enforce_if(~b2)
 
-            # b1 and b2 (b1 * b2)
-            b3 = model.NewBoolVar("")
-            model.AddBoolAnd([b1, b2]).OnlyEnforceIf(b3)
-            model.AddBoolOr([b1.Not(), b2.Not()]).OnlyEnforceIf(b3.Not())
+            # b1 and b2
+            b3 = model.new_bool_var("")
+            model.add_bool_and([b1, b2]).only_enforce_if(b3)
+            model.add_bool_or([~b1, ~b2]).only_enforce_if(~b3)
 
-            # b1 * b2 * r[i]
-            b4 = model.NewIntVar(0, max_r, "b4")
-            model.AddMultiplicationEquality(b4, [b3, r[i]])
+            # b3 * r[i]
+            b4 = model.new_int_var(0, max_r, "b4")
+            model.add_multiplication_equality(b4, [b3, r[i]])
             bb.append(b4)
 
-        model.Add(sum(bb) <= b)
+        model.add(sum(bb) <= b)
 
-    # Somewhat experimental:
-    # This constraint is needed to contrain the upper limit of b.
+    # Constrain upper limit of b if it's a variable
     if not isinstance(b, int):
-        model.Add(b <= sum(r))
+        model.add(b <= sum(r))
 
 
-def prod(model, x, p):
+def global_cardinality(
+    model: CpModel, x: list[IntVar], domain: list[int], gcc: list[IntVar]
+):
     """
-    prod(model, x, p)
+    Global cardinality constraint.
 
-    `p` is the product of the elements in array `x`
-    p = x[0]*x[1]*...x[-1]
-    Note: This trickery is needed since `AddMultiplicationEquality`
-          (as of writing) don't support more than two products at a time.
-    """
-    n = len(x)
-    lb, ub = x[0].Proto().domain
-    t = [model.NewIntVar(lb, ub ** (i + 1), "t") for i in range(n)]
-    model.Add(t[0] == x[0])
-    for i in range(1, n):
-        model.AddMultiplicationEquality(t[i], [t[i - 1], x[i]])
-    model.Add(p == t[-1])
+    For each value in domain, gcc counts the number of occurrences in x.
+    The length of domain must equal the length of gcc.
 
-
-def knapsack(model, values, weights, n):
-    """
-    knapsack(model, values, weights, n)
-
-    Solves the knapsack problem.
-
-    `x`: the selected items
-
-    `z`: sum of values of the selected items
-
-    `w`: sum of weights of the selected items
-    """
-    z = model.NewIntVar(0, sum(values), "z")
-    x = [model.NewIntVar(0, 1, "x(%i)" % i) for i in range(len(values))]
-    scalar_product(model, x, values, z)
-    w = model.NewIntVar(0, sum(weights), "w")
-    scalar_product(model, x, weights, w)
-    model.Add(w <= n)
-
-    return x, z, w
-
-
-def global_cardinality(model, x, domain, gcc):
-    """
-    global_cardinality(model, x, domain, gcc)
-
-    For each value in the array `domain`, the array `gcc`
-    counts the number of occurrences in array `x`.
-
-    The length of `domain` must the same as the length of `gcc`.
+    Parameters
+    ----------
+    model
+        The CP model.
+    x
+        Array of variables.
+    domain
+        Array of values to count.
+    gcc
+        Array of count variables.
     """
     assert len(gcc) == len(domain)
     for i in range(len(domain)):
-        count_vars(model, x, domain[i], gcc[i])
-
-
-#
-# Global constraint regular
-#
-# This is a translation of MiniZinc's regular constraint (defined in
-# lib/zinc/globals.mzn), via the Comet code refered above.
-# All comments are from the MiniZinc code.
-# '''
-# The sequence of values in array 'x' (which must all be in the range 1..S)
-# is accepted by the DFA of 'Q' states with input 1..S and transition
-# function 'd' (which maps (1..Q, 1..S) -> 0..Q)) and initial state 'q0'
-# (which must be in 1..Q) and accepting states 'F' (which all must be in
-# 1..Q).  We reserve state 0 to be an always failing state.
-# '''
-#
-# x : IntVar array
-# Q : number of states
-# S : input_max
-# d : transition matrix
-# q0: initial state
-# F : accepting states
-#
-# Note: The difference between this approach and
-# the one in MiniZinc is that instead of element/2
-# AddAllowedAssignements (i.e. table/2) is used.
-# The AddElement approach is implemented in
-# the regular_element method (see below).
-#
-# It seems that regular_table is faster than
-# regular_element.
-#
-def regular_table(model, x, Q, S, d, q0, F):
-    """
-    regular_table(model, x, Q, S, d, q0, F)
-
-    `x` : IntVar array
-
-    `Q` : number of states
-
-    `S` : input_max
-
-    `d` : transition matrix
-
-    `q0`: initial state
-
-    `F` : accepting states
-
-    `regular_table` seems to be faster than the `regular` method.
-    """
-    assert Q > 0, 'regular: "Q" must be greater than zero'
-    assert S > 0, 'regular: "S" must be greater than zero'
-
-    # d2 is the same as d, except we add one extra transition for
-    # each possible input;  each extra transition is from state zero
-    # to state zero.  This allows us to continue even if we hit a
-    # non-accepted input.
-    d2 = []
-    for i in range(Q + 1):
-        for j in range(S):
-            if i == 0:
-                d2.append((0, j, 0))
-            else:
-                d2.append((i, j, d[i - 1][j]))
-
-    # If x has index set m..n, then a[m-1] holds the initial state
-    # (q0), and a[i+1] holds the state we're in after processing
-    # x[i].  If a[n] is in F, then we succeed (ie. accept the
-    # string).
-    x_range = list(range(0, len(x)))
-    m = 0
-    n = len(x)
-
-    a = [model.NewIntVar(0, Q + 1, "a[%i]" % i) for i in range(m, n + 1)]
-
-    # Check that the final state is in F
-    # solver.Add(solver.MemberCt(a[-1], F))
-    memberOf(model, F, a[-1])
-
-    # First state is q0
-    model.Add(a[m] == q0)
-    _xlb, xub = x[0].Proto().domain
-    for i in x_range:
-        model.Add(x[i] >= 1)
-        model.Add(x[i] <= S)
-        # Determine a[i+1]: a[i+1] == d2[a[i], x[i]]
-        xi1 = model.NewIntVar(0, xub, "xi1")
-        model.Add(xi1 == x[i] - 1)
-        model.AddAllowedAssignments([a[i], xi1, a[i + 1]], d2)
-
-
-#
-# Global constraint regular
-#
-# This is a translation of MiniZinc's regular constraint (defined in
-# lib/zinc/globals.mzn), via Comet code.
-# All comments are from the MiniZinc code.
-# '''
-# The sequence of values in array 'x' (which must all be in the range 1..S)
-# is accepted by the DFA of 'Q' states with input 1..S and transition
-# function 'd' (which maps (1..Q, 1..S) -> 0..Q)) and initial state 'q0'
-# (which must be in 1..Q) and accepting states 'F' (which all must be in
-# 1..Q).  We reserve state 0 to be an always failing state.
-# '''
-#
-# x : IntVar array
-# Q : number of states
-# S : input_max
-# d : transition matrix
-# q0: initial state
-# F : accepting states
-#
-# Cf regulat_table which use AllowedAssignments
-# instead of Element.
-# Note: It seems that regular_element is slower than regular_table.
-#
-def regular_element(model, x, Q, S, d, q0, F):
-    """
-    regular_element(model, x, Q, S, d, q0, F)
-
-      `x` : IntVar array
-
-      `Q` : number of states
-
-      `S` : input_max
-
-      `d` : transition matrix
-
-      `q0`: initial state
-
-      `F` : accepting states
-
-    `regular` seems to be slower than the `regular_table` method.
-    """
-    assert Q > 0, 'regular: "Q" must be greater than zero'
-    assert S > 0, 'regular: "S" must be greater than zero'
-
-    # d2 is the same as d, except we add one extra transition for
-    # each possible input;  each extra transition is from state zero
-    # to state zero.  This allows us to continue even if we hit a
-    # non-accepted input.
-    d2 = []
-    for i in range(Q + 1):
-        row = []
-        for j in range(S):
-            if i == 0:
-                row.append(0)
-            else:
-                row.append(d[i - 1][j])
-        d2.append(row)
-
-    # d2_flatten = flatten(d2)
-    d2_flatten = [d2[i][j] for i in range(Q + 1) for j in range(S)]
-
-    # If x has index set m..n, then a[m-1] holds the initial state
-    # (q0), and a[i+1] holds the state we're in after processing
-    # x[i].  If a[n] is in F, then we succeed (ie. accept the
-    # string).
-    x_range = list(range(0, len(x)))
-    m = 0
-    n = len(x)
-
-    a = [model.NewIntVar(0, Q + 1, "a[%i]" % i) for i in range(m, n + 1)]
-
-    # Check that the final state (a[-1]) is in F (accepatble final states)
-    memberOf(model, F, a[-1])
-
-    # First state is q0
-    model.Add(a[m] == q0)
-    for i in x_range:
-        model.Add(x[i] >= 1)
-        model.Add(x[i] <= S)
-
-        # Determine a[i+1]: a[i+1] == d2[a[i], x[i]]
-        # AddElement(index, variables, target)
-        ix = model.NewIntVar(0, len(d2_flatten) * 1000, "ix(%i)" % (i))
-        model.Add(ix == ((a[i]) * S) + (x[i] - 1))
-        model.AddElement(ix, d2_flatten, a[i + 1])
-
-
-#
-# No overlapping of tasks s1 and s2
-#
-def no_overlap(model, s1, d1, s2, d2):
-    """
-    no_overlap(model, s1, d1, s2, d2)
-
-    Ensure that there are no overlap of task 1 (`s1` + `d1`)
-    and task 2 (`s2` + `d2`)
-    """
-    b1 = model.NewBoolVar("b1")
-    model.Add(s1 + d1 <= s2).OnlyEnforceIf(b1)
-    b2 = model.NewBoolVar("b1")
-    model.Add(s2 + d2 <= s1).OnlyEnforceIf(b2)
-    model.Add(b1 + b2 >= 1)
-
-
-def permutation3(model, from_a, perm_a, to_a):
-    """
-    Ensure that the permutation of `from_a` to `to_a` is
-    the permutation  `perm_a`
-    """
-    assert len(from_a) == len(perm_a), (
-        "Length of `from_a` and `perm_a` must be the same"
-    )
-    assert len(from_a) == len(to_a), (
-        "Length of `from_a` and `to_a` must be the same"
-    )
-    model.AddAllDifferent(perm_a)
-    for i in range(len(from_a)):
-        # to_a[i] = from_a[perm_a[i]]
-        model.AddElement(perm_a[i], from_a, to_a[i])
+        count_var = new_count_var(model, x, domain[i])
+        model.add(gcc[i] == count_var)

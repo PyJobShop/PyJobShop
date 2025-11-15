@@ -4449,3 +4449,253 @@ class TestOverlapVar:
         assert_equal(solver.value(has_overlap), False)
         # Optimal solution should be sequential: [0,5) and [5,10)
         assert_equal(solver.objective_value, 10)
+
+
+class TestCountVar:
+    """
+    Tests for the new_count_var() method.
+    """
+
+    def test_count_basic(self):
+        """
+        Tests basic counting of a value in an array.
+        """
+        model = CpModelPlus()
+        x = [model.new_int_var(0, 10, f"x{i}") for i in range(5)]
+
+        count_var = model.new_count_var(x, 5)
+
+        # Set values: [3, 5, 5, 2, 5] -> count of 5 is 3
+        model.add(x[0] == 3)
+        model.add(x[1] == 5)
+        model.add(x[2] == 5)
+        model.add(x[3] == 2)
+        model.add(x[4] == 5)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(count_var), 3)
+
+    def test_count_zero_occurrences(self):
+        """
+        Tests counting when the value doesn't appear in the array.
+        """
+        model = CpModelPlus()
+        x = [model.new_int_var(0, 10, f"x{i}") for i in range(4)]
+
+        count_var = model.new_count_var(x, 7)
+
+        # Set values: [1, 2, 3, 4] -> count of 7 is 0
+        for idx in range(4):
+            model.add(x[idx] == idx + 1)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(count_var), 0)
+
+    def test_count_all_occurrences(self):
+        """
+        Tests counting when all values in the array match.
+        """
+        model = CpModelPlus()
+        x = [model.new_int_var(0, 10, f"x{i}") for i in range(6)]
+
+        count_var = model.new_count_var(x, 8)
+
+        # Set all values to 8
+        for var in x:
+            model.add(var == 8)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(count_var), 6)
+
+    def test_count_single_occurrence(self):
+        """
+        Tests counting with exactly one occurrence.
+        """
+        model = CpModelPlus()
+        x = [model.new_int_var(0, 10, f"x{i}") for i in range(5)]
+
+        count_var = model.new_count_var(x, 4)
+
+        # Set values: [1, 2, 4, 6, 7] -> count of 4 is 1
+        values = [1, 2, 4, 6, 7]
+        for idx, val in enumerate(values):
+            model.add(x[idx] == val)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(count_var), 1)
+
+    def test_count_variable_value(self):
+        """
+        Tests counting where the value to count is a variable.
+        """
+        model = CpModelPlus()
+        x = [model.new_int_var(0, 5, f"x{i}") for i in range(4)]
+        val = model.new_int_var(0, 5, "val")
+
+        count_var = model.new_count_var(x, val)
+
+        # Set array: [2, 3, 2, 2] and val: 2 -> count should be 3
+        model.add(x[0] == 2)
+        model.add(x[1] == 3)
+        model.add(x[2] == 2)
+        model.add(x[3] == 2)
+        model.add(val == 2)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(count_var), 3)
+
+    def test_count_with_negative_values(self):
+        """
+        Tests counting with negative values.
+        """
+        model = CpModelPlus()
+        x = [model.new_int_var(-10, 10, f"x{i}") for i in range(5)]
+
+        count_var = model.new_count_var(x, -3)
+
+        # Set values: [-3, 0, -3, 5, -3] -> count of -3 is 3
+        values = [-3, 0, -3, 5, -3]
+        for idx, val in enumerate(values):
+            model.add(x[idx] == val)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(count_var), 3)
+
+    def test_count_with_zero(self):
+        """
+        Tests counting occurrences of zero.
+        """
+        model = CpModelPlus()
+        x = [model.new_int_var(-5, 5, f"x{i}") for i in range(6)]
+
+        count_var = model.new_count_var(x, 0)
+
+        # Set values: [0, 1, 0, -1, 0, 2] -> count of 0 is 3
+        values = [0, 1, 0, -1, 0, 2]
+        for idx, val in enumerate(values):
+            model.add(x[idx] == val)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(count_var), 3)
+
+    def test_count_in_constraint(self):
+        """
+        Tests using count_var in other constraints.
+        """
+        model = CpModelPlus()
+        x = [model.new_int_var(0, 3, f"x{i}") for i in range(5)]
+
+        count_var = model.new_count_var(x, 2)
+
+        # Constrain that exactly 3 variables should equal 2
+        model.add(count_var == 3)
+
+        # Add all_different constraint except for value 2
+        # This forces exactly 3 to be 2, and others to be different
+        model.add_all_different([x[i] for i in range(5) if i not in [0, 1, 2]])
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(count_var), 3)
+
+        # Count how many are actually 2
+        actual_count = sum(1 for var in x if solver.value(var) == 2)
+        assert_equal(actual_count, 3)
+
+    def test_count_bounds(self):
+        """
+        Tests that count variable has correct bounds [0, len(array)].
+        """
+        model = CpModelPlus()
+        x = [model.new_int_var(0, 10, f"x{i}") for i in range(7)]
+
+        count_var = model.new_count_var(x, 5)
+
+        # Check bounds using the proto domain
+        lb, ub = count_var.proto.domain[0], count_var.proto.domain[1]
+
+        assert_equal(lb, 0)
+        assert_equal(ub, 7)  # Should be length of array
+
+    def test_count_with_optimization(self):
+        """
+        Tests using count_var in an optimization objective.
+        """
+        model = CpModelPlus()
+        x = [model.new_int_var(0, 5, f"x{i}") for i in range(6)]
+
+        count_var = model.new_count_var(x, 3)
+
+        # Maximize the count of 3s
+        model.maximize(count_var)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        # Should maximize to 6 (all values are 3)
+        assert_equal(solver.value(count_var), 6)
+        assert_equal(solver.objective_value, 6)
+
+    def test_count_single_element_array(self):
+        """
+        Tests counting in an array with a single element.
+        """
+        model = CpModelPlus()
+        x = [model.new_int_var(0, 10, "x0")]
+
+        count_var = model.new_count_var(x, 5)
+
+        model.add(x[0] == 5)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(count_var), 1)
+
+    def test_count_large_array(self):
+        """
+        Tests counting in a larger array.
+        """
+        model = CpModelPlus()
+        size = 20
+        x = [model.new_int_var(0, 10, f"x{i}") for i in range(size)]
+
+        count_var = model.new_count_var(x, 7)
+
+        # Set values: first 10 to 7, rest to 0
+        for idx in range(size):
+            if idx < 10:
+                model.add(x[idx] == 7)
+            else:
+                model.add(x[idx] == 0)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        assert_equal(solver.value(count_var), 10)

@@ -1076,6 +1076,34 @@ class CpModelPlus(CpModel):
 
         return y
 
+    def new_count_var(self, array: list[IntVar], val: int | IntVar) -> IntVar:
+        """
+        Creates a new integer variable representing the number of occurrences
+        of a value in an array.
+
+        Parameters
+        ----------
+        array
+            Array of variables to search.
+        val
+            Value to count (can be constant or variable).
+
+        Returns
+        -------
+        IntVar
+            Integer variable equal to the count of val in array.
+        """
+        size = len(array)
+        count = self.new_int_var(0, size, "")
+        is_equal = [self.new_bool_var("") for _ in range(size)]
+
+        for idx in range(size):
+            self.add(array[idx] == val).only_enforce_if(is_equal[idx])
+            self.add(array[idx] != val).only_enforce_if(~is_equal[idx])
+
+        self.add(count == sum(is_equal))
+        return count
+
     def add_if_then_else(
         self,
         condition: BoolVarT | list[BoolVarT],
