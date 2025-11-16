@@ -13,6 +13,7 @@ from .ProblemData import Mode as Mode
 from .ProblemData import ModeDependency as ModeDependency
 from .ProblemData import Objective as Objective
 from .ProblemData import ProblemData as ProblemData
+from .ProblemData import ProblemDataDecoder as ProblemDataDecoder
 from .ProblemData import Renewable as Renewable
 from .ProblemData import SameSequence as SameSequence
 from .ProblemData import SelectAllOrNone as SelectAllOrNone
