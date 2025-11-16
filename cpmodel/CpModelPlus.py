@@ -1132,3 +1132,128 @@ class CpModelPlus(CpModel):
 
         for var in condition:  # enforce else branch if one var is False
             self.add(else_expr).only_enforce_if(~var)
+
+    def add_cumulative_profiles(
+        self,
+        intervals: list[IntervalVar],
+        demands: list[IntVar],
+        max_profile: list[tuple[int, int]],
+        min_profile: list[tuple[int, int]] | None = None,
+    ):
+        """
+        Adds a cumulative constraint with capacity profiles.
+
+        Parameters
+        ----------
+        intervals
+            List of interval variables.
+        demands
+            List of demand variables corresponding to intervals.
+        max_profile
+            List of (time, capacity) tuples defining the maximum capacity
+            profile over time. Assumes that time points are sorted in
+            increasing order, and that capacity applies from the given time
+            until the next time point (``MAX_VALUE`` if last point).
+        min_profile
+            List of (time, capacity) tuples defining the minimum capacity
+            profile over time. Assumes that time points are sorted in
+            increasing order, and that capacity applies from the given time
+            until the next time point (``MAX_VALUE`` if last point).
+        """
+        times, capacities = zip(*max_profile)
+        for t1, t2 in pairwise(times):
+            if t1 >= t2:
+                raise ValueError("Time points in profile must be increasing.")
+
+        # To model the max profile, we introduce fixed, dummy intervals that
+        # consume load equal to the difference between the maximum capacity
+        # and the desired profile level.
+        dummy = []
+        occupied = []
+        max_capacity = max(capacities)
+
+        for idx in range(len(times)):
+            load = max_capacity - capacities[idx]
+            if load == 0:
+                # If this is zero, then the maximum capacity is allowed in this
+                # segment, so no need to add a dummy interval.
+                continue
+
+            start = times[idx]
+            end = times[idx + 1] if idx + 1 < len(times) else MAX_VALUE
+            interval = self.new_interval_var(start, end - start, end, "")
+            dummy.append(interval)
+            occupied.append(load)
+
+        self.add_cumulative(
+            [*intervals, *dummy],
+            [*demands, *occupied],
+            max_capacity,
+        )
+
+        if min_profile is None:
+            return
+
+        # TODO check that min load cannot be larger than max load. This hangs.
+        # TODO understand if min load can be added without max load
+
+        # Now we start modelling min load profiles using "complement capacity".
+        # Present intervals contribute to this capacity over the entire domain.
+        complement_capacity = self.new_int_var(0, sum(demands), "")
+        selected_demands = [
+            demand * self.presence_of(interval)
+            for interval, demand in zip(intervals, demands)
+        ]
+        self.add(complement_capacity == sum(selected_demands))
+
+        # We introduce prefix and suffix intervals for each interval.
+        prefixes = [
+            self.new_optional_interval_var(
+                start=0,
+                size=interval.start_expr(),
+                end=interval.start_expr(),
+                is_present=self.presence_of(interval),
+                name=f"prefix_{interval.name}",
+            )
+            for interval in intervals
+        ]
+        suffixes = [
+            self.new_optional_interval_var(
+                start=interval.end_expr(),
+                size=MAX_VALUE - interval.end_expr(),
+                end=MAX_VALUE,
+                is_present=self.presence_of(interval),
+                name=f"suffix_{interval.name}",
+            )
+            for interval in intervals
+        ]
+
+        times, min_loads = zip(*min_profile)
+        for t1, t2 in pairwise(times):
+            if t1 >= t2:
+                raise ValueError("Time points in profile must be increasing.")
+
+        # We also introduce fixed, dummy intervals that consume load equal to
+        # the minimum load in this segment.
+        dummy = []
+        occupied = []
+
+        for idx in range(len(times)):
+            if min_loads[idx] == 0:
+                continue  # nothing to do
+
+            start = times[idx]
+            end = times[idx + 1] if idx + 1 < len(times) else MAX_VALUE
+            interval = self.new_interval_var(start, end - start, end, "")
+            dummy.append(interval)
+            occupied.append(min_loads[idx])
+
+        # The prefix and suffix intervals directly consume the demand, so
+        # effectively there is only capacity available on the domain
+        # [start, end). The dummy intervals force that enough effective
+        # capacity is created to satisfy the minimum load profile.
+        self.add_cumulative(
+            [*prefixes, *suffixes, *dummy],
+            [*demands, *demands, *occupied],
+            complement_capacity,
+        )

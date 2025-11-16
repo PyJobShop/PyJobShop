@@ -4699,3 +4699,608 @@ class TestCountVar:
 
         assert_equal(status, cp_model.OPTIMAL)
         assert_equal(solver.value(count_var), 10)
+
+
+class TestCumulativeProfiles:
+    """
+    Tests for the add_cumulative_profiles() method.
+    """
+
+    def test_basic_constant_profile(self):
+        """
+        Tests basic cumulative with constant capacity profile.
+        """
+        model = CpModelPlus()
+
+        # Two tasks with duration 5, demand 3 each
+        start1 = model.new_int_var(0, 10, "start1")
+        start2 = model.new_int_var(0, 10, "start2")
+
+        interval1 = model.new_interval_var(start1, 5, start1 + 5, "interval1")
+        interval2 = model.new_interval_var(start2, 5, start2 + 5, "interval2")
+
+        # Constant capacity of 5 over time horizon
+        max_profile = [(0, 5), (15, 5)]
+
+        model.add_cumulative_profiles(
+            [interval1, interval2], [3, 3], max_profile
+        )
+
+        # Both tasks can't overlap (3 + 3 = 6 > 5)
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        # Verify tasks don't overlap
+        s1 = solver.value(start1)
+        s2 = solver.value(start2)
+        assert (s1 + 5 <= s2) or (s2 + 5 <= s1)
+
+    def test_varying_capacity_profile(self):
+        """
+        Tests cumulative with varying capacity over time.
+        """
+        model = CpModelPlus()
+
+        # Three tasks
+        start1 = model.new_int_var(0, 20, "start1")
+        start2 = model.new_int_var(0, 20, "start2")
+        start3 = model.new_int_var(0, 20, "start3")
+
+        interval1 = model.new_interval_var(start1, 5, start1 + 5, "interval1")
+        interval2 = model.new_interval_var(start2, 5, start2 + 5, "interval2")
+        interval3 = model.new_interval_var(start3, 5, start3 + 5, "interval3")
+
+        # Capacity varies: 0-10 has capacity 3, 10-25 has capacity 10
+        max_profile = [(0, 3), (10, 10)]
+
+        model.add_cumulative_profiles(
+            [interval1, interval2, interval3], [2, 2, 2], max_profile
+        )
+
+        # Force all tasks to start in first period
+        model.add(start1 < 10)
+        model.add(start2 < 10)
+        model.add(start3 < 10)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        # Should be infeasible: 3 tasks * 2 demand = 6 > 3 capacity
+        assert_equal(status, cp_model.INFEASIBLE)
+
+    def test_tasks_fit_in_high_capacity_period(self):
+        """
+        Tests that tasks can fit when scheduled in high capacity period.
+        """
+        model = CpModelPlus()
+
+        # Three tasks with demand 2 each
+        starts = [model.new_int_var(0, 20, f"start{i}") for i in range(3)]
+        intervals = [
+            model.new_interval_var(s, 5, s + 5, f"interval{i}")
+            for i, s in enumerate(starts)
+        ]
+
+        # Low capacity early, high capacity later
+        max_profile = [(0, 3), (10, 10)]
+
+        model.add_cumulative_profiles(intervals, [2, 2, 2], max_profile)
+
+        # Force all tasks to start in high capacity period
+        for start in starts:
+            model.add(start >= 10)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        # Should be feasible in high capacity period
+        assert_equal(status, cp_model.OPTIMAL)
+        for start in starts:
+            assert solver.value(start) >= 10
+
+    def test_zero_capacity_period(self):
+        """
+        Tests handling of zero capacity periods.
+        """
+        model = CpModelPlus()
+
+        start = model.new_int_var(0, 30, "start")
+        interval = model.new_interval_var(start, 5, start + 5, "interval")
+
+        # Zero capacity from 10-20, non-zero elsewhere
+        max_profile = [(0, 5), (10, 0), (20, 5)]
+
+        model.add_cumulative_profiles([interval], [3], max_profile)
+
+        # Force task to overlap with zero capacity period
+        model.add(start >= 8)
+        model.add(start <= 12)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        # Should be infeasible: can't fit demand 3 in capacity 0
+        assert_equal(status, cp_model.INFEASIBLE)
+
+    def test_task_avoids_zero_capacity(self):
+        """
+        Tests that tasks correctly avoid zero capacity periods.
+        """
+        model = CpModelPlus()
+
+        start = model.new_int_var(0, 30, "start")
+        interval = model.new_interval_var(start, 5, start + 5, "interval")
+
+        # Zero capacity from 10-20
+        max_profile = [(0, 5), (10, 0), (20, 5)]
+
+        model.add_cumulative_profiles([interval], [3], max_profile)
+
+        # Minimize start time
+        model.minimize(start)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        s = solver.value(start)
+        # Task should either be before 10 or start at/after 20
+        assert (s + 5 <= 10) or (s >= 20)
+
+    def test_multiple_tasks_different_demands(self):
+        """
+        Tests multiple tasks with different demand values.
+        """
+        model = CpModelPlus()
+
+        starts = [model.new_int_var(0, 20, f"start{i}") for i in range(3)]
+        intervals = [
+            model.new_interval_var(s, 4, s + 4, f"interval{i}")
+            for i, s in enumerate(starts)
+        ]
+
+        # Demands: 2, 3, 1 (total 6, but max any 2 can be is 5)
+        demands = [2, 3, 1]
+
+        # Constant capacity 5
+        max_profile = [(0, 5), (20, 5)]
+
+        model.add_cumulative_profiles(intervals, demands, max_profile)
+
+        # Set specific start times that would violate if tasks 0 and 1 overlap
+        model.add(starts[0] == 0)
+        model.add(starts[1] == 1)  # Would overlap with task 0
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        # Should be infeasible: demand 2 + 3 = 5 at time 1-4
+        # Actually this should be feasible since 2+3=5 equals capacity
+        assert_equal(status, cp_model.OPTIMAL)
+
+    def test_profile_with_many_segments(self):
+        """
+        Tests profile with many time segments.
+        """
+        model = CpModelPlus()
+
+        start = model.new_int_var(0, 50, "start")
+        interval = model.new_interval_var(start, 5, start + 5, "interval")
+
+        # Multiple capacity changes
+        max_profile = [
+            (0, 2),
+            (10, 5),
+            (20, 3),
+            (30, 8),
+            (40, 1),
+            (50, 10),
+        ]
+
+        model.add_cumulative_profiles([interval], [4], max_profile)
+
+        # Minimize start
+        model.minimize(start)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        s = solver.value(start)
+        # Should start in period with capacity >= 4 (either 10-20 or 30-40)
+        assert 10 <= s < 20 or 30 <= s < 40
+
+    def test_single_time_point_profile(self):
+        """
+        Tests profile with single time point (constant capacity).
+        """
+        model = CpModelPlus()
+
+        starts = [model.new_int_var(0, 10, f"start{i}") for i in range(2)]
+        intervals = [
+            model.new_interval_var(s, 3, s + 3, f"interval{i}")
+            for i, s in enumerate(starts)
+        ]
+
+        # Single point means constant capacity
+        max_profile = [(0, 4)]
+
+        model.add_cumulative_profiles(intervals, [3, 2], max_profile)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        # Should be feasible but tasks can't fully overlap
+        assert_equal(status, cp_model.OPTIMAL)
+
+    def test_non_increasing_time_raises_error(self):
+        """
+        Tests that non-increasing time points raise ValueError.
+        """
+        model = CpModelPlus()
+
+        start = model.new_int_var(0, 10, "start")
+        interval = model.new_interval_var(start, 5, start + 5, "interval")
+
+        # Invalid profile: times not increasing
+        max_profile = [(0, 5), (10, 3), (5, 2)]
+
+        try:
+            model.add_cumulative_profiles([interval], [2], max_profile)
+            assert False, "Should have raised ValueError"
+        except ValueError as e:
+            assert "increasing" in str(e).lower()
+
+    def test_equal_time_points_raises_error(self):
+        """
+        Tests that equal consecutive time points raise ValueError.
+        """
+        model = CpModelPlus()
+
+        start = model.new_int_var(0, 10, "start")
+        interval = model.new_interval_var(start, 5, start + 5, "interval")
+
+        # Invalid profile: duplicate time point
+        max_profile = [(0, 5), (10, 3), (10, 2)]
+
+        try:
+            model.add_cumulative_profiles([interval], [2], max_profile)
+            assert False, "Should have raised ValueError"
+        except ValueError as e:
+            assert "increasing" in str(e).lower()
+
+    def test_scheduling_scenario(self):
+        """
+        Tests realistic scheduling scenario with time-dependent capacity.
+        """
+        model = CpModelPlus()
+
+        # 5 tasks with different durations and demands
+        task_specs = [
+            (3, 2),  # (duration, demand)
+            (4, 3),
+            (2, 1),
+            (5, 2),
+            (3, 4),
+        ]
+
+        starts = [
+            model.new_int_var(0, 30, f"start{i}")
+            for i in range(len(task_specs))
+        ]
+        intervals = [
+            model.new_interval_var(s, dur, s + dur, f"task{i}")
+            for i, (s, (dur, _)) in enumerate(zip(starts, task_specs))
+        ]
+        demands = [dem for _, dem in task_specs]
+
+        # Working hours: capacity varies by time of day
+        # 0-8: capacity 3 (morning ramp-up)
+        # 8-16: capacity 8 (peak hours)
+        # 16-24: capacity 4 (evening wind-down)
+        # 24+: capacity 2 (night)
+        max_profile = [(0, 3), (8, 8), (16, 4), (24, 2)]
+
+        model.add_cumulative_profiles(intervals, demands, max_profile)
+
+        # Minimize total completion time
+        max_end = model.new_int_var(0, 50, "max_end")
+        for i, (dur, _) in enumerate(task_specs):
+            model.add(max_end >= starts[i] + dur)
+        model.minimize(max_end)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        # Verify solution is valid
+        assert solver.objective_value > 0
+
+    def test_empty_intervals_list(self):
+        """
+        Tests behavior with empty intervals list.
+        """
+        model = CpModelPlus()
+
+        max_profile = [(0, 5), (10, 3)]
+
+        # Should not raise error with empty lists
+        model.add_cumulative_profiles([], [], max_profile)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+
+    def test_optional_intervals(self):
+        """
+        Tests cumulative max profile with optional intervals.
+        """
+        model = CpModelPlus()
+
+        # Create optional intervals
+        starts = [model.new_int_var(0, 20, f"start{i}") for i in range(3)]
+        presences = [model.new_bool_var(f"present{i}") for i in range(3)]
+
+        intervals = [
+            model.new_optional_interval_var(s, 4, s + 4, p, f"interval{i}")
+            for i, (s, p) in enumerate(zip(starts, presences))
+        ]
+
+        max_profile = [(0, 4), (20, 4)]
+
+        model.add_cumulative_profiles(intervals, [2, 2, 2], max_profile)
+
+        # At least one task must be present
+        model.add(sum(presences) >= 1)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+
+    def test_variable_demands(self):
+        """
+        Tests cumulative max profile with variable (non-constant) demands.
+        """
+        model = CpModelPlus()
+
+        # Create two tasks with variable demands
+        start1 = model.new_int_var(0, 10, "start1")
+        start2 = model.new_int_var(0, 10, "start2")
+
+        interval1 = model.new_interval_var(start1, 5, start1 + 5, "interval1")
+        interval2 = model.new_interval_var(start2, 5, start2 + 5, "interval2")
+
+        # Variable demands
+        demand1 = model.new_int_var(1, 3, "demand1")
+        demand2 = model.new_int_var(1, 3, "demand2")
+
+        # Constant capacity of 4
+        max_profile = [(0, 4), (15, 4)]
+
+        model.add_cumulative_profiles(
+            [interval1, interval2], [demand1, demand2], max_profile
+        )
+
+        # Force overlap and set specific demands
+        model.add(start1 == 0)
+        model.add(start2 == 2)
+        model.add(demand1 == 3)
+        model.add(demand2 == 2)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        # Should be infeasible: at time 2-5, both tasks run with total
+        # demand 3 + 2 = 5 > 4 capacity
+        assert_equal(status, cp_model.INFEASIBLE)
+
+    def test_profile_not_starting_at_zero(self):
+        """
+        Tests profile with first time point not at zero.
+        """
+        model = CpModelPlus()
+
+        start = model.new_int_var(5, 25, "start")
+        interval = model.new_interval_var(start, 5, start + 5, "interval")
+
+        # Profile starts at time 5, not 0
+        max_profile = [(5, 3), (15, 8), (25, 3)]
+
+        model.add_cumulative_profiles([interval], [4], max_profile)
+
+        # Task needs capacity of 4, only available in period [15, 25)
+        model.minimize(start)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        s = solver.value(start)
+        # Should start in high capacity period
+        assert 15 <= s < 25
+
+    def test_long_task_spanning_multiple_segments(self):
+        """
+        Tests a long task that spans multiple profile segments.
+        """
+        model = CpModelPlus()
+
+        start = model.new_int_var(0, 10, "start")
+        # Long duration spanning multiple segments
+        interval = model.new_interval_var(start, 25, start + 25, "interval")
+
+        # Profile with varying capacities
+        max_profile = [(0, 2), (10, 5), (20, 3), (30, 5)]
+
+        model.add_cumulative_profiles([interval], [3], max_profile)
+
+        # Task needs capacity 3 throughout its duration
+        # Period [0,10) has capacity 2 - too low
+        # Period [20,30) has capacity 3 - just enough for 10 units
+        # Must start at 5 to span [5,30) and avoid low capacity at start
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        s = solver.value(start)
+        # Task must start at 5 or later to fit within capacity constraints
+        assert s >= 5
+
+    def test_decreasing_capacity_profile(self):
+        """
+        Tests profile where capacity decreases over time.
+        """
+        model = CpModelPlus()
+
+        start1 = model.new_int_var(0, 20, "start1")
+        start2 = model.new_int_var(0, 20, "start2")
+
+        interval1 = model.new_interval_var(start1, 5, start1 + 5, "interval1")
+        interval2 = model.new_interval_var(start2, 5, start2 + 5, "interval2")
+
+        # Capacity decreases over time (e.g., battery draining)
+        max_profile = [(0, 10), (10, 5), (20, 2)]
+
+        model.add_cumulative_profiles(
+            [interval1, interval2], [4, 4], max_profile
+        )
+
+        # Force both tasks into low capacity period
+        model.add(start1 >= 20)
+        model.add(start2 >= 20)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        # Should be infeasible: 4 + 4 = 8 > 2 capacity
+        assert_equal(status, cp_model.INFEASIBLE)
+
+    def test_exact_capacity_match(self):
+        """
+        Tests scenario where demand exactly matches capacity.
+        """
+        model = CpModelPlus()
+
+        starts = [model.new_int_var(0, 10, f"start{i}") for i in range(3)]
+        intervals = [
+            model.new_interval_var(s, 5, s + 5, f"interval{i}")
+            for i, s in enumerate(starts)
+        ]
+
+        # Demands sum to exactly the capacity
+        demands = [2, 3, 5]
+        max_profile = [(0, 10), (15, 10)]
+
+        model.add_cumulative_profiles(intervals, demands, max_profile)
+
+        # Force all to overlap completely
+        model.add(starts[0] == 0)
+        model.add(starts[1] == 0)
+        model.add(starts[2] == 0)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        # Should be feasible: 2 + 3 + 5 = 10 = capacity
+        assert_equal(status, cp_model.OPTIMAL)
+
+    def test_min_profile_with_varying_capacity(self):
+        """
+        Tests min profile with time-varying minimum capacity requirements.
+        """
+        model = CpModelPlus()
+
+        starts = [model.new_int_var(0, 30, f"start{i}") for i in range(5)]
+        presences = [model.new_bool_var(f"present{i}") for i in range(5)]
+
+        intervals = [
+            model.new_optional_interval_var(s, 5, s + 5, p, f"interval{i}")
+            for i, (s, p) in enumerate(zip(starts, presences))
+        ]
+
+        # Max capacity is constant at 10
+        # Min capacity varies: 0 initially, 4 in period [10,20), 0 after
+        max_profile = [(0, 10)]
+        min_profile = [(0, 0), (10, 4), (20, 0)]
+
+        model.add_cumulative_profiles(
+            intervals, [2, 2, 2, 2, 2], max_profile, min_profile
+        )
+
+        # Minimize number of active tasks
+        model.minimize(sum(presences))
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        assert_equal(status, cp_model.OPTIMAL)
+        # Need at least 2 tasks active to meet min load 4 in [10,20) period
+        total_active = sum(solver.value(p) for p in presences)
+        assert total_active >= 2
+
+        # Verify at least 2 tasks overlap with [10, 20) period
+        active_in_period = 0
+        for i, p in enumerate(presences):
+            if solver.value(p):
+                s = solver.value(starts[i])
+                e = s + 5
+                # Check if [s, e) overlaps with [10, 20)
+                if s < 20 and e > 10:
+                    active_in_period += 1
+        assert active_in_period >= 2
+
+    def test_min_profile_infeasible(self):
+        """
+        Tests that min profile can make problem infeasible.
+        """
+        model = CpModelPlus()
+
+        # Two tasks with demand 2 each
+        starts = [model.new_int_var(0, 10, f"start{i}") for i in range(2)]
+        presences = [model.new_bool_var(f"present{i}") for i in range(2)]
+
+        intervals = [
+            model.new_optional_interval_var(s, 5, s + 5, p, f"interval{i}")
+            for i, (s, p) in enumerate(zip(starts, presences))
+        ]
+
+        # Max capacity 5, but min capacity requires 6 (impossible!)
+        max_profile = [(0, 5)]
+        min_profile = [(0, 6)]
+
+        model.add_cumulative_profiles(
+            intervals, [2, 2], max_profile, min_profile
+        )
+
+        # Try to activate at least one task
+        model.add(sum(presences) >= 1)
+
+        solver = cp_model.CpSolver()
+        status = solver.solve(model)
+
+        # Infeasible: can't meet min load 6 with max capacity 5
+        assert_equal(status, cp_model.INFEASIBLE)
+
+    def test_min_profile_non_increasing_time_raises_error(self):
+        """
+        Tests that non-increasing time points in min profile raise ValueError.
+        """
+        model = CpModelPlus()
+
+        start = model.new_int_var(0, 10, "start")
+        interval = model.new_interval_var(start, 5, start + 5, "interval")
+
+        max_profile = [(0, 10)]
+        # Invalid min profile: times not increasing
+        min_profile = [(0, 2), (10, 3), (5, 1)]
+
+        try:
+            model.add_cumulative_profiles(
+                [interval], [2], max_profile, min_profile
+            )
+            assert False, "Should have raised ValueError"
+        except ValueError as e:
+            assert "increasing" in str(e).lower()
