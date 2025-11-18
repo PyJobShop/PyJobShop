@@ -422,3 +422,6 @@ statistics/*.csv
 *.DS_STORE
 notes.org
 old/
+
+# Vim backup files
+*~
