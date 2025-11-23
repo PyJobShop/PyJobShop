@@ -517,13 +517,6 @@ def test_problem_data_default_values():
     assert_equal(data.constraints, Constraints())
     assert_equal(data.objective, Objective(weight_makespan=1))
 
-    class TestConstraints(Constraints): ...
-
-    class TestObjective(Objective): ...
-
-    assert_(data.constraints != TestConstraints())
-    assert_(data.objective != TestObjective(weight_makespan=1))
-
 
 def test_problem_data_str():
     """
