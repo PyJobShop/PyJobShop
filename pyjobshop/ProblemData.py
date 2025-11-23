@@ -2,7 +2,7 @@ from collections import Counter, defaultdict
 from copy import deepcopy
 from dataclasses import dataclass, field, fields
 from itertools import pairwise
-from typing import Sequence, TypeVar
+from typing import TypeVar
 
 from pyjobshop.constants import MAX_VALUE
 
@@ -993,7 +993,7 @@ class ProblemData:
     def __init__(
         self,
         jobs: list[Job],
-        resources: Sequence[Resource],
+        resources: list[Resource],
         tasks: list[Task],
         modes: list[Mode],
         constraints: Constraints | None = None,
@@ -1280,7 +1280,7 @@ class ProblemData:
     def replace(
         self,
         jobs: list[Job] | None = None,
-        resources: Sequence[Resource] | None = None,
+        resources: list[Resource] | None = None,
         tasks: list[Task] | None = None,
         modes: list[Mode] | None = None,
         constraints: Constraints | None = None,
@@ -1338,7 +1338,7 @@ class ProblemData:
         return self._jobs
 
     @property
-    def resources(self) -> Sequence[Resource]:
+    def resources(self) -> list[Resource]:
         """
         Returns the resource data of this problem instance.
         """
