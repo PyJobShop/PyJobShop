@@ -5,7 +5,6 @@ from itertools import pairwise
 from typing import Protocol, Sequence, TypeAlias, TypeVar
 
 from pyjobshop.constants import MAX_VALUE
-from pyjobshop.protocols import DataclassInstance, SizedDataclassInstance
 
 _T = TypeVar("_T")
 
@@ -329,8 +328,7 @@ class IterableMixin:
     makes the implementation of constraints more concise and readable.
     """
 
-    def __iter__(self: DataclassInstance):
-        # noinspection PyDataclass
+    def __iter__(self):
         return iter(getattr(self, f.name) for f in fields(self))
 
 
@@ -607,16 +605,14 @@ class Constraints:
     select_at_least_one: list[SelectAtLeastOne] = field(default_factory=list)
     select_exactly_one: list[SelectExactlyOne] = field(default_factory=list)
 
-    def __len__(self: DataclassInstance) -> int:
+    def __len__(self) -> int:
         """
         Returns the total number of constraints across all types.
         """
-        # noinspection PyDataclass
         return sum(len(getattr(self, f.name)) for f in fields(self))
 
-    def __str__(self: SizedDataclassInstance) -> str:
+    def __str__(self) -> str:
         parts = []
-        # noinspection PyDataclass
         for f in fields(self):
             count = len(getattr(self, f.name))
             if count > 0:
@@ -684,16 +680,14 @@ class Objective:
     weight_max_tardiness: int = 0
     weight_total_setup_time: int = 0
 
-    def __post_init__(self: DataclassInstance):
-        # noinspection PyDataclass
+    def __post_init__(self):
         for f in fields(self):
             value = getattr(self, f.name)
             if value < 0:
                 raise ValueError(f"{f.name} < 0 not understood.")
 
-    def __str__(self: DataclassInstance) -> str:
+    def __str__(self) -> str:
         parts = []
-        # noinspection PyDataclass
         for f in fields(self):
             value = getattr(self, f.name)
             if value > 0:
