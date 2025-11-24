@@ -740,6 +740,54 @@ class CpModelPlus(CpModel):
         """
         raise NotImplementedError
 
+    def new_interval_var(
+        self,
+        start: IntVar | tuple[int, int] = (),
+        size: IntVar | tuple[int, int] = (),
+        end: IntVar | tuple[int, int] = (),
+        optional: BoolVarT | bool = False,
+        name: str = "",
+    ) -> IntervalVar:
+        """
+        Creates a new optional interval variable. This helper method simplifies
+        the creation of optional interval variables by handling the creation of
+        helper variables.
+
+        Parameters
+        ----------
+        start
+            Start variable or (lb, ub) tuple.
+        size
+            Size variable or (lb, ub) tuple.
+        end
+            End variable or (lb, ub) tuple.
+        optional
+            Boolean variable or constant indicating if interval is optional.
+            If a Boolean variable is provided, then its interpretation is the
+            same as `is_present`.
+        name
+            Name of the interval variable.
+        """
+        if not isinstance(start, IntVar):
+            start = self.new_int_var(start[0], start[1], f"{name}_start")
+
+        if not isinstance(size, IntVar):
+            size = self.new_int_var(size[0], size[1], f"{name}_size")
+
+        if not isinstance(end, IntVar):
+            end = self.new_int_var(end[0], end[1], f"{name}_end")
+
+        is_present = optional
+        if not isinstance(is_present, BoolVarT):  # then we create var
+            if is_present:
+                is_present = self.new_bool_var(f"{name}_is_present")
+            else:
+                is_present = self.new_constant(True)
+
+        return self.new_optional_interval_var(
+            start, size, end, is_present, name
+        )
+
     def new_product_var(self, var1: IntVar, var2: IntVar) -> IntVar:
         """
         Creates a new integer variable representing the product of two integer
