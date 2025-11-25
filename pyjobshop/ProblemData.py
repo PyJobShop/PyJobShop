@@ -2,7 +2,7 @@ from collections import Counter, defaultdict
 from copy import deepcopy
 from dataclasses import dataclass, field, fields
 from itertools import pairwise
-from typing import Protocol, Sequence, TypeAlias, TypeVar
+from typing import Sequence, TypeAlias, TypeVar
 
 from pyjobshop.constants import MAX_VALUE
 
@@ -11,33 +11,14 @@ _T = TypeVar("_T")
 Break: TypeAlias = tuple[int, int]
 
 
-class HasPostInit(Protocol):
-    """
-    Specify the presence of a ``__post_init__()`` method in a class (or
-    indeed in a superclass).  Used for dataclass validation in the mixins
-    below.
-    """
+def _validate_breaks(breaks: list[Break]):
+    for start, end in breaks:
+        if start < 0 or start >= end:
+            raise ValueError("Break start < 0 or start >= end.")
 
-    def __post_init__(self, *args, **kwargs): ...
-
-
-class CheckBreaksMixin(HasPostInit, Protocol):
-    """
-    Specify the presence of a ``breaks`` field, and provide a validation
-    check for it.
-    """
-
-    breaks: list[Break]
-
-    def __post_init__(self, *args, **kwargs):
-        super().__post_init__(*args, **kwargs)
-        for start, end in self.breaks:
-            if start < 0 or start >= end:
-                raise ValueError("Break start < 0 or start >= end.")
-
-        for interval1, interval2 in pairwise(sorted(self.breaks)):
-            if interval1[1] > interval2[0]:
-                raise ValueError("Break intervals must not overlap.")
+    for interval1, interval2 in pairwise(sorted(breaks)):
+        if interval1[1] > interval2[0]:
+            raise ValueError("Break intervals must not overlap.")
 
 
 @dataclass
@@ -107,7 +88,7 @@ class Job:
 
 
 @dataclass
-class Machine(CheckBreaksMixin):
+class Machine:
     """
     A resource that processes tasks only one at a time and can enforce
     sequencing constraints.
@@ -137,15 +118,15 @@ class Machine(CheckBreaksMixin):
     no_idle: bool = False
     name: str = field(default="", kw_only=True)
 
-    def __post_init__(self, *args, **kwargs):
-        super().__post_init__(*args, **kwargs)
+    def __post_init__(self):
+        _validate_breaks(self.breaks)
 
         if self.breaks and self.no_idle:
             raise ValueError("Breaks not allowed with no_idle=True.")
 
 
 @dataclass
-class Renewable(CheckBreaksMixin):
+class Renewable:
     """
     A resource that replenishes its capacity after each task completion.
 
@@ -166,14 +147,15 @@ class Renewable(CheckBreaksMixin):
     breaks: list[Break] = field(default_factory=list)
     name: str = field(default="", kw_only=True)
 
-    def __post_init__(self, *args, **kwargs):
-        super().__post_init__(*args, **kwargs)
+    def __post_init__(self):
+        _validate_breaks(self.breaks)
+
         if self.capacity < 0:
             raise ValueError("Capacity must be non-negative.")
 
 
 @dataclass
-class Consumable(CheckBreaksMixin):
+class Consumable:
     """
     A resource with finite capacity that is permanently consumed by tasks.
     Unlike renewable resources, consumed capacity is never replenished during
@@ -196,8 +178,9 @@ class Consumable(CheckBreaksMixin):
     breaks: list[Break] = field(default_factory=list)
     name: str = field(default="", kw_only=True)
 
-    def __post_init__(self, *args, **kwargs):
-        super().__post_init__(*args, **kwargs)
+    def __post_init__(self):
+        _validate_breaks(self.breaks)
+
         if self.capacity < 0:
             raise ValueError("Capacity must be non-negative.")
 
