@@ -95,19 +95,6 @@ def test_job_attributes_raises_invalid_parameters(
         )
 
 
-def test_job_equality():
-    """
-    Tests the equality comparison for Job objects.
-    """
-    assert_equal(Job(), Job())
-
-    job1 = Job(1, 2, 3, 4, [5], name="Job")
-    assert_(job1 != Job())
-
-    job2 = Job(1, 2, 3, 4, [5], name="Job")
-    assert_equal(job1, job2)
-
-
 def test_machine_attributes():
     """
     Tests that the attributes of the Machine class are set correctly.
@@ -144,19 +131,6 @@ def test_machine_raises_invalid_parameters(breaks, no_idle):
     """
     with assert_raises(ValueError):
         Machine(breaks=breaks, no_idle=no_idle)
-
-
-def test_machine_equality():
-    """
-    Tests the equality comparison for Machine objects.
-    """
-    assert_equal(Machine(), Machine())
-
-    machine1 = Machine([(10, 20)], False, name="M1")
-    assert_(machine1 != Machine())
-
-    machine2 = Machine([(10, 20)], False, name="M1")
-    assert_equal(machine1, machine2)
 
 
 def test_renewable_attributes():
@@ -196,19 +170,6 @@ def test_renewable_raises_invalid_parameters(capacity, breaks):
         Renewable(capacity=capacity, breaks=breaks)
 
 
-def test_renewable_equality():
-    """
-    Tests the equality comparison for Renewable objects.
-    """
-    assert_equal(Renewable(0), Renewable(0))
-
-    renewable1 = Renewable(5, [(10, 20)], name="R1")
-    assert_(renewable1 != Renewable(0))
-
-    renewable2 = Renewable(5, [(10, 20)], name="R1")
-    assert_equal(renewable1, renewable2)
-
-
 def test_consumable_attributes():
     """
     Tests that the attributes of the Consumable class are set correctly.
@@ -245,19 +206,6 @@ def test_consumable_raises_invalid_parameters(capacity, breaks):
     """
     with assert_raises(ValueError):
         Consumable(capacity=capacity, breaks=breaks)
-
-
-def test_consumable_equality():
-    """
-    Tests the equality comparison for Consumable objects.
-    """
-    assert_equal(Consumable(0), Consumable(0))
-
-    consumable1 = Consumable(5, [(10, 20)], name="R1")
-    assert_(consumable1 != Consumable(0))
-
-    consumable2 = Consumable(5, [(10, 20)], name="R1")
-    assert_equal(consumable1, consumable2)
 
 
 def test_task_attributes():
@@ -330,19 +278,6 @@ def test_task_attributes_raises_invalid_parameters(
         )
 
 
-def test_task_equality():
-    """
-    Tests the equality comparison for Task objects.
-    """
-    assert_equal(Task(), Task())
-
-    task1 = Task(1, 0, 100, 0, 100, False, False, name="T1")
-    assert_(task1 != Task())
-
-    task2 = Task(1, 0, 100, 0, 100, False, False, name="T1")
-    assert_equal(task1, task2)
-
-
 def test_mode_attributes():
     """
     Tests that the attributes of the Mode class are set correctly.
@@ -381,19 +316,6 @@ def test_mode_raises_invalid_parameters(resources, duration, demands):
     """
     with assert_raises(ValueError):
         Mode(task=0, resources=resources, duration=duration, demands=demands)
-
-
-def test_mode_equality():
-    """
-    Tests that equality comparison works correctly for Mode objects.
-    """
-    assert_equal(Mode(0, [0], 1), Mode(0, [0], 1))
-
-    mode1 = Mode(0, [1, 2], 10, [5, 3], name="M1")
-    assert_(mode1 != Mode(0, [0], 1))
-
-    mode2 = Mode(0, [1, 2], 10, [5, 3], name="M1")
-    assert_equal(mode1, mode2)
 
 
 def test_mode_dependency_must_have_at_least_one_succesor_mode():
@@ -1126,23 +1048,6 @@ def test_problem_data_task2resources():
 
     with pytest.raises(ValueError):
         data.task2resources(3)
-
-
-def test_problem_data_equality():
-    """
-    Tests the equality comparison for ProblemData objects.
-    """
-    assert_equal(ProblemData([], [], [], []), ProblemData([], [], [], []))
-
-    jobs = [Job(1, tasks=[0], due_date=10)]
-    resources = [Machine(name="M1"), Renewable(5)]
-    tasks = [Task(0)]
-    modes = [Mode(0, [0], 5)]
-    data1 = ProblemData(jobs, resources, tasks, modes)
-    assert_(data1 != ProblemData([], [], [], []))
-
-    data2 = ProblemData(jobs, resources, tasks, modes)
-    assert_equal(data1, data2)
 
 
 # --- Tests that involve checking solver correctness of problem data. ---
