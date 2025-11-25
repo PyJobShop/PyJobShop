@@ -9,7 +9,6 @@ from pyjobshop.constants import MAX_VALUE
 _T = TypeVar("_T")
 
 Break: TypeAlias = tuple[int, int]
-Breaks: TypeAlias = list[Break]
 
 
 class HasPostInit(Protocol):
@@ -28,7 +27,7 @@ class CheckBreaksMixin(HasPostInit, Protocol):
     check for it.
     """
 
-    breaks: Breaks
+    breaks: list[Break]
 
     def __post_init__(self, *args, **kwargs):
         super().__post_init__(*args, **kwargs)
@@ -134,12 +133,12 @@ class Machine(CheckBreaksMixin):
         When breaks are specified and ``no_idle=True``.
     """
 
-    breaks: Breaks = field(default_factory=list)
+    breaks: list[Break] = field(default_factory=list)
     no_idle: bool = False
     name: str = field(default="", kw_only=True)
 
-    def __post_init__(self):
-        super().__post_init__()
+    def __post_init__(self, *args, **kwargs):
+        super().__post_init__(*args, **kwargs)
 
         if self.breaks and self.no_idle:
             raise ValueError("Breaks not allowed with no_idle=True.")
@@ -164,11 +163,11 @@ class Renewable(CheckBreaksMixin):
     """
 
     capacity: int
-    breaks: Breaks = field(default_factory=list)
+    breaks: list[Break] = field(default_factory=list)
     name: str = field(default="", kw_only=True)
 
-    def __post_init__(self):
-        super().__post_init__()
+    def __post_init__(self, *args, **kwargs):
+        super().__post_init__(*args, **kwargs)
         if self.capacity < 0:
             raise ValueError("Capacity must be non-negative.")
 
@@ -194,11 +193,11 @@ class Consumable(CheckBreaksMixin):
     """
 
     capacity: int
-    breaks: Breaks = field(default_factory=list)
+    breaks: list[Break] = field(default_factory=list)
     name: str = field(default="", kw_only=True)
 
-    def __post_init__(self):
-        super().__post_init__()
+    def __post_init__(self, *args, **kwargs):
+        super().__post_init__(*args, **kwargs)
         if self.capacity < 0:
             raise ValueError("Capacity must be non-negative.")
 

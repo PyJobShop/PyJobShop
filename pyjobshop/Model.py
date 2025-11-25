@@ -2,7 +2,7 @@ from typing import Literal, Sequence
 
 from pyjobshop.constants import MAX_VALUE
 from pyjobshop.ProblemData import (
-    Breaks,
+    Break,
     Consecutive,
     Constraints,
     Consumable,
@@ -113,7 +113,7 @@ class Model:
 
     def add_machine(
         self,
-        breaks: Breaks | None = None,
+        breaks: list[Break] | None = None,
         no_idle: bool = False,
         *,
         name: str = "",
@@ -121,7 +121,10 @@ class Model:
         """
         Adds a machine to the model.
         """
-        machine = Machine(breaks or [], no_idle, name=name)
+        if breaks is None:
+            breaks = []
+
+        machine = Machine(breaks, no_idle, name=name)
 
         self._id2resource[id(machine)] = len(self.resources)
         self._resources.append(machine)
@@ -131,14 +134,17 @@ class Model:
     def add_renewable(
         self,
         capacity: int,
-        breaks: Breaks | None = None,
+        breaks: list[Break] | None = None,
         *,
         name: str = "",
     ) -> Renewable:
         """
         Adds a renewable resource to the model.
         """
-        resource = Renewable(capacity, breaks or [], name=name)
+        if breaks is None:
+            breaks = []
+
+        resource = Renewable(capacity, breaks, name=name)
 
         self._id2resource[id(resource)] = len(self.resources)
         self._resources.append(resource)
@@ -148,14 +154,17 @@ class Model:
     def add_consumable(
         self,
         capacity: int,
-        breaks: Breaks | None = None,
+        breaks: list[Break] | None = None,
         *,
         name: str = "",
     ) -> Consumable:
         """
         Adds a consumable resource to the model.
         """
-        resource = Consumable(capacity, breaks or [], name=name)
+        if breaks is None:
+            breaks = []
+
+        resource = Consumable(capacity, breaks, name=name)
 
         self._id2resource[id(resource)] = len(self.resources)
         self._resources.append(resource)
@@ -215,14 +224,14 @@ class Model:
         if isinstance(resources, (Machine, Renewable, Consumable)):
             resources = [resources]
 
-        if isinstance(demands, int):
+        if demands is None:
+            demands = []
+        elif isinstance(demands, int):
             demands = [demands]
 
         task_idx = self._id2task[id(task)]
         resource_idcs = [self._id2resource[id(res)] for res in resources]
-        mode = Mode(
-            task_idx, resource_idcs, duration, demands or [], name=name
-        )
+        mode = Mode(task_idx, resource_idcs, duration, demands, name=name)
 
         self._id2mode[id(mode)] = len(self.modes)
         self._modes.append(mode)
