@@ -283,10 +283,12 @@ class Mode:
         If the length of resources and demands do not match.
     """
 
+    class _MissingList(list): ...
+
     task: int
     resources: list[int]
     duration: int
-    demands: list[int] = field(default_factory=list)
+    demands: list[int] = field(default_factory=_MissingList)
     name: str = field(default="", kw_only=True)
 
     def __post_init__(self):
@@ -296,7 +298,7 @@ class Mode:
         if self.duration < 0:
             raise ValueError("Mode duration must be non-negative.")
 
-        if not self.demands:
+        if isinstance(self.demands, self._MissingList):
             self.demands = [0] * len(self.resources)
 
         if any(demand < 0 for demand in self.demands):
