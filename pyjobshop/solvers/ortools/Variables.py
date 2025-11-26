@@ -11,7 +11,7 @@ from ortools.sat.python.cp_model import (
 )
 
 from pyjobshop.constants import MAX_VALUE
-from pyjobshop.ProblemData import ProblemData
+from pyjobshop.ProblemData import Break, ProblemData
 from pyjobshop.Solution import Solution
 from pyjobshop.solvers.ortools.utils import (
     partition_task_start_by_break_overlap,
@@ -539,7 +539,7 @@ class Variables:
             # For single-resource modes, breaks map directly to individual
             # resource breaks. For multi-resource modes, breaks may represent
             # combined breaks (e.g., when resources have overlapping breaks).
-            all_breaks = []
+            all_breaks: list[Break] = []
             for res_idx in mode.resources:
                 all_breaks.extend(data.resources[res_idx].breaks)
 
