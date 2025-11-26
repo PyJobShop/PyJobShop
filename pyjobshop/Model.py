@@ -1,4 +1,4 @@
-from typing import Literal, Sequence
+from typing import Literal
 
 from pyjobshop.constants import MAX_VALUE
 from pyjobshop.ProblemData import (
@@ -212,7 +212,7 @@ class Model:
     def add_mode(
         self,
         task: Task,
-        resources: Resource | Sequence[Resource],
+        resources: Resource | list[Resource],
         duration: int,
         demands: int | list[int] | None = None,
         *,

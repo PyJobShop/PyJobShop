@@ -2,7 +2,7 @@ from collections import Counter, defaultdict
 from copy import deepcopy
 from dataclasses import dataclass, field, fields
 from itertools import pairwise
-from typing import Sequence, TypeAlias, TypeVar
+from typing import TypeAlias, TypeVar
 
 from pyjobshop.constants import MAX_VALUE
 
@@ -694,7 +694,7 @@ class ProblemData:
     """
 
     jobs: list[Job]
-    resources: Sequence[Resource]
+    resources: list[Resource]
     tasks: list[Task]
     modes: list[Mode]
     constraints: Constraints = field(default_factory=Constraints)
@@ -966,7 +966,7 @@ class ProblemData:
     def replace(
         self,
         jobs: list[Job] | None = None,
-        resources: Sequence[Resource] | None = None,
+        resources: list[Resource] | None = None,
         tasks: list[Task] | None = None,
         modes: list[Mode] | None = None,
         constraints: Constraints | None = None,
