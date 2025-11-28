@@ -18,6 +18,18 @@ class JSONDataclassEncoder(json.JSONEncoder):
     """
 
     def default(self, obj):
+        """This could be overridden in a subclass to support encoding other
+        data types (e.g. ``datetime``).
+
+        Example
+        -------
+        >>> def default(self, o):
+        ...   from datetime import datetime
+        ...   if isinstance(o, datetime):
+        ...      return o.isoformat()
+        ...   else:
+        ...      return super().default(o)
+        """
         if not dataclasses.is_dataclass(obj):
             return super().default(obj)
 
@@ -33,13 +45,13 @@ class AbstractJSONDataclassDecoder(json.JSONDecoder):
     ``@dataclass``\\ -decorated class from JSON.
 
     This is done by iterating over the dataclass's fields which were not
-    explicitly declared as having ``init=False`` (or as ``InitVar``s) in the
-    dataclass's definition.  The name of the dataclass to deserialize is
+    explicitly declared as having ``init=False`` (or as ``InitVar``\\ s) in
+    the dataclass's definition.  The name of the dataclass to deserialize is
     taken from ``__class__`` fields in the JSON, and has to be explicitly
     registered first.
 
     How this is done is the reponsibility of classes extending this class.
-    Also, if a dataclass specifies ``InitVar``s without a default value,
+    Also, if a dataclass specifies ``InitVar``\\ s without a default value,
     this needs to be handled by a custom subclass.
     """
 
@@ -134,8 +146,8 @@ class JSONDataclassDecoder(AbstractJSONDataclassDecoder):
 
     Warnings
     --------
-    If a dataclass specifies ``InitVar``s without a default value, note that
-    this class cannot deal with that and should be extended.
+    If a dataclass specifies ``InitVar``\\ s without a default value, note
+    that this class cannot deal with that and should be extended.
 
     Examples
     --------
@@ -166,7 +178,7 @@ def decoder_factory(name: str, class_list: Iterable[type]):
     Warnings
     --------
     Note that the generated decoder cannot deal with dataclasses specifying
-    ``InitVar``s without a default value.
+    ``InitVar``\\ s without a default value.
 
     Examples
     --------
