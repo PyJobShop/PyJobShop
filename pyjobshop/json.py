@@ -8,7 +8,7 @@ _sentinel = object()
 
 class JSONDataclassEncoder(json.JSONEncoder):
     """
-    Allows for encoding objects of any ``@dataclass''-decorated class into
+    Allows for encoding objects of any ``@dataclass``\\ -decorated class into
     JSON.
 
     This is done by iterating over the dataclass's fields which were not
@@ -30,7 +30,7 @@ class JSONDataclassEncoder(json.JSONEncoder):
 class AbstractJSONDataclassDecoder(json.JSONDecoder):
     """
     This class lays the groundwork for decoding objects of any
-    ``@dataclass''-decorated class from JSON.
+    ``@dataclass``\\ -decorated class from JSON.
 
     This is done by iterating over the dataclass's fields which were not
     explicitly declared as having ``init=False`` (or as ``InitVar``s) in the
@@ -126,8 +126,8 @@ def _build_serializable_classes_dict(
 
 class JSONDataclassDecoder(AbstractJSONDataclassDecoder):
     """
-    Class for decoding objects of ``@dataclass''-decorated classes from JSON,
-    as previously encoded with `JSONDataclassDecoder`.
+    Class for decoding objects of ``@dataclass``\\ -decorated classes from
+    JSON, as previously encoded with `JSONDataclassDecoder`.
 
     A list of classes to be supported must be passed as a ``class_list``
     argument when using this decoder.
@@ -155,7 +155,7 @@ class JSONDataclassDecoder(AbstractJSONDataclassDecoder):
 
 def decoder_factory(name: str, class_list: Iterable[type]):
     """
-    Construct a new class for decoding objects of ``@dataclass''-decorated
+    Construct a new class for decoding objects of ``@dataclass``\\ -decorated
     classes from JSON, as previously encoded with `JSONDataclassDecoder`.
 
     Parameters

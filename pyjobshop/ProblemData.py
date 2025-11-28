@@ -1163,8 +1163,8 @@ ProblemDataDecoder = decoder_factory(
     ),
 )
 ProblemDataDecoder.__doc__ = """A decoder class (to be used with the `json`
-module in the Python Standard Library), which can decode all dataclasses
-specified in this module.
+module in the Python Standard Library), which can decode all
+``@dataclass``\\ es specified in this module.
 
 Example
 -------
