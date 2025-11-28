@@ -269,8 +269,8 @@ class Constraints:
 
             if len(common_modes) != 1:
                 msg = (
-                    "Cannot solve instances with multiple modes that require "
-                    f"task {task_idx} and resource {res_idx} with CP Optimizer."
+                    "Cannot solve instances with multiple modes requiring task"
+                    f" {task_idx} and resource {res_idx} with CP Optimizer."
                 )
                 raise ValueError(msg)
 
