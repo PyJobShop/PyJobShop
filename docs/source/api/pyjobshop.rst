@@ -100,6 +100,8 @@ PyJobShop
     .. autoclass:: Objective
        :members:
 
+    .. autoclass:: ProblemDataDecoder
+
 .. automodule:: pyjobshop.Solution
 
    .. autoclass:: Solution
@@ -138,6 +140,9 @@ PyJobShop
          :value: "Unknown"
 
          Solver terminated with unknown status.
+
+.. automodule:: pyjobshop.json
+   :members:
 
 .. automodule:: pyjobshop.solve
    :members:
