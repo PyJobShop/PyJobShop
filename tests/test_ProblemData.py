@@ -318,7 +318,7 @@ def test_mode_raises_invalid_parameters(resources, duration, demands):
         Mode(task=0, resources=resources, duration=duration, demands=demands)
 
 
-def test_mode_dependency_must_have_at_least_one_succesor_mode():
+def test_mode_dependency_must_have_at_least_one_successor_mode():
     """
     Tests that ModeDependency requires at least one successor mode.
     """
@@ -2090,7 +2090,7 @@ def test_setup_time_bug(solver: str):
         for task_to in model.tasks:
             model.add_setup_time(machine2, task_from, task_to, 1)
 
-    # Before fixing this bug, the solver would incorrecty ignore the setup
+    # Before fixing this bug, the solver would incorrectly ignore the setup
     # time between task 2 and task 3 (due to a dummy assignment variable).
     result = model.solve(solver=solver)
     assert_equal(result.objective, 3)

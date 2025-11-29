@@ -279,7 +279,7 @@ class Variables:
     @property
     def assign_vars(self) -> dict[TaskResIdcs, OptionalIntervalVar]:
         """
-        Retruns the assignment variables.
+        Returns the assignment variables.
         """
         return self._assign_vars
 
