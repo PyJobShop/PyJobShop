@@ -82,8 +82,6 @@ def setup(app):
 
 # -- Options for HTML output -------------------------------------------------
 html_theme = "sphinx_immaterial"
-html_static_path = ["_static"]
-
 html_theme_options = {
     "repo_url": "https://github.com/PyJobShop/PyJobShop/",
     "icon": {
