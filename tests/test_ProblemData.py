@@ -2590,4 +2590,9 @@ def test_json_roundtrip():
 
     assert_equal(result_orig.objective, result_new.objective)
     assert_equal(pd_orig, pd_new)
-    assert 0
+
+
+# TODO: test more JSON unit tests. These are not yet covered above:
+# - Are resource correctly converted to the correct type?
+# - Are resource breaks correctly cast to tuples?
+# - Are constraints also correctly converted?
