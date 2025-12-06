@@ -9,7 +9,7 @@ from pyjobshop.constants import MAX_VALUE
 from tests.utils import read
 
 
-def build_lawrence_instance() -> Model:
+def test_jsp_lawrence(benchmark, solver):
     """
     Job shop problem instance from https://github.com/tamy0612/JSPLIB
 
@@ -47,17 +47,6 @@ def build_lawrence_instance() -> Model:
             task1, task2 = tasks[task_idx - 1], tasks[task_idx]
             model.add_end_before_start(task1, task2)
 
-    return model
-
-
-def test_jsp_lawrence(benchmark, solver):
-    """
-    Job shop problem instance from https://github.com/tamy0612/JSPLIB
-
-    Lawrence 10x5 instance la01 (Table 3, instance 1);
-    also called (setf1) or (F1).
-    """
-    model = build_lawrence_instance()
     result = benchmark(model.solve, solver=solver, time_limit=10)
     assert_equal(result.objective, 666)
 
