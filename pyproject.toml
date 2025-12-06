@@ -66,7 +66,7 @@ dev = [
     "codecov>=2.1.13",
 ]
 docs = [
-    "sphinx>=7.4.7",
+    "sphinx>=7.4.7,<8.2.0",
     "nbsphinx>=0.9.5",
     "sphinx-immaterial>=0.12.2",
     "sphinx-autodoc-typehints>=2.0.0",
