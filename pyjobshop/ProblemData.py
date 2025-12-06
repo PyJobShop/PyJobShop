@@ -1159,7 +1159,7 @@ class ProblemData:
         indent
             Number of spaces to use for indentation. Default is 2.
         **kwargs
-            Additional keyword arguments passed to ``json.dumps()``.
+            Additional keyword arguments passed to :func:`json.dumps`.
 
         Returns
         -------
