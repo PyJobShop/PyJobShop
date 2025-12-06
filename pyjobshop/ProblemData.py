@@ -1,8 +1,9 @@
+import json
 from collections import Counter, defaultdict
 from copy import deepcopy
-from dataclasses import dataclass, field, fields
+from dataclasses import asdict, dataclass, field, fields
 from itertools import pairwise
-from typing import TypeAlias, TypeVar
+from typing import TypeAlias, TypeVar, get_args
 
 from pyjobshop.constants import MAX_VALUE
 
@@ -1148,3 +1149,70 @@ class ProblemData:
         if not (0 <= task < self.num_tasks):
             raise ValueError(f"Invalid task index {task}.")
         return self._task2resources[task]
+
+    def to_json(self, **kwargs) -> str:
+        data = asdict(self)
+
+        for idx, resource in enumerate(self.resources):
+            # Store resource type information for deserialization.
+            if isinstance(resource, Machine):
+                cls_name = "machine"
+            elif isinstance(resource, Renewable):
+                cls_name = "renewable"
+            else:
+                cls_name = "consumable"
+
+            data["resources"][idx]["type"] = cls_name
+
+        return json.dumps(data, **kwargs)
+
+    @classmethod
+    def from_json(cls, json_str: str) -> "ProblemData":
+        data = json.loads(json_str)
+
+        jobs = [Job(**job) for job in data.get("jobs", [])]
+        tasks = [Task(**task) for task in data.get("tasks", [])]
+        modes = [Mode(**mode) for mode in data.get("modes", [])]
+        objective = Objective(**data.get("objective", {}))
+
+        resources: list[Resource] = []
+        for resource in data.get("resources", []):
+            # The 'type' field determines which Resource class to use, but then
+            # gets removed as it's not an actual constructor parameter
+            resource = resource.copy()
+            res_type = resource.pop("type")
+
+            # Convert breaks to tuple format.
+            resource["breaks"] = list(map(tuple, resource.get("breaks", [])))
+
+            if res_type == "machine":
+                resources.append(Machine(**resource))
+            elif res_type == "renewable":
+                resources.append(Renewable(**resource))
+            elif res_type == "consumable":
+                resources.append(Consumable(**resource))
+            else:
+                raise ValueError(f"Unknown resource type: {res_type}")
+
+        constraints_data = data.get("constraints", {})
+        kwargs = {}
+
+        for f in fields(Constraints):
+            # Each field of Constraints is expected to be list[Constraint]. The
+            # type hints can be used to determine the constraint class.
+            constraint_cls = get_args(f.type)[0]  # extracts T from list[T]
+            kwargs[f.name] = [
+                constraint_cls(**item)
+                for item in constraints_data.get(f.name, [])
+            ]
+
+        constraints = Constraints(**kwargs)
+
+        return cls(
+            jobs=jobs,
+            tasks=tasks,
+            resources=resources,
+            modes=modes,
+            constraints=constraints,
+            objective=objective,
+        )

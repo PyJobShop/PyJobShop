@@ -1,6 +1,7 @@
 import pytest
 from numpy.testing import assert_, assert_equal, assert_raises
 
+from benchmarks.test_benchmarks import build_lawrence_instance
 from pyjobshop.constants import MAX_VALUE
 from pyjobshop.Model import Model
 from pyjobshop.ProblemData import (
@@ -2564,3 +2565,29 @@ def test_combined_objective(solver: str):
     # The objective value is 10 * 6 + 2 * 2 = 64.
     assert_equal(result.objective, 64)
     assert_equal(result.status.value, "Optimal")
+
+
+def test_json_roundtrip():
+    """
+    Tests whether serialization and deserialization of a given instance
+    leaves the ProblemData (and solver result) unaffected.
+
+    Solving is useful because the ProblemData instances may be subtly
+    different (e.g. using a list vs a tuple) without affecting the solution.
+    Therefore, we check the solver result first, and only then instance
+    equality.
+    """
+    model_orig: Model = build_lawrence_instance()
+    result_orig = model_orig.solve(display=False)
+
+    # Create the original model data
+    pd_orig: ProblemData = model_orig.data()
+    json_str = pd_orig.to_json()
+
+    pd_new: ProblemData = ProblemData.from_json(json_str)
+    model_new = Model.from_data(pd_new)
+    result_new = model_new.solve(display=False)
+
+    assert_equal(result_orig.objective, result_new.objective)
+    assert_equal(pd_orig, pd_new)
+    assert 0
