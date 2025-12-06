@@ -2564,3 +2564,13 @@ def test_combined_objective(solver: str):
     # The objective value is 10 * 6 + 2 * 2 = 64.
     assert_equal(result.objective, 64)
     assert_equal(result.status.value, "Optimal")
+
+
+def test_json_round_trip(complete_data):
+    """
+    Tests whether serialization and deserialization of a given instance
+    leaves the ProblemData unaffected.
+    """
+    json_str = complete_data.to_json()
+    new = ProblemData.from_json(json_str)
+    assert_equal(complete_data, new)
