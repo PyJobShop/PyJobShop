@@ -1150,7 +1150,22 @@ class ProblemData:
             raise ValueError(f"Invalid task index {task}.")
         return self._task2resources[task]
 
-    def to_json(self, **kwargs) -> str:
+    def to_json(self, indent: int = 2, **kwargs) -> str:
+        """
+        Serializes this ProblemData instance to a JSON string.
+
+        Parameters
+        ----------
+        indent
+            Number of spaces to use for indentation. Default is 2.
+        **kwargs
+            Additional keyword arguments passed to ``json.dumps()``.
+
+        Returns
+        -------
+        str
+            JSON representation of this problem data instance.
+        """
         data = asdict(self)
 
         for idx, resource in enumerate(self.resources):
@@ -1164,10 +1179,23 @@ class ProblemData:
 
             data["resources"][idx]["type"] = cls_name
 
-        return json.dumps(data, **kwargs)
+        return json.dumps(data, indent=indent, **kwargs)
 
     @classmethod
     def from_json(cls, json_str: str) -> "ProblemData":
+        """
+        Deserializes a ProblemData instance from a JSON string.
+
+        Parameters
+        ----------
+        json_str
+            The JSON string to deserialize.
+
+        Returns
+        -------
+        ProblemData
+            The deserialized ProblemData instance.
+        """
         data = json.loads(json_str)
 
         jobs = [Job(**job) for job in data.get("jobs", [])]
@@ -1177,8 +1205,8 @@ class ProblemData:
 
         resources: list[Resource] = []
         for resource in data.get("resources", []):
-            # The 'type' field determines which Resource class to use, but then
-            # gets removed as it's not an actual constructor parameter
+            # The 'type' field determines which Resource class to use, but
+            # it should be removed as it's not a constructor parameter.
             resource = resource.copy()
             res_type = resource.pop("type")
 
@@ -1198,8 +1226,8 @@ class ProblemData:
         kwargs = {}
 
         for f in fields(Constraints):
-            # Each field of Constraints is expected to be list[Constraint]. The
-            # type hints can be used to determine the constraint class.
+            # Each field is expected to be of the form list[ConstraintClass].
+            # We derive the constraint class from the type hints.
             constraint_cls = get_args(f.type)[0]  # extracts T from list[T]
             kwargs[f.name] = [
                 constraint_cls(**item)
