@@ -1217,13 +1217,11 @@ class ProblemData:
             # Convert breaks to tuple format.
             resource["breaks"] = list(map(tuple, resource.get("breaks", [])))
 
-            if res_type == "machine":
-                resources.append(Machine(**resource))
-            elif res_type == "renewable":
-                resources.append(Renewable(**resource))
-            elif res_type == "consumable":
-                resources.append(Consumable(**resource))
-            else:
+            for resource_cls in get_args(Resource):
+                if res_type == resource_cls.__name__.lower():
+                    resources.append(resource_cls(**resource))
+                    break
+
                 raise ValueError(f"Unknown resource type: {res_type}")
 
         constraints_data = data.get("constraints", {})
