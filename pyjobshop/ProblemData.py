@@ -1209,20 +1209,22 @@ class ProblemData:
         objective = Objective(**data.get("objective", {}))
 
         resources: list[Resource] = []
-        for resource in data.get("resources", []):
-            # The 'type' field determines which Resource class to use, but
-            # it should be removed as it's not a constructor parameter.
-            res_type = resource.pop("type")
+        res_name2cls = {
+            res_cls.__name__.lower(): res_cls for res_cls in get_args(Resource)
+        }
 
+        for resource in data.get("resources", []):
             # Convert breaks to tuple format.
             resource["breaks"] = list(map(tuple, resource.get("breaks", [])))
 
-            for resource_cls in get_args(Resource):
-                if res_type == resource_cls.__name__.lower():
-                    resources.append(resource_cls(**resource))
-                    break
+            # The 'type' field determines which Resource class to use, but
+            # it should be removed as it's not a constructor parameter.
+            res_type = resource.pop("type")
+            if res_type not in res_name2cls:
+                raise ValueError(f"Unknown resource type: {res_type}.")
 
-                raise ValueError(f"Unknown resource type: {res_type}")
+            res_cls = res_name2cls[res_type]
+            resources.append(res_cls(**resource))
 
         constraints_data = data.get("constraints", {})
         kwargs = {}
