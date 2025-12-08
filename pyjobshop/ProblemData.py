@@ -1150,14 +1150,17 @@ class ProblemData:
             raise ValueError(f"Invalid task index {task}.")
         return self._task2resources[task]
 
-    def to_json(self, indent: int = 2, **kwargs) -> str:
+    def to_json(self, indent: int | str | None = 2, **kwargs) -> str:
         """
         Serializes this ProblemData instance to a JSON string.
 
         Parameters
         ----------
         indent
-            Number of spaces to use for indentation. Default is 2.
+            If ``indent`` is a non-negative integer, then JSON array elements
+            and object members will be pretty-printed with that indent level.
+            An indent level of 0 will only insert newlines. ``None`` is the
+            most compact representation. Default is 2.
         **kwargs
             Additional keyword arguments passed to :func:`json.dumps`.
 
@@ -1182,7 +1185,7 @@ class ProblemData:
         return json.dumps(data, indent=indent, **kwargs)
 
     @classmethod
-    def from_json(cls, json_str: str) -> "ProblemData":
+    def from_json(cls, json_str: str, **kwargs) -> "ProblemData":
         """
         Deserializes a ProblemData instance from a JSON string.
 
@@ -1190,6 +1193,8 @@ class ProblemData:
         ----------
         json_str
             The JSON string to deserialize.
+        **kwargs
+            Additional keyword arguments passed to :func:`json.loads`.
 
         Returns
         -------
