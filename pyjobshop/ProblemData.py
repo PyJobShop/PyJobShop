@@ -1207,7 +1207,6 @@ class ProblemData:
         for resource in data.get("resources", []):
             # The 'type' field determines which Resource class to use, but
             # it should be removed as it's not a constructor parameter.
-            resource = resource.copy()
             res_type = resource.pop("type")
 
             # Convert breaks to tuple format.
