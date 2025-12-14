@@ -442,7 +442,8 @@ class Model:
             If the mode to be removed is not registered with the model.
         """
         if id(mode) not in self._id2mode:
-            raise ValueError(f"Mode {mode.name} is not registered with the model.")
+            raise ValueError(f"Mode {mode.name} is not registered with the "
+                              "model.")
 
         removed_mode_idx = self._id2mode.pop(id(mode))
         self._modes.pop(removed_mode_idx)
@@ -467,7 +468,8 @@ class Model:
                     if idx != removed_mode_idx
                 ]
                 if len(constraint.modes2) == 0:
-                    self._constraints.mode_dependencies[i] = None  # type: ignore
+                    self._constraints.mode_dependencies[i] = \
+                        None  # type: ignore
         self._constraints.mode_dependencies = [
             constraint
             for constraint in self._constraints.mode_dependencies
@@ -485,7 +487,8 @@ class Model:
         """
         for mode in modes:
             if id(mode) not in self._id2mode:
-                raise ValueError(f"Mode {mode.name} is not registered with the model.")
+                raise ValueError(f"Mode {mode.name} is not registered with the"
+                                  " model.")
 
         removed_modes_idx = set()
         for mode in modes:
@@ -526,7 +529,8 @@ class Model:
                     if idx not in removed_modes_idx
                 ]
                 if len(constraint.modes2) == 0:
-                    self._constraints.mode_dependencies[i] = None  # type: ignore
+                    self._constraints.mode_dependencies[i] = \
+                        None  # type: ignore
         self._constraints.mode_dependencies = [
             constraint
             for constraint in self._constraints.mode_dependencies
