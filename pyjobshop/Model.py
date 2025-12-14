@@ -432,6 +432,107 @@ class Model:
 
         return constraint
 
+    def remove_mode(self, mode: Mode) -> None:
+        """
+        Removes a processing mode from the model.
+
+        Raises
+        ------
+        ValueError
+            If the mode to be removed is not registered with the model.
+        """
+        if id(mode) not in self._id2mode:
+            raise ValueError(f"Mode {mode.name} is not registered with the model.")
+
+        removed_mode_idx = self._id2mode.pop(id(mode))
+        self._modes.pop(removed_mode_idx)
+
+        def update_mode_idx(idx: int) -> int:
+            """Helper to update a single mode index."""
+            return idx - 1 if idx > removed_mode_idx else idx
+
+        # Update the mode indices in _id2mode.
+        for mode_id in self._id2mode:
+            self._id2mode[mode_id] = update_mode_idx(self._id2mode[mode_id])
+
+        # Update ModeDependency constraints.
+        for i, constraint in enumerate(self._constraints.mode_dependencies):
+            if constraint.mode1 == removed_mode_idx:
+                self._constraints.mode_dependencies[i] = None  # type: ignore
+            else:
+                constraint.mode1 = update_mode_idx(constraint.mode1)
+                constraint.modes2 = [
+                    update_mode_idx(idx)
+                    for idx in constraint.modes2
+                    if idx != removed_mode_idx
+                ]
+                if len(constraint.modes2) == 0:
+                    self._constraints.mode_dependencies[i] = None  # type: ignore
+        self._constraints.mode_dependencies = [
+            constraint
+            for constraint in self._constraints.mode_dependencies
+            if constraint is not None
+        ]
+
+    def remove_modes(self, modes: list[Mode]) -> None:
+        """
+        Removes multiple processing modes from the model.
+
+        Raises
+        ------
+        ValueError
+            If any of the modes to be removed is not registered with the model.
+        """
+        for mode in modes:
+            if id(mode) not in self._id2mode:
+                raise ValueError(f"Mode {mode.name} is not registered with the model.")
+
+        removed_modes_idx = set()
+        for mode in modes:
+            mode_idx = self._id2mode.pop(id(mode))
+            removed_modes_idx.add(mode_idx)
+
+        old_mode_idx_to_new_mode_idx = [None] * len(self.modes)
+        new_idx = 0
+        for old_idx in range(len(self.modes)):
+            if old_idx not in removed_modes_idx:
+                old_mode_idx_to_new_mode_idx[old_idx] = new_idx
+                new_idx += 1
+        self._modes = [
+            mode
+            for mode, new_idx in zip(self._modes, old_mode_idx_to_new_mode_idx)
+            if new_idx is not None
+        ]
+
+        def update_mode_idx(idx: int) -> int:
+            """Helper to update a single mode index."""
+            if idx in removed_modes_idx:
+                raise ValueError("Trying to update a removed mode index.")
+            return old_mode_idx_to_new_mode_idx[idx]  # type: ignore
+
+        # Update the mode indices in _id2mode.
+        for mode_id in self._id2mode:
+            self._id2mode[mode_id] = update_mode_idx(self._id2mode[mode_id])
+
+        # Update ModeDependency constraints.
+        for i, constraint in enumerate(self._constraints.mode_dependencies):
+            if constraint.mode1 in removed_modes_idx:
+                self._constraints.mode_dependencies[i] = None  # type: ignore
+            else:
+                constraint.mode1 = update_mode_idx(constraint.mode1)
+                constraint.modes2 = [
+                    update_mode_idx(idx)
+                    for idx in constraint.modes2
+                    if idx not in removed_modes_idx
+                ]
+                if len(constraint.modes2) == 0:
+                    self._constraints.mode_dependencies[i] = None  # type: ignore
+        self._constraints.mode_dependencies = [
+            constraint
+            for constraint in self._constraints.mode_dependencies
+            if constraint is not None
+        ]
+
     def set_objective(
         self,
         weight_makespan: int = 0,

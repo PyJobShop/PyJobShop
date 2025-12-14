@@ -34,6 +34,8 @@ PyJobShop
          ~Model.add_select_all_or_none
          ~Model.add_select_at_least_one
          ~Model.add_select_exactly_one
+         ~Model.remove_mode
+         ~Model.remove_modes
          ~Model.set_objective
          ~Model.summary
          ~Model.from_data

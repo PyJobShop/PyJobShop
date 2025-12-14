@@ -1,4 +1,4 @@
-from numpy.testing import assert_equal
+from numpy.testing import assert_equal, assert_raises
 
 from pyjobshop.Model import Model
 from pyjobshop.ProblemData import (
@@ -377,3 +377,210 @@ def test_solve_additional_kwargs_initial_solution_fixed(small):
     # instance admits a better solution with makespan 3.
     assert_equal(result.objective, 5)
     assert_equal(result.status.value, "Optimal")
+
+
+def test_remove_mode():
+    """
+    Tests that removing a mode from the model works correctly.
+    """
+    model = Model()
+
+    job = model.add_job()
+    machine = model.add_machine()
+    task = model.add_task(job=job)
+
+    mode1 = model.add_mode(task, machine, 1)
+    mode2 = model.add_mode(task, machine, 2)
+    mode3 = model.add_mode(task, machine, 3)
+
+    assert_equal(len(model.modes), 3)
+
+    # Remove the middle mode
+    model.remove_mode(mode2)
+
+    assert_equal(len(model.modes), 2)
+    assert_equal(model.modes[0], mode1)
+    assert_equal(model.modes[1], mode3)
+
+    assert_equal(len(model.modes), 2)
+    assert_equal(model.modes[0].duration, 1)
+    assert_equal(model.modes[1].duration, 3)
+
+
+def test_remove_mode_not_registered():
+    """
+    Tests that removing a mode that is not registered raises an error.
+    """
+    model = Model()
+
+    job = model.add_job()
+    machine = model.add_machine()
+    task = model.add_task(job=job)
+    mode = model.add_mode(task, machine, 1)
+
+    model.remove_mode(mode)
+
+    # Try to remove it again
+    with assert_raises(ValueError):
+        model.remove_mode(mode)
+
+
+def test_remove_mode_updates_mode_dependencies():
+    """
+    Tests that removing a mode updates mode dependencies correctly.
+    """
+    model = Model()
+
+    job = model.add_job()
+    machine = model.add_machine()
+    task1 = model.add_task(job=job)
+    task2 = model.add_task(job=job)
+
+    mode1 = model.add_mode(task1, machine, 1)
+    mode2 = model.add_mode(task2, machine, 2)
+    mode3 = model.add_mode(task2, machine, 3)
+    mode4 = model.add_mode(task2, machine, 4)
+
+    # Add mode dependency: mode1 -> [mode2, mode3, mode4]
+    model.add_mode_dependency(mode1, [mode2, mode3, mode4])
+
+    assert_equal(len(model.constraints.mode_dependencies), 1)
+    assert_equal(model.constraints.mode_dependencies[0].mode1, 0)
+    assert_equal(model.constraints.mode_dependencies[0].modes2, [1, 2, 3])
+
+    # Remove mode3
+    model.remove_mode(mode3)
+
+    assert_equal(len(model.constraints.mode_dependencies), 1)
+    assert_equal(model.constraints.mode_dependencies[0].mode1, 0)
+    assert_equal(model.constraints.mode_dependencies[0].modes2, [1, 2])
+
+
+def test_remove_mode_removes_dependency_with_removed_mode1():
+    """
+    Tests that removing a mode that is mode1 in a dependency removes it.
+    """
+    model = Model()
+
+    job = model.add_job()
+    machine = model.add_machine()
+    task1 = model.add_task(job=job)
+    task2 = model.add_task(job=job)
+
+    mode1 = model.add_mode(task1, machine, 1)
+    mode2 = model.add_mode(task2, machine, 2)
+
+    # Add mode dependency: mode1 -> [mode2]
+    model.add_mode_dependency(mode1, [mode2])
+
+    assert_equal(len(model.constraints.mode_dependencies), 1)
+
+    # Remove mode1, which should remove the entire dependency
+    model.remove_mode(mode1)
+
+    assert_equal(len(model.constraints.mode_dependencies), 0)
+
+
+def test_remove_mode_removes_empty_mode_dependencies():
+    """
+    Tests that removing modes removes mode dependencies that become empty.
+    """
+    model = Model()
+
+    job = model.add_job()
+    machine = model.add_machine()
+    task1 = model.add_task(job=job)
+    task2 = model.add_task(job=job)
+
+    mode1 = model.add_mode(task1, machine, 1)
+    mode2 = model.add_mode(task2, machine, 2)
+
+    # Add mode dependency: mode1 -> [mode2]
+    model.add_mode_dependency(mode1, [mode2])
+
+    assert_equal(len(model.constraints.mode_dependencies), 1)
+
+    # Remove mode2, which should remove the entire dependency
+    model.remove_mode(mode2)
+
+    assert_equal(len(model.constraints.mode_dependencies), 0)
+
+
+def test_remove_modes():
+    """
+    Tests that removing multiple modes from the model works correctly.
+    """
+    model = Model()
+
+    job = model.add_job()
+    machine = model.add_machine()
+    task = model.add_task(job=job)
+
+    mode1 = model.add_mode(task, machine, 1)
+    mode2 = model.add_mode(task, machine, 2)
+    mode3 = model.add_mode(task, machine, 3)
+    mode4 = model.add_mode(task, machine, 4)
+
+    assert_equal(len(model.modes), 4)
+
+    # Remove modes 2 and 4
+    model.remove_modes([mode2, mode4])
+
+    assert_equal(len(model.modes), 2)
+    assert_equal(model.modes[0], mode1)
+    assert_equal(model.modes[1], mode3)
+
+    assert_equal(len(model.modes), 2)
+    assert_equal(model.modes[0].duration, 1)
+    assert_equal(model.modes[1].duration, 3)
+
+
+def test_remove_modes_not_registered():
+    """
+    Tests that removing modes where one is not registered raises an error.
+    """
+    model = Model()
+
+    job = model.add_job()
+    machine = model.add_machine()
+    task = model.add_task(job=job)
+    mode1 = model.add_mode(task, machine, 1)
+    mode2 = model.add_mode(task, machine, 2)
+
+    model.remove_modes([mode1, mode2])
+
+    # Try to remove them again
+    with assert_raises(ValueError):
+        model.remove_modes([mode1, mode2])
+
+
+def test_remove_modes_updates_mode_dependencies():
+    """
+    Tests that removing multiple modes updates mode dependencies correctly.
+    """
+    model = Model()
+
+    job = model.add_job()
+    machine = model.add_machine()
+    task1 = model.add_task(job=job)
+    task2 = model.add_task(job=job)
+
+    mode1 = model.add_mode(task1, machine, 1)
+    mode2 = model.add_mode(task2, machine, 2)
+    mode3 = model.add_mode(task2, machine, 3)
+    mode4 = model.add_mode(task2, machine, 4)
+    mode5 = model.add_mode(task2, machine, 5)
+
+    # Add mode dependency: mode1 -> [mode2, mode3, mode4, mode5]
+    model.add_mode_dependency(mode1, [mode2, mode3, mode4, mode5])
+
+    assert_equal(len(model.constraints.mode_dependencies), 1)
+    assert_equal(model.constraints.mode_dependencies[0].mode1, 0)
+    assert_equal(model.constraints.mode_dependencies[0].modes2, [1, 2, 3, 4])
+
+    # Remove mode3 and mode5
+    model.remove_modes([mode3, mode5])
+
+    assert_equal(len(model.constraints.mode_dependencies), 1)
+    assert_equal(model.constraints.mode_dependencies[0].mode1, 0)
+    assert_equal(model.constraints.mode_dependencies[0].modes2, [1, 2])
