@@ -1201,7 +1201,7 @@ class ProblemData:
         ProblemData
             The deserialized ProblemData instance.
         """
-        data = json.loads(json_str)
+        data = json.loads(json_str, **kwargs)
 
         jobs = [Job(**job) for job in data.get("jobs", [])]
         tasks = [Task(**task) for task in data.get("tasks", [])]
