@@ -2,13 +2,9 @@ Contributing
 ============
 
 Conversations about development and issues take place in the `GitHub repository <https://github.com/PyJobShop/PyJobShop/>`_.
-Feel free to open a new issue if you have something to discuss.
-We welcome contributions from the community.
-
-Before starting work on a new feature or significant change, please open an issue or start a discussion first.
-This helps us determine whether the feature fits the project and align on the approach.
-We're happy to help you get started, review early drafts, or discuss implementation details.
-The requirements below describe what's needed before a PR can be merged, but don't let them discourage you from getting started.
+If you are looking to make a contribution, please make sure to discuss the change first in a GitHub issue.
+This helps us scope the contribution before you commit many hours of work to it.
+Feel free to open a new issue if no appropriate issue already exists!
 
 
 Setting up a local installation
@@ -66,15 +62,15 @@ Committing changes
 ------------------
 
 We use pull requests to develop PyJobShop.
-The following guidelines help us maintain the codebase.
-Don't worry if your first pull request doesn't meet all of these requirements.
+The following requirements must be met before a PR can be merged.
+If you're new to contributing, don't worry about meeting all requirements initially.
+Feel free to open a draft PR early - we're happy to help you address any requirements.
 
 - **One branch. One feature.**
   Branches are cheap and GitHub makes it easy to merge and delete branches with a few clicks.
   Avoid the temptation to lump in a bunch of unrelated changes when working on a feature, if possible.
   This helps us keep track of what has changed when preparing a release.
-- Before merging, code submissions should include tests.
-  If you're unsure how to write tests for your changes, feel free to open a draft PR and ask for guidance.
+- Code submissions should include tests.
 - Each function, class, method, and attribute needs to be documented using docstrings.
   We conform to the `NumPy docstring standard <https://numpydoc.readthedocs.io/en/latest/format.html#docstring-standard>`_.
 - If you are adding new functionality, you need to add it to the documentation by editing (or creating) the appropriate file in ``docs/source/``.
@@ -84,8 +80,6 @@ Don't worry if your first pull request doesn't meet all of these requirements.
 .. note::
 
    Please use the "Pull request" template on GitHub when opening a pull request.
-   Feel free to open a draft pull request early, even if your work is incomplete.
-   This allows us to provide feedback and help you iterate.
 
 
 Licensing
