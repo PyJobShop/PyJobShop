@@ -1,8 +1,9 @@
+import json
 from collections import Counter, defaultdict
 from copy import deepcopy
-from dataclasses import dataclass, field, fields
+from dataclasses import asdict, dataclass, field, fields
 from itertools import pairwise
-from typing import TypeAlias, TypeVar
+from typing import TypeAlias, TypeVar, get_args
 
 from pyjobshop.constants import MAX_VALUE
 
@@ -1148,3 +1149,102 @@ class ProblemData:
         if not (0 <= task < self.num_tasks):
             raise ValueError(f"Invalid task index {task}.")
         return self._task2resources[task]
+
+    def to_json(self, indent: int | str | None = 2, **kwargs) -> str:
+        """
+        Serializes this ProblemData instance to a JSON string.
+
+        Parameters
+        ----------
+        indent
+            If ``indent`` is a non-negative integer, then JSON array elements
+            and object members will be pretty-printed with that indent level.
+            An indent level of 0 will only insert newlines. ``None`` is the
+            most compact representation. Default is 2.
+        **kwargs
+            Additional keyword arguments passed to :func:`json.dumps`.
+
+        Returns
+        -------
+        str
+            JSON representation of this problem data instance.
+        """
+        data = asdict(self)
+
+        for idx, resource in enumerate(self.resources):
+            # Store resource type information for deserialization.
+            if isinstance(resource, Machine):
+                cls_name = "machine"
+            elif isinstance(resource, Renewable):
+                cls_name = "renewable"
+            else:
+                cls_name = "consumable"
+
+            data["resources"][idx]["type"] = cls_name
+
+        return json.dumps(data, indent=indent, **kwargs)
+
+    @classmethod
+    def from_json(cls, json_str: str, **kwargs) -> "ProblemData":
+        """
+        Deserializes a ProblemData instance from a JSON string.
+
+        Parameters
+        ----------
+        json_str
+            The JSON string to deserialize.
+        **kwargs
+            Additional keyword arguments passed to :func:`json.loads`.
+
+        Returns
+        -------
+        ProblemData
+            The deserialized ProblemData instance.
+        """
+        data = json.loads(json_str, **kwargs)
+
+        jobs = [Job(**job) for job in data.get("jobs", [])]
+        tasks = [Task(**task) for task in data.get("tasks", [])]
+        modes = [Mode(**mode) for mode in data.get("modes", [])]
+        objective = Objective(**data.get("objective", {}))
+
+        resources: list[Resource] = []
+        res_name2cls = {
+            res_cls.__name__.lower(): res_cls for res_cls in get_args(Resource)
+        }
+
+        for resource in data.get("resources", []):
+            # Convert breaks to tuple format.
+            resource["breaks"] = list(map(tuple, resource.get("breaks", [])))
+
+            # The 'type' field determines which Resource class to use, but
+            # it should be removed as it's not a constructor parameter.
+            res_type = resource.pop("type")
+            if res_type not in res_name2cls:
+                raise ValueError(f"Unknown resource type: {res_type}.")
+
+            res_cls = res_name2cls[res_type]
+            resources.append(res_cls(**resource))
+
+        constraints_data = data.get("constraints", {})
+        kwargs = {}
+
+        for f in fields(Constraints):
+            # Each field is expected to be of the form list[ConstraintClass].
+            # We derive the constraint class from the type hints.
+            constraint_cls = get_args(f.type)[0]  # extracts T from list[T]
+            kwargs[f.name] = [
+                constraint_cls(**item)
+                for item in constraints_data.get(f.name, [])
+            ]
+
+        constraints = Constraints(**kwargs)
+
+        return cls(
+            jobs=jobs,
+            tasks=tasks,
+            resources=resources,
+            modes=modes,
+            constraints=constraints,
+            objective=objective,
+        )
