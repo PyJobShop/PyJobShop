@@ -64,7 +64,7 @@ Committing changes
 We use pull requests to develop PyJobShop.
 The following requirements must be met before a PR can be merged.
 If you're new to contributing, don't worry about meeting all requirements initially.
-Feel free to open a draft PR early - we're happy to help you address any requirements.
+We encourage you to open draft PRs early and we'll guide you through the process.
 
 - **One branch. One feature.**
   Branches are cheap and GitHub makes it easy to merge and delete branches with a few clicks.
