@@ -68,8 +68,6 @@ This greatly reduces the job of maintaining and releasing the software.
   Branches are cheap and GitHub makes it easy to merge and delete branches with a few clicks.
   Avoid the temptation to lump in a bunch of unrelated changes when working on a feature, if possible.
   This helps us keep track of what has changed when preparing a release.
-- Commit messages should be clear and concise.
-  This means a subject line of less than 80 characters, and, if necessary, a blank line followed by a commit message body.
 - Code submissions should always include tests.
 - Each function, class, method, and attribute needs to be documented using docstrings.
   We conform to the `NumPy docstring standard <https://numpydoc.readthedocs.io/en/latest/format.html#docstring-standard>`_.
