@@ -9,7 +9,10 @@ This PR:
 **Notes**:
 
 Please read our [contributing guidelines](https://pyjobshop.org/latest/dev/contributing.html) first.
-In particular:
+If this is a significant change, please discuss it in an issue first.
+
+The requirements below must be met before merging, but not for opening a PR. 
+Feel free to open a draft PR early - we're happy to help and provide suggestions on how to address these requirements. 
 
 - You must add tests when making code changes. This keeps the code coverage level up, and helps ensure the changes work as intended.
 - When fixing a bug, you must add a test that would produce the bug in the master branch, and then show that it is fixed with the new code. 
