@@ -25,28 +25,25 @@ def _validate_breaks(breaks: list[Break]):
 @dataclass
 class Job:
     """
-    Simple dataclass for storing job related data.
+    Simple dataclass for storing job-related data.
 
     Parameters
     ----------
     weight
         The weight of the job, used as multiplicative factor in the
-        objective function. Must be non-negative. Default ``1``.
+        objective function. Must be non-negative.
     release_date
         The earliest time that the job may start. Must be non-negative.
-        Default ``0``.
     deadline
         The latest time by which the job must be completed. Note that a
         deadline is different from a due date; the latter does not restrict
         the latest completion time.
-        Default :const:`~pyjobshop.constants.MAX_VALUE`.
     due_date
         The latest time that the job should be completed before incurring
-        penalties. Can be negative to represent past due dates. Default
-        ``None``, meaning that there is no due date.
+        penalties. Can be negative to represent past due dates. Default is
+        `None`, meaning there is no due date.
     tasks
-        List of task indices that belong to this job. Default ``None``,
-        which initializes an empty list.
+        List of task indices that belong to this job. Default is an empty list.
     name
         Name of the job.
 
@@ -105,7 +102,7 @@ class Machine:
         Whether the machine must operate continuously without idle time between
         tasks. When ``True``, tasks are scheduled back-to-back with no gaps,
         except for required setup times. When ``False`` (default), the machine
-        can remain idle between tasks.
+        can remain idle between tasks. Cannot be combined with breaks.
     name
         Name of the machine.
 
@@ -192,33 +189,31 @@ Resource = Machine | Renewable | Consumable
 @dataclass
 class Task:
     """
-    Simple dataclass for storing task related data.
+    Simple dataclass for storing task-related data.
 
     Parameters
     ----------
     job
-        The index of the job that this task belongs to. None if the task
-        does not belong to any job. Default ``None``.
+        The index of the job that this task belongs to, ``None`` if the task
+        does not belong to any job.
     earliest_start
-        Earliest start time of the task. Default ``0``.
+        Earliest start time of the task.
     latest_start
         Latest start time of the task.
-        Default :const:`~pyjobshop.constants.MAX_VALUE`.
     earliest_end
-        Earliest end time of the task. Default ``0``.
+        Earliest end time of the task.
     latest_end
         Latest end time of the task.
-        Default :const:`~pyjobshop.constants.MAX_VALUE`.
     allow_idle
         Whether the task can remain idle after completing its processing.
         If ``True``, the task can continue occupying resources after
-        finishing (e.g., blocking in flow shops). Default ``False``.
+        finishing (e.g., blocking in flow shops).
     allow_breaks
         Whether the task can be interrupted by resource breaks. If
         ``True``, the task stops processing during breaks and resumes
-        afterwards. Default ``False``.
+        afterwards.
     optional
-        Whether the task is optional. Default ``False``.
+        Whether the task is optional.
     name
         Name of the task.
     """
@@ -255,9 +250,9 @@ class Mode:
     duration
         Processing duration of this mode. Must be non-negative.
     demands
-        Optional list of demands for each resource for this mode. Demands must
-        be non-negative. If set to ``None``, then the demands are initialized
-        as list of zeros with the same length as the resources.
+        List of demands for each resource for this mode. Demands must be
+        non-negative. By default, the demands are initialized as a list of
+        zeros with the same length as the resources.
     name
         Name of the mode.
 
@@ -292,7 +287,7 @@ class Mode:
 
 class IterableMixin:
     """
-    Mixin class for making dataclases iterable (and thus unpackable). This
+    Mixin class for making dataclasses iterable (and thus unpackable). This
     makes the implementation of constraints more concise and readable.
     """
 
@@ -401,7 +396,7 @@ class Consecutive(IterableMixin):
     assigned to, meaning that no other task is allowed to be scheduled between
     them.
 
-    Hand-waiving some details, let :math:`m_1, m_2` be the selected modes of
+    Hand-waving some details, let :math:`m_1, m_2` be the selected modes of
     task 1 and task 2, and let :math:`R` denote the machines that both modes
     require. This constraint ensures that
 
@@ -494,11 +489,11 @@ class SetupTime(IterableMixin):
 class ModeDependency(IterableMixin):
     """
     Represents a dependency between task modes: if mode 1 is selected,
-    then at least one of the modes in modes 2 must also be selected.
+    then at least one of the modes in modes2 must also be selected.
 
     Let :math:`m_1` be the Boolean variable indicating whether mode 1 is
     selected. Let :math:`M_2` be the set of Boolean variables corresponding
-    to the modes in modes 2.
+    to the modes in modes2.
 
     The constraint is then expressed as:
 
@@ -621,7 +616,7 @@ class Objective:
 
     **Total tardiness** (:math:`TT`): The weighted sum of the tardiness of each job, where the tardiness is the difference between completion time and due date :math:`d_j` (0 if completed before due date).
         .. math::
-            TT = \sum_{j \in J} w_j U_j
+            TT = \sum_{j \in J} w_j \max(C_j - d_j, 0)
 
     **Total earliness** (:math:`TE`): The weighted sum of the earliness of each job, where earliness is the difference between due date :math:`d_j` and completion time (0 if completed after due date).
         .. math::
@@ -688,8 +683,7 @@ class ProblemData:
     modes
         List of processing modes of tasks.
     constraints
-        The constraints of this problem data instance. Default is no
-        constraints.
+        The constraints of this problem data instance.
     objective
         The objective function. Default is minimizing the makespan.
     """
@@ -747,9 +741,9 @@ class ProblemData:
         if self.num_machines > 0:
             parts.append(f"{self.num_machines} machines")
         if self.num_renewables > 0:
-            parts.append(f"{self.num_renewables} renewable")
+            parts.append(f"{self.num_renewables} renewables")
         if self.num_consumables > 0:
-            parts.append(f"{self.num_consumables} consumable")
+            parts.append(f"{self.num_consumables} consumables")
 
         for idx, part in enumerate(parts):
             symbol = "└─" if idx == len(parts) - 1 else "├─"

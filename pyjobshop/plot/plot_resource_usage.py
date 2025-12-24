@@ -57,7 +57,19 @@ def plot_resource_usage(
 
 def _compute_usage(solution: Solution, data: ProblemData) -> np.ndarray:
     """
-    Computes the resource usage for the each resource and each time step.
+    Computes the resource usage for each resource at each time step.
+
+    Parameters
+    ----------
+    solution
+        The solution containing task schedules.
+    data
+        The problem data with resource and mode information.
+
+    Returns
+    -------
+    np.ndarray
+        A 2D array of shape (num_resources, makespan) with usage values.
     """
     usages = np.zeros((data.num_resources, solution.makespan))
 
