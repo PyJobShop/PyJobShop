@@ -31,22 +31,19 @@ class Job:
     ----------
     weight
         The weight of the job, used as multiplicative factor in the
-        objective function. Must be non-negative. Default ``1``.
+        objective function. Must be non-negative.
     release_date
         The earliest time that the job may start. Must be non-negative.
-        Default ``0``.
     deadline
         The latest time by which the job must be completed. Note that a
         deadline is different from a due date; the latter does not restrict
         the latest completion time.
-        Default :const:`~pyjobshop.constants.MAX_VALUE`.
     due_date
         The latest time that the job should be completed before incurring
-        penalties. Can be negative to represent past due dates. Default
-        ``None``, meaning that there is no due date.
+        penalties. Can be negative to represent past due dates. Default is
+        `None`, meaning there is no due date.
     tasks
-        List of task indices that belong to this job. Default ``None``,
-        which initializes an empty list.
+        List of task indices that belong to this job. Default is an empty list.
     name
         Name of the job.
 
@@ -105,7 +102,7 @@ class Machine:
         Whether the machine must operate continuously without idle time between
         tasks. When ``True``, tasks are scheduled back-to-back with no gaps,
         except for required setup times. When ``False`` (default), the machine
-        can remain idle between tasks.
+        can remain idle between tasks. Cannot be combined with breaks.
     name
         Name of the machine.
 
@@ -197,28 +194,26 @@ class Task:
     Parameters
     ----------
     job
-        The index of the job that this task belongs to. None if the task
-        does not belong to any job. Default ``None``.
+        The index of the job that this task belongs to, ``None`` if the task
+        does not belong to any job.
     earliest_start
-        Earliest start time of the task. Default ``0``.
+        Earliest start time of the task.
     latest_start
         Latest start time of the task.
-        Default :const:`~pyjobshop.constants.MAX_VALUE`.
     earliest_end
-        Earliest end time of the task. Default ``0``.
+        Earliest end time of the task.
     latest_end
         Latest end time of the task.
-        Default :const:`~pyjobshop.constants.MAX_VALUE`.
     allow_idle
         Whether the task can remain idle after completing its processing.
         If ``True``, the task can continue occupying resources after
-        finishing (e.g., blocking in flow shops). Default ``False``.
+        finishing (e.g., blocking in flow shops).
     allow_breaks
         Whether the task can be interrupted by resource breaks. If
         ``True``, the task stops processing during breaks and resumes
-        afterwards. Default ``False``.
+        afterwards.
     optional
-        Whether the task is optional. Default ``False``.
+        Whether the task is optional.
     name
         Name of the task.
     """
@@ -255,9 +250,9 @@ class Mode:
     duration
         Processing duration of this mode. Must be non-negative.
     demands
-        Optional list of demands for each resource for this mode. Demands must
-        be non-negative. If set to ``None``, then the demands are initialized
-        as list of zeros with the same length as the resources.
+        List of demands for each resource for this mode. Demands must be
+        non-negative. By default, the demands are initialized as list of zeros
+        with the same length as the resources.
     name
         Name of the mode.
 
@@ -688,8 +683,7 @@ class ProblemData:
     modes
         List of processing modes of tasks.
     constraints
-        The constraints of this problem data instance. Default is no
-        constraints.
+        The constraints of this problem data instance.
     objective
         The objective function. Default is minimizing the makespan.
     """
