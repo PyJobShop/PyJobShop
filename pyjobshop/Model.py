@@ -319,8 +319,8 @@ class Model:
     def add_consecutive(self, task1: Task, task2: Task) -> Consecutive:
         """
         Adds a constraint that the first task must be scheduled right before
-        the second task, meaning that no task is allowed to schedule between,
-        on machines that they are both scheduled on.
+        the second task, meaning that no task is allowed to be scheduled
+        between, on machines that they are both scheduled on.
         """
         idx1, idx2 = self._id2task[id(task1)], self._id2task[id(task2)]
         constraint = Consecutive(idx1, idx2)
