@@ -102,7 +102,7 @@ class CPModel:
         **kwargs,
     ) -> Result:
         """
-        Solves the given problem data instance with Google OR-Tools.
+        Solves the given problem data instance with CP Optimizer.
 
         Parameters
         ----------

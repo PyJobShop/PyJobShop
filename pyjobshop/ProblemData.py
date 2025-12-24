@@ -25,7 +25,7 @@ def _validate_breaks(breaks: list[Break]):
 @dataclass
 class Job:
     """
-    Simple dataclass for storing job related data.
+    Simple dataclass for storing job-related data.
 
     Parameters
     ----------
@@ -189,7 +189,7 @@ Resource = Machine | Renewable | Consumable
 @dataclass
 class Task:
     """
-    Simple dataclass for storing task related data.
+    Simple dataclass for storing task-related data.
 
     Parameters
     ----------
@@ -251,8 +251,8 @@ class Mode:
         Processing duration of this mode. Must be non-negative.
     demands
         List of demands for each resource for this mode. Demands must be
-        non-negative. By default, the demands are initialized as list of zeros
-        with the same length as the resources.
+        non-negative. By default, the demands are initialized as a list of
+        zeros with the same length as the resources.
     name
         Name of the mode.
 
@@ -287,7 +287,7 @@ class Mode:
 
 class IterableMixin:
     """
-    Mixin class for making dataclases iterable (and thus unpackable). This
+    Mixin class for making dataclasses iterable (and thus unpackable). This
     makes the implementation of constraints more concise and readable.
     """
 
@@ -396,7 +396,7 @@ class Consecutive(IterableMixin):
     assigned to, meaning that no other task is allowed to be scheduled between
     them.
 
-    Hand-waiving some details, let :math:`m_1, m_2` be the selected modes of
+    Hand-waving some details, let :math:`m_1, m_2` be the selected modes of
     task 1 and task 2, and let :math:`R` denote the machines that both modes
     require. This constraint ensures that
 
@@ -489,11 +489,11 @@ class SetupTime(IterableMixin):
 class ModeDependency(IterableMixin):
     """
     Represents a dependency between task modes: if mode 1 is selected,
-    then at least one of the modes in modes 2 must also be selected.
+    then at least one of the modes in modes2 must also be selected.
 
     Let :math:`m_1` be the Boolean variable indicating whether mode 1 is
     selected. Let :math:`M_2` be the set of Boolean variables corresponding
-    to the modes in modes 2.
+    to the modes in modes2.
 
     The constraint is then expressed as:
 
@@ -616,7 +616,7 @@ class Objective:
 
     **Total tardiness** (:math:`TT`): The weighted sum of the tardiness of each job, where the tardiness is the difference between completion time and due date :math:`d_j` (0 if completed before due date).
         .. math::
-            TT = \sum_{j \in J} w_j U_j
+            TT = \sum_{j \in J} w_j \max(C_j - d_j, 0)
 
     **Total earliness** (:math:`TE`): The weighted sum of the earliness of each job, where earliness is the difference between due date :math:`d_j` and completion time (0 if completed after due date).
         .. math::
@@ -741,9 +741,9 @@ class ProblemData:
         if self.num_machines > 0:
             parts.append(f"{self.num_machines} machines")
         if self.num_renewables > 0:
-            parts.append(f"{self.num_renewables} renewable")
+            parts.append(f"{self.num_renewables} renewables")
         if self.num_consumables > 0:
-            parts.append(f"{self.num_consumables} consumable")
+            parts.append(f"{self.num_consumables} consumables")
 
         for idx, part in enumerate(parts):
             symbol = "└─" if idx == len(parts) - 1 else "├─"
