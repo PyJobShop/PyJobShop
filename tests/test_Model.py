@@ -330,7 +330,7 @@ def test_summary():
         "0 jobs\n"
         "2 resources\n"
         "├─ 1 machines\n"
-        "└─ 1 renewable\n"
+        "└─ 1 renewables\n"
         "2 tasks\n"
         "2 modes\n"
         "1 constraints\n"
