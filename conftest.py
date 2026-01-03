@@ -116,8 +116,9 @@ def complete_data():
 
 
 @pytest.fixture(scope="session")
-def complete_sol():
+def complete_sol(complete_data):
     return Solution(
+        complete_data,
         [
             TaskData(0, [0], 0, 1),
             TaskData(1, [0], 2, 3),
@@ -127,7 +128,7 @@ def complete_sol():
             TaskData(6, [3], 2, 3),
             TaskData(-1, [], 0, 0, 0, 0, present=False),
             TaskData(8, [5], 0, 3, breaks=1),
-        ]
+        ],
     )
 
 

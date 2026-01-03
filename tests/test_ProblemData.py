@@ -27,7 +27,7 @@ from pyjobshop.ProblemData import (
     StartBeforeStart,
     Task,
 )
-from pyjobshop.Solution import TaskData as TaskData
+from pyjobshop.Solution import JobData, TaskData
 from pyjobshop.solve import solve
 
 
@@ -1466,6 +1466,24 @@ def test_task_allow_idle_and_breaks(solver):
     assert_equal(sol_tasks.processing, 2)
 
 
+def test_task_optional_empty_solution(solver):
+    """
+    Smoke test that checks that an instance with only an optional task and
+    without selection constraints results in the trivial solution.
+    """
+    model = Model()
+    job = model.add_job()
+    machine = model.add_machine()
+    task = model.add_task(job=job, optional=True)
+    model.add_mode(task, machine, duration=1)
+
+    result = model.solve(solver=solver)
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.objective, 0)
+    assert_equal(result.best.tasks, [TaskData(0, [], 0, 0, present=False)])
+    assert_equal(result.best.jobs, [JobData(0, 0, present=False)])
+
+
 def test_mode_without_resources(solver: str):
     """
     Tests that a mode without resources is scheduled correctly.
@@ -2540,6 +2558,7 @@ def test_total_setup_time(solver: str):
     # two, the objective value is 2 * (1 + 3) = 8.
     assert_equal(result.objective, 8)
     assert_equal(result.status.value, "Optimal")
+    assert_equal(result.best.objective, 8)
 
 
 def test_combined_objective(solver: str):

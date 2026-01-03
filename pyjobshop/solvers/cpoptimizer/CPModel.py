@@ -87,11 +87,9 @@ class CPModel:
 
         for idx in range(data.num_tasks):
             if idx not in tasks:
-                tasks[idx] = TaskData(
-                    data.num_modes, [], 0, 0, 0, 0, present=False
-                )
+                tasks[idx] = TaskData(0, [], 0, 0, 0, 0, present=False)
 
-        return Solution([tasks[idx] for idx in range(self._data.num_tasks)])
+        return Solution(data, [tasks[idx] for idx in range(data.num_tasks)])
 
     def solve(
         self,
@@ -140,12 +138,12 @@ class CPModel:
         if status in ["Optimal", "Feasible"]:
             solution = self._convert_to_solution(cp_result)
             objective: float = cp_result.get_objective_value()  # type: ignore
-            lower_bound: float = cp_result.get_objective_bound()  # type: ignore
+            lower_bound = cp_result.get_objective_bound()
         else:
             # No feasible solution due to infeasible instance or time limit.
-            solution = Solution([])
+            solution = Solution(self._data, [])
             objective = float("inf")
-            lower_bound = float("-inf")
+            lower_bound = 0
 
         return Result(
             objective=objective,
