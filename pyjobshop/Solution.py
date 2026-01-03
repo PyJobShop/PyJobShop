@@ -167,11 +167,15 @@ class Solution:
         jobs = []
 
         for job in self._data.jobs:
-            tasks = [self._tasks[idx] for idx in job.tasks if self._tasks[idx]]
-            present_tasks = [task for task in tasks if task.present]
-            start = min([task.start for task in present_tasks], default=0)
-            end = max([task.end for task in present_tasks], default=0)
-            present = bool(present_tasks)
+            # Calculate job data based on its present tasks.
+            tasks_data = [
+                self._tasks[idx]
+                for idx in job.tasks
+                if self._tasks[idx].present
+            ]
+            start = min([task.start for task in tasks_data], default=0)
+            end = max([task.end for task in tasks_data], default=0)
+            present = bool(tasks_data)
             jobs.append(
                 JobData(start, end, job.release_date, job.due_date, present)
             )
