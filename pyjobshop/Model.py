@@ -1,7 +1,8 @@
-from typing import Literal, Sequence
+from typing import Literal
 
 from pyjobshop.constants import MAX_VALUE
 from pyjobshop.ProblemData import (
+    Break,
     Consecutive,
     Constraints,
     Consumable,
@@ -112,7 +113,7 @@ class Model:
 
     def add_machine(
         self,
-        breaks: list[tuple[int, int]] | None = None,
+        breaks: list[Break] | None = None,
         no_idle: bool = False,
         *,
         name: str = "",
@@ -120,6 +121,9 @@ class Model:
         """
         Adds a machine to the model.
         """
+        if breaks is None:
+            breaks = []
+
         machine = Machine(breaks, no_idle, name=name)
 
         self._id2resource[id(machine)] = len(self.resources)
@@ -130,13 +134,16 @@ class Model:
     def add_renewable(
         self,
         capacity: int,
-        breaks: list[tuple[int, int]] | None = None,
+        breaks: list[Break] | None = None,
         *,
         name: str = "",
     ) -> Renewable:
         """
         Adds a renewable resource to the model.
         """
+        if breaks is None:
+            breaks = []
+
         resource = Renewable(capacity, breaks, name=name)
 
         self._id2resource[id(resource)] = len(self.resources)
@@ -147,13 +154,16 @@ class Model:
     def add_consumable(
         self,
         capacity: int,
-        breaks: list[tuple[int, int]] | None = None,
+        breaks: list[Break] | None = None,
         *,
         name: str = "",
     ) -> Consumable:
         """
         Adds a consumable resource to the model.
         """
+        if breaks is None:
+            breaks = []
+
         resource = Consumable(capacity, breaks, name=name)
 
         self._id2resource[id(resource)] = len(self.resources)
@@ -202,7 +212,7 @@ class Model:
     def add_mode(
         self,
         task: Task,
-        resources: Resource | Sequence[Resource],
+        resources: Resource | list[Resource],
         duration: int,
         demands: int | list[int] | None = None,
         *,
@@ -214,7 +224,9 @@ class Model:
         if isinstance(resources, (Machine, Renewable, Consumable)):
             resources = [resources]
 
-        if isinstance(demands, int):
+        if demands is None:
+            demands = []
+        elif isinstance(demands, int):
             demands = [demands]
 
         task_idx = self._id2task[id(task)]
