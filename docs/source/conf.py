@@ -100,9 +100,43 @@ def autodoc_process_signature(
     return signature, return_annot
 
 
+def autodoc_process_docstring(app, what, name, obj, options, lines):
+    """
+    For dataclasses, copy the Parameters section as Attributes section to
+    include references in the TOC documentation.
+    """
+    if what != "class" or not is_dataclass(obj):
+        return
+
+    try:
+        # Skip the "Parameters" header and underline to get to the content.
+        start = lines.index("Parameters")
+        start = start + 2
+    except ValueError:  # no parameter docstring, so nothing to do
+        return
+
+    # Find where the Parameters section ends by looking for the next section.
+    # Sections in NumPy-style docstrings have a header followed by dashes.
+    end = len(lines)
+    for idx in range(start, len(lines) - 1):
+        if (
+            lines[idx]
+            and not lines[idx].startswith(" ")
+            and lines[idx + 1].startswith("---")
+        ):
+            end = idx
+            break
+
+    content = lines[start:end]
+    lines.extend(["", "Attributes", "----------", *content])
+
+
 def setup(app):
     app.connect(
         "autodoc-process-signature", autodoc_process_signature, priority=0
+    )
+    app.connect(
+        "autodoc-process-docstring", autodoc_process_docstring, priority=100
     )
     return {
         "version": "0.1",
