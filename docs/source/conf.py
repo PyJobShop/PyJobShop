@@ -1,7 +1,7 @@
 import datetime
 import os
 import shutil
-from dataclasses import is_dataclass
+from dataclasses import MISSING, fields, is_dataclass
 
 # Project information
 now = datetime.date.today()
@@ -59,14 +59,45 @@ def autodoc_process_signature(
     app, what, name, obj, options, signature, return_annot
 ):
     """
-    Process signature of dataclasses with default factories using lists.
+    Process signature of dataclasses with default factories, so that sensible
+    default values are shown intead of complicated factory references.
     """
-    if what == "class" and is_dataclass(obj):
-        if signature:
-            signature = signature.replace("<factory>", "[]")
+    if what != "class" or not is_dataclass(obj) or not signature:
+        return None
 
-        return signature, return_annot
-    return None
+    for field in fields(obj):
+        if field.default_factory is MISSING:
+            continue
+
+        # Get the default value from the default factory. By default, we use
+        # show the repr(), unless it's a dataclass.
+        default = field.default_factory()
+        display = repr(default)
+
+        if is_dataclass(default):
+            # For dataclasses, show a minimal repr with only non-default
+            # fields. E.g., Objective(weight_makespan=1) instead of
+            # Objective(weight_makespan=1, weight_tardy_jobs=0, ...).
+            parts = []
+            for f in fields(default):
+                value = getattr(default, f.name)
+
+                # Skip fields that are at their default value.
+                is_default = f.default is not MISSING and value == f.default
+                is_factory_default = (
+                    f.default_factory is not MISSING
+                    and value == f.default_factory()
+                )
+                if is_default or is_factory_default:
+                    continue
+
+                parts.append(f"{f.name}={value!r}")
+
+            display = f"{type(default).__name__}({', '.join(parts)})"
+
+        signature = signature.replace("<factory>", display, 1)
+
+    return signature, return_annot
 
 
 def setup(app):
