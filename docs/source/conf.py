@@ -155,6 +155,5 @@ object_description_options = [
         "py:.*",
         {"include_fields_in_toc": False, "include_rubrics_in_toc": False},
     ),
-    ("py:attribute", {"include_in_toc": False}),
     ("py:parameter", {"include_in_toc": False}),
 ]
