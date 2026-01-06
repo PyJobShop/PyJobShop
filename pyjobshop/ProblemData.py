@@ -692,7 +692,7 @@ class ProblemData:
     resources: list[Resource]
     tasks: list[Task]
     modes: list[Mode]
-    constraints: Constraints = field(default_factory=Constraints)
+    constraints: Constraints = field(default_factory=lambda: Constraints())
     objective: Objective = field(
         default_factory=lambda: Objective(weight_makespan=1)
     )
