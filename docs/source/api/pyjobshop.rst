@@ -103,8 +103,13 @@ PyJobShop
 .. automodule:: pyjobshop.Solution
 
    .. autoclass:: Solution
+      :members:
 
    .. autoclass:: TaskData
+      :members:
+
+   .. autoclass:: JobData
+      :members:
 
 .. automodule:: pyjobshop.Result
 
