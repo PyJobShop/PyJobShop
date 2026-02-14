@@ -132,7 +132,11 @@ class Variables:
         variables: dict[int, CpoSequenceVar] = {}
 
         for idx in data.machine_idcs:
-            modes = data.resource2modes(idx)
+            if not (modes := data.resource2modes(idx)):
+                # Skip machines without modes to avoid CPO warning
+                # about unused sequence variables.
+                continue
+
             intervals = [self.mode_vars[mode] for mode in modes]
             tasks = [data.modes[mode].task for mode in modes]
             seq_var = sequence_var(
