@@ -70,7 +70,7 @@ class Constraints:
                     res2modes[res].append(mode_idx)
 
             for res_idx, res_mode_idcs in res2modes.items():
-                # Assignment variable can only be present if a modes is
+                # Assignment variable can only be present if a mode is
                 # selected that uses the corresponding resource.
                 presence = variables.assign_vars[task_idx, res_idx].present
                 mode_vars = [variables.mode_vars[idx] for idx in res_mode_idcs]

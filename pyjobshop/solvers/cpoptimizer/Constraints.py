@@ -157,6 +157,10 @@ class Constraints:
         for mode_idx, mode_var in enumerate(variables.mode_vars):
             mode = data.modes[mode_idx]
 
+            # A mode's breaks are the union of all its required resources'
+            # breaks, merged to handle overlapping intervals. This means
+            # a task is interrupted whenever any of its resources is on
+            # break.
             all_breaks = []
             for res_idx in mode.resources:
                 all_breaks.extend(data.resources[res_idx].breaks)

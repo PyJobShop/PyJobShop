@@ -93,6 +93,9 @@ class Variables:
             mode_durations = [mode.duration for mode in modes]
             var.set_size_min(min(mode_durations))
 
+            if not (task.allow_idle or task.allow_breaks):
+                var.set_size_max(max(mode_durations))
+
             variables.append(var)
             self._model.add(var)
 
@@ -189,6 +192,7 @@ class Variables:
                 start=sol_task.start,
                 end=sol_task.end,
                 length=sol_task.duration,
+                size=sol_task.processing,
             )
 
         self._model.set_starting_point(init)

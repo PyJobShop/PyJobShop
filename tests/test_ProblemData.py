@@ -1333,6 +1333,7 @@ def test_task_allow_breaks(solver: str, resource):
     assert_equal(sol_task.start, 0)
     assert_equal(sol_task.end, 6)
     assert_equal(sol_task.processing, 3)
+    assert_equal(sol_task.idle, 0)
     assert_equal(sol_task.breaks, 3)
 
 
@@ -1360,6 +1361,7 @@ def test_task_allow_breaks_with_multiple_modes(solver: str):
     assert_equal(sol_task.start, 0)
     assert_equal(sol_task.end, 1)
     assert_equal(sol_task.processing, 1)
+    assert_equal(sol_task.idle, 0)
     assert_equal(sol_task.breaks, 0)
 
 
@@ -1406,6 +1408,7 @@ def test_task_allow_breaks_multiple_resources(solver: str):
     assert_equal(sol_task.start, 0)
     assert_equal(sol_task.end, 5)
     assert_equal(sol_task.processing, 2)
+    assert_equal(sol_task.idle, 0)
     assert_equal(sol_task.breaks, 3)
 
 
@@ -1433,6 +1436,7 @@ def test_task_does_not_end_in_break(solver: str):
     assert_equal(sol_task.start, 0)
     assert_equal(sol_task.end, 1)
     assert_equal(sol_task.processing, 1)
+    assert_equal(sol_task.idle, 0)
     assert_equal(sol_task.breaks, 0)
 
 
