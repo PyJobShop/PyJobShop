@@ -93,6 +93,9 @@ class Objective:
         total = []
 
         for res_idx in data.machine_idcs:
+            if not data.resource2modes(res_idx):
+                continue
+
             if (setup_times := utils.setup_times_matrix(data)) is None:
                 continue
 
