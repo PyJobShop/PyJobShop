@@ -363,6 +363,27 @@ class Constraints:
             presences = [variables.task_vars[idx].present for idx in idcs]
             model.add(sum(presences) == 1).only_enforce_if(condition)
 
+    def _redundant_cumulative_constraints(self):
+        """
+        Adds redundant cumulative constraints for connected components of
+        machines.
+        """
+        model, data, variables = self._model, self._data, self._variables
+
+        for component in utils.redundant_cumulative_components(data):
+            if not (0 < len(component.machines) < data.num_machines):
+                continue
+
+            if not (0 < len(component.tasks) < data.num_tasks):
+                continue
+
+            intervals = [
+                variables.task_vars[idx].interval for idx in component.tasks
+            ]
+            demands = [1] * len(intervals)
+            capacity = len(component.machines)
+            model.add_cumulative(intervals, demands, capacity)
+
     def add_constraints(self):
         """
         Adds all the constraints to the CP model.
@@ -379,4 +400,9 @@ class Constraints:
         self._same_sequence_constraints()
         self._circuit_constraints()  # must be after sequencing constraints!
         self._mode_dependencies()
+
+        # From here onwards we know which sequence constraints are active.
+        self._circuit_constraints()
+
         self._task_selection_constraints()
+        self._redundant_cumulative_constraints()
