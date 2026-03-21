@@ -1852,6 +1852,62 @@ def test_end_before_end(timing_constraints_model: Model, solver: str):
     assert_equal(result.best.tasks[1].end, 3)
 
 
+def test_start_at_start(timing_constraints_model: Model, solver: str):
+    """
+    Tests that the start at start constraint is respected.
+    """
+    model = timing_constraints_model
+    model.add_start_at_start(model.tasks[0], model.tasks[1], delay=2)
+
+    # Task 1 starts at 0, task 2 must start exactly at 0 + 2 (delay).
+    result = model.solve(solver=solver)
+    assert_equal(result.objective, 3)
+    assert_equal(result.best.tasks[0].start, 0)
+    assert_equal(result.best.tasks[1].start, 2)
+
+
+def test_start_at_end(timing_constraints_model: Model, solver: str):
+    """
+    Tests that the start at end constraint is respected.
+    """
+    model = timing_constraints_model
+    model.add_start_at_end(model.tasks[0], model.tasks[1], delay=2)
+
+    # Task 1 starts at 0, task 2 must end exactly at 0 + 2 (delay).
+    result = model.solve(solver=solver)
+    assert_equal(result.objective, 2)
+    assert_equal(result.best.tasks[0].start, 0)
+    assert_equal(result.best.tasks[1].end, 2)
+
+
+def test_end_at_start(timing_constraints_model: Model, solver: str):
+    """
+    Tests that the end at start constraint is respected.
+    """
+    model = timing_constraints_model
+    model.add_end_at_start(model.tasks[0], model.tasks[1], delay=2)
+
+    # Task 1 ends at 1 earliest, task 2 must start exactly at 1 + 2 (delay).
+    result = model.solve(solver=solver)
+    assert_equal(result.objective, 4)
+    assert_equal(result.best.tasks[0].end, 1)
+    assert_equal(result.best.tasks[1].start, 3)
+
+
+def test_end_at_end(timing_constraints_model: Model, solver: str):
+    """
+    Tests that the end at end constraint is respected.
+    """
+    model = timing_constraints_model
+    model.add_end_at_end(model.tasks[0], model.tasks[1], delay=2)
+
+    # Task 1 ends at 1 earliest, task 2 must end exactly at 1 + 2 (delay).
+    result = model.solve(solver=solver)
+    assert_equal(result.objective, 3)
+    assert_equal(result.best.tasks[0].end, 1)
+    assert_equal(result.best.tasks[1].end, 3)
+
+
 def test_identical_resources(solver: str):
     """
     Tests that the identical resources constraint is respected.
