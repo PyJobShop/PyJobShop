@@ -356,6 +356,66 @@ class EndBeforeEnd(IterableMixin):
 
 
 @dataclass
+class StartAtStart(IterableMixin):
+    """
+    Start task 1 (:math:`s_1`) at the start of task 2 (:math:`s_2`), with
+    an optional delay :math:`d`. That is,
+
+    .. math::
+        s_1 + d = s_2.
+    """
+
+    task1: int
+    task2: int
+    delay: int = 0
+
+
+@dataclass
+class StartAtEnd(IterableMixin):
+    """
+    Start task 1 (:math:`s_1`) at the end of task 2 (:math:`e_2`), with an
+    optional delay :math:`d`. That is,
+
+    .. math::
+        s_1 + d = e_2.
+    """
+
+    task1: int
+    task2: int
+    delay: int = 0
+
+
+@dataclass
+class EndAtStart(IterableMixin):
+    """
+    End task 1 (:math:`e_1`) at the start of task 2 (:math:`s_2`), with an
+    optional delay :math:`d`. That is,
+
+    .. math::
+        e_1 + d = s_2.
+    """
+
+    task1: int
+    task2: int
+    delay: int = 0
+
+
+@dataclass
+class EndAtEnd(IterableMixin):
+    """
+    End task 1 (:math:`e_1`) at the end of task 2 (:math:`e_2`), with an
+    optional delay :math:`d`. That is,
+
+    .. math::
+        e_1 + d = e_2.
+    """
+
+    task1: int
+    task2: int
+    delay: int = 0
+
+
+@dataclass
 class IdenticalResources(IterableMixin):
     """
     Select modes for task 1 and task 2 that use the same resources.
@@ -558,6 +618,10 @@ class Constraints:
     start_before_end: list[StartBeforeEnd] = field(default_factory=list)
     end_before_start: list[EndBeforeStart] = field(default_factory=list)
     end_before_end: list[EndBeforeEnd] = field(default_factory=list)
+    start_at_start: list[StartAtStart] = field(default_factory=list)
+    start_at_end: list[StartAtEnd] = field(default_factory=list)
+    end_at_start: list[EndAtStart] = field(default_factory=list)
+    end_at_end: list[EndAtEnd] = field(default_factory=list)
     identical_resources: list[IdenticalResources] = field(default_factory=list)
     different_resources: list[DifferentResources] = field(default_factory=list)
     consecutive: list[Consecutive] = field(default_factory=list)
