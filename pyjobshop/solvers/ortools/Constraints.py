@@ -174,6 +174,34 @@ class Constraints:
             expr = var1.end + delay <= var2.end
             model.add(expr).only_enforce_if(both_present)
 
+        for idx1, idx2, delay in data.constraints.start_at_start:
+            var1 = variables.task_vars[idx1]
+            var2 = variables.task_vars[idx2]
+            both_present = [var1.present, var2.present]
+            expr = var1.start + delay == var2.start
+            model.add(expr).only_enforce_if(both_present)
+
+        for idx1, idx2, delay in data.constraints.start_at_end:
+            var1 = variables.task_vars[idx1]
+            var2 = variables.task_vars[idx2]
+            both_present = [var1.present, var2.present]
+            expr = var1.start + delay == var2.end
+            model.add(expr).only_enforce_if(both_present)
+
+        for idx1, idx2, delay in data.constraints.end_at_start:
+            var1 = variables.task_vars[idx1]
+            var2 = variables.task_vars[idx2]
+            both_present = [var1.present, var2.present]
+            expr = var1.end + delay == var2.start
+            model.add(expr).only_enforce_if(both_present)
+
+        for idx1, idx2, delay in data.constraints.end_at_end:
+            var1 = variables.task_vars[idx1]
+            var2 = variables.task_vars[idx2]
+            both_present = [var1.present, var2.present]
+            expr = var1.end + delay == var2.end
+            model.add(expr).only_enforce_if(both_present)
+
     def _identical_and_different_resource_constraints(self):
         """
         Creates constraints for identical and different resources constraints.

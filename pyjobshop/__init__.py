@@ -4,6 +4,8 @@ from .ProblemData import Consecutive as Consecutive
 from .ProblemData import Constraints as Constraints
 from .ProblemData import Consumable as Consumable
 from .ProblemData import DifferentResources as DifferentResources
+from .ProblemData import EndAtEnd as EndAtEnd
+from .ProblemData import EndAtStart as EndAtStart
 from .ProblemData import EndBeforeEnd as EndBeforeEnd
 from .ProblemData import EndBeforeStart as EndBeforeStart
 from .ProblemData import IdenticalResources as IdenticalResources
@@ -20,6 +22,8 @@ from .ProblemData import SelectAllOrNone as SelectAllOrNone
 from .ProblemData import SelectAtLeastOne as SelectAtLeastOne
 from .ProblemData import SelectExactlyOne as SelectExactlyOne
 from .ProblemData import SetupTime as SetupTime
+from .ProblemData import StartAtEnd as StartAtEnd
+from .ProblemData import StartAtStart as StartAtStart
 from .ProblemData import StartBeforeEnd as StartBeforeEnd
 from .ProblemData import StartBeforeStart as StartBeforeStart
 from .ProblemData import Task as Task

@@ -7,6 +7,8 @@ from pyjobshop.ProblemData import (
     Constraints,
     Consumable,
     DifferentResources,
+    EndAtEnd,
+    EndAtStart,
     EndBeforeEnd,
     EndBeforeStart,
     IdenticalResources,
@@ -24,6 +26,8 @@ from pyjobshop.ProblemData import (
     SelectAtLeastOne,
     SelectExactlyOne,
     SetupTime,
+    StartAtEnd,
+    StartAtStart,
     StartBeforeEnd,
     StartBeforeStart,
     Task,
@@ -288,6 +292,58 @@ class Model:
         idx1, idx2 = self._id2task[id(task1)], self._id2task[id(task2)]
         constraint = EndBeforeEnd(idx1, idx2, delay)
         self._constraints.end_before_end.append(constraint)
+
+        return constraint
+
+    def add_start_at_start(
+        self, task1: Task, task2: Task, delay: int = 0
+    ) -> StartAtStart:
+        """
+        Adds a constraint that task 2 must start exactly at the start of
+        task 1 plus the delay.
+        """
+        idx1, idx2 = self._id2task[id(task1)], self._id2task[id(task2)]
+        constraint = StartAtStart(idx1, idx2, delay)
+        self._constraints.start_at_start.append(constraint)
+
+        return constraint
+
+    def add_start_at_end(
+        self, task1: Task, task2: Task, delay: int = 0
+    ) -> StartAtEnd:
+        """
+        Adds a constraint that task 2 must end exactly at the start of
+        task 1 plus the delay.
+        """
+        idx1, idx2 = self._id2task[id(task1)], self._id2task[id(task2)]
+        constraint = StartAtEnd(idx1, idx2, delay)
+        self._constraints.start_at_end.append(constraint)
+
+        return constraint
+
+    def add_end_at_start(
+        self, task1: Task, task2: Task, delay: int = 0
+    ) -> EndAtStart:
+        """
+        Adds a constraint that task 2 must start exactly at the end of
+        task 1 plus the delay.
+        """
+        idx1, idx2 = self._id2task[id(task1)], self._id2task[id(task2)]
+        constraint = EndAtStart(idx1, idx2, delay)
+        self._constraints.end_at_start.append(constraint)
+
+        return constraint
+
+    def add_end_at_end(
+        self, task1: Task, task2: Task, delay: int = 0
+    ) -> EndAtEnd:
+        """
+        Adds a constraint that task 2 must end exactly at the end of
+        task 1 plus the delay.
+        """
+        idx1, idx2 = self._id2task[id(task1)], self._id2task[id(task2)]
+        constraint = EndAtEnd(idx1, idx2, delay)
+        self._constraints.end_at_end.append(constraint)
 
         return constraint
 

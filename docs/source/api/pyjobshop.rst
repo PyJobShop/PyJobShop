@@ -25,6 +25,10 @@ PyJobShop
          ~Model.add_start_before_end
          ~Model.add_end_before_start
          ~Model.add_end_before_end
+         ~Model.add_start_at_start
+         ~Model.add_start_at_end
+         ~Model.add_end_at_start
+         ~Model.add_end_at_end
          ~Model.add_identical_resources
          ~Model.add_different_resources
          ~Model.add_no_overlap
@@ -71,6 +75,14 @@ PyJobShop
     .. autoclass:: EndBeforeStart
 
     .. autoclass:: EndBeforeEnd
+
+    .. autoclass:: StartAtStart
+
+    .. autoclass:: StartAtEnd
+
+    .. autoclass:: EndAtStart
+
+    .. autoclass:: EndAtEnd
 
     .. autoclass:: IdenticalResources
 
