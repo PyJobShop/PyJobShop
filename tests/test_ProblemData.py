@@ -1536,6 +1536,38 @@ def test_machine_breaks(solver: str):
     assert_equal(result.objective, 6)
 
 
+def test_machine_break_with_fixed_start(solver: str):
+    """
+    Tests that a machine break with a fixed-start task results in
+    the correct makespan. Two machines: machine1 (no break) feeds into
+    machine2 (break [0, 10]). Two jobs, each with a task on machine1
+    and a task on machine2, connected by end_before_start. The first
+    job's machine2 task has a fixed start at 10. All durations are 1.
+    The makespan should be 12.
+    """
+    model = Model()
+    machine1 = model.add_machine()
+    machine2 = model.add_machine(breaks=[(0, 10)])
+
+    m1_task1 = model.add_task()
+    m1_task2 = model.add_task()
+    m2_task1 = model.add_task(earliest_start=10, latest_start=10)
+    m2_task2 = model.add_task()
+
+    for task in [m1_task1, m1_task2]:
+        model.add_mode(task, machine1, duration=1)
+
+    for task in [m2_task1, m2_task2]:
+        model.add_mode(task, machine2, duration=1)
+
+    model.add_end_before_start(m1_task1, m2_task1)
+    model.add_end_before_start(m1_task2, m2_task2)
+
+    result = model.solve(solver=solver)
+    assert_equal(result.status.value, "Optimal")
+    assert_equal(result.objective, 12)
+
+
 def test_machine_no_idle(solver: str):
     """
     Tests that a machine with no idle time is respected.
