@@ -2,7 +2,7 @@ from ortools.sat.python.cp_model import CpModel, CpSolver
 
 from pyjobshop.ProblemData import ProblemData
 from pyjobshop.Result import Result, SolveStatus
-from pyjobshop.Solution import Solution, TaskData
+from pyjobshop.Solution import ScheduledTask, Solution
 
 from .Constraints import Constraints
 from .Objective import Objective
@@ -72,7 +72,7 @@ class CPModel:
             task_var = variables.task_vars[task_idx]
 
             if not cp_solver.value(task_var.present):
-                task = TaskData(0, [], 0, 0, 0, 0, False)
+                task = ScheduledTask(0, [], 0, 0, 0, 0, False)
                 tasks.append(task)
                 continue
 
@@ -80,7 +80,7 @@ class CPModel:
                 mode_var = variables.mode_vars[mode_idx]
 
                 if cp_solver.value(mode_var):  # selected mode
-                    task = TaskData(
+                    task = ScheduledTask(
                         mode_idx,
                         data.modes[mode_idx].resources,
                         cp_solver.value(task_var.start),

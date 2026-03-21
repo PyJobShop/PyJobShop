@@ -7,7 +7,7 @@ from pyjobshop.solvers.utils import setup_times_matrix
 
 
 @dataclass
-class TaskData:
+class ScheduledTask:
     """
     Stores scheduling data related to a task.
 
@@ -53,7 +53,7 @@ class TaskData:
 
 
 @dataclass
-class JobData:
+class ScheduledJob:
     """
     Stores scheduling data related to a job.
 
@@ -141,7 +141,7 @@ class Solution:
     data
         The problem data instance.
     tasks
-        The list of TaskData objects, one for each task in the problem,
+        The list of ScheduledTask objects, one for each task in the problem,
         or an empty list if a dummy solution is to be created.
 
 
@@ -151,7 +151,7 @@ class Solution:
        a feasible solution, or an empty solution if no tasks are provided.
     """
 
-    def __init__(self, data: ProblemData, tasks: list[TaskData]):
+    def __init__(self, data: ProblemData, tasks: list[ScheduledTask]):
         self._data = data
         self._tasks = tasks
         self._jobs = self._make_job_data() if tasks else []
@@ -163,7 +163,7 @@ class Solution:
             and self.jobs == other.jobs
         )
 
-    def _make_job_data(self) -> list[JobData]:
+    def _make_job_data(self) -> list[ScheduledJob]:
         jobs = []
 
         for job in self._data.jobs:
@@ -177,20 +177,22 @@ class Solution:
             end = max([task.end for task in tasks_data], default=0)
             present = bool(tasks_data)
             jobs.append(
-                JobData(start, end, job.release_date, job.due_date, present)
+                ScheduledJob(
+                    start, end, job.release_date, job.due_date, present
+                )
             )
 
         return jobs
 
     @property
-    def tasks(self) -> list[TaskData]:
+    def tasks(self) -> list[ScheduledTask]:
         """
         Returns the list of task data.
         """
         return self._tasks
 
     @property
-    def jobs(self) -> list[JobData]:
+    def jobs(self) -> list[ScheduledJob]:
         """
         Returns the list of job data.
         """

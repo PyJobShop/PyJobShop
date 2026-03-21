@@ -9,14 +9,14 @@ from pyjobshop.ProblemData import (
     ProblemData,
     Task,
 )
-from pyjobshop.Solution import JobData, Solution, TaskData
+from pyjobshop.Solution import ScheduledJob, ScheduledTask, Solution
 
 
 def test_task_data_attributes():
     """
-    Tests the attributes of TaskData.
+    Tests the attributes of ScheduledTask.
     """
-    task = TaskData(mode=0, resources=[0], start=1, end=3)
+    task = ScheduledTask(mode=0, resources=[0], start=1, end=3)
     assert_equal(task.duration, 2)
     assert_equal(task.processing, 2)
     assert_equal(task.idle, 0)
@@ -24,19 +24,21 @@ def test_task_data_attributes():
     assert_equal(task.present, True)
 
     # Test with idle and breaks: processing time should be less.
-    task = TaskData(mode=0, resources=[0], start=1, end=10, idle=2, breaks=3)
+    task = ScheduledTask(
+        mode=0, resources=[0], start=1, end=10, idle=2, breaks=3
+    )
     assert_equal(task.processing, 4)
 
     # Test with present=False.
-    task = TaskData(mode=0, resources=[0], start=0, end=0, present=False)
+    task = ScheduledTask(mode=0, resources=[0], start=0, end=0, present=False)
     assert_equal(task.present, False)
 
 
 def test_job_data_attributes():
     """
-    Tests the attributes of JobData.
+    Tests the attributes of ScheduledJob.
     """
-    job = JobData(start=1, end=3)
+    job = ScheduledJob(start=1, end=3)
 
     assert_equal(job.duration, 2)
     assert_equal(job.flow_time, 3)  # release_date = 0
@@ -45,7 +47,7 @@ def test_job_data_attributes():
     assert_equal(job.earliness, 0)  # due_date = None
 
     # Test with release date and due date set explicitly.
-    job = JobData(start=1, end=3, release_date=1, due_date=2)
+    job = ScheduledJob(start=1, end=3, release_date=1, due_date=2)
 
     assert_equal(job.flow_time, 2)
     assert_equal(job.is_tardy, True)
@@ -53,7 +55,7 @@ def test_job_data_attributes():
     assert_equal(job.earliness, 0)
 
     # Also test non-negative earliness.
-    job = JobData(start=1, end=3, release_date=1, due_date=4)
+    job = ScheduledJob(start=1, end=3, release_date=1, due_date=4)
     assert_equal(job.earliness, 1)
 
 
@@ -62,7 +64,7 @@ def test_job_data_absent_zero_attributes():
     Tests that an absent job (i.e., without present tasks) has the correct
     zero attributes.
     """
-    job = JobData(start=0, end=0, present=False)
+    job = ScheduledJob(start=0, end=0, present=False)
 
     assert_equal(job.duration, 0)
     assert_equal(job.flow_time, 0)
@@ -75,11 +77,11 @@ def test_solution_eq(small):
     """
     Tests the equality comparison of solutions.
     """
-    tasks = [TaskData(0, [0], 0, 1), TaskData(0, [0], 1, 3)]
+    tasks = [ScheduledTask(0, [0], 0, 1), ScheduledTask(0, [0], 1, 3)]
     sol = Solution(small, tasks)
     assert_equal(sol, Solution(small, tasks))
 
-    other = [*tasks, TaskData(0, [0], 3, 4)]
+    other = [*tasks, ScheduledTask(0, [0], 3, 4)]
     assert_(sol != Solution(small, other))
 
 
@@ -87,7 +89,7 @@ def test_solution_makespan(small):
     """
     Tests the makespan calculation of a solution.
     """
-    tasks = [TaskData(0, [0], 0, 0), TaskData(0, [1], 0, 100)]
+    tasks = [ScheduledTask(0, [0], 0, 0), ScheduledTask(0, [1], 0, 100)]
     sol = Solution(small, tasks)
 
     assert_equal(sol.makespan, 100)
@@ -134,8 +136,8 @@ def test_solution_job_data():
     )
 
     task_data = [
-        TaskData(mode=0, resources=[0], start=2, end=4),
-        TaskData(mode=1, resources=[0], start=0, end=2),
+        ScheduledTask(mode=0, resources=[0], start=2, end=4),
+        ScheduledTask(mode=1, resources=[0], start=0, end=2),
     ]
     solution = Solution(data, task_data)
     assert_equal(len(solution.jobs), 2)
@@ -177,10 +179,10 @@ def test_solution_job_data_absent_tasks():
     )
 
     task_data = [
-        TaskData(mode=0, resources=[0], start=0, end=2),
+        ScheduledTask(mode=0, resources=[0], start=0, end=2),
         # Second task is absent so it should be ignored in job data,
         # despite having scheduling data (for whatever reason).
-        TaskData(mode=0, resources=[], start=0, end=8, present=False),
+        ScheduledTask(mode=0, resources=[], start=0, end=8, present=False),
     ]
     solution = Solution(data, task_data)
     assert_equal(len(solution.jobs), 1)
@@ -217,8 +219,8 @@ def test_solution_objective_components():
     )
 
     task_data = [
-        TaskData(mode=0, resources=[0], start=2, end=4),
-        TaskData(mode=1, resources=[0], start=0, end=2),
+        ScheduledTask(mode=0, resources=[0], start=2, end=4),
+        ScheduledTask(mode=1, resources=[0], start=0, end=2),
     ]
     solution = Solution(data, task_data)
 
@@ -247,7 +249,7 @@ def test_solution_total_setup_time():
     model.add_setup_time(machine, task1, task2, duration=5)
     model.set_objective(weight_total_setup_time=2)
 
-    sol_tasks = [TaskData(0, [0], 0, 1), TaskData(0, [0], 6, 7)]
+    sol_tasks = [ScheduledTask(0, [0], 0, 1), ScheduledTask(0, [0], 6, 7)]
     solution = Solution(model.data(), sol_tasks)
 
     assert_equal(solution.total_setup_time, 5)

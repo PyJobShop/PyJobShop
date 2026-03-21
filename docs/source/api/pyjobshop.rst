@@ -105,10 +105,10 @@ PyJobShop
    .. autoclass:: Solution
       :members:
 
-   .. autoclass:: TaskData
+   .. autoclass:: ScheduledTask
       :members:
 
-   .. autoclass:: JobData
+   .. autoclass:: ScheduledJob
       :members:
 
 .. automodule:: pyjobshop.Result

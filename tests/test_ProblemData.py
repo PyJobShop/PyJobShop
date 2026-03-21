@@ -27,7 +27,7 @@ from pyjobshop.ProblemData import (
     StartBeforeStart,
     Task,
 )
-from pyjobshop.Solution import JobData, TaskData
+from pyjobshop.Solution import ScheduledJob, ScheduledTask
 from pyjobshop.solve import solve
 
 
@@ -1484,8 +1484,10 @@ def test_task_optional_empty_solution(solver):
     result = model.solve(solver=solver)
     assert_equal(result.status.value, "Optimal")
     assert_equal(result.objective, 0)
-    assert_equal(result.best.tasks, [TaskData(0, [], 0, 0, present=False)])
-    assert_equal(result.best.jobs, [JobData(0, 0, present=False)])
+    assert_equal(
+        result.best.tasks, [ScheduledTask(0, [], 0, 0, present=False)]
+    )
+    assert_equal(result.best.jobs, [ScheduledJob(0, 0, present=False)])
 
 
 def test_mode_without_resources(solver: str):
@@ -1514,7 +1516,7 @@ def test_mode_without_resources(solver: str):
     assert_equal(result.objective, 2)
     assert_equal(
         result.best.tasks,
-        [TaskData(0, [], 0, 1), TaskData(2, [], 1, 2)],
+        [ScheduledTask(0, [], 0, 1), ScheduledTask(2, [], 1, 2)],
     )
 
 

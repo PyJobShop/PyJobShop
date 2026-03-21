@@ -3,7 +3,7 @@ from docplex.cp.solution import CpoSolveResult
 
 from pyjobshop.ProblemData import ProblemData
 from pyjobshop.Result import Result, SolveStatus
-from pyjobshop.Solution import Solution, TaskData
+from pyjobshop.Solution import ScheduledTask, Solution
 
 from .Constraints import Constraints
 from .Objective import Objective
@@ -75,7 +75,7 @@ class CPModel:
                 overlap = var.get_length() - var.size
                 processing = data.modes[mode_idx].duration
                 idle = var.get_length() - processing - overlap
-                tasks[task] = TaskData(
+                tasks[task] = ScheduledTask(
                     mode_idx,
                     data.modes[mode_idx].resources,
                     var.start,
@@ -87,7 +87,7 @@ class CPModel:
 
         for idx in range(data.num_tasks):
             if idx not in tasks:
-                tasks[idx] = TaskData(0, [], 0, 0, 0, 0, present=False)
+                tasks[idx] = ScheduledTask(0, [], 0, 0, 0, 0, present=False)
 
         return Solution(data, [tasks[idx] for idx in range(data.num_tasks)])
 

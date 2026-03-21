@@ -2,7 +2,7 @@ import pytest
 from numpy.testing import assert_, assert_equal
 
 from pyjobshop import Model, solve
-from pyjobshop.Solution import Solution, TaskData
+from pyjobshop.Solution import ScheduledTask, Solution
 from tests.utils import read
 
 
@@ -78,7 +78,9 @@ def test_solve_initial_solution(small, solver, capfd):
     }
     msg = solver2msg[solver]
 
-    init = Solution(small, [TaskData(0, [0], 0, 1), TaskData(1, [0], 1, 3)])
+    init = Solution(
+        small, [ScheduledTask(0, [0], 0, 1), ScheduledTask(1, [0], 1, 3)]
+    )
     solve(small, solver, display=True, initial_solution=init)
     printed = capfd.readouterr().out
     assert_(msg in printed)
