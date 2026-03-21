@@ -198,7 +198,7 @@ class Constraints:
 
                 model.add(presence2 == 0).only_enforce_if(presence1)
 
-    def _no_overlap_constraints(self):
+    def _task_pairs_no_overlap(self):
         """
         Creates pairwise no-overlap constraints for tasks that share a
         resource.
@@ -390,7 +390,7 @@ class Constraints:
         self._resource_breaks_constraints()
         self._timing_constraints()
         self._identical_and_different_resource_constraints()
-        self._no_overlap_constraints()
+        self._task_pairs_no_overlap()
         self._consecutive_constraints()
         self._same_sequence_constraints()
         self._circuit_constraints()  # must be after sequencing constraints!
