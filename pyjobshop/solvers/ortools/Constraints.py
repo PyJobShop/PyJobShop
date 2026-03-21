@@ -234,12 +234,22 @@ class Constraints:
         model, data, variables = self._model, self._data, self._variables
 
         for task_idx1, task_idx2 in data.constraints.no_overlap:
+            var1 = variables.task_vars[task_idx1]
+            var2 = variables.task_vars[task_idx2]
+
             for res_idx in range(data.num_resources):
                 assign1 = variables.assign_vars.get((task_idx1, res_idx))
                 assign2 = variables.assign_vars.get((task_idx2, res_idx))
 
                 if assign1 and assign2:
-                    model.add_no_overlap([assign1.interval, assign2.interval])
+                    order = model.new_bool_var("")
+                    both = [assign1.present, assign2.present]
+                    model.add(var1.end <= var2.start).only_enforce_if(
+                        *both, order
+                    )
+                    model.add(var2.end <= var1.start).only_enforce_if(
+                        *both, ~order
+                    )
 
     def _consecutive_constraints(self):
         """

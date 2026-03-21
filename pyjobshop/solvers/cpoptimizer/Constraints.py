@@ -266,12 +266,20 @@ class Constraints:
         model, data, variables = self._model, self._data, self._variables
 
         for idx1, idx2 in data.constraints.no_overlap:
+            task_var1 = variables.task_vars[idx1]
+            task_var2 = variables.task_vars[idx2]
             intersecting = utils.intersecting_modes(data, idx1, idx2)
 
             for mode1, mode2, _resources in intersecting:
-                var1 = variables.mode_vars[mode1]
-                var2 = variables.mode_vars[mode2]
-                model.add(cpo.no_overlap([var1, var2]))
+                both = cpo.logical_and(
+                    cpo.presence_of(variables.mode_vars[mode1]),
+                    cpo.presence_of(variables.mode_vars[mode2]),
+                )
+                disjunction = cpo.logical_or(
+                    cpo.end_of(task_var1) <= cpo.start_of(task_var2),
+                    cpo.end_of(task_var2) <= cpo.start_of(task_var1),
+                )
+                model.add(cpo.if_then(both, disjunction))
 
     def _consecutive_constraints(self):
         """
