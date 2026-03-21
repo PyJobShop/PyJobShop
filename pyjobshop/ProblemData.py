@@ -462,6 +462,18 @@ class NoOverlap(IterableMixin):
 
 
 @dataclass
+class NoMixing:
+    """
+    Prevents tasks from different groups from overlapping in time on a
+    given resource. Tasks within the same group may overlap (subject to
+    resource capacity). Each group is a list of task indices.
+    """
+
+    resource: int
+    groups: list[list[int]]
+
+
+@dataclass
 class Consecutive(IterableMixin):
     """
     Sequence task 1 and task 2 consecutively on the machines they are both
@@ -637,6 +649,7 @@ class Constraints:
     identical_resources: list[IdenticalResources] = field(default_factory=list)
     different_resources: list[DifferentResources] = field(default_factory=list)
     no_overlap: list[NoOverlap] = field(default_factory=list)
+    no_mixing: list[NoMixing] = field(default_factory=list)
     consecutive: list[Consecutive] = field(default_factory=list)
     same_sequence: list[SameSequence] = field(default_factory=list)
     setup_times: list[SetupTime] = field(default_factory=list)

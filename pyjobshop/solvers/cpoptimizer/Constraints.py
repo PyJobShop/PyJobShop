@@ -281,6 +281,28 @@ class Constraints:
                 )
                 model.add(cpo.if_then(both, disjunction))
 
+    def _no_mixing_constraints(self):
+        """
+        Creates no-mixing constraints using state functions: tasks from
+        different groups cannot overlap in time on the given resource.
+        """
+        model, data, variables = self._model, self._data, self._variables
+
+        for constraint in data.constraints.no_mixing:
+            res_idx = constraint.resource
+            state_fn = model.state_function(name=f"no_mixing_{res_idx}")
+
+            for group_idx, group in enumerate(constraint.groups):
+                for task_idx in group:
+                    modes = data.task2modes(task_idx)
+                    for mode_idx in modes:
+                        mode = data.modes[mode_idx]
+                        if res_idx in mode.resources:
+                            mode_var = variables.mode_vars[mode_idx]
+                            model.add(
+                                cpo.always_equal(state_fn, mode_var, group_idx)
+                            )
+
     def _consecutive_constraints(self):
         """
         Creates the consecutive constraints.
@@ -408,6 +430,7 @@ class Constraints:
         self._timing_constraints()
         self._identical_and_different_resource_constraints()
         self._task_pairs_no_overlap()
+        self._no_mixing_constraints()
         self._consecutive_constraints()
         self._same_sequence_constraints()
         self._mode_dependencies()

@@ -2022,6 +2022,35 @@ def test_no_overlap(solver: str):
     assert_equal(result.objective, 10)
 
 
+def test_no_mixing(solver: str):
+    """
+    Tests that the no mixing constraint prevents tasks from different
+    groups from overlapping on the same renewable resource, while tasks
+    within the same group can still overlap.
+    """
+    model = Model()
+
+    renewable = model.add_renewable(capacity=10)
+    task_a1 = model.add_task()
+    task_a2 = model.add_task()
+    task_b1 = model.add_task()
+
+    model.add_mode(task_a1, renewable, duration=5)
+    model.add_mode(task_a2, renewable, duration=5)
+    model.add_mode(task_b1, renewable, duration=5)
+
+    # Without no_mixing, all three tasks can overlap, so makespan is 5.
+    result = model.solve(solver=solver)
+    assert_equal(result.objective, 5)
+
+    # With no_mixing, group A tasks can overlap with each other, but
+    # group B tasks cannot overlap with group A. So the best schedule
+    # has group A (a1, a2) overlapping at [0, 5] and b1 at [5, 10].
+    model.add_no_mixing(renewable, [[task_a1, task_a2], [task_b1]])
+    result = model.solve(solver=solver)
+    assert_equal(result.objective, 10)
+
+
 def test_consecutive_constraint(solver: str):
     """
     Tests that the consecutive constraint is respected.

@@ -16,6 +16,7 @@ from pyjobshop.ProblemData import (
     Machine,
     Mode,
     ModeDependency,
+    NoMixing,
     NoOverlap,
     Objective,
     ProblemData,
@@ -381,6 +382,22 @@ class Model:
         idx1, idx2 = self._id2task[id(task1)], self._id2task[id(task2)]
         constraint = NoOverlap(idx1, idx2)
         self._constraints.no_overlap.append(constraint)
+
+        return constraint
+
+    def add_no_mixing(
+        self, resource: Resource, groups: list[list[Task]]
+    ) -> NoMixing:
+        """
+        Adds a constraint that prevents tasks from different groups from
+        overlapping in time on the given resource.
+        """
+        res_idx = self._id2resource[id(resource)]
+        idx_groups = [
+            [self._id2task[id(task)] for task in group] for group in groups
+        ]
+        constraint = NoMixing(res_idx, idx_groups)
+        self._constraints.no_mixing.append(constraint)
 
         return constraint
 

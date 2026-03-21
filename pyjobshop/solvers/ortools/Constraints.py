@@ -251,6 +251,37 @@ class Constraints:
                         *both, ~order
                     )
 
+    def _no_mixing_constraints(self):
+        """
+        Creates no-mixing constraints: tasks from different groups cannot
+        overlap in time on the given resource.
+        """
+        model, data, variables = self._model, self._data, self._variables
+
+        for constraint in data.constraints.no_mixing:
+            res_idx = constraint.resource
+
+            for g1, group1 in enumerate(constraint.groups):
+                for group2 in constraint.groups[g1 + 1 :]:
+                    for idx1 in group1:
+                        for idx2 in group2:
+                            a1 = variables.assign_vars.get((idx1, res_idx))
+                            a2 = variables.assign_vars.get((idx2, res_idx))
+
+                            if not (a1 and a2):
+                                continue
+
+                            var1 = variables.task_vars[idx1]
+                            var2 = variables.task_vars[idx2]
+                            order = model.new_bool_var("")
+                            both = [a1.present, a2.present]
+                            model.add(var1.end <= var2.start).only_enforce_if(
+                                *both, order
+                            )
+                            model.add(var2.end <= var1.start).only_enforce_if(
+                                *both, ~order
+                            )
+
     def _consecutive_constraints(self):
         """
         Creates the consecutive constraints.
@@ -429,6 +460,7 @@ class Constraints:
         self._timing_constraints()
         self._identical_and_different_resource_constraints()
         self._task_pairs_no_overlap()
+        self._no_mixing_constraints()
         self._consecutive_constraints()
         self._same_sequence_constraints()
         self._circuit_constraints()  # must be after sequencing constraints!
