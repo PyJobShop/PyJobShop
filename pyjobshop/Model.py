@@ -14,6 +14,7 @@ from pyjobshop.ProblemData import (
     Machine,
     Mode,
     ModeDependency,
+    NoOverlap,
     Objective,
     ProblemData,
     Renewable,
@@ -313,6 +314,17 @@ class Model:
         idx1, idx2 = self._id2task[id(task1)], self._id2task[id(task2)]
         constraint = DifferentResources(idx1, idx2)
         self._constraints.different_resources.append(constraint)
+
+        return constraint
+
+    def add_no_overlap(self, task1: Task, task2: Task) -> NoOverlap:
+        """
+        Adds a constraint that prevents two tasks from overlapping in time
+        if they are assigned to the same resource.
+        """
+        idx1, idx2 = self._id2task[id(task1)], self._id2task[id(task2)]
+        constraint = NoOverlap(idx1, idx2)
+        self._constraints.no_overlap.append(constraint)
 
         return constraint
 

@@ -198,6 +198,21 @@ class Constraints:
 
                 model.add(presence2 == 0).only_enforce_if(presence1)
 
+    def _no_overlap_constraints(self):
+        """
+        Creates pairwise no-overlap constraints for tasks that share a
+        resource.
+        """
+        model, data, variables = self._model, self._data, self._variables
+
+        for task_idx1, task_idx2 in data.constraints.no_overlap:
+            for res_idx in range(data.num_resources):
+                assign1 = variables.assign_vars.get((task_idx1, res_idx))
+                assign2 = variables.assign_vars.get((task_idx2, res_idx))
+
+                if assign1 and assign2:
+                    model.add_no_overlap([assign1.interval, assign2.interval])
+
     def _consecutive_constraints(self):
         """
         Creates the consecutive constraints.
@@ -375,6 +390,7 @@ class Constraints:
         self._resource_breaks_constraints()
         self._timing_constraints()
         self._identical_and_different_resource_constraints()
+        self._no_overlap_constraints()
         self._consecutive_constraints()
         self._same_sequence_constraints()
         self._circuit_constraints()  # must be after sequencing constraints!

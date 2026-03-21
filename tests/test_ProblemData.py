@@ -1941,6 +1941,31 @@ def test_different_resources_with_modes_and_multiple_resources(solver: str):
     assert_equal(result.best.tasks[1].mode, 3)
 
 
+def test_no_overlap(solver: str):
+    """
+    Tests that the no overlap constraint prevents two tasks from
+    overlapping when assigned to the same renewable resource.
+    """
+    model = Model()
+
+    renewable = model.add_renewable(capacity=10)
+    task1 = model.add_task()
+    task2 = model.add_task()
+    model.add_mode(task1, renewable, duration=5)
+    model.add_mode(task2, renewable, duration=5)
+
+    # Without no_overlap, the tasks can overlap on the renewable
+    # (capacity allows it), so makespan is 5.
+    result = model.solve(solver=solver)
+    assert_equal(result.objective, 5)
+
+    # With no_overlap, the tasks must not overlap on the shared
+    # renewable, so makespan becomes 10.
+    model.add_no_overlap(task1, task2)
+    result = model.solve(solver=solver)
+    assert_equal(result.objective, 10)
+
+
 def test_consecutive_constraint(solver: str):
     """
     Tests that the consecutive constraint is respected.

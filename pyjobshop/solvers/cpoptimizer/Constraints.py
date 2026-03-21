@@ -238,6 +238,21 @@ class Constraints:
                 )
                 model.add(expr1 <= expr2)
 
+    def _no_overlap_constraints(self):
+        """
+        Creates pairwise no-overlap constraints for tasks that share a
+        resource.
+        """
+        model, data, variables = self._model, self._data, self._variables
+
+        for idx1, idx2 in data.constraints.no_overlap:
+            intersecting = utils.intersecting_modes(data, idx1, idx2)
+
+            for mode1, mode2, _resources in intersecting:
+                var1 = variables.mode_vars[mode1]
+                var2 = variables.mode_vars[mode2]
+                model.add(cpo.no_overlap([var1, var2]))
+
     def _consecutive_constraints(self):
         """
         Creates the consecutive constraints.
@@ -364,6 +379,7 @@ class Constraints:
         self._resource_breaks_constraints()
         self._timing_constraints()
         self._identical_and_different_resource_constraints()
+        self._no_overlap_constraints()
         self._consecutive_constraints()
         self._same_sequence_constraints()
         self._mode_dependencies()
