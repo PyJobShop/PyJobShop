@@ -43,7 +43,7 @@ Contents
    examples/optional_tasks
    examples/breaks
    examples/objectives
-   examples/sequencing_constraints
+   examples/sequencing
    examples/solver_tips
 
 .. toctree::
