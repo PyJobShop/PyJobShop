@@ -20,6 +20,7 @@ class Objective:
         self._data = data
         self._task_vars = variables.task_vars
         self._job_vars = variables.job_vars
+        self._mode_vars = variables.mode_vars
         self._sequence_vars = variables.sequence_vars
 
     def _makespan_expr(self) -> CpoExpr:
@@ -85,6 +86,32 @@ class Objective:
         ]
         return cpo.max(tardiness)  # type: ignore
 
+    def _max_workload_expr(self) -> CpoExpr:
+        """
+        Returns an expression representing the weighted maximum completion
+        time over all machines.
+        """
+        data = self._data
+        workloads = []
+
+        for res_idx in data.machine_idcs:
+            weight = data.resources[res_idx].weight
+            modes = data.resource2modes(res_idx)
+
+            if not modes:
+                continue
+
+            intervals = [self._mode_vars[mode] for mode in modes]
+            completion = cpo.max(
+                cpo.end_of(var, absentValue=0) for var in intervals
+            )
+            workloads.append(weight * completion)
+
+        if not workloads:
+            return 0  # type: ignore
+
+        return cpo.max(workloads)  # type: ignore
+
     def _total_setup_time_expr(self) -> CpoExpr:
         """
         Returns an expression representing the total setup times.
@@ -134,6 +161,7 @@ class Objective:
             (objective.weight_total_earliness, self._total_earliness_expr),
             (objective.weight_max_tardiness, self._max_tardiness_expr),
             (objective.weight_total_setup_time, self._total_setup_time_expr),
+            (objective.weight_max_workload, self._max_workload_expr),
         ]
         exprs = [weight * expr() for weight, expr in items if weight > 0]
         return cpo.minimize(cpo.sum(exprs))

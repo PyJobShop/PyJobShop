@@ -114,6 +114,7 @@ class Machine:
 
     breaks: list[Break] = field(default_factory=list)
     no_idle: bool = False
+    weight: int = 1
     name: str = field(default="", kw_only=True)
 
     def __post_init__(self):
@@ -121,6 +122,9 @@ class Machine:
 
         if self.breaks and self.no_idle:
             raise ValueError("Breaks not allowed with no_idle=True.")
+
+        if self.weight < 0:
+            raise ValueError("Weight must be non-negative.")
 
 
 @dataclass
@@ -143,6 +147,7 @@ class Renewable:
 
     capacity: int
     breaks: list[Break] = field(default_factory=list)
+    weight: int = 1
     name: str = field(default="", kw_only=True)
 
     def __post_init__(self):
@@ -150,6 +155,9 @@ class Renewable:
 
         if self.capacity < 0:
             raise ValueError("Capacity must be non-negative.")
+
+        if self.weight < 0:
+            raise ValueError("Weight must be non-negative.")
 
 
 @dataclass
@@ -174,6 +182,7 @@ class Consumable:
 
     capacity: int
     breaks: list[Break] = field(default_factory=list)
+    weight: int = 1
     name: str = field(default="", kw_only=True)
 
     def __post_init__(self):
@@ -181,6 +190,9 @@ class Consumable:
 
         if self.capacity < 0:
             raise ValueError("Capacity must be non-negative.")
+
+        if self.weight < 0:
+            raise ValueError("Weight must be non-negative.")
 
 
 Resource = Machine | Renewable | Consumable
@@ -720,9 +732,14 @@ class Objective:
         .. math::
             TST = \sum_{r \in R} \sum_{u, v \in M^R_r} s_{t_u, t_v, r} b_{ruv}
 
+    **Maximum workload** (:math:`W_{\max}`): The weighted maximum completion time over all machines, where :math:`R` denotes the set of machines, :math:`w_r` denotes the weight of machine :math:`r`, and :math:`C_r` denotes the completion time of the last task on machine :math:`r`.
+        .. math::
+            W_{\max} = \max_{r \in R} w_r C_r
+
     .. note::
         Use :attr:`Job.weight` to set a specific job's weight (:math:`w_j`) in the
-        objective function.
+        objective function. Use :attr:`Machine.weight` to set a specific
+        machine's weight (:math:`w_r`) in the objective function.
     """  # noqa: E501
 
     weight_makespan: int = 0
@@ -732,6 +749,7 @@ class Objective:
     weight_total_earliness: int = 0
     weight_max_tardiness: int = 0
     weight_total_setup_time: int = 0
+    weight_max_workload: int = 0
 
     def __post_init__(self):
         for f in fields(self):

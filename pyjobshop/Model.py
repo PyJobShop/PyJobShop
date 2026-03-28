@@ -121,6 +121,7 @@ class Model:
         self,
         breaks: list[Break] | None = None,
         no_idle: bool = False,
+        weight: int = 1,
         *,
         name: str = "",
     ) -> Machine:
@@ -130,7 +131,7 @@ class Model:
         if breaks is None:
             breaks = []
 
-        machine = Machine(breaks, no_idle, name=name)
+        machine = Machine(breaks, no_idle, weight, name=name)
 
         self._id2resource[id(machine)] = len(self.resources)
         self._resources.append(machine)
@@ -141,6 +142,7 @@ class Model:
         self,
         capacity: int,
         breaks: list[Break] | None = None,
+        weight: int = 1,
         *,
         name: str = "",
     ) -> Renewable:
@@ -150,7 +152,7 @@ class Model:
         if breaks is None:
             breaks = []
 
-        resource = Renewable(capacity, breaks, name=name)
+        resource = Renewable(capacity, breaks, weight, name=name)
 
         self._id2resource[id(resource)] = len(self.resources)
         self._resources.append(resource)
@@ -161,6 +163,7 @@ class Model:
         self,
         capacity: int,
         breaks: list[Break] | None = None,
+        weight: int = 1,
         *,
         name: str = "",
     ) -> Consumable:
@@ -170,7 +173,7 @@ class Model:
         if breaks is None:
             breaks = []
 
-        resource = Consumable(capacity, breaks, name=name)
+        resource = Consumable(capacity, breaks, weight, name=name)
 
         self._id2resource[id(resource)] = len(self.resources)
         self._resources.append(resource)
@@ -526,6 +529,7 @@ class Model:
         weight_total_earliness: int = 0,
         weight_max_tardiness: int = 0,
         weight_total_setup_time: int = 0,
+        weight_max_workload: int = 0,
     ) -> Objective:
         """
         Sets the objective function in this model.
@@ -538,6 +542,7 @@ class Model:
             weight_total_earliness=weight_total_earliness,
             weight_max_tardiness=weight_max_tardiness,
             weight_total_setup_time=weight_total_setup_time,
+            weight_max_workload=weight_max_workload,
         )
         return self._objective
 

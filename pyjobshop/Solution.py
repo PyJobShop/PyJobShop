@@ -212,6 +212,7 @@ class Solution:
             + objective.weight_total_earliness * self.total_earliness
             + objective.weight_max_tardiness * self.max_tardiness
             + objective.weight_total_setup_time * self.total_setup_time
+            + objective.weight_max_workload * self.max_workload
         )
 
     @property
@@ -298,3 +299,24 @@ class Solution:
                 setup_times += matrix[machine_idx, task_idx1, task_idx2]
 
         return setup_times
+
+    @property
+    def max_workload(self) -> int:
+        """
+        Returns the weighted maximum completion time over all machines.
+        """
+        data = self._data
+        resource2tasks: dict[int, list[ScheduledTask]] = defaultdict(list)
+
+        for sol_task in self._tasks:
+            for res in sol_task.resources:
+                resource2tasks[res].append(sol_task)
+
+        workloads = []
+        for res_idx in data.machine_idcs:
+            weight = data.resources[res_idx].weight
+            tasks = resource2tasks[res_idx]
+            completion = max((t.end for t in tasks), default=0)
+            workloads.append(weight * completion)
+
+        return max(workloads, default=0)

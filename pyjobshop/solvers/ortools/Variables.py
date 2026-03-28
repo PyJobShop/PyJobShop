@@ -268,6 +268,7 @@ class Variables:
         self._tardiness_vars: list[IntVar] | None = None
         self._earliness_vars: list[IntVar] | None = None
         self._max_tardiness_var: IntVar | None = None
+        self._max_workload_var: IntVar | None = None
 
     @property
     def job_vars(self) -> list[JobVar]:
@@ -392,6 +393,18 @@ class Variables:
 
         self._max_tardiness_var = self._make_max_tardiness_variable()
         return self._max_tardiness_var
+
+    @property
+    def max_workload_var(self) -> IntVar:
+        """
+        Returns the max workload variable, creating it if it does not
+        exist.
+        """
+        if self._max_workload_var is not None:
+            return self._max_workload_var
+
+        self._max_workload_var = self._make_max_workload_variable()
+        return self._max_workload_var
 
     def res2assign(self, idx: int) -> list[OptionalIntervalVar]:
         """
@@ -586,6 +599,40 @@ class Variables:
 
         return makespan_var
 
+    def _make_max_workload_variable(self) -> IntVar:
+        """
+        Creates the max workload variable, defined as the weighted
+        maximum completion time over all machines.
+        """
+        model, data = self._model, self._data
+        max_workload_var = model.new_int_var(0, MAX_VALUE, "max_workload")
+        workloads = []
+
+        for res_idx in data.machine_idcs:
+            weight = data.resources[res_idx].weight
+            assigns = self.res2assign(res_idx)
+
+            if not assigns:
+                continue
+
+            # Completion time of a machine is the max end time of its
+            # present assignments (0 if none are present).
+            completion = model.new_int_var(0, MAX_VALUE, "")
+            ends = []
+            for var in assigns:
+                end = model.new_int_var(0, MAX_VALUE, "")
+                model.add(end == var.end).only_enforce_if(var.present)
+                model.add(end == 0).only_enforce_if(~var.present)
+                ends.append(end)
+
+            model.add_max_equality(completion, ends)
+            workloads.append(weight * completion)
+
+        if workloads:
+            model.add_max_equality(max_workload_var, workloads)
+
+        return max_workload_var
+
     def _make_is_tardy_variables(self) -> list[IntVar]:
         """
         Creates the Boolean variables indicating whether each job is tardy.
@@ -708,6 +755,9 @@ class Variables:
 
         if data.objective.weight_makespan > 0:
             model.add_hint(self.makespan_var, solution.makespan)
+
+        if data.objective.weight_max_workload > 0:
+            model.add_hint(self.max_workload_var, solution.max_workload)
 
         # Task and mode related variables.
         for task_idx in range(data.num_tasks):

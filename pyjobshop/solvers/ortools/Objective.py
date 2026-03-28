@@ -78,4 +78,7 @@ class Objective:
 
             expr += obj_weight * LinearExpr.sum(setup_time_vars)
 
+        if (obj_weight := objective.weight_max_workload) > 0:
+            expr += obj_weight * variables.max_workload_var
+
         self._model.minimize(expr)

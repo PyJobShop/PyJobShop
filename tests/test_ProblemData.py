@@ -398,13 +398,14 @@ def test_constraints_str():
 @pytest.mark.parametrize(
     "weights",
     [
-        [-1, 0, 0, 0, 0, 0, 0],  # weight_makespan < 0,
-        [0, -1, 0, 0, 0, 0, 0],  # weight_tardy_jobs < 0
-        [0, 0, -1, 0, 0, 0, 0],  # weight_total_flow_time < 0
-        [0, 0, 0, -1, 0, 0, 0],  # weight_total_tardiness < 0
-        [0, 0, 0, 0, -1, 0, 0],  # weight_total_earliness < 0
-        [0, 0, 0, 0, 0, -1, 0],  # weight_max_tardiness < 0
-        [0, 0, 0, 0, 0, 0, -1],  # weight_total_setup_time < 0
+        [-1, 0, 0, 0, 0, 0, 0, 0],  # weight_makespan < 0,
+        [0, -1, 0, 0, 0, 0, 0, 0],  # weight_tardy_jobs < 0
+        [0, 0, -1, 0, 0, 0, 0, 0],  # weight_total_flow_time < 0
+        [0, 0, 0, -1, 0, 0, 0, 0],  # weight_total_tardiness < 0
+        [0, 0, 0, 0, -1, 0, 0, 0],  # weight_total_earliness < 0
+        [0, 0, 0, 0, 0, -1, 0, 0],  # weight_max_tardiness < 0
+        [0, 0, 0, 0, 0, 0, -1, 0],  # weight_total_setup_time < 0
+        [0, 0, 0, 0, 0, 0, 0, -1],  # weight_max_workload < 0
     ],
 )
 def test_objective_valid_values(weights: list[int]):
@@ -2675,6 +2676,56 @@ def test_total_setup_time(solver: str):
     assert_equal(result.objective, 8)
     assert_equal(result.status.value, "Optimal")
     assert_equal(result.best.objective, 8)
+
+
+def test_max_workload(solver: str):
+    """
+    Tests that the max workload objective is correctly optimized.
+    """
+    model = Model()
+
+    # Two machines with weights 1 and 2.
+    m1 = model.add_machine(weight=1)
+    m2 = model.add_machine(weight=2)
+
+    # Two tasks, each can go on either machine.
+    tasks = [model.add_task() for _ in range(2)]
+    for task in tasks:
+        model.add_mode(task, m1, duration=3)
+        model.add_mode(task, m2, duration=3)
+
+    model.set_objective(weight_max_workload=1)
+    result = model.solve(solver=solver)
+
+    # Optimal: assign both tasks to machine 1 (weight=1), giving
+    # workload max(1*6, 2*0) = 6. Assigning any task to machine 2
+    # would give at least max(1*3, 2*3) = 6 as well, so optimal is 6.
+    assert_equal(result.objective, 6)
+    assert_equal(result.status.value, "Optimal")
+
+
+def test_max_workload_weighted(solver: str):
+    """
+    Tests that machine weights affect the max workload objective.
+    """
+    model = Model()
+
+    # Machine 1 has weight 10, machine 2 has weight 1.
+    m1 = model.add_machine(weight=10)
+    m2 = model.add_machine(weight=1)
+
+    tasks = [model.add_task() for _ in range(2)]
+    for task in tasks:
+        model.add_mode(task, m1, duration=2)
+        model.add_mode(task, m2, duration=2)
+
+    model.set_objective(weight_max_workload=1)
+    result = model.solve(solver=solver)
+
+    # Optimal: assign both tasks to machine 2 (weight=1), giving
+    # max(10*0, 1*4) = 4. Assigning one to m1 gives max(10*2, 1*2) = 20.
+    assert_equal(result.objective, 4)
+    assert_equal(result.status.value, "Optimal")
 
 
 def test_combined_objective(solver: str):
