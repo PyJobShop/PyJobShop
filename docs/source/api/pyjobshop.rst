@@ -31,7 +31,6 @@ PyJobShop
          ~Model.add_end_at_end
          ~Model.add_identical_resources
          ~Model.add_different_resources
-         ~Model.add_no_overlap
          ~Model.add_no_mixing
          ~Model.add_consecutive
          ~Model.add_same_sequence
@@ -88,8 +87,6 @@ PyJobShop
     .. autoclass:: IdenticalResources
 
     .. autoclass:: DifferentResources
-
-    .. autoclass:: NoOverlap
 
     .. autoclass:: NoMixing
 

@@ -462,18 +462,6 @@ class DifferentResources(IterableMixin):
 
 
 @dataclass
-class NoOverlap(IterableMixin):
-    """
-    Prevents two tasks from overlapping in time if they are assigned to the
-    same resource. If the selected modes of task 1 and task 2 share at least
-    one resource, their intervals must not overlap.
-    """
-
-    task1: int
-    task2: int
-
-
-@dataclass
 class NoMixing:
     """
     Prevents tasks from different groups from overlapping in time on a
@@ -660,7 +648,6 @@ class Constraints:
     end_at_end: list[EndAtEnd] = field(default_factory=list)
     identical_resources: list[IdenticalResources] = field(default_factory=list)
     different_resources: list[DifferentResources] = field(default_factory=list)
-    no_overlap: list[NoOverlap] = field(default_factory=list)
     no_mixing: list[NoMixing] = field(default_factory=list)
     consecutive: list[Consecutive] = field(default_factory=list)
     same_sequence: list[SameSequence] = field(default_factory=list)

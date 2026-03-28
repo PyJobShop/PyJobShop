@@ -226,31 +226,6 @@ class Constraints:
 
                 model.add(presence2 == 0).only_enforce_if(presence1)
 
-    def _task_pairs_no_overlap(self):
-        """
-        Creates pairwise no-overlap constraints for tasks that share a
-        resource.
-        """
-        model, data, variables = self._model, self._data, self._variables
-
-        for task_idx1, task_idx2 in data.constraints.no_overlap:
-            var1 = variables.task_vars[task_idx1]
-            var2 = variables.task_vars[task_idx2]
-
-            for res_idx in range(data.num_resources):
-                assign1 = variables.assign_vars.get((task_idx1, res_idx))
-                assign2 = variables.assign_vars.get((task_idx2, res_idx))
-
-                if assign1 and assign2:
-                    order = model.new_bool_var("")
-                    both = [assign1.present, assign2.present]
-                    model.add(var1.end <= var2.start).only_enforce_if(
-                        *both, order
-                    )
-                    model.add(var2.end <= var1.start).only_enforce_if(
-                        *both, ~order
-                    )
-
     def _no_mixing_constraints(self):
         """
         Creates no-mixing constraints: tasks from different groups cannot
@@ -459,7 +434,6 @@ class Constraints:
         self._resource_breaks_constraints()
         self._timing_constraints()
         self._identical_and_different_resource_constraints()
-        self._task_pairs_no_overlap()
         self._no_mixing_constraints()
         self._consecutive_constraints()
         self._same_sequence_constraints()

@@ -14,7 +14,6 @@ from .ProblemData import Machine as Machine
 from .ProblemData import Mode as Mode
 from .ProblemData import ModeDependency as ModeDependency
 from .ProblemData import NoMixing as NoMixing
-from .ProblemData import NoOverlap as NoOverlap
 from .ProblemData import Objective as Objective
 from .ProblemData import ProblemData as ProblemData
 from .ProblemData import Renewable as Renewable

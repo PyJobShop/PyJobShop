@@ -258,29 +258,6 @@ class Constraints:
                 )
                 model.add(expr1 <= expr2)
 
-    def _task_pairs_no_overlap(self):
-        """
-        Creates pairwise no-overlap constraints for tasks that share a
-        resource.
-        """
-        model, data, variables = self._model, self._data, self._variables
-
-        for idx1, idx2 in data.constraints.no_overlap:
-            task_var1 = variables.task_vars[idx1]
-            task_var2 = variables.task_vars[idx2]
-            intersecting = utils.intersecting_modes(data, idx1, idx2)
-
-            for mode1, mode2, _resources in intersecting:
-                both = cpo.logical_and(
-                    cpo.presence_of(variables.mode_vars[mode1]),
-                    cpo.presence_of(variables.mode_vars[mode2]),
-                )
-                disjunction = cpo.logical_or(
-                    cpo.end_of(task_var1) <= cpo.start_of(task_var2),
-                    cpo.end_of(task_var2) <= cpo.start_of(task_var1),
-                )
-                model.add(cpo.if_then(both, disjunction))
-
     def _no_mixing_constraints(self):
         """
         Creates no-mixing constraints using state functions: tasks from
@@ -429,7 +406,6 @@ class Constraints:
         self._resource_breaks_constraints()
         self._timing_constraints()
         self._identical_and_different_resource_constraints()
-        self._task_pairs_no_overlap()
         self._no_mixing_constraints()
         self._consecutive_constraints()
         self._same_sequence_constraints()
