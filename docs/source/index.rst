@@ -42,8 +42,8 @@ Contents
    examples/project_scheduling
    examples/optional_tasks
    examples/breaks
-   examples/objectives
    examples/sequencing
+   examples/objectives
    examples/solver_tips
 
 .. toctree::
