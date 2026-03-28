@@ -89,12 +89,12 @@ class Objective:
     def _max_workload_expr(self) -> CpoExpr:
         """
         Returns an expression representing the weighted maximum completion
-        time over all machines.
+        time over all resources.
         """
         data = self._data
         workloads = []
 
-        for res_idx in data.machine_idcs:
+        for res_idx in range(data.num_resources):
             weight = data.resources[res_idx].weight
             modes = data.resource2modes(res_idx)
 

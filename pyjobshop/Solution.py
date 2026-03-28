@@ -303,7 +303,7 @@ class Solution:
     @property
     def max_workload(self) -> int:
         """
-        Returns the weighted maximum completion time over all machines.
+        Returns the weighted maximum completion time over all resources.
         """
         data = self._data
         resource2tasks: dict[int, list[ScheduledTask]] = defaultdict(list)
@@ -313,7 +313,7 @@ class Solution:
                 resource2tasks[res].append(sol_task)
 
         workloads = []
-        for res_idx in data.machine_idcs:
+        for res_idx in range(data.num_resources):
             weight = data.resources[res_idx].weight
             tasks = resource2tasks[res_idx]
             completion = max((t.end for t in tasks), default=0)

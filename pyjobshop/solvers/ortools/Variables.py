@@ -602,34 +602,18 @@ class Variables:
     def _make_max_workload_variable(self) -> IntVar:
         """
         Creates the max workload variable, defined as the weighted
-        maximum completion time over all machines.
+        maximum completion time over all resources.
         """
         model, data = self._model, self._data
         max_workload_var = model.new_int_var(0, MAX_VALUE, "max_workload")
-        workloads = []
 
-        for res_idx in data.machine_idcs:
+        for res_idx in range(data.num_resources):
             weight = data.resources[res_idx].weight
             assigns = self.res2assign(res_idx)
 
-            if not assigns:
-                continue
-
-            # Completion time of a machine is the max end time of its
-            # present assignments (0 if none are present).
-            completion = model.new_int_var(0, MAX_VALUE, "")
-            ends = []
             for var in assigns:
-                end = model.new_int_var(0, MAX_VALUE, "")
-                model.add(end == var.end).only_enforce_if(var.present)
-                model.add(end == 0).only_enforce_if(~var.present)
-                ends.append(end)
-
-            model.add_max_equality(completion, ends)
-            workloads.append(weight * completion)
-
-        if workloads:
-            model.add_max_equality(max_workload_var, workloads)
+                expr = weight * var.end <= max_workload_var
+                model.add(expr).only_enforce_if(var.present)
 
         return max_workload_var
 
