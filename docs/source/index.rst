@@ -43,7 +43,8 @@ Contents
    examples/optional_tasks
    examples/breaks
    examples/objectives
-   examples/quick_examples
+   examples/sequencing_constraints
+   examples/solver_tips
 
 .. toctree::
    :maxdepth: 1
