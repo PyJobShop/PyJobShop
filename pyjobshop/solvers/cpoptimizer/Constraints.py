@@ -242,21 +242,37 @@ class Constraints:
         """
         model, data, variables = self._model, self._data, self._variables
 
-        for idx1, idx2 in data.constraints.identical_resources:
-            for mode1, modes2 in utils.identical_modes(data, idx1, idx2):
-                expr1 = presence_of(variables.mode_vars[mode1])
-                expr2 = sum(
-                    presence_of(variables.mode_vars[mode2]) for mode2 in modes2
+        for task1, task2 in data.constraints.identical_resources:
+            modes1 = data.task2modes(task1)
+            modes2 = data.task2modes(task2)
+            for res_idx in range(data.num_resources):
+                expr1 = sum(
+                    presence_of(variables.mode_vars[m])
+                    for m in modes1
+                    if res_idx in data.modes[m].resources
                 )
-                model.add(expr1 <= expr2)
+                expr2 = sum(
+                    presence_of(variables.mode_vars[m])
+                    for m in modes2
+                    if res_idx in data.modes[m].resources
+                )
+                model.add(expr1 == expr2)
 
-        for idx1, idx2 in data.constraints.different_resources:
-            for mode1, modes2 in utils.different_modes(data, idx1, idx2):
-                expr1 = presence_of(variables.mode_vars[mode1])
-                expr2 = sum(
-                    presence_of(variables.mode_vars[mode2]) for mode2 in modes2
+        for task1, task2 in data.constraints.different_resources:
+            modes1 = data.task2modes(task1)
+            modes2 = data.task2modes(task2)
+            for res_idx in range(data.num_resources):
+                expr1 = sum(
+                    presence_of(variables.mode_vars[m])
+                    for m in modes1
+                    if res_idx in data.modes[m].resources
                 )
-                model.add(expr1 <= expr2)
+                expr2 = sum(
+                    presence_of(variables.mode_vars[m])
+                    for m in modes2
+                    if res_idx in data.modes[m].resources
+                )
+                model.add(expr1 + expr2 <= 1)
 
     def _no_mixing_constraints(self):
         """
