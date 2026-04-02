@@ -47,9 +47,9 @@ def plot_resource_usage(
 
     usages = _compute_usage(solution, data)
 
-    for i, resource in enumerate(resources):
+    for idx, resource in enumerate(resources):
         usage = usages[resource]
-        ax = axes[i]
+        ax = axes[idx]
         time = np.arange(len(usage))
         label = data.resources[resource].name or f"Resource {resource}"
 
