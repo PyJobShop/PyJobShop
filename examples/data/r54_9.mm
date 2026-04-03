@@ -33,7 +33,7 @@ jobnr.    #modes  #successors   successors
   15        3          1          18
   16        3          1          18
   17        3          1          18
-  18        1          0        
+  18        1          0
 ************************************************************************
 REQUESTS/DURATIONS:
 jobnr. mode duration  R 1  R 2  R 3  R 4  R 5  N 1  N 2

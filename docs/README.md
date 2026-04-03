@@ -1,6 +1,6 @@
 # Documentation
 
-This directory hosts the documentation. 
+This directory hosts the documentation.
 We use Sphinx for this.
 If you want to build the documentation, you need to manually install [`pandoc`](https://pandoc.org/installing.html), as well as a few unique dependencies that are listed in the development dependencies group in the top-level `pyproject.toml`.
 You can install those dependencies using `uv sync --all-groups`.
