@@ -42,6 +42,7 @@ Contents
    examples/project_scheduling
    examples/optional_tasks
    examples/breaks
+   examples/storage_units
    examples/sequencing
    examples/objectives
    examples/solver_tips
