@@ -17,9 +17,9 @@ pronr.  #jobs rel.date duedate tardcost  MPM-Time
 PRECEDENCE RELATIONS:
 jobnr.    #modes  #successors   successors
    1        1          1           2
-   2        3          1           3 
+   2        3          1           3
    3        3          1           4
-   4        1          0        
+   4        1          0
 ************************************************************************
 REQUESTS/DURATIONS:
 jobnr. mode duration  R 1  R 2  N 1  N 2
