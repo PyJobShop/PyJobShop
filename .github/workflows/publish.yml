@@ -10,6 +10,8 @@ jobs:
   run:
     name: "Build and publish release"
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write  # for trusted publishing
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
@@ -23,5 +25,3 @@ jobs:
       - run: uv python install 3.12
       - run: uv build
       - run: uv publish
-        env:
-            UV_PUBLISH_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
