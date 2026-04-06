@@ -6,6 +6,8 @@ on:
   pull_request:
     branches: [ main ]
 
+permissions: {}
+
 jobs:
   build:
     name: Test pyjobshop using Python ${{ matrix.python-version }}
@@ -15,10 +17,12 @@ jobs:
       matrix:
         python-version: ['3.10', '3.11', '3.12', '3.13', '3.14']
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
 
       - name: Install the latest version of uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6.8.0
         with:
           version: "0.8.10"
           python-version: ${{ matrix.python-version }}
@@ -28,7 +32,7 @@ jobs:
         run: uv sync --all-extras
 
       - name: Cache pre-commit
-        uses: actions/cache@v3
+        uses: actions/cache@6f8efc29b200d32929f49075959781ed54ec270c # v3.5.0
         id: cache-pre-commit
         with:
           path: ~/.cache/pre-commit/
@@ -45,6 +49,6 @@ jobs:
         run: uv run pytest
 
       - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@9cc74bf7e13a810454a28846494ddbc3795eb693 # v3.1.6
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
