@@ -2066,10 +2066,13 @@ def test_before_constraint_different_machines(solver: str):
     task2 = model.add_task()
 
     model.add_mode(task1, machine1, duration=5)
+    model.add_mode(task1, machine2, duration=5)
+    model.add_mode(task2, machine1, duration=1)
     model.add_mode(task2, machine2, duration=1)
 
-    # Before constraint should have no effect since the tasks do not
-    # share a machine. Task 2 can start at time 0 in parallel.
+    # Before constraint should have no effect when the tasks are assigned
+    # to different machines. The solver assigns them to separate machines
+    # so they run in parallel.
     model.add_before(task1, task2)
 
     result = model.solve(solver=solver)
