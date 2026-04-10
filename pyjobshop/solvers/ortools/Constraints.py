@@ -247,6 +247,29 @@ class Constraints:
 
                 model.add(arc == 1).only_enforce_if(both_present)
 
+    def _before_constraints(self):
+        """
+        Creates the before constraints. Task 1 must appear before task 2
+        in the sequence, but other tasks may appear between them.
+        """
+        model, data, variables = self._model, self._data, self._variables
+
+        for task_idx1, task_idx2 in data.constraints.before:
+            for res_idx in data.machine_idcs:
+                var1 = variables.assign_vars.get((task_idx1, res_idx))
+                var2 = variables.assign_vars.get((task_idx2, res_idx))
+                if not (var1 and var2):
+                    continue
+
+                seq_var = variables.sequence_vars[res_idx]
+                seq_var.activate_ranks(model)
+
+                rank1 = seq_var.ranks[task_idx1]
+                rank2 = seq_var.ranks[task_idx2]
+                both_present = [var1.present, var2.present]
+
+                model.add(rank1 < rank2).only_enforce_if(both_present)
+
     def _same_sequence_constraints(self):
         """
         Creates the same sequence constraints.
@@ -344,6 +367,28 @@ class Constraints:
 
                     model.add(expr).only_enforce_if(arc)
 
+            if not seq_var.ranks:
+                continue
+
+            ranks = seq_var.ranks
+
+            for task_idx in res_tasks:
+                var = variables.assign_vars[task_idx, res_idx]
+                model.add(ranks[task_idx] == -1).only_enforce_if(~var.present)
+
+                start_arc = arcs[seq_var.DUMMY, task_idx]
+                model.add(ranks[task_idx] == 0).only_enforce_if(start_arc)
+
+            for task_idx1 in res_tasks:
+                for task_idx2 in res_tasks:
+                    if task_idx1 == task_idx2:
+                        continue
+
+                    arc = arcs[task_idx1, task_idx2]
+                    model.add(
+                        ranks[task_idx2] == ranks[task_idx1] + 1
+                    ).only_enforce_if(arc)
+
     def _mode_dependencies(self):
         """
         Implements the mode dependency constraints.
@@ -404,6 +449,7 @@ class Constraints:
         self._timing_constraints()
         self._identical_and_different_resource_constraints()
         self._consecutive_constraints()
+        self._before_constraints()
         self._same_sequence_constraints()
         self._circuit_constraints()  # must be after sequencing constraints!
         self._mode_dependencies()

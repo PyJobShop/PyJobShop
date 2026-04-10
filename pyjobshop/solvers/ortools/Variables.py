@@ -169,6 +169,7 @@ class SequenceVar:
     def __init__(self, tasks: list[int]):
         self._tasks = tasks
         self._arcs: dict[tuple[TaskIdx, TaskIdx], BoolVarT] = {}
+        self._ranks: dict[int, IntVar] = {}
         self._is_active = False
 
     @property
@@ -179,11 +180,35 @@ class SequenceVar:
         return self._arcs
 
     @property
+    def ranks(self) -> dict[int, IntVar]:
+        """
+        Returns the rank variables of the sequence variable.
+        """
+        return self._ranks
+
+    @property
     def is_active(self) -> bool:
         """
         Returns whether the sequence variable is active.
         """
         return self._is_active
+
+    def activate_ranks(self, model: CpModel):
+        """
+        Activates rank variables for all tasks in this sequence. Rank
+        variables track the position of each task in the sequence, which
+        is needed for before constraints.
+        """
+        if self._ranks:
+            return
+
+        self.activate(model)
+
+        num_tasks = len(self._tasks)
+        self._ranks = {
+            task: model.new_int_var(-1, num_tasks - 1, f"rank_{task}")
+            for task in self._tasks
+        }
 
     def activate(self, model: CpModel):
         """

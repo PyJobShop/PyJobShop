@@ -277,6 +277,25 @@ class Constraints:
 
                     model.add(cpo.previous(seq_var, var1, var2))
 
+    def _before_constraints(self):
+        """
+        Creates the before constraints.
+        """
+        model, data, variables = self._model, self._data, self._variables
+
+        for idx1, idx2 in data.constraints.before:
+            intersecting = utils.intersecting_modes(data, idx1, idx2)
+
+            for mode1, mode2, resources in intersecting:
+                res_idcs = set(resources) & set(data.machine_idcs)
+
+                for res_idx in res_idcs:
+                    seq_var = variables.sequence_vars[res_idx]
+                    var1 = variables.mode_vars[mode1]
+                    var2 = variables.mode_vars[mode2]
+
+                    model.add(cpo.before(seq_var, var1, var2))
+
     def _same_sequence_constraints(self):
         """
         Creates the same sequence constraints.
@@ -385,6 +404,7 @@ class Constraints:
         self._timing_constraints()
         self._identical_and_different_resource_constraints()
         self._consecutive_constraints()
+        self._before_constraints()
         self._same_sequence_constraints()
         self._mode_dependencies()
         self._task_selection_constraints()

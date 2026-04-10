@@ -2,6 +2,7 @@ from typing import Literal
 
 from pyjobshop.constants import MAX_VALUE
 from pyjobshop.ProblemData import (
+    Before,
     Break,
     Consecutive,
     Constraints,
@@ -384,6 +385,18 @@ class Model:
 
         return constraint
 
+    def add_before(self, task1: Task, task2: Task) -> Before:
+        """
+        Adds a constraint that the first task must be scheduled before the
+        second task on machines that they are both scheduled on. Unlike
+        ``add_consecutive``, other tasks may appear between them.
+        """
+        idx1, idx2 = self._id2task[id(task1)], self._id2task[id(task2)]
+        constraint = Before(idx1, idx2)
+        self._constraints.before.append(constraint)
+
+        return constraint
+
     def add_same_sequence(
         self,
         machine1: Machine,
@@ -602,6 +615,9 @@ class Model:
 
         for idx1, idx2 in data.constraints.consecutive:
             model.add_consecutive(tasks[idx1], tasks[idx2])
+
+        for idx1, idx2 in data.constraints.before:
+            model.add_before(tasks[idx1], tasks[idx2])
 
         for idcs in data.constraints.same_sequence:
             res_idx1, res_idx2, task_idcs1, task_idcs2 = idcs

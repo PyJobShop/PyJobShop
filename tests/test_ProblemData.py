@@ -4,6 +4,7 @@ from numpy.testing import assert_, assert_equal, assert_raises
 from pyjobshop.constants import MAX_VALUE
 from pyjobshop.Model import Model
 from pyjobshop.ProblemData import (
+    Before,
     Consecutive,
     Constraints,
     Consumable,
@@ -364,6 +365,7 @@ def test_constraints_len():
         identical_resources=[IdenticalResources(0, 1)],
         different_resources=[DifferentResources(0, 1)],
         consecutive=[Consecutive(1, 2)],
+        before=[Before(1, 2)],
         same_sequence=[SameSequence(0, 1)],
         setup_times=[
             SetupTime(0, 0, 1, 1),  # machine
@@ -376,7 +378,7 @@ def test_constraints_len():
         select_exactly_one=[SelectAtLeastOne([1, 0])],
     )
 
-    assert_equal(len(constraints), 15)
+    assert_equal(len(constraints), 16)
 
 
 def test_constraints_str():
@@ -678,6 +680,7 @@ def test_problem_data_all_modes_demand_infeasible():
         ("identical_resources", IdenticalResources, [(2, 0), (0, 2)]),
         ("different_resources", DifferentResources, [(2, 0), (0, 2)]),
         ("consecutive", Consecutive, [(2, 0), (0, 2)]),
+        ("before", Before, [(2, 0), (0, 2)]),
         (
             "same_sequence",
             SameSequence,
@@ -2018,6 +2021,36 @@ def test_consecutive_constraint(solver: str):
     # Task 2 must be scheduled directly before task 1, but the setup time
     # between them is 100, so the makespan is 1 + 100 + 1 = 102.
     assert_equal(result.objective, 102)
+
+
+def test_before_constraint(solver: str):
+    """
+    Tests that the before constraint is respected but allows gaps.
+    """
+    model = Model()
+
+    machine = model.add_machine()
+    task1 = model.add_task()
+    task2 = model.add_task()
+    task3 = model.add_task()
+
+    model.add_mode(task1, machine, duration=1)
+    model.add_mode(task2, machine, duration=1)
+    model.add_mode(task3, machine, duration=2)
+
+    # task1 must come before task2, but task3 can be between them.
+    model.add_before(task1, task2)
+
+    # Add a large setup time from task1 directly to task2, so the solver
+    # is incentivized to put task3 between them.
+    model.add_setup_time(machine, task1, task2, duration=100)
+
+    result = model.solve(solver=solver)
+
+    # Optimal: task1 -> task3 -> task2, makespan = 1 + 0 + 2 + 0 + 1 = 4
+    # If before were consecutive, makespan would be 1 + 100 + 1 = 102.
+    assert_equal(result.objective, 4)
+    assert_equal(result.status.value, "Optimal")
 
 
 def test_consecutive_multiple_machines(solver: str):

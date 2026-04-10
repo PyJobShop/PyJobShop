@@ -1,5 +1,6 @@
 from .constants import MAX_VALUE as MAX_VALUE
 from .Model import Model as Model
+from .ProblemData import Before as Before
 from .ProblemData import Consecutive as Consecutive
 from .ProblemData import Constraints as Constraints
 from .ProblemData import Consumable as Consumable

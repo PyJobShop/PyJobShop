@@ -472,6 +472,27 @@ class Consecutive(IterableMixin):
 
 
 @dataclass
+class Before(IterableMixin):
+    """
+    Sequence task 1 before task 2 on the machines they are both assigned to.
+    Unlike ``Consecutive``, other tasks may appear between them.
+
+    Hand-waving some details, let :math:`m_1, m_2` be the selected modes of
+    task 1 and task 2, and let :math:`R` denote the machines that both modes
+    require. This constraint ensures that
+
+    .. math::
+        m_1 \\prec m_2 \\quad \\forall r \\in R,
+
+    where :math:`\\prec` means that :math:`m_1` is ordered before
+    :math:`m_2` in the sequence (but not necessarily directly before).
+    """
+
+    task1: int
+    task2: int
+
+
+@dataclass
 class SameSequence(IterableMixin):
     """
     Ensures that two machines process their assigned tasks in the same relative
@@ -625,6 +646,7 @@ class Constraints:
     identical_resources: list[IdenticalResources] = field(default_factory=list)
     different_resources: list[DifferentResources] = field(default_factory=list)
     consecutive: list[Consecutive] = field(default_factory=list)
+    before: list[Before] = field(default_factory=list)
     same_sequence: list[SameSequence] = field(default_factory=list)
     setup_times: list[SetupTime] = field(default_factory=list)
     mode_dependencies: list[ModeDependency] = field(default_factory=list)
@@ -888,6 +910,7 @@ class ProblemData:
             (self.constraints.identical_resources, "identical_resources"),
             (self.constraints.different_resources, "different_resources"),
             (self.constraints.consecutive, "consecutive"),
+            (self.constraints.before, "before"),
         ]
 
         for constraints, name in task_pair_constraints:

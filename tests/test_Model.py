@@ -2,6 +2,7 @@ from numpy.testing import assert_equal
 
 from pyjobshop.Model import Model
 from pyjobshop.ProblemData import (
+    Before,
     Consecutive,
     Constraints,
     DifferentResources,
@@ -42,6 +43,7 @@ def test_model_to_data():
     model.add_identical_resources(task2, task1)
     model.add_different_resources(task2, task1)
     model.add_consecutive(task2, task1)
+    model.add_before(task2, task1)
     model.add_same_sequence(machine1, machine2, [task1], [task2])
     model.add_setup_time(machine1, task1, task2, 3)
     model.add_setup_time(machine2, task1, task2, 4)
@@ -73,6 +75,7 @@ def test_model_to_data():
         identical_resources=[IdenticalResources(1, 0)],
         different_resources=[DifferentResources(1, 0)],
         consecutive=[Consecutive(1, 0)],
+        before=[Before(1, 0)],
         same_sequence=[SameSequence(0, 1, [0], [1])],
         setup_times=[SetupTime(0, 0, 1, 3), SetupTime(1, 0, 1, 4)],
         mode_dependencies=[ModeDependency(0, [1])],
