@@ -2077,6 +2077,9 @@ def test_before_constraint_different_machines(solver: str):
 
     result = model.solve(solver=solver)
 
+    # The solver assigns the tasks to different machines, so they run in
+    # parallel and the before constraint is a no-op. Makespan = max(5, 1) = 5.
+    # If the constraint forced sequential execution, it would be 5 + 1 = 6.
     assert_equal(result.objective, 5)
     assert_equal(result.status.value, "Optimal")
 
