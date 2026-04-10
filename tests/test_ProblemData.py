@@ -2053,6 +2053,31 @@ def test_before_constraint(solver: str):
     assert_equal(result.status.value, "Optimal")
 
 
+def test_before_constraint_different_machines(solver: str):
+    """
+    Tests that the before constraint is a no-op when tasks are on different
+    machines.
+    """
+    model = Model()
+
+    machine1 = model.add_machine()
+    machine2 = model.add_machine()
+    task1 = model.add_task()
+    task2 = model.add_task()
+
+    model.add_mode(task1, machine1, duration=5)
+    model.add_mode(task2, machine2, duration=1)
+
+    # Before constraint should have no effect since the tasks do not
+    # share a machine. Task 2 can start at time 0 in parallel.
+    model.add_before(task1, task2)
+
+    result = model.solve(solver=solver)
+
+    assert_equal(result.objective, 5)
+    assert_equal(result.status.value, "Optimal")
+
+
 def test_consecutive_multiple_machines(solver: str):
     """
     Test the consecutive constraint with tasks that have modes with multiple
