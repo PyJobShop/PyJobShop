@@ -2083,6 +2083,39 @@ def test_before_constraint_different_machines(solver: str):
     assert_equal(result.status.value, "Optimal")
 
 
+def test_before_constraint_chain(solver: str):
+    """
+    Tests that chained before constraints are respected.
+    """
+    model = Model()
+
+    machine = model.add_machine()
+    task1 = model.add_task()
+    task2 = model.add_task()
+    task3 = model.add_task()
+
+    model.add_mode(task1, machine, duration=1)
+    model.add_mode(task2, machine, duration=1)
+    model.add_mode(task3, machine, duration=1)
+
+    # before(task1, task2) + before(task2, task3) transitively forces
+    # task1 before task3.
+    model.add_before(task1, task2)
+    model.add_before(task2, task3)
+
+    # Large setup time from task1 to task3 to incentivize the solver to
+    # put task1 after task3 if it could.
+    model.add_setup_time(machine, task1, task3, duration=100)
+
+    result = model.solve(solver=solver)
+
+    # The only feasible ordering is task1 -> task2 -> task3 with
+    # makespan = 1 + 0 + 1 + 0 + 1 = 3. The setup time from task1 to
+    # task3 does not apply since they are not directly adjacent.
+    assert_equal(result.objective, 3)
+    assert_equal(result.status.value, "Optimal")
+
+
 def test_consecutive_multiple_machines(solver: str):
     """
     Test the consecutive constraint with tasks that have modes with multiple
