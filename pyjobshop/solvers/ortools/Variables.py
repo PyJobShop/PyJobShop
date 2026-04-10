@@ -813,3 +813,14 @@ class Variables:
                     )
 
                 model.add_hint(arc, hint)
+
+            if not seq_var.ranks:
+                continue
+
+            # Sort assigned tasks by start time to determine ranks.
+            sorted_tasks = sorted(assigned, key=task_start)
+            task2rank = {task: rank for rank, task in enumerate(sorted_tasks)}
+
+            for task_idx, rank_var in seq_var.ranks.items():
+                rank = task2rank.get(task_idx, -1)
+                model.add_hint(rank_var, rank)
