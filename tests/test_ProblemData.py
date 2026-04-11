@@ -2083,36 +2083,29 @@ def test_before_constraint_different_machines(solver: str):
     assert_equal(result.status.value, "Optimal")
 
 
-def test_before_constraint_chain(solver: str):
+def test_before_constraint_optional_task(solver: str):
     """
-    Tests that chained before constraints are respected.
+    Tests that the before constraint is vacuously satisfied when one of
+    the tasks is optional and absent from the solution.
     """
     model = Model()
 
     machine = model.add_machine()
-    task1 = model.add_task()
+    task1 = model.add_task(optional=True)
     task2 = model.add_task()
-    task3 = model.add_task()
 
     model.add_mode(task1, machine, duration=1)
     model.add_mode(task2, machine, duration=1)
-    model.add_mode(task3, machine, duration=1)
 
-    # before(task1, task2) + before(task2, task3) transitively forces
-    # task1 before task3.
-    model.add_before(task1, task2)
-    model.add_before(task2, task3)
-
-    # Large setup time from task1 to task3 to incentivize the solver to
-    # put task1 after task3 if it could.
-    model.add_setup_time(machine, task1, task3, duration=100)
+    # A before constraint in the "wrong" direction. If task1 were present,
+    # the setup time from task2 to task1 would force a makespan of 102.
+    # Since task1 is optional, the solver drops it and the makespan is 1.
+    model.add_before(task2, task1)
+    model.add_setup_time(machine, task2, task1, duration=100)
 
     result = model.solve(solver=solver)
 
-    # The only feasible ordering is task1 -> task2 -> task3 with
-    # makespan = 1 + 0 + 1 + 0 + 1 = 3. The setup time from task1 to
-    # task3 does not apply since they are not directly adjacent.
-    assert_equal(result.objective, 3)
+    assert_equal(result.objective, 1)
     assert_equal(result.status.value, "Optimal")
 
 
