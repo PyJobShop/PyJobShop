@@ -1,3 +1,5 @@
+from collections import defaultdict
+from dataclasses import dataclass
 from itertools import product
 
 import numpy as np
@@ -160,3 +162,90 @@ def merge(intervals: list[tuple[int, int]]) -> list[tuple[int, int]]:
             merged[-1] = (merged[-1][0], new_end)
 
     return merged
+
+
+@dataclass
+class Component:
+    """
+    A simple dataclass to represent a redundant cumulative component.
+
+    Parameters
+    ----------
+    machines
+        Set of machine indices that belong to this component.
+    tasks
+        Set of task indices that can be assigned to any of the machines
+        in this component.
+    """
+
+    machines: set[int]
+    tasks: set[int]
+
+
+def redundant_cumulative_components(data: ProblemData) -> list[Component]:
+    """
+    Returns a list of components, consisting of a group of machines and
+    tasks, which can be used to add redundant cumulative constraints to
+    enhance constraint propagation.
+
+    First, a graph is built where nodes are machines, and an edge between
+    two machines is added if they appear together in the machine assignments
+    of any task. Then, connected components are found using depth-first search
+    on this graph. Finally, for each component, we find the set of tasks that
+    can be assigned to any of the machines in that component.
+
+    Parameters
+    ----------
+    data
+        The problem data instance.
+
+    Returns
+    -------
+    list[Component]
+        A list of components, each containing a set of machine indices and
+        a set of task indices that can be assigned to any of the machines in
+        the component.
+    """
+    task2machines = defaultdict(set)
+    for task_idx in range(data.num_tasks):
+        for mode_idx in data.task2modes(task_idx):
+            mode = data.modes[mode_idx]
+            machines = set(mode.resources) & set(data.machine_idcs)
+            task2machines[task_idx].update(machines)
+
+    # Build the machines graph.
+    graph = defaultdict(set)
+    for task_idx in range(data.num_tasks):
+        for idx1, idx2 in product(task2machines[task_idx], repeat=2):
+            graph[idx1].add(idx2)
+
+    # Find the machine components.
+    nodes = set(graph.keys())
+    visited = set()
+    machine_components: list[set[int]] = []
+
+    def dfs(node, component):
+        visited.add(node)
+        component.add(node)
+
+        for neighbor in graph.get(node, []):
+            if neighbor not in visited:
+                dfs(neighbor, component)
+
+    for node in nodes:
+        if node not in visited:
+            component: set[int] = set()
+            dfs(node, component)
+            machine_components.append(component)
+
+    # Find the tasks belonging to each component.
+    result = []
+    for machines in machine_components:
+        tasks = {
+            task
+            for task, task_machines in task2machines.items()
+            if task_machines & machines
+        }
+        result.append(Component(machines, tasks))
+
+    return result
