@@ -4,6 +4,10 @@ Execute example notebooks into Markdown for the Zensical docs build.
 This mirrors the old nbsphinx execution behaviour as a pre-build step: each
 notebook is run, and its outputs are captured under docs/source/examples/.
 Set SKIP_NOTEBOOKS=1 to convert without executing for faster local builds.
+
+This is a temporary workaround. Once Zensical supports the mkdocs-jupyter
+plugin natively, notebooks can be rendered directly and this script removed.
+Tracked upstream at https://github.com/zensical/backlog/issues/9.
 """
 
 import os
@@ -15,20 +19,6 @@ from pathlib import Path
 REPO = Path(__file__).parent.parent
 EXAMPLES_SRC = REPO / "examples"
 EXAMPLES_OUT = REPO / "docs" / "source" / "examples"
-
-# Display order and titles, taken from the old index.rst examples toctree.
-ORDER = [
-    ("simple_example", "Simple example"),
-    ("flexible_job_shop", "Flexible job shop"),
-    ("hybrid_flow_shop", "Hybrid flow shop"),
-    ("permutation_flow_shop", "Permutation flow shop"),
-    ("project_scheduling", "Project scheduling"),
-    ("optional_tasks", "Optional tasks"),
-    ("breaks", "Breaks"),
-    ("sequencing", "Sequencing"),
-    ("objectives", "Objectives"),
-    ("solver_tips", "Solver tips"),
-]
 
 NUMERIC_REFERENCE = re.compile(r"(?<!\\)\[(\d+(?:\s*[-,]\s*\d+)+)\](?!\()")
 TRUTHY_ENV = {"1", "true", "yes", "on"}
@@ -105,8 +95,8 @@ def main() -> None:
     EXAMPLES_OUT.mkdir(parents=True, exist_ok=True)
     skip_execution = os.getenv("SKIP_NOTEBOOKS", "").lower() in TRUTHY_ENV
 
-    for stem, _title in ORDER:
-        notebook = EXAMPLES_SRC / f"{stem}.ipynb"
+    for notebook in sorted(EXAMPLES_SRC.glob("*.ipynb")):
+        stem = notebook.stem
         cmd = [
             sys.executable,
             "-m",
