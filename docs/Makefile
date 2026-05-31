@@ -1,20 +1,17 @@
-# Minimal makefile for Sphinx documentation
-#
+# Documentation build (Zensical).
 
-# You can set these variables from the command line, and also
-# from the environment for the first two.
-SPHINXOPTS    ?=
-SPHINXBUILD   ?= sphinx-build
-SOURCEDIR     = source
-BUILDDIR      = build
+.PHONY: html fast serve clean
 
-# Put it first so that "make" without argument is like "make help".
-help:
-	@$(SPHINXBUILD) -M help "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
+html:
+	uv run python ../scripts/build_examples.py
+	uv run zensical build --clean
 
-.PHONY: help Makefile
+fast:
+	SKIP_NOTEBOOKS=1 uv run python ../scripts/build_examples.py
+	uv run zensical build --clean
 
-# Catch-all target: route all unknown targets to Sphinx using the new
-# "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).
-%: Makefile
-	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
+serve:
+	uv run zensical serve
+
+clean:
+	rm -rf build source/examples

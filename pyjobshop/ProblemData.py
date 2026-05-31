@@ -298,11 +298,12 @@ class IterableMixin:
 @dataclass
 class StartBeforeStart(IterableMixin):
     """
-    Start task 1 (:math:`s_1`) before task 2 starts (:math:`s_2`), with an
-    optional delay :math:`d`. That is,
+    Start task 1 ($s_1$) before task 2 starts ($s_2$), with an optional delay
+    $d$. That is,
 
-    .. math::
-        s_1 + d \\leq s_2.
+    $$
+    s_1 + d \\leq s_2.
+    $$
     """
 
     task1: int
@@ -313,11 +314,12 @@ class StartBeforeStart(IterableMixin):
 @dataclass
 class StartBeforeEnd(IterableMixin):
     """
-    Start task 1 (:math:`s_1`) before task 2 ends (:math:`e_2`), with an
-    optional delay :math:`d`. That is,
+    Start task 1 ($s_1$) before task 2 ends ($e_2$), with an optional delay
+    $d$. That is,
 
-    .. math::
-        s_1 + d \\leq e_2.
+    $$
+    s_1 + d \\leq e_2.
+    $$
     """
 
     task1: int
@@ -328,11 +330,12 @@ class StartBeforeEnd(IterableMixin):
 @dataclass
 class EndBeforeStart(IterableMixin):
     """
-    End task 1 (:math:`e_1`) before task 2 starts (:math:`s_2`), with an
-    optional delay :math:`d`. That is,
+    End task 1 ($e_1$) before task 2 starts ($s_2$), with an optional delay
+    $d$. That is,
 
-    .. math::
-        e_1 + d \\leq s_2.
+    $$
+    e_1 + d \\leq s_2.
+    $$
     """
 
     task1: int
@@ -343,11 +346,12 @@ class EndBeforeStart(IterableMixin):
 @dataclass
 class EndBeforeEnd(IterableMixin):
     """
-    End task 1 (:math:`e_1`) before task 2 ends (:math:`e_2`), with an
-    optional delay :math:`d`. That is,
+    End task 1 ($e_1$) before task 2 ends ($e_2$), with an optional delay
+    $d$. That is,
 
-    .. math::
-        e_1 + d \\leq e_2.
+    $$
+    e_1 + d \\leq e_2.
+    $$
     """
 
     task1: int
@@ -358,11 +362,12 @@ class EndBeforeEnd(IterableMixin):
 @dataclass
 class StartAtStart(IterableMixin):
     """
-    Start task 1 (:math:`s_1`) at the start of task 2 (:math:`s_2`), with
-    an optional delay :math:`d`. That is,
+    Start task 1 ($s_1$) at the start of task 2 ($s_2$), with an optional
+    delay $d$. That is,
 
-    .. math::
-        s_1 + d = s_2.
+    $$
+    s_1 + d = s_2.
+    $$
     """
 
     task1: int
@@ -373,11 +378,12 @@ class StartAtStart(IterableMixin):
 @dataclass
 class StartAtEnd(IterableMixin):
     """
-    Start task 1 (:math:`s_1`) at the end of task 2 (:math:`e_2`), with an
-    optional delay :math:`d`. That is,
+    Start task 1 ($s_1$) at the end of task 2 ($e_2$), with an optional delay
+    $d$. That is,
 
-    .. math::
-        s_1 + d = e_2.
+    $$
+    s_1 + d = e_2.
+    $$
     """
 
     task1: int
@@ -388,11 +394,12 @@ class StartAtEnd(IterableMixin):
 @dataclass
 class EndAtStart(IterableMixin):
     """
-    End task 1 (:math:`e_1`) at the start of task 2 (:math:`s_2`), with an
-    optional delay :math:`d`. That is,
+    End task 1 ($e_1$) at the start of task 2 ($s_2$), with an optional delay
+    $d$. That is,
 
-    .. math::
-        e_1 + d = s_2.
+    $$
+    e_1 + d = s_2.
+    $$
     """
 
     task1: int
@@ -403,11 +410,12 @@ class EndAtStart(IterableMixin):
 @dataclass
 class EndAtEnd(IterableMixin):
     """
-    End task 1 (:math:`e_1`) at the end of task 2 (:math:`e_2`), with an
-    optional delay :math:`d`. That is,
+    End task 1 ($e_1$) at the end of task 2 ($e_2$), with an optional delay
+    $d$. That is,
 
-    .. math::
-        e_1 + d = e_2.
+    $$
+    e_1 + d = e_2.
+    $$
     """
 
     task1: int
@@ -420,12 +428,12 @@ class IdenticalResources(IterableMixin):
     """
     Select modes for task 1 and task 2 that use the same resources.
 
-    Let :math:`m_1, m_2` be the selected modes of task 1 and task 2, and let
-    :math:`R_m` denote the resources required by mode :math:`m`. This
-    constraint ensures that
+    Let $m_1, m_2$ be the selected modes of task 1 and task 2, and let $R_m$
+    denote the resources required by mode $m$. This constraint ensures that
 
-    .. math::
-        R_{m_1} = R_{m_2}.
+    $$
+    R_{m_1} = R_{m_2}.
+    $$
     """
 
     task1: int
@@ -437,12 +445,12 @@ class DifferentResources(IterableMixin):
     """
     Select modes for task 1 and task 2 that use different resources.
 
-    Let :math:`m_1, m_2` be the selected modes of task 1 and task 2, and let
-    :math:`R_m` denote the resources required by mode :math:`m`. This
-    constraint ensures that
+    Let $m_1, m_2$ be the selected modes of task 1 and task 2, and let $R_m$
+    denote the resources required by mode $m$. This constraint ensures that
 
-    .. math::
-        R_{m_1} \\cap R_{m_2} = \\emptyset.
+    $$
+    R_{m_1} \\cap R_{m_2} = \\emptyset.
+    $$
     """
 
     task1: int
@@ -456,15 +464,16 @@ class Consecutive(IterableMixin):
     assigned to, meaning that no other task is allowed to be scheduled between
     them.
 
-    Hand-waving some details, let :math:`m_1, m_2` be the selected modes of
-    task 1 and task 2, and let :math:`R` denote the machines that both modes
-    require. This constraint ensures that
+    Hand-waving some details, let $m_1, m_2$ be the selected modes of task 1
+    and task 2, and let $R$ denote the machines that both modes require. This
+    constraint ensures that
 
-    .. math::
-        m_1 \\to m_2 \\quad \\forall r \\in R,
+    $$
+    m_1 \\to m_2 \\quad \\forall r \\in R,
+    $$
 
-    where :math:`\\to` means that :math:`m_1` is directly followed by
-    :math:`m_2` and no other interval is scheduled between them.
+    where $\\to$ means that $m_1$ is directly followed by $m_2$ and no other
+    interval is scheduled between them.
     """
 
     task1: int
@@ -521,18 +530,19 @@ class SetupTime(IterableMixin):
     Sequence-dependent setup time between task 1 and task 2 on the given
     machine.
 
-    Let :math:`e_1` be the end time of task 1 and let :math:`s_2` be the
-    start time of task 2. If the selected modes of task 1 and task 2 both
-    require the given machine, then this constraint ensures that
+    Let $e_1$ be the end time of task 1 and let $s_2$ be the start time of
+    task 2. If the selected modes of task 1 and task 2 both require the given
+    machine, then this constraint ensures that
 
-    .. math::
-        e_1 + d \\leq s_2,
+    $$
+    e_1 + d \\leq s_2,
+    $$
 
-    where :math:`d` is the setup time duration. Note that this also implies
-    an end-before-start relationship between task 1 and task 2.
+    where $d$ is the setup time duration. Note that this also implies an
+    end-before-start relationship between task 1 and task 2.
 
-    When using :attr:`Machine.breaks`, setup times are allowed to take place
-    during the breaks.
+    When using `Machine.breaks`, setup times are allowed to take place during
+    the breaks.
     """
 
     machine: int
@@ -551,14 +561,15 @@ class ModeDependency(IterableMixin):
     Represents a dependency between task modes: if mode 1 is selected,
     then at least one of the modes in modes2 must also be selected.
 
-    Let :math:`m_1` be the Boolean variable indicating whether mode 1 is
-    selected. Let :math:`M_2` be the set of Boolean variables corresponding
-    to the modes in modes2.
+    Let $m_1$ be the Boolean variable indicating whether mode 1 is selected.
+    Let $M_2$ be the set of Boolean variables corresponding to the modes in
+    modes2.
 
     The constraint is then expressed as:
 
-    .. math::
-        m_1 \\leq \\sum_{m \\in M_2} m
+    $$
+    m_1 \\leq \\sum_{m \\in M_2} m
+    $$
     """
 
     mode1: int
@@ -656,48 +667,74 @@ class Constraints:
 @dataclass
 class Objective:
     r"""
-    The objective class represents a weighted sum of objective functions :math:`f`, calculated as:
-    :math:`\sum_f \text{weight}_f \cdot \text{value}_f` with :math:`\text{weight}_f \ge 0`.
-    The objective functions :math:`f` are defined below.
+    The objective class represents a weighted sum of objective functions $f$,
+    calculated as $\sum_f \text{weight}_f \cdot \text{value}_f$ with
+    $\text{weight}_f \ge 0$. The objective functions $f$ are defined below.
 
-    In the following, let :math:`J` denote the set of jobs, :math:`T` denote the set of tasks,
-    :math:`C_j` denote the completion time of job :math:`j`, and :math:`C_t` denote the completion time of
-    task :math:`t`.
+    In the following, let $J$ denote the set of jobs, $T$ denote the set of
+    tasks, $C_j$ denote the completion time of job $j$, and $C_t$ denote the
+    completion time of task $t$.
 
-    **Makespan** (:math:`C_{\max}`): The finish time of the latest task.
-        .. math::
-            C_{\max} = \max_{t \in T} C_t
+    **Makespan** ($C_{\max}$): The finish time of the latest task.
 
-    **Number of tardy jobs** (:math:`NTJ`): The weighted sum of all tardy jobs, where a job is tardy when it does not meet its due date :math:`d_j`.
-        .. math::
-            NTJ = \sum_{j \in J} w_j \mathbb{1}_{\{C_j - d_j > 0\}}
+    $$
+    C_{\max} = \max_{t \in T} C_t
+    $$
 
-    where :math:`\mathbb{1}_{\{x\}}` is the indicator function.
+    **Number of tardy jobs** ($NTJ$): The weighted sum of all tardy jobs, where
+    a job is tardy when it does not meet its due date $d_j$.
 
-    **Total flow time** (:math:`TFT`): The weighted sum of the length of stay in the system of each job, from their release date to their completion.
-        .. math::
-            TFT = \sum_{j \in J} w_j ( C_j - r_j )
+    $$
+    NTJ = \sum_{j \in J} w_j \mathbb{1}_{\{C_j - d_j > 0\}}
+    $$
 
-    **Total tardiness** (:math:`TT`): The weighted sum of the tardiness of each job, where the tardiness is the difference between completion time and due date :math:`d_j` (0 if completed before due date).
-        .. math::
-            TT = \sum_{j \in J} w_j \max(C_j - d_j, 0)
+    where $\mathbb{1}_{\{x\}}$ is the indicator function.
 
-    **Total earliness** (:math:`TE`): The weighted sum of the earliness of each job, where earliness is the difference between due date :math:`d_j` and completion time (0 if completed after due date).
-        .. math::
-            TE = \sum_{j \in J} w_j (\max(d_j - C_j, 0))
+    **Total flow time** ($TFT$): The weighted sum of the length of stay in the
+    system of each job, from their release date to their completion.
 
-    **Maximum tardiness** (:math:`U_{\max}`): The weighted maximum tardiness of all jobs.
-        .. math::
-            U_{\max} = \max_{j \in J} w_j (\max(C_j - d_j, 0))
+    $$
+    TFT = \sum_{j \in J} w_j ( C_j - r_j )
+    $$
 
-    **Total setup time** (:math:`TST`): The sum of all sequence-dependent setup times between consecutive tasks on each machine, where :math:`R` denotes the set of machines, :math:`M^R_r` denotes the set of modes requiring :math:`r \in R`, :math:`s_{t_u, t_v, r}` denotes the setup time between tasks :math:`t_u` and :math:`t_v` on machine :math:`r` and :math:`b_{ruv}` is the binary variable indicating whether task :math:`t_u` is followed by task :math:`t_v` on machine :math:`r`.
-        .. math::
-            TST = \sum_{r \in R} \sum_{u, v \in M^R_r} s_{t_u, t_v, r} b_{ruv}
+    **Total tardiness** ($TT$): The weighted sum of the tardiness of each job,
+    where the tardiness is the difference between completion time and due date
+    $d_j$ (0 if completed before due date).
 
-    .. note::
-        Use :attr:`Job.weight` to set a specific job's weight (:math:`w_j`) in the
+    $$
+    TT = \sum_{j \in J} w_j \max(C_j - d_j, 0)
+    $$
+
+    **Total earliness** ($TE$): The weighted sum of the earliness of each job,
+    where earliness is the difference between due date $d_j$ and completion
+    time (0 if completed after due date).
+
+    $$
+    TE = \sum_{j \in J} w_j (\max(d_j - C_j, 0))
+    $$
+
+    **Maximum tardiness** ($U_{\max}$): The weighted maximum tardiness of all
+    jobs.
+
+    $$
+    U_{\max} = \max_{j \in J} w_j (\max(C_j - d_j, 0))
+    $$
+
+    **Total setup time** ($TST$): The sum of all sequence-dependent setup times
+    between consecutive tasks on each machine, where $R$ denotes the set of
+    machines, $M^R_r$ denotes the set of modes requiring $r \in R$,
+    $s_{t_u, t_v, r}$ denotes the setup time between tasks $t_u$ and $t_v$ on
+    machine $r$ and $b_{ruv}$ is the binary variable indicating whether task
+    $t_u$ is followed by task $t_v$ on machine $r$.
+
+    $$
+    TST = \sum_{r \in R} \sum_{u, v \in M^R_r} s_{t_u, t_v, r} b_{ruv}
+    $$
+
+    !!! note
+        Use `Job.weight` to set a specific job's weight ($w_j$) in the
         objective function.
-    """  # noqa: E501
+    """
 
     weight_makespan: int = 0
     weight_tardy_jobs: int = 0
@@ -1220,7 +1257,7 @@ class ProblemData:
             An indent level of 0 will only insert newlines. ``None`` is the
             most compact representation. Default is 2.
         **kwargs
-            Additional keyword arguments passed to :func:`json.dumps`.
+            Additional keyword arguments passed to `json.dumps`.
 
         Returns
         -------
@@ -1252,7 +1289,7 @@ class ProblemData:
         json_str
             The JSON string to deserialize.
         **kwargs
-            Additional keyword arguments passed to :func:`json.loads`.
+            Additional keyword arguments passed to `json.loads`.
 
         Returns
         -------

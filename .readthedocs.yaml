@@ -9,6 +9,7 @@ build:
     - asdf install uv latest
     - asdf global uv latest
     - uv sync --all-groups
-    - .venv/bin/python -m sphinx -T -b html -d docs/_build/doctrees -D language=en docs/source $READTHEDOCS_OUTPUT/html
-sphinx:
-  configuration: docs/source/conf.py
+    - uv run python scripts/build_examples.py
+    - cd docs && uv run zensical build --clean
+    - mkdir -p $READTHEDOCS_OUTPUT/html
+    - cp -a docs/build/. $READTHEDOCS_OUTPUT/html

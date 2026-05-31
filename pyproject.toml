@@ -66,10 +66,10 @@ dev = [
     "codecov>=2.1.13",
 ]
 docs = [
-    "sphinx>=7.4.7,<8.2.0",
-    "nbsphinx>=0.9.5",
-    "sphinx-immaterial>=0.12.2",
-    "sphinx-autodoc-typehints>=2.0.0",
+    "zensical>=0.0.43",
+    "mkdocstrings-python>=1.11.0",
+    "nbconvert>=7.16.0",
+    {include-group = "examples"},
 ]
 examples = [
     "jupyter>=1.0.0",
