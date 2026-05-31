@@ -80,9 +80,18 @@ docstring_section_style = "table"
 members_order = "source"
 separate_signature = true
 show_signature_annotations = true
+signature_crossrefs = true
 show_root_heading = true
+show_root_full_path = false
+show_symbol_type_heading = true
+show_symbol_type_toc = false
 show_source = false
-heading_level = 2
+heading_level = 3
+
+[project.plugins.mkdocstrings.handlers.python.options.summary]
+attributes = true
+functions = true
+classes = true
 
 [project.markdown_extensions.admonition]
 [project.markdown_extensions.attr_list]
