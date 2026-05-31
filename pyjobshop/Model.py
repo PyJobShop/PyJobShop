@@ -118,7 +118,6 @@ class Model:
     def add_machine(
         self,
         breaks: list[Break] | None = None,
-        no_idle: bool = False,
         *,
         name: str = "",
     ) -> Machine:
@@ -128,7 +127,7 @@ class Model:
         if breaks is None:
             breaks = []
 
-        machine = Machine(breaks, no_idle, name=name)
+        machine = Machine(breaks, name=name)
 
         self._id2resource[id(machine)] = len(self.resources)
         self._resources.append(machine)
@@ -537,11 +536,7 @@ class Model:
 
         for resource in data.resources:
             if isinstance(resource, Machine):
-                model.add_machine(
-                    resource.breaks,
-                    resource.no_idle,
-                    name=resource.name,
-                )
+                model.add_machine(resource.breaks, name=resource.name)
             elif isinstance(resource, Renewable):
                 model.add_renewable(
                     resource.capacity,

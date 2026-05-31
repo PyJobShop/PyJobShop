@@ -49,7 +49,7 @@ def complete_data():
     """
     jobs = [Job(tasks=[2], due_date=1)]
     resources = [
-        Machine(no_idle=True),
+        Machine(),
         Renewable(1),
         Consumable(1),
         Machine(),

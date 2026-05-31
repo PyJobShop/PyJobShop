@@ -98,29 +98,15 @@ class Machine:
         break is represented as a tuple ``(start, end)``, where ``start`` must
         be non-negative and ``start`` must be smaller than ``end``. Default is
         no breaks.
-    no_idle
-        Whether the machine must operate continuously without idle time between
-        tasks. When ``True``, tasks are scheduled back-to-back with no gaps,
-        except for required setup times. When ``False`` (default), the machine
-        can remain idle between tasks. Cannot be combined with breaks.
     name
         Name of the machine.
-
-    Raises
-    ------
-    ValueError
-        When breaks are specified and ``no_idle=True``.
     """
 
     breaks: list[Break] = field(default_factory=list)
-    no_idle: bool = False
     name: str = field(default="", kw_only=True)
 
     def __post_init__(self):
         _validate_breaks(self.breaks)
-
-        if self.breaks and self.no_idle:
-            raise ValueError("Breaks not allowed with no_idle=True.")
 
 
 @dataclass
