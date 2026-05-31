@@ -1,10 +1,10 @@
 # Citing PyJobShop
 
-If you use PyJobShop in your research, please consider citing the following
-paper:
+If you use PyJobShop in your research, please consider citing the following paper:
 
-> Lan, L., and Berkhout, J. (2025). PyJobShop: Solving scheduling problems with
-> constraint programming in Python. <https://arxiv.org/abs/2502.13483>
+> Lan, L., and Berkhout, J. (2025).
+> PyJobShop: Solving scheduling problems with constraint programming in Python.
+> <https://arxiv.org/abs/2502.13483>
 
 Or, using the following BibTeX entry:
 

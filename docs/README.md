@@ -1,7 +1,7 @@
 # Documentation
 
-This directory hosts the documentation. The site is built with Zensical from
-Markdown files in `docs/source/`.
+This directory hosts the documentation.
+The site is built with Zensical from Markdown files in `docs/source/`.
 
 Install the development and documentation dependencies from the project root:
 
@@ -15,9 +15,7 @@ Build the documentation from this directory:
 uv run make html
 ```
 
-The full build executes the example notebooks from the repository-level
-`examples/` directory, converts them to Markdown in `docs/source/examples/`,
-and then runs `zensical build`.
+The full build executes the example notebooks from the repository-level `examples/` directory, converts them to Markdown in `docs/source/examples/`, and then runs `zensical build`.
 
 For faster local iteration, convert notebooks without executing them:
 

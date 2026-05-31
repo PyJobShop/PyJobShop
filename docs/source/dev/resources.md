@@ -1,7 +1,6 @@
 # Resources
 
-Below is a list of useful resources for OR-Tools and CP Optimizer, which may
-come in handy when developing PyJobShop.
+Below is a list of useful resources for OR-Tools and CP Optimizer, which may come in handy when developing PyJobShop.
 
 ## OR-Tools
 
@@ -11,8 +10,7 @@ come in handy when developing PyJobShop.
   Protobuf of OR-Tools parameters.
 - [CP-SAT recipes](https://github.com/google/or-tools/blob/1715a7f/ortools/sat/docs/scheduling.md):
   Modeling recipes for CP-SAT.
-- [CP-SAT Primer](https://github.com/d-krupke/cpsat-primer): introductory book
-  to OR-Tools' CP-SAT solver.
+- [CP-SAT Primer](https://github.com/d-krupke/cpsat-primer): introductory book to OR-Tools' CP-SAT solver.
 - [Scheduling seminar on CP-SAT](https://www.youtube.com/watch?v=vvUxusrUcpU):
   talk by Laurent Perron on CP-SAT.
 

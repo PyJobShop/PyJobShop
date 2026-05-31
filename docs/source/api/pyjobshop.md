@@ -1,33 +1,28 @@
 # PyJobShop API
 
-The public API is organized around a few core objects. Use the overview below
-to jump to the high-level concepts, then use the detailed reference for
-signatures, parameter tables, and return values.
+The public API is organized around a few core objects.
+Use the overview below to jump to the high-level concepts, then use the detailed reference for signatures, parameter tables, and return values.
 
 <div class="api-overview-grid">
 
 <a class="api-overview-card" href="#modeling-interface">
 <strong>Modeling</strong>
-<span>Build scheduling problems incrementally with <code>Model</code>, jobs,
-resources, tasks, and modes.</span>
+<span>Build scheduling problems incrementally with <code>Model</code>, jobs, resources, tasks, and modes.</span>
 </a>
 
 <a class="api-overview-card" href="#problem-data">
 <strong>Problem data</strong>
-<span>Inspect and serialize immutable scheduling instances with
-<code>ProblemData</code>.</span>
+<span>Inspect and serialize immutable scheduling instances with <code>ProblemData</code>.</span>
 </a>
 
 <a class="api-overview-card" href="#constraint-types">
 <strong>Constraints</strong>
-<span>Represent timing, resource, sequencing, setup-time, and selection
-rules.</span>
+<span>Represent timing, resource, sequencing, setup-time, and selection rules.</span>
 </a>
 
 <a class="api-overview-card" href="#solutions-and-results">
 <strong>Solutions</strong>
-<span>Work with solver output, scheduled tasks, job metrics, and solve
-status.</span>
+<span>Work with solver output, scheduled tasks, job metrics, and solve status.</span>
 </a>
 
 </div>
