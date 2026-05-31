@@ -144,11 +144,11 @@ class Solution:
         The list of ScheduledTask objects, one for each task in the problem,
         or an empty list if a dummy solution is to be created.
 
-
-    .. note::
-       This class does **not** validate whether the solution is feasible. When
-       instantiated directly, it assumes that the provided task data represent
-       a feasible solution, or an empty solution if no tasks are provided.
+    Notes
+    -----
+    This class does **not** validate whether the solution is feasible. When
+    instantiated directly, it assumes that the provided task data represent a
+    feasible solution, or an empty solution if no tasks are provided.
     """
 
     def __init__(self, data: ProblemData, tasks: list[ScheduledTask]):
