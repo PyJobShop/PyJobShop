@@ -71,6 +71,7 @@ docs = [
     "jupyter>=1.0.0",
     "nbconvert>=7.16.0",
     "matplotlib>=3.8.0",
+    "ruff>=0.8.0",
 ]
 examples = [
     "jupyter>=1.0.0",
