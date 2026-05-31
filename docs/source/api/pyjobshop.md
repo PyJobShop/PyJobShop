@@ -119,4 +119,6 @@ Use the overview below to jump to the high-level concepts, then use the detailed
 
 ::: pyjobshop.solve.solve
 
+::: pyjobshop.show_versions.show_versions
+
 ::: pyjobshop.constants

@@ -15,7 +15,7 @@ To limit the amount of time needed to triage your problem, please do the followi
 
 - Include a short, self-contained code snippet that reproduces the problem.
 - Specify the version information of the `pyjobshop` installation you use.
-  You can do this by including the output of `pyjobshop.show_versions()`:
+  You can do this by including the output of [`pyjobshop.show_versions()`](../api/pyjobshop.md#pyjobshop.show_versions.show_versions):
 
     ```python
     import pyjobshop

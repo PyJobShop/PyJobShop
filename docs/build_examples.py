@@ -6,7 +6,6 @@ notebook is run, and its outputs are captured under docs/source/examples/.
 Set SKIP_NOTEBOOKS=1 to convert without executing for faster local builds.
 """
 
-import json
 import os
 import re
 import subprocess
@@ -32,6 +31,7 @@ ORDER = [
 ]
 
 NUMERIC_REFERENCE = re.compile(r"(?<!\\)\[(\d+(?:\s*[-,]\s*\d+)+)\](?!\()")
+TRUTHY_ENV = {"1", "true", "yes", "on"}
 
 
 def _fence_indented_blocks(markdown: str) -> str:
@@ -103,7 +103,7 @@ def _post_process(markdown: str) -> str:
 
 def main() -> None:
     EXAMPLES_OUT.mkdir(parents=True, exist_ok=True)
-    skip_execution = os.getenv("SKIP_NOTEBOOKS")
+    skip_execution = os.getenv("SKIP_NOTEBOOKS", "").lower() in TRUTHY_ENV
 
     for stem, _title in ORDER:
         notebook = EXAMPLES_SRC / f"{stem}.ipynb"
@@ -129,10 +129,6 @@ def main() -> None:
 
         markdown = EXAMPLES_OUT / f"{stem}.md"
         markdown.write_text(_post_process(markdown.read_text()))
-
-    nav = [{title: f"examples/{stem}.md"} for stem, title in ORDER]
-    (HERE / "examples_nav.json").write_text(json.dumps(nav, indent=2))
-    print(f"Wrote nav fragment for {len(ORDER)} notebooks.")
 
 
 if __name__ == "__main__":

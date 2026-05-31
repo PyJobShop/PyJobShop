@@ -44,6 +44,14 @@ nav = [
   ]},
 ]
 
+[project.plugins.mkdocstrings.handlers.python]
+inventories = [
+    "https://docs.python.org/3/objects.inv",
+    "https://numpy.org/doc/stable/objects.inv",
+    "https://matplotlib.org/stable/objects.inv",
+    "https://www.sphinx-doc.org/en/master/objects.inv",
+]
+
 [project.theme]
 features = [
     "content.code.copy",
@@ -81,7 +89,7 @@ members_order = "source"
 separate_signature = true
 line_length = 72
 show_signature_annotations = true
-signature_crossrefs = false
+signature_crossrefs = true
 show_bases = false
 show_root_heading = true
 show_root_full_path = false

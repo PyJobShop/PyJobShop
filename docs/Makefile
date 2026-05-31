@@ -14,4 +14,4 @@ serve:
 	uv run zensical serve
 
 clean:
-	rm -rf build source/examples examples_nav.json
+	rm -rf build source/examples

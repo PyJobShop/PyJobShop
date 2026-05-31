@@ -73,7 +73,6 @@ instance/
 # Documentation
 docs/_build/
 docs/build/
-docs/examples_nav.json
 docs/source/examples/
 
 # PyBuilder
