@@ -68,10 +68,8 @@ dev = [
 docs = [
     "zensical>=0.0.43",
     "mkdocstrings-python>=1.11.0",
-    "jupyter>=1.0.0",
     "nbconvert>=7.16.0",
-    "matplotlib>=3.8.0",
-    "ruff>=0.8.0",
+    {include-group = "examples"},
 ]
 examples = [
     "jupyter>=1.0.0",

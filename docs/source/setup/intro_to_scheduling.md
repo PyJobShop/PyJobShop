@@ -4,7 +4,7 @@ Scheduling deals with allocating tasks to resources over time.
 The goal is to optimize some objective, often the makespan, while completing all tasks in a timely manner and respecting all constraints.
 Scheduling applications are numerous: car manufacturers, chemical plants, project managers all deal with scheduling on a daily basis.
 
-![A Gantt chart.](../assets/machine-gantt.png)
+![A Gantt chart that visualizes the solution to a scheduling problem.](../assets/machine-gantt.png)
 
 Figure 1: A Gantt chart that visualizes the solution to a scheduling problem.
 

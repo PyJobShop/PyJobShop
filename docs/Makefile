@@ -3,11 +3,11 @@
 .PHONY: html fast serve clean
 
 html:
-	uv run python build_examples.py
+	uv run python ../scripts/build_examples.py
 	uv run zensical build --clean
 
 fast:
-	SKIP_NOTEBOOKS=1 uv run python build_examples.py
+	SKIP_NOTEBOOKS=1 uv run python ../scripts/build_examples.py
 	uv run zensical build --clean
 
 serve:

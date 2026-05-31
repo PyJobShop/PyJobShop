@@ -12,9 +12,9 @@ import subprocess
 import sys
 from pathlib import Path
 
-HERE = Path(__file__).parent
-EXAMPLES_SRC = HERE.parent / "examples"
-EXAMPLES_OUT = HERE / "source" / "examples"
+REPO = Path(__file__).parent.parent
+EXAMPLES_SRC = REPO / "examples"
+EXAMPLES_OUT = REPO / "docs" / "source" / "examples"
 
 # Display order and titles, taken from the old index.rst examples toctree.
 ORDER = [
