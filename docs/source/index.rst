@@ -39,7 +39,7 @@ Contents
    examples/flexible_job_shop
    examples/hybrid_flow_shop
    examples/permutation_flow_shop
-   examples/project_scheduling
+   examples/resource_constrained_project_scheduling
    examples/optional_tasks
    examples/breaks
    examples/sequencing
