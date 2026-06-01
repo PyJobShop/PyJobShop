@@ -12,7 +12,7 @@ readme = "README.md"
 keywords = [
     "scheduling",
     "job shop",
-    "project scheduling",
+    "resource-constrained project scheduling",
     "constraint programming",
     "operations research",
 ]
