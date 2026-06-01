@@ -162,10 +162,9 @@ def test_add_machine_attributes():
     """
     model = Model()
 
-    machine = model.add_machine(breaks=[], no_idle=True, name="machine")
+    machine = model.add_machine(breaks=[], name="machine")
 
     assert_equal(machine.breaks, [])
-    assert_equal(machine.no_idle, True)
     assert_equal(machine.name, "machine")
 
 
