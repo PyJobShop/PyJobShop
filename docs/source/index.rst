@@ -42,7 +42,7 @@ Contents
    examples/resource_constrained_project_scheduling
    examples/optional_tasks
    examples/breaks
-   examples/sequencing
+   examples/sequence_dependent_setup_times
    examples/objectives
    examples/solver_tips
 
