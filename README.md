@@ -10,10 +10,10 @@ PyJobShop is a Python library for solving scheduling problems with constraint pr
 It currently supports the following scheduling problems:
 
 - **Resource environments:** single machines, parallel machines, hybrid flow shops, open shops, job shops, flexible job shops, distributed shops, renewable resources and consumable resources.
-- **Constraints:** release dates, deadlines, due dates, multiple modes, permutations, sequence-dependent setup times, no-wait, no-idle, blocking, breaks, optional task selection, and arbitrary precedence constraints.
+- **Constraints:** release dates, deadlines, due dates, multiple modes, permutations, sequence-dependent setup times, no-wait, blocking, breaks, optional task selection, and arbitrary precedence constraints.
 - **Objective functions:** minimizing makespan, total flow time, number of tardy jobs, total tardiness, total earliness, maximum tardiness, and total setup times.
 
-You can find PyJobShop on the Python Package Index under the name `pyjobshop`. 
+You can find PyJobShop on the Python Package Index under the name `pyjobshop`.
 To install it, simply run:
 
 ``` shell
@@ -25,7 +25,7 @@ The documentation is available [here](https://pyjobshop.org/).
 ## Constraint programming solvers
 
 PyJobShop uses [OR-Tools'](https://github.com/google/or-tools) CP-SAT solver as its default constraint programming solver.
-We also provide support for CP Optimizer. 
+We also provide support for CP Optimizer.
 See [our documentation](https://pyjobshop.org/stable/setup/installation.html) for instructions on how to install PyJobShop with CP Optimizer.
 
 ## Examples
@@ -34,7 +34,7 @@ We provide example notebooks that show how PyJobShop may be used to solve schedu
 
 - A short tutorial and introduction to PyJobShop's modeling interface, available [here](https://pyjobshop.org/stable/examples/simple_example.html). This is a great way to get started with PyJobShop.
 - Notebooks solving the classical machine scheduling problems such as the flexible job shop problem ([here](https://pyjobshop.org/stable/examples/flexible_job_shop.html)), the hybrid flow shop ([here](https://pyjobshop.org/stable/examples/hybrid_flow_shop.html)), and the permutation flow shop ([here](https://pyjobshop.org/stable/examples/permutation_flow_shop.html)).
-- A notebook showing how to solve different project scheduling problems, [here](https://pyjobshop.org/stable/examples/project_scheduling.html).
+- A notebook showing how to solve resource-constrained project scheduling problems, [here](https://pyjobshop.org/stable/examples/resource_constrained_project_scheduling.html).
 - A notebook showing how to solve scheduling problems with optional tasks, [here](https://pyjobshop.org/stable/examples/optional_tasks.html).
 - A notebook showing how to solve scheduling problems with resource breaks, [here](https://pyjobshop.org/stable/examples/breaks.html).
 - An overview of supported objective functions, [here](https://pyjobshop.org/stable/examples/objectives_examples.html).
@@ -43,8 +43,8 @@ If you are new to scheduling or constraint programming, you might benefit from f
 
 ## Contributing
 
-We are very grateful for any contributions you are willing to make. 
-Please have a look [here](https://pyjobshop.org/stable/dev/contributing.html) to get started. 
+We are very grateful for any contributions you are willing to make.
+Please have a look [here](https://pyjobshop.org/stable/dev/contributing.html) to get started.
 If you aim to make a large change, it is helpful to discuss the change first in a new GitHub issue. Feel free to open one!
 
 ## Getting help
@@ -66,10 +66,10 @@ Or, using the following BibTeX entry:
 
 ```bibtex
 @misc{Lan_Berkhout_2025,
-      title={{PyJobShop}: Solving scheduling problems with constraint programming in {Python}}, 
+      title={{PyJobShop}: Solving scheduling problems with constraint programming in {Python}},
       author={Leon Lan and Joost Berkhout},
       year={2025},
-      url={https://arxiv.org/abs/2502.13483}, 
+      url={https://arxiv.org/abs/2502.13483},
       archivePrefix="arXiv",
       eprint={2502.13483},
 }

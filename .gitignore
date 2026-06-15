@@ -50,6 +50,9 @@ coverage.xml
 .hypothesis/
 .pytest_cache/
 
+# Plot test results
+result_images/
+
 # Translations
 *.mo
 *.pot

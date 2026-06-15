@@ -1,3 +1,4 @@
+from matplotlib.pyplot import subplots
 from matplotlib.testing.decorators import image_comparison as img_comp
 
 from pyjobshop import Model, ScheduledTask, Solution
@@ -63,6 +64,54 @@ def test_plot_resource_usage():
     sol = result.best
 
     plot_resource_usage(sol, data)
+
+
+@img_comp(["plot_resource_usage_resources"], **IMG_KWARGS)
+def test_plot_resource_usage_resources():
+    """
+    Tests that resource subset is correctly plotted in the resource usage plot.
+    """
+    model = Model()
+    resources = [
+        model.add_machine(name="Machine"),
+        model.add_renewable(capacity=5, name="Renewable"),
+        model.add_consumable(capacity=2, name="Consumable"),
+    ]
+
+    for idx in [1, 2]:
+        task = model.add_task()
+        model.add_mode(task, resources, duration=idx * 10, demands=[0, idx, 1])
+
+    data = model.data()
+    result = solve(data)
+    sol = result.best
+
+    plot_resource_usage(sol, data, resources=[0])
+
+
+@img_comp(["plot_resource_usage_resources_axes"], **IMG_KWARGS)
+def test_plot_resource_usage_resources_axes():
+    """
+    Tests that resource subset is correctly plotted in the resource usage plot
+    with custom axes.
+    """
+    model = Model()
+    resources = [
+        model.add_machine(name="Machine"),
+        model.add_renewable(capacity=5, name="Renewable"),
+        model.add_consumable(capacity=2, name="Consumable"),
+    ]
+
+    for idx in [1, 2]:
+        task = model.add_task()
+        model.add_mode(task, resources, duration=idx * 10, demands=[0, idx, 1])
+
+    data = model.data()
+    result = solve(data)
+    sol = result.best
+
+    _, axes = subplots(2, sharex=True)
+    plot_resource_usage(sol, data, resources=[0, 2], axes=axes)
 
 
 @img_comp(["plot_task_gantt"], **IMG_KWARGS)

@@ -138,6 +138,15 @@ def setup(app):
     app.connect(
         "autodoc-process-docstring", autodoc_process_docstring, priority=100
     )
+
+    # Set up Rybbit analytics.
+    kwargs = {"data-site-id": "b44882f66649"}
+    app.add_js_file(
+        "https://app.rybbit.io/api/script.js",
+        loading_method="defer",
+        **kwargs,
+    )
+
     return {
         "version": "0.1",
         "parallel_read_safe": True,
