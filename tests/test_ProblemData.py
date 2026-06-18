@@ -401,7 +401,8 @@ def test_constraints_str():
         [0, 0, 0, -1, 0, 0, 0],  # weight_total_tardiness < 0
         [0, 0, 0, 0, -1, 0, 0],  # weight_total_earliness < 0
         [0, 0, 0, 0, 0, -1, 0],  # weight_max_tardiness < 0
-        [0, 0, 0, 0, 0, 0, -1],  # weight_total_setup_time < 0
+        [0, 0, 0, 0, 0, 0, -1, 0],  # weight_total_setup_time < 0
+        [0, 0, 0, 0, 0, 0, 0, -1],  # weight_max_earliness < 0
     ],
 )
 def test_objective_valid_values(weights: list[int]):
@@ -824,6 +825,7 @@ def test_problem_data_raises_mode_dependency_same_task():
         Objective(weight_total_tardiness=1),
         Objective(weight_total_earliness=1),
         Objective(weight_max_tardiness=1),
+        Objective(weight_max_earliness=1),
     ],
 )
 def test_problem_data_tardy_objective_without_job_due_dates(
@@ -2522,6 +2524,31 @@ def test_max_tardiness(solver: str):
     # Both jobs are tardy by 2 time units, but job 1 has weight 2 and job 2
     # has weight 1. So the maximum tardiness is 2 * 2 = 4. Multiplied with the
     # ``weight_max_tardiness`` of 2, the objective value is 8.
+    assert_equal(result.objective, 8)
+    assert_equal(result.best.tasks[0].end, 2)
+    assert_equal(result.best.tasks[1].end, 2)
+
+
+def test_max_earliness(solver: str):
+    """
+    Tests that the maximum earliness objective function is correctly optimized.
+    """
+    model = Model()
+
+    for idx in range(2):
+        machine = model.add_machine()
+        job = model.add_job(weight=idx + 1, deadline=2, due_date=4)
+        task = model.add_task(job=job)
+        model.add_mode(task, machine, duration=2)
+
+    model.set_objective(weight_max_earliness=2)
+
+    result = model.solve(solver=solver)
+
+    # Both jobs must finish by their deadline at time 2, which is 2 time units
+    # before their due date. Job 1 has weight 2 and job 2 has weight 1. So the
+    # maximum earliness is 2 * 2 = 4. Multiplied with the
+    # ``weight_max_earliness`` of 2, the objective value is 8.
     assert_equal(result.objective, 8)
     assert_equal(result.best.tasks[0].end, 2)
     assert_equal(result.best.tasks[1].end, 2)

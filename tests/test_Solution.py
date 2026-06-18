@@ -109,6 +109,7 @@ def test_solution_empty(small):
     assert_equal(sol.total_tardiness, 0)
     assert_equal(sol.total_earliness, 0)
     assert_equal(sol.max_tardiness, 0)
+    assert_equal(sol.max_earliness, 0)
     assert_equal(sol.total_setup_time, 0)
     assert_equal(sol.objective, 0)
 
@@ -215,7 +216,7 @@ def test_solution_objective_components():
         tasks=tasks,
         modes=modes,
         resources=[Machine()],
-        objective=Objective(2, 2, 2, 2, 2, 2, 0),
+        objective=Objective(2, 2, 2, 2, 2, 2, 0, 2),
     )
 
     task_data = [
@@ -230,9 +231,10 @@ def test_solution_objective_components():
     assert_equal(solution.total_tardiness, 3)  # 3*1 + 1*0 = 3
     assert_equal(solution.total_earliness, 2)  # 3*0 + 1*2 = 2
     assert_equal(solution.max_tardiness, 3)  # max(3*1, 1*0) = 3
+    assert_equal(solution.max_earliness, 2)  # max(3*0, 1*2) = 2
     assert_equal(solution.total_setup_time, 0)
 
-    assert_equal(solution.objective, 52)
+    assert_equal(solution.objective, 56)
 
 
 def test_solution_total_setup_time():

@@ -268,6 +268,7 @@ class Variables:
         self._tardiness_vars: list[IntVar] | None = None
         self._earliness_vars: list[IntVar] | None = None
         self._max_tardiness_var: IntVar | None = None
+        self._max_earliness_var: IntVar | None = None
 
     @property
     def job_vars(self) -> list[JobVar]:
@@ -392,6 +393,18 @@ class Variables:
 
         self._max_tardiness_var = self._make_max_tardiness_variable()
         return self._max_tardiness_var
+
+    @property
+    def max_earliness_var(self) -> IntVar:
+        """
+        Returns the maximum earliness variable, creating it if it does not
+        exist.
+        """
+        if self._max_earliness_var is not None:
+            return self._max_earliness_var
+
+        self._max_earliness_var = self._make_max_earliness_variable()
+        return self._max_earliness_var
 
     def res2assign(self, idx: int) -> list[OptionalIntervalVar]:
         """
@@ -663,6 +676,23 @@ class Variables:
 
         return max_tardiness_var
 
+    def _make_max_earliness_variable(self) -> IntVar:
+        """
+        Creates the maximum earliness variable.
+        """
+        model = self._model
+        max_earliness_var = model.new_int_var(0, MAX_VALUE, "max_earliness")
+
+        if self._job_vars:
+            # Need at least one job to enforce this constraint.
+            earliness_vars = [
+                job.weight * var
+                for job, var in zip(self._data.jobs, self.earliness_vars)
+            ]
+            model.add_max_equality(max_earliness_var, earliness_vars)
+
+        return max_earliness_var
+
     def warmstart(self, solution: Solution):
         """
         Warmstarts the variables based on the given solution.
@@ -705,6 +735,13 @@ class Variables:
                 for idx, job in enumerate(solution.jobs)
             )
             model.add_hint(self.max_tardiness_var, max_tardiness)
+
+        if data.objective.weight_max_earliness > 0:
+            max_earliness = max(
+                data.jobs[idx].weight * job.earliness
+                for idx, job in enumerate(solution.jobs)
+            )
+            model.add_hint(self.max_earliness_var, max_earliness)
 
         if data.objective.weight_makespan > 0:
             model.add_hint(self.makespan_var, solution.makespan)

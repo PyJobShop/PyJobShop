@@ -676,6 +676,10 @@ class Objective:
         .. math::
             U_{\max} = \max_{j \in J} w_j (\max(C_j - d_j, 0))
 
+    **Maximum earliness** (:math:`E_{\max}`): The weighted maximum earliness of all jobs.
+        .. math::
+            E_{\max} = \max_{j \in J} w_j (\max(d_j - C_j, 0))
+
     **Total setup time** (:math:`TST`): The sum of all sequence-dependent setup times between consecutive tasks on each machine, where :math:`R` denotes the set of machines, :math:`M^R_r` denotes the set of modes requiring :math:`r \in R`, :math:`s_{t_u, t_v, r}` denotes the setup time between tasks :math:`t_u` and :math:`t_v` on machine :math:`r` and :math:`b_{ruv}` is the binary variable indicating whether task :math:`t_u` is followed by task :math:`t_v` on machine :math:`r`.
         .. math::
             TST = \sum_{r \in R} \sum_{u, v \in M^R_r} s_{t_u, t_v, r} b_{ruv}
@@ -692,6 +696,7 @@ class Objective:
     weight_total_earliness: int = 0
     weight_max_tardiness: int = 0
     weight_total_setup_time: int = 0
+    weight_max_earliness: int = 0
 
     def __post_init__(self):
         for f in fields(self):
@@ -997,6 +1002,7 @@ class ProblemData:
             or self.objective.weight_total_tardiness > 0
             or self.objective.weight_total_earliness > 0
             or self.objective.weight_max_tardiness > 0
+            or self.objective.weight_max_earliness > 0
         ) and any(job.due_date is None for job in self.jobs):
             msg = "Job due dates required for due date-based objectives."
             raise ValueError(msg)

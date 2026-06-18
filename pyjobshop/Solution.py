@@ -212,6 +212,7 @@ class Solution:
             + objective.weight_total_earliness * self.total_earliness
             + objective.weight_max_tardiness * self.max_tardiness
             + objective.weight_total_setup_time * self.total_setup_time
+            + objective.weight_max_earliness * self.max_earliness
         )
 
     @property
@@ -271,6 +272,19 @@ class Solution:
 
         return max(
             self._data.jobs[idx].weight * job.tardiness
+            for idx, job in enumerate(self._jobs)
+        )
+
+    @property
+    def max_earliness(self) -> int:
+        """
+        Returns the maximum earliness of all jobs.
+        """
+        if not self._jobs:
+            return 0
+
+        return max(
+            self._data.jobs[idx].weight * job.earliness
             for idx, job in enumerate(self._jobs)
         )
 

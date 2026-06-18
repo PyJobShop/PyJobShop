@@ -104,6 +104,7 @@ def complete_data():
         weight_total_earliness=6,
         weight_max_tardiness=7,
         weight_total_setup_time=8,
+        weight_max_earliness=9,
     )
     return ProblemData(
         jobs,

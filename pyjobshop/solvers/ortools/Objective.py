@@ -55,6 +55,9 @@ class Objective:
         if (obj_weight := objective.weight_max_tardiness) > 0:
             expr += obj_weight * variables.max_tardiness_var
 
+        if (obj_weight := objective.weight_max_earliness) > 0:
+            expr += obj_weight * variables.max_earliness_var
+
         if (obj_weight := objective.weight_total_setup_time) > 0:
             data = self._data
             setup_times = utils.setup_times_matrix(data)
