@@ -188,11 +188,9 @@ def redundant_cumulative_components(data: ProblemData) -> list[Component]:
     tasks, which can be used to add redundant cumulative constraints to
     enhance constraint propagation.
 
-    First, a graph is built where nodes are machines, and an edge between
-    two machines is added if they appear together in the machine assignments
-    of any task. Then, connected components are found using depth-first search
-    on this graph. Finally, for each component, we find the set of tasks that
-    can be assigned to any of the machines in that component.
+    Machines that appear together in the eligible machines of some task are
+    grouped into the same component using a union-find. For each component, we
+    then collect the tasks that can be assigned to any of its machines.
 
     Parameters
     ----------
@@ -206,46 +204,46 @@ def redundant_cumulative_components(data: ProblemData) -> list[Component]:
         a set of task indices that can be assigned to any of the machines in
         the component.
     """
-    task2machines = defaultdict(set)
+    machine_idcs = set(data.machine_idcs)
+    task2machines: dict[int, set[int]] = defaultdict(set)
     for task_idx in range(data.num_tasks):
         for mode_idx in data.task2modes(task_idx):
-            mode = data.modes[mode_idx]
-            machines = set(mode.resources) & set(data.machine_idcs)
-            task2machines[task_idx].update(machines)
+            resources = data.modes[mode_idx].resources
+            task2machines[task_idx].update(
+                machine_idcs.intersection(resources)
+            )
 
-    # Build the machines graph.
-    graph = defaultdict(set)
-    for task_idx in range(data.num_tasks):
-        for idx1, idx2 in product(task2machines[task_idx], repeat=2):
-            graph[idx1].add(idx2)
+    # Union machines that share a task into the same component.
+    parent: dict[int, int] = {}
+    for machines in task2machines.values():
+        for machine in machines:
+            parent.setdefault(machine, machine)
 
-    # Find the machine components.
-    nodes = set(graph.keys())
-    visited = set()
-    machine_components: list[set[int]] = []
+    def find(machine: int) -> int:
+        while parent[machine] != machine:
+            parent[machine] = parent[parent[machine]]
+            machine = parent[machine]
+        return machine
 
-    def dfs(node, component):
-        visited.add(node)
-        component.add(node)
+    for machines in task2machines.values():
+        if not machines:
+            continue
 
-        for neighbor in graph.get(node, []):
-            if neighbor not in visited:
-                dfs(neighbor, component)
+        first, *rest = sorted(machines)
+        for machine in rest:
+            parent[find(first)] = find(machine)
 
-    for node in nodes:
-        if node not in visited:
-            component: set[int] = set()
-            dfs(node, component)
-            machine_components.append(component)
+    # Group machines and tasks by their component root.
+    machines_by_root: dict[int, set[int]] = defaultdict(set)
+    for machine in sorted(parent):
+        machines_by_root[find(machine)].add(machine)
 
-    # Find the tasks belonging to each component.
-    result = []
-    for machines in machine_components:
-        tasks = {
-            task
-            for task, task_machines in task2machines.items()
-            if task_machines & machines
-        }
-        result.append(Component(machines, tasks))
+    tasks_by_root: dict[int, set[int]] = defaultdict(set)
+    for task_idx, machines in task2machines.items():
+        if machines:
+            tasks_by_root[find(next(iter(machines)))].add(task_idx)
 
-    return result
+    return [
+        Component(machines, tasks_by_root[root])
+        for root, machines in machines_by_root.items()
+    ]

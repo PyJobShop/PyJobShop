@@ -401,8 +401,7 @@ class Constraints:
                 variables.task_vars[idx].interval for idx in component.tasks
             ]
             demands = [1] * len(intervals)
-            capacity = len(component.machines)
-            model.add_cumulative(intervals, demands, capacity)
+            model.add_cumulative(intervals, demands, len(component.machines))
 
     def add_constraints(self):
         """
