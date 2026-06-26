@@ -70,7 +70,7 @@ class Constraints:
                     res2modes[res].append(mode_idx)
 
             for res_idx, res_mode_idcs in res2modes.items():
-                # Assignment variable can only be present if a modes is
+                # Assignment variable can only be present if a mode is
                 # selected that uses the corresponding resource.
                 presence = variables.assign_vars[task_idx, res_idx].present
                 mode_vars = [variables.mode_vars[idx] for idx in res_mode_idcs]
@@ -103,13 +103,13 @@ class Constraints:
             capacity = data.resources[idx].capacity
             model.add_cumulative(intervals, demands, capacity)
 
-    def _non_renewable_capacity(self):
+    def _consumable_capacity(self):
         """
-        Creates capacity constraints for the non-renewable resources.
+        Creates capacity constraints for the consumable resources.
         """
         model, data, variables = self._model, self._data, self._variables
 
-        for idx in data.non_renewable_idcs:
+        for idx in data.consumable_idcs:
             demands = variables.res2demand(idx)
             total = LinearExpr.sum(demands)
             capacity = data.resources[idx].capacity
@@ -172,6 +172,34 @@ class Constraints:
             var2 = variables.task_vars[idx2]
             both_present = [var1.present, var2.present]
             expr = var1.end + delay <= var2.end
+            model.add(expr).only_enforce_if(both_present)
+
+        for idx1, idx2, delay in data.constraints.start_at_start:
+            var1 = variables.task_vars[idx1]
+            var2 = variables.task_vars[idx2]
+            both_present = [var1.present, var2.present]
+            expr = var1.start + delay == var2.start
+            model.add(expr).only_enforce_if(both_present)
+
+        for idx1, idx2, delay in data.constraints.start_at_end:
+            var1 = variables.task_vars[idx1]
+            var2 = variables.task_vars[idx2]
+            both_present = [var1.present, var2.present]
+            expr = var1.start + delay == var2.end
+            model.add(expr).only_enforce_if(both_present)
+
+        for idx1, idx2, delay in data.constraints.end_at_start:
+            var1 = variables.task_vars[idx1]
+            var2 = variables.task_vars[idx2]
+            both_present = [var1.present, var2.present]
+            expr = var1.end + delay == var2.start
+            model.add(expr).only_enforce_if(both_present)
+
+        for idx1, idx2, delay in data.constraints.end_at_end:
+            var1 = variables.task_vars[idx1]
+            var2 = variables.task_vars[idx2]
+            both_present = [var1.present, var2.present]
+            expr = var1.end + delay == var2.end
             model.add(expr).only_enforce_if(both_present)
 
     def _identical_and_different_resource_constraints(self):
@@ -260,13 +288,9 @@ class Constraints:
         setup_times = utils.setup_times_matrix(data)
 
         for res_idx in data.machine_idcs:
-            machine = data.resources[res_idx]
             seq_var = variables.sequence_vars[res_idx]
 
             if setup_times is not None and np.any(setup_times[res_idx]):
-                seq_var.activate(model)
-
-            if machine.no_idle:
                 seq_var.activate(model)
 
             if not seq_var.is_active:
@@ -309,11 +333,7 @@ class Constraints:
                         else 0
                     )
 
-                    if machine.no_idle:
-                        expr = var1.end + setup == var2.start
-                    else:
-                        expr = var1.end + setup <= var2.start
-
+                    expr = var1.end + setup <= var2.start
                     model.add(expr).only_enforce_if(arc)
 
     def _mode_dependencies(self):
@@ -392,7 +412,7 @@ class Constraints:
         self._select_one_mode()
         self._machines_no_overlap()
         self._renewable_capacity()
-        self._non_renewable_capacity()
+        self._consumable_capacity()
         self._resource_breaks_constraints()
         self._timing_constraints()
         self._identical_and_different_resource_constraints()

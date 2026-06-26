@@ -19,7 +19,7 @@ from pyjobshop.ProblemData import (
     StartBeforeEnd,
     StartBeforeStart,
 )
-from pyjobshop.Solution import Solution, TaskData
+from pyjobshop.Solution import ScheduledTask, Solution
 
 
 def test_model_to_data():
@@ -162,10 +162,9 @@ def test_add_machine_attributes():
     """
     model = Model()
 
-    machine = model.add_machine(breaks=[], no_idle=True, name="machine")
+    machine = model.add_machine(breaks=[], name="machine")
 
     assert_equal(machine.breaks, [])
-    assert_equal(machine.no_idle, True)
     assert_equal(machine.name, "machine")
 
 
@@ -184,19 +183,19 @@ def test_add_renewable_resource_attributes():
     assert_equal(renewable.name, "resource")
 
 
-def test_add_non_renewable_resource_attributes():
+def test_add_consumable_resource_attributes():
     """
     Tests that adding a resource to the model correctly sets the attributes.
     """
     model = Model()
 
-    non_renewable = model.add_non_renewable(
+    consumable = model.add_consumable(
         capacity=1, breaks=[(0, 1)], name="resource"
     )
 
-    assert_equal(non_renewable.capacity, 1)
-    assert_equal(non_renewable.breaks, [(0, 1)])
-    assert_equal(non_renewable.name, "resource")
+    assert_equal(consumable.capacity, 1)
+    assert_equal(consumable.breaks, [(0, 1)])
+    assert_equal(consumable.name, "resource")
 
 
 def test_add_task_attributes():
@@ -330,7 +329,7 @@ def test_summary():
         "0 jobs\n"
         "2 resources\n"
         "├─ 1 machines\n"
-        "└─ 1 renewable\n"
+        "└─ 1 renewables\n"
         "2 tasks\n"
         "2 modes\n"
         "1 constraints\n"
@@ -366,7 +365,9 @@ def test_solve_additional_kwargs_initial_solution_fixed(small):
     additional kwargs to the solver, fixing the solution.
     """
     model = Model.from_data(small)
-    init = Solution([TaskData(0, [0], 0, 1), TaskData(1, [0], 3, 5)])
+    init = Solution(
+        small, [ScheduledTask(0, [0], 0, 1), ScheduledTask(1, [0], 3, 5)]
+    )
     result = model.solve(
         "ortools",
         initial_solution=init,

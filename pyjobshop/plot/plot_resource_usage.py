@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.axes import Axes
 
-from pyjobshop import NonRenewable, ProblemData, Renewable, Solution
+from pyjobshop import Consumable, ProblemData, Renewable, Solution
 
 
 def plot_resource_usage(
@@ -25,14 +25,20 @@ def plot_resource_usage(
         (from top to bottom). Defaults to all resources in the data instance.
     axes
         The matplotlib axes to use for plotting. It must have at least length
-        ``data.num_resources``. If not provided, a new set of axes will be
-        created.
+        ``data.num_resources`` or ``resources`` if that was provided. If not
+        provided, a new set of axes will be created.
     """
+    axes_count = (
+        len(resources) if resources is not None else data.num_resources
+    )
+
     if axes is None:
-        _, axes = plt.subplots(data.num_resources, sharex=True)
+        _, axes = plt.subplots(axes_count, sharex=True)
+        if isinstance(axes, Axes):
+            axes = [axes]
         assert axes is not None  # make mypy happy
 
-    if len(axes) < data.num_resources:
+    if len(axes) < axes_count:
         msg = "The number of axes must be at least the number of resources."
         raise ValueError(msg)
 
@@ -41,9 +47,9 @@ def plot_resource_usage(
 
     usages = _compute_usage(solution, data)
 
-    for resource in resources:
+    for idx, resource in enumerate(resources):
         usage = usages[resource]
-        ax = axes[resource]
+        ax = axes[idx]
         time = np.arange(len(usage))
         label = data.resources[resource].name or f"Resource {resource}"
 
@@ -57,7 +63,19 @@ def plot_resource_usage(
 
 def _compute_usage(solution: Solution, data: ProblemData) -> np.ndarray:
     """
-    Computes the resource usage for the each resource and each time step.
+    Computes the resource usage for each resource at each time step.
+
+    Parameters
+    ----------
+    solution
+        The solution containing task schedules.
+    data
+        The problem data with resource and mode information.
+
+    Returns
+    -------
+    np.ndarray
+        A 2D array of shape (num_resources, makespan) with usage values.
     """
     usages = np.zeros((data.num_resources, solution.makespan))
 
@@ -69,7 +87,7 @@ def _compute_usage(solution: Solution, data: ProblemData) -> np.ndarray:
 
             if isinstance(resource, Renewable):
                 usages[resource_idx, task.start : task.end] += demand
-            elif isinstance(resource, NonRenewable):
+            elif isinstance(resource, Consumable):
                 usages[resource_idx, task.start :] += demand
             else:
                 # Machine is a unary renewable resource.

@@ -6,8 +6,8 @@
 PyJobShop is a Python library for solving scheduling problems with constraint programming.
 It currently supports the following scheduling problems:
 
-- **Resource environments:** single machines, parallel machines, hybrid flow shops, open shops, job shops, flexible job shops, distributed shops, renewable resources and non-renewable resources.
-- **Constraints:** release dates, deadlines, due dates, multiple modes, permutations, sequence-dependent setup times, no-wait, no-idle, blocking, breaks, optional task selection, and arbitrary precedence constraints.
+- **Resource environments:** single machines, parallel machines, hybrid flow shops, open shops, job shops, flexible job shops, distributed shops, renewable resources and consumable resources.
+- **Constraints:** release dates, deadlines, due dates, multiple modes, permutations, sequence-dependent setup times, no-wait, blocking, breaks, optional task selection, and arbitrary precedence constraints.
 - **Objective functions:** minimizing makespan, total flow time, number of tardy jobs, total tardiness, total earliness, maximum tardiness, and total setup times.
 
 You can find PyJobShop on the Python Package Index under the name ``pyjobshop``.
@@ -17,11 +17,6 @@ To install it, simply run:
 
    pip install pyjobshop
 
-
-.. hint::
-
-    If you are new to scheduling or constraint programming, you might benefit from first reading the :doc:`introduction to scheduling <setup/intro_to_scheduling>` and :doc:`introduction to CP <setup/intro_to_cp>` pages.
-    To set up an installation from source, or to run the examples listed below yourself, please have a look at the :doc:`installation instructions <setup/installation>`.
 
 Contents
 --------
@@ -44,11 +39,12 @@ Contents
    examples/flexible_job_shop
    examples/hybrid_flow_shop
    examples/permutation_flow_shop
-   examples/project_scheduling
+   examples/resource_constrained_project_scheduling
    examples/optional_tasks
    examples/breaks
+   examples/sequence_dependent_setup_times
    examples/objectives
-   examples/quick_examples
+   examples/solver_tips
 
 .. toctree::
    :maxdepth: 1

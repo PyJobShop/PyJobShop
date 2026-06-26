@@ -78,7 +78,7 @@ def _project_instance_to_data(instance: psplib.ProjectInstance) -> ProblemData:
         if resource.renewable:
             model.add_renewable(capacity=resource.capacity)
         else:
-            model.add_non_renewable(capacity=resource.capacity)
+            model.add_consumable(capacity=resource.capacity)
 
     for project in instance.projects:
         job = model.add_job(release_date=project.release_date)

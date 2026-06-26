@@ -1,10 +1,14 @@
-from typing import Sequence
+from typing import Literal
 
 from pyjobshop.constants import MAX_VALUE
 from pyjobshop.ProblemData import (
+    Break,
     Consecutive,
     Constraints,
+    Consumable,
     DifferentResources,
+    EndAtEnd,
+    EndAtStart,
     EndBeforeEnd,
     EndBeforeStart,
     IdenticalResources,
@@ -12,7 +16,6 @@ from pyjobshop.ProblemData import (
     Machine,
     Mode,
     ModeDependency,
-    NonRenewable,
     Objective,
     ProblemData,
     Renewable,
@@ -22,6 +25,8 @@ from pyjobshop.ProblemData import (
     SelectAtLeastOne,
     SelectExactlyOne,
     SetupTime,
+    StartAtEnd,
+    StartAtStart,
     StartBeforeEnd,
     StartBeforeStart,
     Task,
@@ -33,7 +38,7 @@ from pyjobshop.solve import solve
 
 class Model:
     """
-    A simple interface for building a scheduling problem step-by-step.
+    A simple modeling interface for building a scheduling problem step-by-step.
     """
 
     def __init__(self):
@@ -91,155 +96,6 @@ class Model:
         """
         return self._objective
 
-    @classmethod
-    def from_data(cls, data: ProblemData):
-        """
-        Creates a Model instance from a ProblemData instance.
-        """
-        model = cls()
-
-        for job in data.jobs:
-            model.add_job(
-                job.weight,
-                job.release_date,
-                job.deadline,
-                job.due_date,
-                name=job.name,
-            )
-
-        for resource in data.resources:
-            if isinstance(resource, Machine):
-                model.add_machine(
-                    resource.breaks,
-                    resource.no_idle,
-                    name=resource.name,
-                )
-            elif isinstance(resource, Renewable):
-                model.add_renewable(
-                    resource.capacity,
-                    resource.breaks,
-                    name=resource.name,
-                )
-            elif isinstance(resource, NonRenewable):
-                model.add_non_renewable(
-                    resource.capacity,
-                    resource.breaks,
-                    name=resource.name,
-                )
-            else:
-                raise ValueError(f"Unknown resource type: {type(resource)}")
-
-        for task in data.tasks:
-            model.add_task(
-                model.jobs[task.job] if task.job is not None else None,
-                task.earliest_start,
-                task.latest_start,
-                task.earliest_end,
-                task.latest_end,
-                task.allow_idle,
-                task.allow_breaks,
-                task.optional,
-                name=task.name,
-            )
-
-        for mode in data.modes:
-            model.add_mode(
-                model.tasks[mode.task],
-                [model.resources[res] for res in mode.resources],
-                mode.duration,
-                mode.demands,
-                name=mode.name,
-            )
-
-        resources = model.resources
-        tasks = model.tasks
-
-        for idx1, idx2, delay in data.constraints.start_before_start:
-            model.add_start_before_start(tasks[idx1], tasks[idx2], delay)
-
-        for idx1, idx2, delay in data.constraints.start_before_end:
-            model.add_start_before_end(tasks[idx1], tasks[idx2], delay)
-
-        for idx1, idx2, delay in data.constraints.end_before_start:
-            model.add_end_before_start(tasks[idx1], tasks[idx2], delay)
-
-        for idx1, idx2, delay in data.constraints.end_before_end:
-            model.add_end_before_end(tasks[idx1], tasks[idx2], delay)
-
-        for idx1, idx2 in data.constraints.identical_resources:
-            model.add_identical_resources(tasks[idx1], tasks[idx2])
-
-        for idx1, idx2 in data.constraints.different_resources:
-            model.add_different_resources(tasks[idx1], tasks[idx2])
-
-        for idx1, idx2 in data.constraints.consecutive:
-            model.add_consecutive(tasks[idx1], tasks[idx2])
-
-        for idcs in data.constraints.same_sequence:
-            res_idx1, res_idx2, task_idcs1, task_idcs2 = idcs
-            model.add_same_sequence(
-                resources[res_idx1],
-                resources[res_idx2],
-                [tasks[idx] for idx in task_idcs1] if task_idcs1 else None,
-                [tasks[idx] for idx in task_idcs2] if task_idcs2 else None,
-            )
-
-        for res_idx, idx1, idx2, duration in data.constraints.setup_times:
-            model.add_setup_time(
-                machine=resources[res_idx],  # type: ignore
-                task1=tasks[idx1],
-                task2=tasks[idx2],
-                duration=duration,
-            )
-
-        for mode1, modes2 in data.constraints.mode_dependencies:
-            model.add_mode_dependency(
-                model.modes[mode1], [model.modes[m] for m in modes2]
-            )
-
-        for idcs, condition_idx in data.constraints.select_all_or_none:
-            model.add_select_all_or_none(
-                [tasks[idx] for idx in idcs],
-                tasks[condition_idx] if condition_idx is not None else None,
-            )
-
-        for idcs, condition_idx in data.constraints.select_at_least_one:
-            model.add_select_at_least_one(
-                [tasks[idx] for idx in idcs],
-                tasks[condition_idx] if condition_idx is not None else None,
-            )
-
-        for idcs, condition_idx in data.constraints.select_exactly_one:
-            model.add_select_exactly_one(
-                [tasks[idx] for idx in idcs],
-                tasks[condition_idx] if condition_idx is not None else None,
-            )
-
-        model.set_objective(
-            weight_makespan=data.objective.weight_makespan,
-            weight_tardy_jobs=data.objective.weight_tardy_jobs,
-            weight_total_tardiness=data.objective.weight_total_tardiness,
-            weight_total_flow_time=data.objective.weight_total_flow_time,
-            weight_total_earliness=data.objective.weight_total_earliness,
-            weight_max_tardiness=data.objective.weight_max_tardiness,
-            weight_total_setup_time=data.objective.weight_total_setup_time,
-        )
-
-        return model
-
-    def data(self) -> ProblemData:
-        """
-        Returns a ProblemData object containing the problem instance.
-        """
-        return ProblemData(
-            jobs=self.jobs,
-            resources=self.resources,
-            tasks=self.tasks,
-            modes=self.modes,
-            constraints=self.constraints,
-            objective=self.objective,
-        )
-
     def add_job(
         self,
         weight: int = 1,
@@ -261,15 +117,17 @@ class Model:
 
     def add_machine(
         self,
-        breaks: list[tuple[int, int]] | None = None,
-        no_idle: bool = False,
+        breaks: list[Break] | None = None,
         *,
         name: str = "",
     ) -> Machine:
         """
         Adds a machine to the model.
         """
-        machine = Machine(breaks, no_idle, name=name)
+        if breaks is None:
+            breaks = []
+
+        machine = Machine(breaks, name=name)
 
         self._id2resource[id(machine)] = len(self.resources)
         self._resources.append(machine)
@@ -279,13 +137,16 @@ class Model:
     def add_renewable(
         self,
         capacity: int,
-        breaks: list[tuple[int, int]] | None = None,
+        breaks: list[Break] | None = None,
         *,
         name: str = "",
     ) -> Renewable:
         """
         Adds a renewable resource to the model.
         """
+        if breaks is None:
+            breaks = []
+
         resource = Renewable(capacity, breaks, name=name)
 
         self._id2resource[id(resource)] = len(self.resources)
@@ -293,17 +154,20 @@ class Model:
 
         return resource
 
-    def add_non_renewable(
+    def add_consumable(
         self,
         capacity: int,
-        breaks: list[tuple[int, int]] | None = None,
+        breaks: list[Break] | None = None,
         *,
         name: str = "",
-    ) -> NonRenewable:
+    ) -> Consumable:
         """
-        Adds a non-renewable resource to the model.
+        Adds a consumable resource to the model.
         """
-        resource = NonRenewable(capacity, breaks, name=name)
+        if breaks is None:
+            breaks = []
+
+        resource = Consumable(capacity, breaks, name=name)
 
         self._id2resource[id(resource)] = len(self.resources)
         self._resources.append(resource)
@@ -351,7 +215,7 @@ class Model:
     def add_mode(
         self,
         task: Task,
-        resources: Resource | Sequence[Resource],
+        resources: Resource | list[Resource],
         duration: int,
         demands: int | list[int] | None = None,
         *,
@@ -360,10 +224,12 @@ class Model:
         """
         Adds a processing mode to the model.
         """
-        if isinstance(resources, (Machine, Renewable, NonRenewable)):
+        if isinstance(resources, (Machine, Renewable, Consumable)):
             resources = [resources]
 
-        if isinstance(demands, int):
+        if demands is None:
+            demands = []
+        elif isinstance(demands, int):
             demands = [demands]
 
         task_idx = self._id2task[id(task)]
@@ -427,6 +293,58 @@ class Model:
 
         return constraint
 
+    def add_start_at_start(
+        self, task1: Task, task2: Task, delay: int = 0
+    ) -> StartAtStart:
+        """
+        Adds a constraint that task 2 must start exactly at the start of
+        task 1 plus the delay.
+        """
+        idx1, idx2 = self._id2task[id(task1)], self._id2task[id(task2)]
+        constraint = StartAtStart(idx1, idx2, delay)
+        self._constraints.start_at_start.append(constraint)
+
+        return constraint
+
+    def add_start_at_end(
+        self, task1: Task, task2: Task, delay: int = 0
+    ) -> StartAtEnd:
+        """
+        Adds a constraint that task 2 must end exactly at the start of
+        task 1 plus the delay.
+        """
+        idx1, idx2 = self._id2task[id(task1)], self._id2task[id(task2)]
+        constraint = StartAtEnd(idx1, idx2, delay)
+        self._constraints.start_at_end.append(constraint)
+
+        return constraint
+
+    def add_end_at_start(
+        self, task1: Task, task2: Task, delay: int = 0
+    ) -> EndAtStart:
+        """
+        Adds a constraint that task 2 must start exactly at the end of
+        task 1 plus the delay.
+        """
+        idx1, idx2 = self._id2task[id(task1)], self._id2task[id(task2)]
+        constraint = EndAtStart(idx1, idx2, delay)
+        self._constraints.end_at_start.append(constraint)
+
+        return constraint
+
+    def add_end_at_end(
+        self, task1: Task, task2: Task, delay: int = 0
+    ) -> EndAtEnd:
+        """
+        Adds a constraint that task 2 must end exactly at the end of
+        task 1 plus the delay.
+        """
+        idx1, idx2 = self._id2task[id(task1)], self._id2task[id(task2)]
+        constraint = EndAtEnd(idx1, idx2, delay)
+        self._constraints.end_at_end.append(constraint)
+
+        return constraint
+
     def add_identical_resources(
         self, task1: Task, task2: Task
     ) -> IdenticalResources:
@@ -456,8 +374,8 @@ class Model:
     def add_consecutive(self, task1: Task, task2: Task) -> Consecutive:
         """
         Adds a constraint that the first task must be scheduled right before
-        the second task, meaning that no task is allowed to schedule between,
-        on machines that they are both scheduled on.
+        the second task, meaning that no task is allowed to be scheduled
+        between, on machines that they are both scheduled on.
         """
         idx1, idx2 = self._id2task[id(task1)], self._id2task[id(task2)]
         constraint = Consecutive(idx1, idx2)
@@ -600,9 +518,154 @@ class Model:
         """
         return str(self.data())
 
+    @classmethod
+    def from_data(cls, data: ProblemData):
+        """
+        Creates a Model instance from a ProblemData instance.
+        """
+        model = cls()
+
+        for job in data.jobs:
+            model.add_job(
+                job.weight,
+                job.release_date,
+                job.deadline,
+                job.due_date,
+                name=job.name,
+            )
+
+        for resource in data.resources:
+            if isinstance(resource, Machine):
+                model.add_machine(resource.breaks, name=resource.name)
+            elif isinstance(resource, Renewable):
+                model.add_renewable(
+                    resource.capacity,
+                    resource.breaks,
+                    name=resource.name,
+                )
+            elif isinstance(resource, Consumable):
+                model.add_consumable(
+                    resource.capacity,
+                    resource.breaks,
+                    name=resource.name,
+                )
+            else:
+                raise ValueError(f"Unknown resource type: {type(resource)}")
+
+        for task in data.tasks:
+            model.add_task(
+                model.jobs[task.job] if task.job is not None else None,
+                task.earliest_start,
+                task.latest_start,
+                task.earliest_end,
+                task.latest_end,
+                task.allow_idle,
+                task.allow_breaks,
+                task.optional,
+                name=task.name,
+            )
+
+        for mode in data.modes:
+            model.add_mode(
+                model.tasks[mode.task],
+                [model.resources[res] for res in mode.resources],
+                mode.duration,
+                mode.demands,
+                name=mode.name,
+            )
+
+        resources = model.resources
+        tasks = model.tasks
+
+        for idx1, idx2, delay in data.constraints.start_before_start:
+            model.add_start_before_start(tasks[idx1], tasks[idx2], delay)
+
+        for idx1, idx2, delay in data.constraints.start_before_end:
+            model.add_start_before_end(tasks[idx1], tasks[idx2], delay)
+
+        for idx1, idx2, delay in data.constraints.end_before_start:
+            model.add_end_before_start(tasks[idx1], tasks[idx2], delay)
+
+        for idx1, idx2, delay in data.constraints.end_before_end:
+            model.add_end_before_end(tasks[idx1], tasks[idx2], delay)
+
+        for idx1, idx2 in data.constraints.identical_resources:
+            model.add_identical_resources(tasks[idx1], tasks[idx2])
+
+        for idx1, idx2 in data.constraints.different_resources:
+            model.add_different_resources(tasks[idx1], tasks[idx2])
+
+        for idx1, idx2 in data.constraints.consecutive:
+            model.add_consecutive(tasks[idx1], tasks[idx2])
+
+        for idcs in data.constraints.same_sequence:
+            res_idx1, res_idx2, task_idcs1, task_idcs2 = idcs
+            model.add_same_sequence(
+                resources[res_idx1],
+                resources[res_idx2],
+                [tasks[idx] for idx in task_idcs1] if task_idcs1 else None,
+                [tasks[idx] for idx in task_idcs2] if task_idcs2 else None,
+            )
+
+        for res_idx, idx1, idx2, duration in data.constraints.setup_times:
+            model.add_setup_time(
+                machine=resources[res_idx],  # type: ignore
+                task1=tasks[idx1],
+                task2=tasks[idx2],
+                duration=duration,
+            )
+
+        for mode1, modes2 in data.constraints.mode_dependencies:
+            model.add_mode_dependency(
+                model.modes[mode1], [model.modes[m] for m in modes2]
+            )
+
+        for idcs, condition_idx in data.constraints.select_all_or_none:
+            model.add_select_all_or_none(
+                [tasks[idx] for idx in idcs],
+                tasks[condition_idx] if condition_idx is not None else None,
+            )
+
+        for idcs, condition_idx in data.constraints.select_at_least_one:
+            model.add_select_at_least_one(
+                [tasks[idx] for idx in idcs],
+                tasks[condition_idx] if condition_idx is not None else None,
+            )
+
+        for idcs, condition_idx in data.constraints.select_exactly_one:
+            model.add_select_exactly_one(
+                [tasks[idx] for idx in idcs],
+                tasks[condition_idx] if condition_idx is not None else None,
+            )
+
+        model.set_objective(
+            weight_makespan=data.objective.weight_makespan,
+            weight_tardy_jobs=data.objective.weight_tardy_jobs,
+            weight_total_tardiness=data.objective.weight_total_tardiness,
+            weight_total_flow_time=data.objective.weight_total_flow_time,
+            weight_total_earliness=data.objective.weight_total_earliness,
+            weight_max_tardiness=data.objective.weight_max_tardiness,
+            weight_total_setup_time=data.objective.weight_total_setup_time,
+        )
+
+        return model
+
+    def data(self) -> ProblemData:
+        """
+        Returns a ProblemData object containing the problem instance.
+        """
+        return ProblemData(
+            jobs=self.jobs,
+            resources=self.resources,
+            tasks=self.tasks,
+            modes=self.modes,
+            constraints=self.constraints,
+            objective=self.objective,
+        )
+
     def solve(
         self,
-        solver: str = "ortools",
+        solver: Literal["ortools", "cpoptimizer"] = "ortools",
         time_limit: float = float("inf"),
         display: bool = True,
         num_workers: int | None = None,

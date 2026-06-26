@@ -61,7 +61,6 @@ class Constraints:
             if not data.resource2modes(idx):
                 continue  # skip because cpo warns if there are no modes
 
-            machine = data.resources[idx]
             seq_var = variables.sequence_vars[idx]
             matrix = None
             setup_times = utils.setup_times_matrix(data)
@@ -75,38 +74,6 @@ class Constraints:
             # See ICAPS 2017 presentation for details.
             is_direct = True if matrix is not None else None
             model.add(cpo.no_overlap(seq_var, matrix, is_direct))
-
-            if not machine.no_idle:
-                continue
-
-            # For no-idle machines, enforce: end + setup_time == next_start.
-            # This applies to all task pairs except the last task in sequence.
-            # The last task is determined dynamically by the solver sequencing.
-            intervals = seq_var.get_interval_variables()
-            task_idcs = [data.modes[m].task for m in data.resource2modes(idx)]
-
-            for task_idx, interval in zip(task_idcs, intervals):
-                next_type = cpo.type_of_next(
-                    seq_var,
-                    interval,
-                    # The returned value ``data.num_tasks`` is used to
-                    # deactivate the precedence constraint.
-                    lastValue=data.num_tasks,
-                    absentValue=data.num_tasks,
-                )
-
-                setup = 0
-                if setup_times is not None:
-                    setup_array = setup_times[idx, task_idx, :].tolist()
-                    setup_array.append(0)  # padding for last or absent
-                    setup = cpo.element(setup_array, next_type)
-
-                not_absent_or_last = next_type != data.num_tasks
-                end1 = cpo.end_of(interval)
-                start2 = cpo.start_of_next(seq_var, interval)
-                expr = end1 + setup == start2
-
-                model.add(cpo.if_then(not_absent_or_last, expr))
 
     def _get_demand(self, mode_idx: int, res_idx: int) -> int:
         """
@@ -132,13 +99,13 @@ class Constraints:
             capacity = data.resources[res_idx].capacity
             model.add(pulses <= capacity)
 
-    def _non_renewable_capacity(self):
+    def _consumable_capacity(self):
         """
-        Creates capacity constraints for the non-renewable resources.
+        Creates capacity constraints for the consumable resources.
         """
         model, data, variables = self._model, self._data, self._variables
 
-        for res_idx in data.non_renewable_idcs:
+        for res_idx in data.consumable_idcs:
             modes = data.resource2modes(res_idx)
             usage = sum(
                 presence_of(variables.mode_vars[mode_idx])
@@ -157,6 +124,10 @@ class Constraints:
         for mode_idx, mode_var in enumerate(variables.mode_vars):
             mode = data.modes[mode_idx]
 
+            # A mode's breaks are the union of all its required resources'
+            # breaks, merged to handle overlapping intervals. This means
+            # a task is interrupted whenever any of its resources is on
+            # break.
             all_breaks = []
             for res_idx in mode.resources:
                 all_breaks.extend(data.resources[res_idx].breaks)
@@ -211,6 +182,26 @@ class Constraints:
             task_var1 = variables.task_vars[idx1]
             task_var2 = variables.task_vars[idx2]
             model.add(cpo.end_before_end(task_var1, task_var2, delay))
+
+        for idx1, idx2, delay in data.constraints.start_at_start:
+            task_var1 = variables.task_vars[idx1]
+            task_var2 = variables.task_vars[idx2]
+            model.add(cpo.start_at_start(task_var1, task_var2, delay))
+
+        for idx1, idx2, delay in data.constraints.start_at_end:
+            task_var1 = variables.task_vars[idx1]
+            task_var2 = variables.task_vars[idx2]
+            model.add(cpo.start_at_end(task_var1, task_var2, delay))
+
+        for idx1, idx2, delay in data.constraints.end_at_start:
+            task_var1 = variables.task_vars[idx1]
+            task_var2 = variables.task_vars[idx2]
+            model.add(cpo.end_at_start(task_var1, task_var2, delay))
+
+        for idx1, idx2, delay in data.constraints.end_at_end:
+            task_var1 = variables.task_vars[idx1]
+            task_var2 = variables.task_vars[idx2]
+            model.add(cpo.end_at_end(task_var1, task_var2, delay))
 
     def _identical_and_different_resource_constraints(self):
         """
@@ -269,8 +260,8 @@ class Constraints:
 
             if len(common_modes) != 1:
                 msg = (
-                    "Cannot solve instances with multiple modes that require "
-                    f"task {task_idx} and resource {res_idx} with CP Optimzer."
+                    "Cannot solve instances with multiple modes requiring task"
+                    f" {task_idx} and resource {res_idx} with CP Optimizer."
                 )
                 raise ValueError(msg)
 
@@ -374,7 +365,7 @@ class Constraints:
         self._select_one_mode()
         self._machines_no_overlap_and_setup_times()
         self._renewable_capacity()
-        self._non_renewable_capacity()
+        self._consumable_capacity()
         self._resource_breaks_constraints()
         self._timing_constraints()
         self._identical_and_different_resource_constraints()

@@ -3,6 +3,7 @@ import warnings
 from functools import partial
 from multiprocessing import cpu_count
 from pathlib import Path
+from typing import Literal
 
 import numpy as np
 import tomli
@@ -91,6 +92,18 @@ def tabulate(headers: list[str], rows: np.ndarray) -> str:
 
 
 def write_solution(instance_loc: Path, sol_dir: Path, result: Result):
+    """
+    Writes the solution to a file in the specified directory.
+
+    Parameters
+    ----------
+    instance_loc
+        Path to the original instance file.
+    sol_dir
+        Directory where the solution file will be written.
+    result
+        The result object containing the solution to write.
+    """
     with open(sol_dir / (instance_loc.stem + ".sol"), "w") as fh:
         fh.write(f"instance: {instance_loc.name}\n")
         fh.write(f"status: {result.status}\n")
@@ -110,7 +123,7 @@ def write_solution(instance_loc: Path, sol_dir: Path, result: Result):
 def _solve(
     instance_loc: Path,
     instance_format: InstanceFormat,
-    solver: str,
+    solver: Literal["ortools", "cpoptimizer"],
     time_limit: float,
     display: bool,
     num_workers_per_instance: int,

@@ -1,5 +1,7 @@
 from numpy.testing import assert_, assert_equal
 
+from pyjobshop import Model
+
 
 def test_solve_initial_solution(
     require_cpoptimizer,
@@ -65,3 +67,26 @@ def test_variables_property(require_cpoptimizer, small):
     assert_equal(len(variables.task_vars), 2)
     assert_equal(len(variables.mode_vars), 2)
     assert_equal(len(variables.sequence_vars), 1)
+
+
+def test_no_warning_for_machine_without_modes(require_cpoptimizer, capfd):
+    """
+    Tests that no 'Unused sequence variable' warning is emitted when a
+    machine exists but has no modes assigned to it.
+    """
+    from pyjobshop.solvers.cpoptimizer.CPModel import CPModel
+
+    model = Model()
+    job = model.add_job()
+    machine = model.add_machine()
+    model.add_machine()  # unused machine, no modes
+
+    task = model.add_task(job=job)
+    model.add_mode(task, machine, duration=1)
+
+    cp_model = CPModel(model.data())
+    cp_model.solve(display=True)
+
+    captured = capfd.readouterr()
+    output = captured.out + captured.err
+    assert_("Unused sequence variable" not in output)

@@ -10,6 +10,40 @@ PyJobShop
    .. autoclass:: Model
       :members:
 
+      .. rubric:: Methods
+
+      .. autosummary::
+         :nosignatures:
+
+         ~Model.add_job
+         ~Model.add_machine
+         ~Model.add_renewable
+         ~Model.add_consumable
+         ~Model.add_task
+         ~Model.add_mode
+         ~Model.add_start_before_start
+         ~Model.add_start_before_end
+         ~Model.add_end_before_start
+         ~Model.add_end_before_end
+         ~Model.add_start_at_start
+         ~Model.add_start_at_end
+         ~Model.add_end_at_start
+         ~Model.add_end_at_end
+         ~Model.add_identical_resources
+         ~Model.add_different_resources
+         ~Model.add_consecutive
+         ~Model.add_same_sequence
+         ~Model.add_setup_time
+         ~Model.add_mode_dependency
+         ~Model.add_select_all_or_none
+         ~Model.add_select_at_least_one
+         ~Model.add_select_exactly_one
+         ~Model.set_objective
+         ~Model.summary
+         ~Model.from_data
+         ~Model.data
+         ~Model.solve
+
 .. automodule:: pyjobshop.ProblemData
 
     .. autoclass:: ProblemData
@@ -24,7 +58,7 @@ PyJobShop
     .. autoclass:: Renewable
        :members:
 
-    .. autoclass:: NonRenewable
+    .. autoclass:: Consumable
        :members:
 
     .. autoclass:: Task
@@ -40,6 +74,14 @@ PyJobShop
     .. autoclass:: EndBeforeStart
 
     .. autoclass:: EndBeforeEnd
+
+    .. autoclass:: StartAtStart
+
+    .. autoclass:: StartAtEnd
+
+    .. autoclass:: EndAtStart
+
+    .. autoclass:: EndAtEnd
 
     .. autoclass:: IdenticalResources
 
@@ -73,8 +115,13 @@ PyJobShop
 .. automodule:: pyjobshop.Solution
 
    .. autoclass:: Solution
+      :members:
 
-   .. autoclass:: TaskData
+   .. autoclass:: ScheduledTask
+      :members:
+
+   .. autoclass:: ScheduledJob
+      :members:
 
 .. automodule:: pyjobshop.Result
 

@@ -93,6 +93,9 @@ class Variables:
             mode_durations = [mode.duration for mode in modes]
             var.set_size_min(min(mode_durations))
 
+            if not (task.allow_idle or task.allow_breaks):
+                var.set_size_max(max(mode_durations))
+
             variables.append(var)
             self._model.add(var)
 
@@ -132,12 +135,16 @@ class Variables:
         variables: dict[int, CpoSequenceVar] = {}
 
         for idx in data.machine_idcs:
-            modes = data.resource2modes(idx)
+            if not (modes := data.resource2modes(idx)):
+                # Skip machines without modes to avoid CPO warning
+                # about unused sequence variables.
+                continue
+
             intervals = [self.mode_vars[mode] for mode in modes]
             tasks = [data.modes[mode].task for mode in modes]
             seq_var = sequence_var(
                 name=f"S{idx}",
-                types=tasks,  # needed for total_setup_times objective
+                types=tasks,  # needed for total setup time objective
                 vars=intervals,
             )
             self._model.add(seq_var)
@@ -153,16 +160,14 @@ class Variables:
         init = self._model.create_empty_solution()
 
         for idx in range(data.num_jobs):
-            job = data.jobs[idx]
             job_var = self.job_vars[idx]
-            sol_tasks = [solution.tasks[task] for task in job.tasks]
-
-            present = any(task.present for task in sol_tasks)
-            job_start = min(task.start for task in sol_tasks if task.present)
-            job_end = max(task.end for task in sol_tasks if task.present)
+            sol_job = solution.jobs[idx]
 
             init.add_interval_var_solution(
-                job_var, presence=present, start=job_start, end=job_end
+                job_var,
+                presence=sol_job.present,
+                start=sol_job.start,
+                end=sol_job.end,
             )
 
         for idx in range(data.num_tasks):
@@ -187,6 +192,7 @@ class Variables:
                 start=sol_task.start,
                 end=sol_task.end,
                 length=sol_task.duration,
+                size=sol_task.processing,
             )
 
         self._model.set_starting_point(init)

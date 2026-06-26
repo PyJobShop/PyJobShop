@@ -5,8 +5,8 @@ repos:
     rev: v6.0.0
     hooks:
     -   id: debug-statements
-        id: trailing-whitespace
-        id: end-of-file-fixer
+    -   id: trailing-whitespace
+    -   id: end-of-file-fixer
 
 -   repo: https://github.com/kynan/nbstripout
     rev: 0.6.1

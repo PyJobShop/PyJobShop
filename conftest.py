@@ -4,6 +4,7 @@ from pyjobshop import Model
 from pyjobshop.ProblemData import (
     Consecutive,
     Constraints,
+    Consumable,
     DifferentResources,
     EndBeforeEnd,
     EndBeforeStart,
@@ -12,7 +13,6 @@ from pyjobshop.ProblemData import (
     Machine,
     Mode,
     ModeDependency,
-    NonRenewable,
     Objective,
     ProblemData,
     Renewable,
@@ -25,7 +25,7 @@ from pyjobshop.ProblemData import (
     StartBeforeStart,
     Task,
 )
-from pyjobshop.Solution import Solution, TaskData
+from pyjobshop.Solution import ScheduledTask, Solution
 
 
 @pytest.fixture(scope="session")
@@ -49,9 +49,9 @@ def complete_data():
     """
     jobs = [Job(tasks=[2], due_date=1)]
     resources = [
-        Machine(no_idle=True),
+        Machine(),
         Renewable(1),
-        NonRenewable(1),
+        Consumable(1),
         Machine(),
         Machine(),
         Machine(breaks=[(1, 2)]),
@@ -116,18 +116,19 @@ def complete_data():
 
 
 @pytest.fixture(scope="session")
-def complete_sol():
+def complete_sol(complete_data):
     return Solution(
+        complete_data,
         [
-            TaskData(0, [0], 0, 1),
-            TaskData(1, [0], 2, 3),
-            TaskData(2, [1], 1, 2),
-            TaskData(4, [2], 0, 1),
-            TaskData(5, [3], 0, 1),
-            TaskData(6, [3], 2, 3),
-            TaskData(-1, [], 0, 0, 0, 0, present=False),
-            TaskData(8, [5], 0, 3, breaks=1),
-        ]
+            ScheduledTask(0, [0], 0, 1),
+            ScheduledTask(1, [0], 2, 3),
+            ScheduledTask(2, [1], 1, 2),
+            ScheduledTask(4, [2], 0, 1),
+            ScheduledTask(5, [3], 0, 1),
+            ScheduledTask(6, [3], 2, 3),
+            ScheduledTask(-1, [], 0, 0, 0, 0, present=False),
+            ScheduledTask(8, [5], 0, 3, breaks=1),
+        ],
     )
 
 

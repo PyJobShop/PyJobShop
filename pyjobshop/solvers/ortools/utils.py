@@ -17,13 +17,39 @@ def partition_task_start_by_break_overlap(
     overlap with breaks. The partitioning accounts for tasks that may span
     multiple breaks.
 
+    The algorithm works in three steps:
+
+    1. **Critical intervals**: For each break, compute the range of task start
+       times that would cause the task to overlap with that break. A task
+       overlaps a break ``[b_s, b_e)`` if it starts before ``b_s`` and its
+       processing (plus any earlier overlapping breaks) extends past ``b_s``.
+       The critical interval for a break is ``[earliest_start, b_s)``.
+
+    2. **Partitioning**: The boundaries of all critical intervals form a set
+       of breakpoints that divide the timeline into sub-intervals. For each
+       sub-interval, determine which breaks' critical intervals contain it.
+       The total overlap duration is the sum of those breaks' durations.
+
+    3. **Domain construction**: Group sub-intervals by their total overlap
+       duration into ``Domain`` objects. Start times not covered by any
+       critical interval have zero overlap. Finally, exclude start times
+       that fall inside breaks themselves.
+
+    Example
+    -------
+    Consider breaks ``[(5, 8), (12, 14)]`` and ``task_duration = 10``.
+    A task starting at time 0 spans ``[0, 10)`` and overlaps break
+    ``[5, 8)`` for 3 units. A task starting at 3 spans ``[3, 13)`` and
+    overlaps both breaks for ``3 + 1 = 4`` units. The function returns a
+    mapping like ``{0: Domain(...), 3: Domain(...), 4: Domain(...), ...}``.
+
     Parameters
     ----------
     breaks
         A list of (start, end) tuples representing break intervals.
         Must be non-overlapping and sorted.
     task_duration
-        The duration of the task to be scheduled.
+        The processing duration of the task to be scheduled.
 
     Returns
     -------
@@ -31,9 +57,11 @@ def partition_task_start_by_break_overlap(
         Mapping from break_overlap_duration -> valid_start_time_domain.
         Each domain contains all start times that result in the given overlap.
     """
-    # Find critical points. This is the earliest time that starting this
-    # task will result in overlap with the considered break. We process breaks
-    # in reverse order to account for previous breaks that would also overlap.
+    # For each break, compute the critical interval: the range of start
+    # times for which the task would overlap with that break. We process
+    # breaks in reverse order to account for earlier breaks that extend
+    # the task's span (a task that overlaps an earlier break takes longer,
+    # making it more likely to also overlap later breaks).
     reversed_breaks = list(reversed(breaks))
     critical_intervals = []
 
@@ -51,10 +79,11 @@ def partition_task_start_by_break_overlap(
         # If a task starts in this interval, it will overlap with this break.
         critical_intervals.append((point, start))
 
-    # Next, we partition the start times. We identify all breakpoints and
-    # analyze the intervals between them. For each interval, we check if it is
-    # contained in a break's critical interval, which then determines the total
-    # overlap duration.
+    # Partition the start times. The boundaries of all critical intervals
+    # form a sorted set of breakpoints that divide the timeline into
+    # sub-intervals. For each sub-interval, we check which breaks' critical
+    # intervals fully contain it, and sum their durations to get the total
+    # overlap.
     partition = defaultdict(list)
     breakpoints = sorted(
         set(point for points in critical_intervals for point in points)

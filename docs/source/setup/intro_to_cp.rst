@@ -49,5 +49,5 @@ Several popular tools and libraries are available for modeling and solving CP pr
 For those interested in more details of CP, we refer to the following resources:
 
 * `CP-SAT Primer <https://github.com/d-krupke/cpsat-primer>`_: a great introduction book to Google OR-Tools' CP-SAT solver. This book will help you to get familiar with modeling basics.
-* `Discrete Optimization Coursera <https://www.coursera.org/learn/discrete-optimization>`_: module 3 covers constraint programming by Pascal van Hentenryck, who has made many great advancements in CP.
-* `Combinatorial Optimisation and Constraint Programming by Pierre Flener <https://github.com/Pierre-Flener/Pierre-Flener.github.io/tree/main/courses/COCP/slides>`_: course about constraint programming by Pierre Flener.
+* `Discrete Optimization MOOC <https://www.my-mooc.com/en/mooc/optimization-75993f57-f2df-4126-8d8f-abc83b854b05>`_: module 3 covers constraint programming by Pascal van Hentenryck, who has made many great advancements in CP.
+* `Combinatorial Optimisation and Constraint Programming by Pierre Flener <https://github.com/Pierre-Flener/Pierre-Flener.github.io/tree/f0e1d03da300b95ab4302715eea934c1011522a2/courses/COCP/slides>`_: course about constraint programming by Pierre Flener.

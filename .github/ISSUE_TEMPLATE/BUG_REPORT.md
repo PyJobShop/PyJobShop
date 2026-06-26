@@ -8,7 +8,7 @@ assignees: ''
 
 #### Describe the bug
 
-[ A clear and concise description of what the bug is. 
+[ A clear and concise description of what the bug is.
 This should explain **why** the current behavior is a problem and why the expected output is a better solution. ]
 
 #### Code sample

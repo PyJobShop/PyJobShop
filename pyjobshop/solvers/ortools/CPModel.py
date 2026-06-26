@@ -2,7 +2,7 @@ from ortools.sat.python.cp_model import CpModel, CpSolver
 
 from pyjobshop.ProblemData import ProblemData
 from pyjobshop.Result import Result, SolveStatus
-from pyjobshop.Solution import Solution, TaskData
+from pyjobshop.Solution import ScheduledTask, Solution
 
 from .Constraints import Constraints
 from .Objective import Objective
@@ -72,7 +72,7 @@ class CPModel:
             task_var = variables.task_vars[task_idx]
 
             if not cp_solver.value(task_var.present):
-                task = TaskData(data.num_modes, [], 0, 0, 0, 0, False)
+                task = ScheduledTask(0, [], 0, 0, 0, 0, False)
                 tasks.append(task)
                 continue
 
@@ -80,7 +80,7 @@ class CPModel:
                 mode_var = variables.mode_vars[mode_idx]
 
                 if cp_solver.value(mode_var):  # selected mode
-                    task = TaskData(
+                    task = ScheduledTask(
                         mode_idx,
                         data.modes[mode_idx].resources,
                         cp_solver.value(task_var.start),
@@ -92,7 +92,7 @@ class CPModel:
                     tasks.append(task)
                     break
 
-        return Solution(tasks)
+        return Solution(data, tasks)
 
     def solve(
         self,
@@ -142,18 +142,20 @@ class CPModel:
 
         status_code = solver.solve(self._model)
         status = solver.status_name(status_code)
-        objective_value = solver.objective_value
 
         if status in ["OPTIMAL", "FEASIBLE"]:
             solution = self._convert_to_solution(solver)
+            objective_value = solver.objective_value
+            lower_bound = solver.best_objective_bound
         else:
             # No feasible solution found due to infeasibility or time limit.
-            solution = Solution([])
+            solution = Solution(self._data, [])
             objective_value = float("inf")
+            lower_bound = 0
 
         return Result(
             objective=objective_value,
-            lower_bound=solver.best_objective_bound,
+            lower_bound=lower_bound,
             status=self._get_solve_status(status),
             runtime=solver.wall_time,
             best=solution,

@@ -11,7 +11,7 @@ from ortools.sat.python.cp_model import (
 )
 
 from pyjobshop.constants import MAX_VALUE
-from pyjobshop.ProblemData import ProblemData
+from pyjobshop.ProblemData import Break, ProblemData
 from pyjobshop.Solution import Solution
 from pyjobshop.solvers.ortools.utils import (
     partition_task_start_by_break_overlap,
@@ -55,6 +55,20 @@ class TaskVar:
     """
     Variables that represent a task in the problem.
 
+    The duration of a task is decomposed as:
+
+        duration = processing + idle + breaks
+
+    where these three components are disjoint time intervals within
+    [start, end):
+
+    - **processing**: time spent actively working on the task according
+      to the selected mode.
+    - **idle**: time outside breaks where the task occupies a resource
+      but is not being processed (only nonzero if ``allow_idle=True``).
+    - **breaks**: time during which the task's processing is interrupted
+      by resource breaks (only nonzero if ``allow_breaks=True``).
+
     Parameters
     ----------
     interval
@@ -66,7 +80,7 @@ class TaskVar:
     idle
         The integer variable representing the idle time of the task.
     breaks
-        The integer variable representing the break times of the task.
+        The integer variable representing the break time of the task.
     """
 
     interval: IntervalVar
@@ -279,7 +293,7 @@ class Variables:
     @property
     def assign_vars(self) -> dict[TaskResIdcs, OptionalIntervalVar]:
         """
-        Retruns the assignment variables.
+        Returns the assignment variables.
         """
         return self._assign_vars
 
@@ -464,7 +478,8 @@ class Variables:
             breaks = model.new_int_var(0, ub_breaks, f"{name}_breaks")
 
             duration = model.new_int_var(0, MAX_VALUE, f"{name}_duration")
-            model.add(duration == processing + idle + breaks)
+            expr = duration == processing + idle + breaks
+            model.add(expr).only_enforce_if(present)
 
             interval = model.new_optional_interval_var(
                 start, duration, end, present, f"{name}_interval"
@@ -536,10 +551,11 @@ class Variables:
         variables: list[list[BreakVar]] = []
 
         for mode in data.modes:
-            # For single-resource modes, breaks map directly to individual
-            # resource breaks. For multi-resource modes, breaks may represent
-            # combined breaks (e.g., when resources have overlapping breaks).
-            all_breaks = []
+            # A mode's breaks are the union of all its required resources'
+            # breaks, merged to handle overlapping intervals. This means
+            # a task is interrupted whenever any of its resources is on
+            # break.
+            all_breaks: list[Break] = []
             for res_idx in mode.resources:
                 all_breaks.extend(data.resources[res_idx].breaks)
 
@@ -662,42 +678,32 @@ class Variables:
         model.clear_hints()
 
         # Job related variables.
-        max_tardiness = 0
-        for task_idx in range(data.num_jobs):
-            job = data.jobs[task_idx]
-            job_var = job_vars[task_idx]
-            job_sol_tasks = [sol_tasks[task] for task in job.tasks]
+        for job_idx in range(data.num_jobs):
+            job_var = job_vars[job_idx]
+            sol_job = solution.jobs[job_idx]
 
-            job_start = min(task.start for task in job_sol_tasks)
-            job_end = max(task.end for task in job_sol_tasks)
-            job_duration = job_end - job_start
-
-            model.add_hint(job_var.start, job_start)  # type: ignore
-            model.add_hint(job_var.duration, job_duration)  # type: ignore
-            model.add_hint(job_var.end, job_end)  # type: ignore
+            model.add_hint(job_var.start, sol_job.start)
+            model.add_hint(job_var.duration, sol_job.duration)
+            model.add_hint(job_var.end, sol_job.end)
 
             if data.objective.weight_total_flow_time > 0:
-                flow_time = job_end - job.release_date
-                model.add_hint(self.flow_time_vars[task_idx], flow_time)
+                model.add_hint(self.flow_time_vars[job_idx], sol_job.flow_time)
 
-            if job.due_date is not None:
-                if data.objective.weight_tardy_jobs > 0:
-                    is_tardy = job_end > job.due_date
-                    model.add_hint(self.is_tardy_vars[task_idx], is_tardy)
+            if data.objective.weight_tardy_jobs > 0:
+                model.add_hint(self.is_tardy_vars[job_idx], sol_job.is_tardy)
 
-                if data.objective.weight_total_tardiness > 0:
-                    tardiness = max(0, job_end - job.due_date)
-                    model.add_hint(self.tardiness_vars[task_idx], tardiness)
+            if data.objective.weight_total_tardiness > 0:
+                model.add_hint(self.tardiness_vars[job_idx], sol_job.tardiness)
 
-                if data.objective.weight_total_earliness > 0:
-                    earliness = max(0, job.due_date - job_end)
-                    model.add_hint(self.earliness_vars[task_idx], earliness)
+            if data.objective.weight_total_earliness > 0:
+                model.add_hint(self.earliness_vars[job_idx], sol_job.earliness)
 
-                if data.objective.weight_max_tardiness > 0:
-                    tardiness = max(0, job_end - job.due_date)
-                    max_tardiness = max(max_tardiness, tardiness)
-
+        # Objective related variables.
         if data.objective.weight_max_tardiness > 0:
+            max_tardiness = max(
+                data.jobs[idx].weight * job.tardiness
+                for idx, job in enumerate(solution.jobs)
+            )
             model.add_hint(self.max_tardiness_var, max_tardiness)
 
         if data.objective.weight_makespan > 0:

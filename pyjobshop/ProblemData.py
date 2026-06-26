@@ -1,38 +1,49 @@
+import json
 from collections import Counter, defaultdict
 from copy import deepcopy
-from dataclasses import dataclass, field, fields
+from dataclasses import asdict, dataclass, field, fields
 from itertools import pairwise
-from typing import Sequence, TypeVar
+from typing import TypeAlias, TypeVar, get_args
 
 from pyjobshop.constants import MAX_VALUE
 
 _T = TypeVar("_T")
 
+Break: TypeAlias = tuple[int, int]
 
+
+def _validate_breaks(breaks: list[Break]):
+    for start, end in breaks:
+        if start < 0 or start >= end:
+            raise ValueError("Break start < 0 or start >= end.")
+
+    for interval1, interval2 in pairwise(sorted(breaks)):
+        if interval1[1] > interval2[0]:
+            raise ValueError("Break intervals must not overlap.")
+
+
+@dataclass
 class Job:
     """
-    Simple dataclass for storing job related data.
+    Simple dataclass for storing job-related data.
 
     Parameters
     ----------
     weight
         The weight of the job, used as multiplicative factor in the
-        objective function. Must be non-negative. Default ``1``.
+        objective function. Must be non-negative.
     release_date
         The earliest time that the job may start. Must be non-negative.
-        Default ``0``.
     deadline
         The latest time by which the job must be completed. Note that a
         deadline is different from a due date; the latter does not restrict
         the latest completion time.
-        Default :const:`~pyjobshop.constants.MAX_VALUE`.
     due_date
         The latest time that the job should be completed before incurring
-        penalties. Can be negative to represent past due dates. Default
-        ``None``, meaning that there is no due date.
+        penalties. Can be negative to represent past due dates. Default is
+        `None`, meaning there is no due date.
     tasks
-        List of task indices that belong to this job. Default ``None``,
-        which initializes an empty list.
+        List of task indices that belong to this job. Default is an empty list.
     name
         Name of the job.
 
@@ -42,89 +53,25 @@ class Job:
         If the release date is greater than the deadline.
     """
 
-    def __init__(
-        self,
-        weight: int = 1,
-        release_date: int = 0,
-        deadline: int = MAX_VALUE,
-        due_date: int | None = None,
-        tasks: list[int] | None = None,
-        *,
-        name: str = "",
-    ):
-        if weight < 0:
+    weight: int = 1
+    release_date: int = 0
+    deadline: int = MAX_VALUE
+    due_date: int | None = None
+    tasks: list[int] = field(default_factory=list)
+    name: str = field(default="", kw_only=True)
+
+    def __post_init__(self):
+        if self.weight < 0:
             raise ValueError("Weight must be non-negative.")
 
-        if release_date < 0:
+        if self.release_date < 0:
             raise ValueError("Release date must be non-negative.")
 
-        if deadline < 0:
+        if self.deadline < 0:
             raise ValueError("Deadline must be non-negative.")
 
-        if release_date > deadline:
+        if self.release_date > self.deadline:
             raise ValueError("Must have release_date <= deadline.")
-
-        self._weight = weight
-        self._release_date = release_date
-        self._deadline = deadline
-        self._due_date = due_date
-        self._tasks = [] if tasks is None else tasks
-        self._name = name
-
-    def __eq__(self, other) -> bool:
-        return (
-            isinstance(other, Job)
-            and self.weight == other.weight
-            and self.release_date == other.release_date
-            and self.deadline == other.deadline
-            and self.due_date == other.due_date
-            and self.tasks == other.tasks
-            and self.name == other.name
-        )
-
-    @property
-    def weight(self) -> int:
-        """
-        The weight of the job, used as multiplicative factor in the objective
-        function.
-        """
-        return self._weight
-
-    @property
-    def release_date(self) -> int:
-        """
-        The earliest time that the job may start.
-        """
-        return self._release_date
-
-    @property
-    def deadline(self) -> int:
-        """
-        The latest time by which the job must be completed.
-        """
-        return self._deadline
-
-    @property
-    def due_date(self) -> int | None:
-        """
-        The latest time that the job should be completed before incurring
-        penalties.
-        """
-        return self._due_date
-
-    @property
-    def tasks(self) -> list[int]:
-        """
-        List of task indices that belong to this job.
-        """
-        return self._tasks
-
-    @property
-    def name(self) -> str:
-        """
-        Name of the job.
-        """
-        return self._name
 
     def add_task(self, idx: int):
         """
@@ -135,13 +82,14 @@ class Job:
         idx
             Task index to add.
         """
-        self._tasks.append(idx)
+        self.tasks.append(idx)
 
 
+@dataclass
 class Machine:
     """
-    A machine resource is a specialized resource that only processes one task
-    at a time and can handle sequencing constraints.
+    A resource that processes tasks only one at a time and can enforce
+    sequencing constraints.
 
     Parameters
     ----------
@@ -150,77 +98,21 @@ class Machine:
         break is represented as a tuple ``(start, end)``, where ``start`` must
         be non-negative and ``start`` must be smaller than ``end``. Default is
         no breaks.
-    no_idle
-        Whether the machine must operate continuously without idle time between
-        tasks. When ``True``, tasks are scheduled back-to-back with no gaps,
-        except for required setup times. When ``False`` (default), the machine
-        can remain idle between tasks.
     name
         Name of the machine.
-
-    Raises
-    ------
-    ValueError
-        When breaks are specified and ``no_idle=True``.
     """
 
-    def __init__(
-        self,
-        breaks: list[tuple[int, int]] | None = None,
-        no_idle: bool = False,
-        *,
-        name: str = "",
-    ):
-        if breaks is not None:
-            for start, end in breaks:
-                if start < 0 or start >= end:
-                    raise ValueError("Break start < 0 or start >= end.")
+    breaks: list[Break] = field(default_factory=list)
+    name: str = field(default="", kw_only=True)
 
-            for interval1, interval2 in pairwise(sorted(breaks)):
-                if interval1[1] > interval2[0]:
-                    raise ValueError("Break intervals must not overlap.")
-
-        if breaks and no_idle:
-            raise ValueError("Breaks not allowed with no_idle=True.")
-
-        self._breaks = breaks or []
-        self._no_idle = no_idle
-        self._name = name
-
-    def __eq__(self, other) -> bool:
-        return (
-            isinstance(other, Machine)
-            and self.breaks == other.breaks
-            and self.no_idle == other.no_idle
-            and self.name == other.name
-        )
-
-    @property
-    def breaks(self) -> list[tuple[int, int]]:
-        """
-        List of time intervals during which tasks cannot be processed.
-        """
-        return self._breaks
-
-    @property
-    def no_idle(self) -> bool:
-        """
-        Whether the machine has no idle time constraints.
-        """
-        return self._no_idle
-
-    @property
-    def name(self) -> str:
-        """
-        Name of the machine.
-        """
-        return self._name
+    def __post_init__(self):
+        _validate_breaks(self.breaks)
 
 
+@dataclass
 class Renewable:
     """
-    A renewable resource that replenishes its capacity after each task
-    completion.
+    A resource that replenishes its capacity after each task completion.
 
     Parameters
     ----------
@@ -235,62 +127,23 @@ class Renewable:
         Name of the resource.
     """
 
-    def __init__(
-        self,
-        capacity: int,
-        breaks: list[tuple[int, int]] | None = None,
-        *,
-        name: str = "",
-    ):
-        if capacity < 0:
+    capacity: int
+    breaks: list[Break] = field(default_factory=list)
+    name: str = field(default="", kw_only=True)
+
+    def __post_init__(self):
+        _validate_breaks(self.breaks)
+
+        if self.capacity < 0:
             raise ValueError("Capacity must be non-negative.")
 
-        if breaks is not None:
-            for start, end in breaks:
-                if start < 0 or start >= end:
-                    raise ValueError("Break start < 0 or start >= end.")
 
-            for interval1, interval2 in pairwise(sorted(breaks)):
-                if interval1[1] > interval2[0]:
-                    raise ValueError("Break intervals must not overlap.")
-
-        self._capacity = capacity
-        self._breaks = breaks or []
-        self._name = name
-
-    def __eq__(self, other) -> bool:
-        return (
-            isinstance(other, Renewable)
-            and self.capacity == other.capacity
-            and self.breaks == other.breaks
-            and self.name == other.name
-        )
-
-    @property
-    def capacity(self) -> int:
-        """
-        Capacity of the resource.
-        """
-        return self._capacity
-
-    @property
-    def breaks(self) -> list[tuple[int, int]]:
-        """
-        List of time intervals during which tasks cannot be processed.
-        """
-        return self._breaks
-
-    @property
-    def name(self) -> str:
-        """
-        Name of the resource.
-        """
-        return self._name
-
-
-class NonRenewable:
+@dataclass
+class Consumable:
     """
-    A non-renewable resource that does not replenish its capacity.
+    A resource with finite capacity that is permanently consumed by tasks.
+    Unlike renewable resources, consumed capacity is never replenished during
+    the scheduling horizon.
 
     Parameters
     ----------
@@ -305,203 +158,71 @@ class NonRenewable:
         Name of the resource.
     """
 
-    def __init__(
-        self,
-        capacity: int,
-        breaks: list[tuple[int, int]] | None = None,
-        *,
-        name: str = "",
-    ):
-        if capacity < 0:
+    capacity: int
+    breaks: list[Break] = field(default_factory=list)
+    name: str = field(default="", kw_only=True)
+
+    def __post_init__(self):
+        _validate_breaks(self.breaks)
+
+        if self.capacity < 0:
             raise ValueError("Capacity must be non-negative.")
 
-        if breaks is not None:
-            for start, end in breaks:
-                if start < 0 or start >= end:
-                    raise ValueError("Break start < 0 or start >= end.")
 
-            for interval1, interval2 in pairwise(sorted(breaks)):
-                if interval1[1] > interval2[0]:
-                    raise ValueError("Break intervals must not overlap.")
-
-        self._capacity = capacity
-        self._breaks = breaks or []
-        self._name = name
-
-    def __eq__(self, other) -> bool:
-        return (
-            isinstance(other, NonRenewable)
-            and self.capacity == other.capacity
-            and self.breaks == other.breaks
-            and self.name == other.name
-        )
-
-    @property
-    def capacity(self) -> int:
-        """
-        Capacity of the resource.
-        """
-        return self._capacity
-
-    @property
-    def breaks(self) -> list[tuple[int, int]]:
-        """
-        List of time intervals during which tasks cannot be processed.
-        """
-        return self._breaks
-
-    @property
-    def name(self) -> str:
-        """
-        Name of the resource.
-        """
-        return self._name
+Resource = Machine | Renewable | Consumable
 
 
-Resource = Machine | Renewable | NonRenewable
-
-
+@dataclass
 class Task:
     """
-    Simple dataclass for storing task related data.
+    Simple dataclass for storing task-related data.
 
     Parameters
     ----------
     job
-        The index of the job that this task belongs to. None if the task
-        does not belong to any job. Default ``None``.
+        The index of the job that this task belongs to, ``None`` if the task
+        does not belong to any job.
     earliest_start
-        Earliest start time of the task. Default ``0``.
+        Earliest start time of the task.
     latest_start
         Latest start time of the task.
-        Default :const:`~pyjobshop.constants.MAX_VALUE`.
     earliest_end
-        Earliest end time of the task. Default ``0``.
+        Earliest end time of the task.
     latest_end
         Latest end time of the task.
-        Default :const:`~pyjobshop.constants.MAX_VALUE`.
     allow_idle
         Whether the task can remain idle after completing its processing.
         If ``True``, the task can continue occupying resources after
-        finishing (e.g., blocking in flow shops). Default ``False``.
+        finishing (e.g., blocking in flow shops).
     allow_breaks
         Whether the task can be interrupted by resource breaks. If
         ``True``, the task stops processing during breaks and resumes
-        afterwards. Default ``False``.
+        afterwards.
     optional
-        Whether the task is optional. Default ``False``.
+        Whether the task is optional.
     name
         Name of the task.
     """
 
-    def __init__(
-        self,
-        job: int | None = None,
-        earliest_start: int = 0,
-        latest_start: int = MAX_VALUE,
-        earliest_end: int = 0,
-        latest_end: int = MAX_VALUE,
-        allow_idle: bool = False,
-        allow_breaks: bool = False,
-        optional: bool = False,
-        *,
-        name: str = "",
-    ):
-        if earliest_start > latest_start:
+    job: int | None = None
+    earliest_start: int = 0
+    latest_start: int = MAX_VALUE
+    earliest_end: int = 0
+    latest_end: int = MAX_VALUE
+    allow_idle: bool = False
+    allow_breaks: bool = False
+    optional: bool = False
+    name: str = field(default="", kw_only=True)
+
+    def __post_init__(self):
+        if self.earliest_start > self.latest_start:
             raise ValueError("earliest_start must be <= latest_start.")
 
-        if earliest_end > latest_end:
+        if self.earliest_end > self.latest_end:
             raise ValueError("earliest_end must be <= latest_end.")
 
-        self._job = job
-        self._earliest_start = earliest_start
-        self._latest_start = latest_start
-        self._earliest_end = earliest_end
-        self._latest_end = latest_end
-        self._allow_idle = allow_idle
-        self._allow_breaks = allow_breaks
-        self._optional = optional
-        self._name = name
 
-    def __eq__(self, other) -> bool:
-        return (
-            isinstance(other, Task)
-            and self.job == other.job
-            and self.earliest_start == other.earliest_start
-            and self.latest_start == other.latest_start
-            and self.earliest_end == other.earliest_end
-            and self.latest_end == other.latest_end
-            and self.allow_idle == other.allow_idle
-            and self.allow_breaks == other.allow_breaks
-            and self.optional == other.optional
-            and self.name == other.name
-        )
-
-    @property
-    def job(self) -> int | None:
-        """
-        The index of the job that this task belongs to. None if the task
-        does not belong to any job.
-        """
-        return self._job
-
-    @property
-    def earliest_start(self) -> int:
-        """
-        Earliest start time of the task.
-        """
-        return self._earliest_start
-
-    @property
-    def latest_start(self) -> int:
-        """
-        Latest start time of the task.
-        """
-        return self._latest_start
-
-    @property
-    def earliest_end(self) -> int:
-        """
-        Earliest end time of the task.
-        """
-        return self._earliest_end
-
-    @property
-    def latest_end(self) -> int:
-        """
-        Latest end time of the task.
-        """
-        return self._latest_end
-
-    @property
-    def allow_idle(self) -> bool:
-        """
-        Whether the task can have idle time.
-        """
-        return self._allow_idle
-
-    @property
-    def allow_breaks(self) -> bool:
-        """
-        Whether the task can be interrupted by breaks.
-        """
-        return self._allow_breaks
-
-    @property
-    def optional(self) -> bool:
-        """
-        Whether the task is optional.
-        """
-        return self._optional
-
-    @property
-    def name(self) -> str:
-        """
-        Name of the task.
-        """
-        return self._name
-
-
+@dataclass
 class Mode:
     """
     Simple dataclass for storing processing mode data.
@@ -515,9 +236,9 @@ class Mode:
     duration
         Processing duration of this mode. Must be non-negative.
     demands
-        Optional list of demands for each resource for this mode. Demands must
-        be non-negative. If set to ``None``, then the demands are initialized
-        as list of zeros with the same length as the resources.
+        List of demands for each resource for this mode. Demands must be
+        non-negative. By default, the demands are initialized as a list of
+        zeros with the same length as the resources.
     name
         Name of the mode.
 
@@ -527,68 +248,32 @@ class Mode:
         If the length of resources and demands do not match.
     """
 
-    def __init__(
-        self,
-        task: int,
-        resources: list[int],
-        duration: int,
-        demands: list[int] | None = None,
-        *,
-        name: str = "",
-    ):
-        if len(set(resources)) != len(resources):
+    task: int
+    resources: list[int]
+    duration: int
+    demands: list[int] = field(default_factory=list)
+    name: str = field(default="", kw_only=True)
+
+    def __post_init__(self):
+        if len(set(self.resources)) != len(self.resources):
             raise ValueError("Mode resources must be unique.")
 
-        if duration < 0:
+        if self.duration < 0:
             raise ValueError("Mode duration must be non-negative.")
 
-        demands = demands if demands is not None else [0] * len(resources)
-        if any(demand < 0 for demand in demands):
+        if not self.demands:
+            self.demands = [0] * len(self.resources)
+
+        if any(demand < 0 for demand in self.demands):
             raise ValueError("Mode demands must be non-negative.")
 
-        if len(resources) != len(demands):
+        if len(self.resources) != len(self.demands):
             raise ValueError("resources and demands must have same length.")
-
-        self._task = task
-        self._resources = resources
-        self._duration = duration
-        self._demands = demands
-        self._name = name
-
-    def __eq__(self, other) -> bool:
-        return (
-            isinstance(other, Mode)
-            and self.task == other.task
-            and self.resources == other.resources
-            and self.duration == other.duration
-            and self.demands == other.demands
-            and self.name == other.name
-        )
-
-    @property
-    def task(self) -> int:
-        return self._task
-
-    @property
-    def resources(self) -> list[int]:
-        return self._resources
-
-    @property
-    def duration(self) -> int:
-        return self._duration
-
-    @property
-    def demands(self) -> list[int]:
-        return self._demands
-
-    @property
-    def name(self) -> str:
-        return self._name
 
 
 class IterableMixin:
     """
-    Mixin class for making dataclases iterable (and thus unpackable). This
+    Mixin class for making dataclasses iterable (and thus unpackable). This
     makes the implementation of constraints more concise and readable.
     """
 
@@ -657,6 +342,66 @@ class EndBeforeEnd(IterableMixin):
 
 
 @dataclass
+class StartAtStart(IterableMixin):
+    """
+    Start task 1 (:math:`s_1`) at the start of task 2 (:math:`s_2`), with
+    an optional delay :math:`d`. That is,
+
+    .. math::
+        s_1 + d = s_2.
+    """
+
+    task1: int
+    task2: int
+    delay: int = 0
+
+
+@dataclass
+class StartAtEnd(IterableMixin):
+    """
+    Start task 1 (:math:`s_1`) at the end of task 2 (:math:`e_2`), with an
+    optional delay :math:`d`. That is,
+
+    .. math::
+        s_1 + d = e_2.
+    """
+
+    task1: int
+    task2: int
+    delay: int = 0
+
+
+@dataclass
+class EndAtStart(IterableMixin):
+    """
+    End task 1 (:math:`e_1`) at the start of task 2 (:math:`s_2`), with an
+    optional delay :math:`d`. That is,
+
+    .. math::
+        e_1 + d = s_2.
+    """
+
+    task1: int
+    task2: int
+    delay: int = 0
+
+
+@dataclass
+class EndAtEnd(IterableMixin):
+    """
+    End task 1 (:math:`e_1`) at the end of task 2 (:math:`e_2`), with an
+    optional delay :math:`d`. That is,
+
+    .. math::
+        e_1 + d = e_2.
+    """
+
+    task1: int
+    task2: int
+    delay: int = 0
+
+
+@dataclass
 class IdenticalResources(IterableMixin):
     """
     Select modes for task 1 and task 2 that use the same resources.
@@ -697,7 +442,7 @@ class Consecutive(IterableMixin):
     assigned to, meaning that no other task is allowed to be scheduled between
     them.
 
-    Hand-waiving some details, let :math:`m_1, m_2` be the selected modes of
+    Hand-waving some details, let :math:`m_1, m_2` be the selected modes of
     task 1 and task 2, and let :math:`R` denote the machines that both modes
     require. This constraint ensures that
 
@@ -790,11 +535,11 @@ class SetupTime(IterableMixin):
 class ModeDependency(IterableMixin):
     """
     Represents a dependency between task modes: if mode 1 is selected,
-    then at least one of the modes in modes 2 must also be selected.
+    then at least one of the modes in modes2 must also be selected.
 
     Let :math:`m_1` be the Boolean variable indicating whether mode 1 is
     selected. Let :math:`M_2` be the set of Boolean variables corresponding
-    to the modes in modes 2.
+    to the modes in modes2.
 
     The constraint is then expressed as:
 
@@ -859,6 +604,10 @@ class Constraints:
     start_before_end: list[StartBeforeEnd] = field(default_factory=list)
     end_before_start: list[EndBeforeStart] = field(default_factory=list)
     end_before_end: list[EndBeforeEnd] = field(default_factory=list)
+    start_at_start: list[StartAtStart] = field(default_factory=list)
+    start_at_end: list[StartAtEnd] = field(default_factory=list)
+    end_at_start: list[EndAtStart] = field(default_factory=list)
+    end_at_end: list[EndAtEnd] = field(default_factory=list)
     identical_resources: list[IdenticalResources] = field(default_factory=list)
     different_resources: list[DifferentResources] = field(default_factory=list)
     consecutive: list[Consecutive] = field(default_factory=list)
@@ -917,7 +666,7 @@ class Objective:
 
     **Total tardiness** (:math:`TT`): The weighted sum of the tardiness of each job, where the tardiness is the difference between completion time and due date :math:`d_j` (0 if completed before due date).
         .. math::
-            TT = \sum_{j \in J} w_j U_j
+            TT = \sum_{j \in J} w_j \max(C_j - d_j, 0)
 
     **Total earliness** (:math:`TE`): The weighted sum of the earliness of each job, where earliness is the difference between due date :math:`d_j` and completion time (0 if completed after due date).
         .. math::
@@ -968,6 +717,7 @@ class Objective:
         return "\n".join(lines)
 
 
+@dataclass
 class ProblemData:
     """
     Class that contains all data needed to solve the scheduling problem.
@@ -983,40 +733,27 @@ class ProblemData:
     modes
         List of processing modes of tasks.
     constraints
-        The constraints of this problem data instance. Default is no
-        constraints.
+        The constraints of this problem data instance.
     objective
         The objective function. Default is minimizing the makespan.
     """
 
-    def __init__(
-        self,
-        jobs: list[Job],
-        resources: Sequence[Resource],
-        tasks: list[Task],
-        modes: list[Mode],
-        constraints: Constraints | None = None,
-        objective: Objective | None = None,
-    ):
-        self._jobs = jobs
-        self._resources = resources
-        self._tasks = tasks
-        self._modes = modes
-        self._constraints = (
-            constraints if constraints is not None else Constraints()
-        )
-        self._objective = (
-            objective
-            if objective is not None
-            else Objective(weight_makespan=1)
-        )
+    jobs: list[Job]
+    resources: list[Resource]
+    tasks: list[Task]
+    modes: list[Mode]
+    constraints: Constraints = field(default_factory=lambda: Constraints())
+    objective: Objective = field(
+        default_factory=lambda: Objective(weight_makespan=1)
+    )
 
+    def __post_init__(self):
         self._validate()
 
         # After validation, we can safely set the helper attributes.
-        self._task2modes: list[list[int]] = [[] for _ in tasks]
-        self._task2resources: list[list[int]] = [[] for _ in tasks]
-        self._resource2modes: list[list[int]] = [[] for _ in resources]
+        self._task2modes: list[list[int]] = [[] for _ in self.tasks]
+        self._task2resources: list[list[int]] = [[] for _ in self.tasks]
+        self._resource2modes: list[list[int]] = [[] for _ in self.resources]
 
         for mode_idx, mode in enumerate(self.modes):
             self._task2modes[mode.task].append(mode_idx)
@@ -1028,26 +765,21 @@ class ProblemData:
 
         self._machine_idcs: list[int] = []
         self._renewable_idcs: list[int] = []
-        self._non_renewable_idcs: list[int] = []
+        self._consumable_idcs: list[int] = []
 
         for idx, resource in enumerate(self.resources):
             if isinstance(resource, Machine):
                 self._machine_idcs.append(idx)
             elif isinstance(resource, Renewable):
                 self._renewable_idcs.append(idx)
-            elif isinstance(resource, NonRenewable):
-                self._non_renewable_idcs.append(idx)
-
-    def __eq__(self, other) -> bool:
-        return (
-            isinstance(other, ProblemData)
-            and self.jobs == other.jobs
-            and self.resources == other.resources
-            and self.tasks == other.tasks
-            and self.modes == other.modes
-            and self.constraints == other.constraints
-            and self.objective == other.objective
-        )
+            elif isinstance(resource, Consumable):
+                self._consumable_idcs.append(idx)
+            else:
+                # This can't happen now, but we'd like to know if it does
+                # in the future.
+                raise TypeError(
+                    f"Unexpected resource type: {resource.__class__.__name__}"
+                )
 
     def __str__(self):
         lines = [
@@ -1059,9 +791,9 @@ class ProblemData:
         if self.num_machines > 0:
             parts.append(f"{self.num_machines} machines")
         if self.num_renewables > 0:
-            parts.append(f"{self.num_renewables} renewable")
-        if self.num_non_renewables > 0:
-            parts.append(f"{self.num_non_renewables} non_renewable")
+            parts.append(f"{self.num_renewables} renewables")
+        if self.num_consumables > 0:
+            parts.append(f"{self.num_consumables} consumables")
 
         for idx, part in enumerate(parts):
             symbol = "└─" if idx == len(parts) - 1 else "├─"
@@ -1279,7 +1011,7 @@ class ProblemData:
     def replace(
         self,
         jobs: list[Job] | None = None,
-        resources: Sequence[Resource] | None = None,
+        resources: list[Resource] | None = None,
         tasks: list[Task] | None = None,
         modes: list[Mode] | None = None,
         constraints: Constraints | None = None,
@@ -1330,102 +1062,60 @@ class ProblemData:
         )
 
     @property
-    def jobs(self) -> list[Job]:
-        """
-        Returns the job data of this problem instance.
-        """
-        return self._jobs
-
-    @property
-    def resources(self) -> Sequence[Resource]:
-        """
-        Returns the resource data of this problem instance.
-        """
-        return self._resources
-
-    @property
-    def tasks(self) -> list[Task]:
-        """
-        Returns the task data of this problem instance.
-        """
-        return self._tasks
-
-    @property
-    def modes(self) -> list[Mode]:
-        """
-        Returns the processing modes of this problem instance.
-        """
-        return self._modes
-
-    @property
-    def constraints(self) -> Constraints:
-        """
-        Returns the constraints of this problem instance.
-        """
-        return self._constraints
-
-    @property
-    def objective(self) -> Objective:
-        """
-        Returns the objective function of this problem instance.
-        """
-        return self._objective
-
-    @property
     def num_jobs(self) -> int:
         """
         Returns the number of jobs in this instance.
         """
-        return len(self._jobs)
+        return len(self.jobs)
 
     @property
     def num_resources(self) -> int:
         """
         Returns the number of resources in this instance.
         """
-        return len(self._resources)
+        return len(self.resources)
 
     @property
     def num_machines(self) -> int:
         """
         Returns the number of machines in this instance.
         """
-        return len(self._machine_idcs)
+        return len(self.machine_idcs)
 
     @property
     def num_renewables(self) -> int:
         """
         Returns the number of renewable resources in this instance.
         """
-        return len(self._renewable_idcs)
+        return len(self.renewable_idcs)
 
     @property
-    def num_non_renewables(self) -> int:
+    def num_consumables(self) -> int:
         """
-        Returns the number of non-renewable resources in this instance.
+        Returns the number of consumable resources in this instance.
         """
-        return len(self._non_renewable_idcs)
+        return len(self.consumable_idcs)
 
     @property
     def num_tasks(self) -> int:
         """
         Returns the number of tasks in this instance.
         """
-        return len(self._tasks)
+        return len(self.tasks)
 
     @property
     def num_modes(self) -> int:
         """
         Returns the number of modes in this instance.
         """
-        return len(self._modes)
+        return len(self.modes)
 
     @property
     def num_constraints(self) -> int:
         """
         Returns the number of constraints in this instance.
         """
-        return len(self._constraints)
+        return len(self.constraints)
 
     @property
     def machine_idcs(self) -> list[int]:
@@ -1443,12 +1133,12 @@ class ProblemData:
         return self._renewable_idcs
 
     @property
-    def non_renewable_idcs(self) -> list[int]:
+    def consumable_idcs(self) -> list[int]:
         """
-        Returns the list of resource indices corresponding to non-renewable
+        Returns the list of resource indices corresponding to consumable
         resources.
         """
-        return self._non_renewable_idcs
+        return self._consumable_idcs
 
     def task2modes(self, task: int) -> list[int]:
         """
@@ -1503,3 +1193,102 @@ class ProblemData:
         if not (0 <= task < self.num_tasks):
             raise ValueError(f"Invalid task index {task}.")
         return self._task2resources[task]
+
+    def to_json(self, indent: int | str | None = 2, **kwargs) -> str:
+        """
+        Serializes this ProblemData instance to a JSON string.
+
+        Parameters
+        ----------
+        indent
+            If ``indent`` is a non-negative integer, then JSON array elements
+            and object members will be pretty-printed with that indent level.
+            An indent level of 0 will only insert newlines. ``None`` is the
+            most compact representation. Default is 2.
+        **kwargs
+            Additional keyword arguments passed to :func:`json.dumps`.
+
+        Returns
+        -------
+        str
+            JSON representation of this problem data instance.
+        """
+        data = asdict(self)
+
+        for idx, resource in enumerate(self.resources):
+            # Store resource type information for deserialization.
+            if isinstance(resource, Machine):
+                cls_name = "machine"
+            elif isinstance(resource, Renewable):
+                cls_name = "renewable"
+            else:
+                cls_name = "consumable"
+
+            data["resources"][idx]["type"] = cls_name
+
+        return json.dumps(data, indent=indent, **kwargs)
+
+    @classmethod
+    def from_json(cls, json_str: str, **kwargs) -> "ProblemData":
+        """
+        Deserializes a ProblemData instance from a JSON string.
+
+        Parameters
+        ----------
+        json_str
+            The JSON string to deserialize.
+        **kwargs
+            Additional keyword arguments passed to :func:`json.loads`.
+
+        Returns
+        -------
+        ProblemData
+            The deserialized ProblemData instance.
+        """
+        data = json.loads(json_str, **kwargs)
+
+        jobs = [Job(**job) for job in data.get("jobs", [])]
+        tasks = [Task(**task) for task in data.get("tasks", [])]
+        modes = [Mode(**mode) for mode in data.get("modes", [])]
+        objective = Objective(**data.get("objective", {}))
+
+        resources: list[Resource] = []
+        res_name2cls = {
+            res_cls.__name__.lower(): res_cls for res_cls in get_args(Resource)
+        }
+
+        for resource in data.get("resources", []):
+            # Convert breaks to tuple format.
+            resource["breaks"] = list(map(tuple, resource.get("breaks", [])))
+
+            # The 'type' field determines which Resource class to use, but
+            # it should be removed as it's not a constructor parameter.
+            res_type = resource.pop("type")
+            if res_type not in res_name2cls:
+                raise ValueError(f"Unknown resource type: {res_type}.")
+
+            res_cls = res_name2cls[res_type]
+            resources.append(res_cls(**resource))
+
+        constraints_data = data.get("constraints", {})
+        kwargs = {}
+
+        for f in fields(Constraints):
+            # Each field is expected to be of the form list[ConstraintClass].
+            # We derive the constraint class from the type hints.
+            constraint_cls = get_args(f.type)[0]  # extracts T from list[T]
+            kwargs[f.name] = [
+                constraint_cls(**item)
+                for item in constraints_data.get(f.name, [])
+            ]
+
+        constraints = Constraints(**kwargs)
+
+        return cls(
+            jobs=jobs,
+            tasks=tasks,
+            resources=resources,
+            modes=modes,
+            constraints=constraints,
+            objective=objective,
+        )
