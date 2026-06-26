@@ -1,3 +1,5 @@
+from collections import defaultdict
+from dataclasses import dataclass
 from itertools import product
 
 import numpy as np
@@ -160,3 +162,88 @@ def merge(intervals: list[tuple[int, int]]) -> list[tuple[int, int]]:
             merged[-1] = (merged[-1][0], new_end)
 
     return merged
+
+
+@dataclass
+class Component:
+    """
+    A simple dataclass to represent a redundant cumulative component.
+
+    Parameters
+    ----------
+    machines
+        Set of machine indices that belong to this component.
+    tasks
+        Set of task indices that can be assigned to any of the machines
+        in this component.
+    """
+
+    machines: set[int]
+    tasks: set[int]
+
+
+def redundant_cumulative_components(data: ProblemData) -> list[Component]:
+    """
+    Returns a list of components, consisting of a group of machines and
+    tasks, which can be used to add redundant cumulative constraints to
+    enhance constraint propagation.
+
+    Machines that appear together in the eligible machines of some task are
+    grouped into the same component using a union-find. For each component, we
+    then collect the tasks that can be assigned to any of its machines.
+
+    Parameters
+    ----------
+    data
+        The problem data instance.
+
+    Returns
+    -------
+    list[Component]
+        A list of components, each containing a set of machine indices and
+        a set of task indices that can be assigned to any of the machines in
+        the component.
+    """
+    machine_idcs = set(data.machine_idcs)
+    task2machines: dict[int, set[int]] = defaultdict(set)
+    for task_idx in range(data.num_tasks):
+        for mode_idx in data.task2modes(task_idx):
+            resources = data.modes[mode_idx].resources
+            task2machines[task_idx].update(
+                machine_idcs.intersection(resources)
+            )
+
+    # Union machines that share a task into the same component.
+    parent: dict[int, int] = {}
+    for machines in task2machines.values():
+        for machine in machines:
+            parent.setdefault(machine, machine)
+
+    def find(machine: int) -> int:
+        while parent[machine] != machine:
+            parent[machine] = parent[parent[machine]]
+            machine = parent[machine]
+        return machine
+
+    for machines in task2machines.values():
+        if not machines:
+            continue
+
+        first, *rest = sorted(machines)
+        for machine in rest:
+            parent[find(first)] = find(machine)
+
+    # Group machines and tasks by their component root.
+    machines_by_root: dict[int, set[int]] = defaultdict(set)
+    for machine in sorted(parent):
+        machines_by_root[find(machine)].add(machine)
+
+    tasks_by_root: dict[int, set[int]] = defaultdict(set)
+    for task_idx, machines in task2machines.items():
+        if machines:
+            tasks_by_root[find(next(iter(machines)))].add(task_idx)
+
+    return [
+        Component(machines, tasks_by_root[root])
+        for root, machines in machines_by_root.items()
+    ]
