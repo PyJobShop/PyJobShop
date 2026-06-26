@@ -114,7 +114,7 @@ def test_redundant_cumulative_components_empty():
     model = Model()
     resources = [
         model.add_renewable(capacity=10),
-        model.add_non_renewable(capacity=10),
+        model.add_consumable(capacity=10),
     ]
     tasks = [model.add_task() for _ in range(10)]
 

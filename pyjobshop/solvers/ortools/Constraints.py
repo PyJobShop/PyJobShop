@@ -420,9 +420,5 @@ class Constraints:
         self._same_sequence_constraints()
         self._circuit_constraints()  # must be after sequencing constraints!
         self._mode_dependencies()
-
-        # From here onwards we know which sequence constraints are active.
-        self._circuit_constraints()
-
         self._task_selection_constraints()
         self._redundant_cumulative_constraints()
