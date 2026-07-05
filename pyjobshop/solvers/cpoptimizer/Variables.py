@@ -170,6 +170,13 @@ class Variables:
                 end=sol_job.end,
             )
 
+        # Only presence, start, and end are set: for a present interval
+        # they determine length, and without an intensity function CP
+        # Optimizer requires size == length, so passing the processing
+        # time as size triggers "inconsistent with its initial domain"
+        # warnings for tasks that allow idle time. Absent intervals get
+        # presence only, since another mode's timing values need not
+        # fit their domain.
         for idx in range(data.num_tasks):
             task_var = self.task_vars[idx]
             sol_task = solution.tasks[idx]
@@ -179,20 +186,21 @@ class Variables:
                 presence=sol_task.present,
                 start=sol_task.start,
                 end=sol_task.end,
-                length=sol_task.duration,
             )
 
         for idx, mode in enumerate(data.modes):
             sol_task = solution.tasks[mode.task]
             var = self.mode_vars[idx]
 
+            if idx != sol_task.mode:
+                init.add_interval_var_solution(var, presence=False)
+                continue
+
             init.add_interval_var_solution(
                 var,
-                presence=idx == sol_task.mode,
+                presence=True,
                 start=sol_task.start,
                 end=sol_task.end,
-                length=sol_task.duration,
-                size=sol_task.processing,
             )
 
         self._model.set_starting_point(init)
