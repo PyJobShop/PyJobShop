@@ -1,3 +1,4 @@
+from collections import defaultdict
 from itertools import pairwise
 
 import docplex.cp.modeler as cpo
@@ -212,37 +213,52 @@ class Constraints:
         """
         model, data, variables = self._model, self._data, self._variables
 
+        def modes_by_resources(
+            task_idx: int,
+        ) -> dict[frozenset[int], list[int]]:
+            grouped: dict[frozenset[int], list[int]] = defaultdict(list)
+            for mode_idx in data.task2modes(task_idx):
+                resources = frozenset(data.modes[mode_idx].resources)
+                grouped[resources].append(mode_idx)
+            return grouped
+
+        def selected(mode_idcs: list[int]):
+            return sum(
+                presence_of(variables.mode_vars[mode_idx])
+                for mode_idx in mode_idcs
+            )
+
+        def ordered(groups):
+            return sorted(
+                groups,
+                key=lambda resources: tuple(sorted(resources)),
+            )
+
         for task1, task2 in data.constraints.identical_resources:
-            modes1 = data.task2modes(task1)
-            modes2 = data.task2modes(task2)
-            for res_idx in range(data.num_resources):
-                expr1 = sum(
-                    presence_of(variables.mode_vars[m])
-                    for m in modes1
-                    if res_idx in data.modes[m].resources
-                )
-                expr2 = sum(
-                    presence_of(variables.mode_vars[m])
-                    for m in modes2
-                    if res_idx in data.modes[m].resources
-                )
+            groups1 = modes_by_resources(task1)
+            groups2 = modes_by_resources(task2)
+
+            signatures = groups1.keys() | groups2.keys()
+            for resources in ordered(signatures):
+                if not resources:
+                    continue
+
+                expr1 = selected(groups1.get(resources, []))
+                expr2 = selected(groups2.get(resources, []))
                 model.add(expr1 == expr2)
 
         for task1, task2 in data.constraints.different_resources:
-            modes1 = data.task2modes(task1)
-            modes2 = data.task2modes(task2)
-            for res_idx in range(data.num_resources):
-                expr1 = sum(
-                    presence_of(variables.mode_vars[m])
-                    for m in modes1
-                    if res_idx in data.modes[m].resources
-                )
-                expr2 = sum(
-                    presence_of(variables.mode_vars[m])
-                    for m in modes2
-                    if res_idx in data.modes[m].resources
-                )
-                model.add(expr1 + expr2 <= 1)
+            groups1 = modes_by_resources(task1)
+            groups2 = modes_by_resources(task2)
+
+            for resources1 in ordered(groups1):
+                mode_idcs1 = groups1[resources1]
+                for resources2 in ordered(groups2):
+                    mode_idcs2 = groups2[resources2]
+                    if resources1.isdisjoint(resources2):
+                        continue
+
+                    model.add(selected(mode_idcs1) + selected(mode_idcs2) <= 1)
 
     def _no_mixing_constraints(self):
         """

@@ -101,6 +101,33 @@ def test_break_constraints_only_for_modes_with_breaks(
     assert_equal(model.count("forbidExtent"), 0)
 
 
+def test_resource_constraints_ignore_unused_resources(require_cpoptimizer):
+    """
+    Tests that resource relations do not scale with unrelated resources.
+    """
+    from pyjobshop.solvers.cpoptimizer.CPModel import CPModel
+
+    def num_constraints(num_unused: int) -> int:
+        model = Model()
+        machines = [model.add_machine() for _ in range(2)]
+        tasks = [model.add_task() for _ in range(4)]
+
+        for task in tasks:
+            for machine in machines:
+                model.add_mode(task, machine, duration=1)
+
+        model.add_identical_resources(tasks[0], tasks[1])
+        model.add_different_resources(tasks[2], tasks[3])
+
+        for _ in range(num_unused):
+            model.add_machine()
+
+        cp_model = CPModel(model.data())
+        return cp_model.model.get_statistics().nb_constraints
+
+    assert_equal(num_constraints(20), num_constraints(0))
+
+
 def test_solve_initial_solution(
     require_cpoptimizer,
     complete_data,
