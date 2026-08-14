@@ -94,6 +94,7 @@ class Objective:
         """
         data = self._data
         workloads = []
+        has_zero_weight = False
 
         for res_idx in range(data.num_resources):
             weight = data.resources[res_idx].weight
@@ -102,11 +103,18 @@ class Objective:
             if not modes:
                 continue
 
+            if weight == 0:
+                has_zero_weight = True
+                continue
+
             intervals = [self._mode_vars[mode] for mode in modes]
             completion = cpo.max(
                 cpo.end_of(var, absentValue=0) for var in intervals
             )
             workloads.append(weight * completion)
+
+        if has_zero_weight:
+            workloads.append(0)
 
         if not workloads:
             return 0  # type: ignore

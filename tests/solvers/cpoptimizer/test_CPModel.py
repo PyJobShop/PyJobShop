@@ -128,6 +128,28 @@ def test_resource_constraints_ignore_unused_resources(require_cpoptimizer):
     assert_equal(num_constraints(20), num_constraints(0))
 
 
+def test_zero_weight_workload_skips_completion_expression(
+    require_cpoptimizer,
+):
+    """
+    Tests that zero-weight resources add no completion expressions.
+    """
+    from pyjobshop.solvers.cpoptimizer.CPModel import CPModel
+
+    model = Model()
+    weighted = model.add_machine(weight=2)
+    zero_weight = model.add_machine(weight=0)
+
+    for machine in [weighted, zero_weight]:
+        task = model.add_task()
+        model.add_mode(task, machine, duration=1)
+
+    model.set_objective(weight_max_workload=1)
+    cpo = CPModel(model.data()).model.get_cpo_string()
+
+    assert_("0 * endOf" not in cpo)
+
+
 def test_solve_initial_solution(
     require_cpoptimizer,
     complete_data,
