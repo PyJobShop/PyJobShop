@@ -1,7 +1,6 @@
 import docplex.cp.modeler as cpo
 from docplex.cp.model import CpoExpr, CpoModel
 
-import pyjobshop.solvers.utils as utils
 from pyjobshop.ProblemData import Objective as ObjectiveData
 from pyjobshop.ProblemData import ProblemData
 
@@ -22,6 +21,7 @@ class Objective:
         self._job_vars = variables.job_vars
         self._mode_vars = variables.mode_vars
         self._sequence_vars = variables.sequence_vars
+        self._setup_times = variables.setup_times
 
     def _makespan_expr(self) -> CpoExpr:
         """
@@ -123,7 +123,7 @@ class Objective:
             if not data.resource2modes(res_idx):
                 continue
 
-            if (setup_times := utils.setup_times_matrix(data)) is None:
+            if self._setup_times is None:
                 continue
 
             seq_var = self._sequence_vars[res_idx]
@@ -136,7 +136,7 @@ class Objective:
                 # depends on the next interval's task in the sequence. If the
                 # interval is last or absent, we set the setup time to 0.
                 task_idx = task_idcs[idx]
-                setup_array = setup_times[res_idx, task_idx, :].tolist()
+                setup_array = self._setup_times[res_idx, task_idx, :].tolist()
                 setup_array.append(0)  # padding for last or absent
                 next_idx = cpo.type_of_next(
                     seq_var,

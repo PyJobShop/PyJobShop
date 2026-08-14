@@ -1,7 +1,6 @@
 from itertools import pairwise
 
 import docplex.cp.modeler as cpo
-import numpy as np
 from docplex.cp.function import CpoStepFunction
 from docplex.cp.model import CpoModel
 
@@ -56,6 +55,7 @@ class Constraints:
         available, the setup times are enforced as well.
         """
         model, data, variables = self._model, self._data, self._variables
+        setup_times = variables.setup_times
 
         for idx in data.machine_idcs:
             if not data.resource2modes(idx):
@@ -63,9 +63,8 @@ class Constraints:
 
             seq_var = variables.sequence_vars[idx]
             matrix = None
-            setup_times = utils.setup_times_matrix(data)
 
-            if setup_times is not None and np.any(setup_times[idx, :, :] > 0):
+            if setup_times is not None and setup_times[idx].any():
                 # The indexing of setup times is correctly handled by the
                 # interval variable's task index "type".
                 matrix = setup_times[idx, :, :]

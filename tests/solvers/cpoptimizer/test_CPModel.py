@@ -3,6 +3,31 @@ from numpy.testing import assert_, assert_equal
 from pyjobshop import Model
 
 
+def test_setup_matrix_is_built_once(
+    require_cpoptimizer,
+    complete_data,
+    monkeypatch,
+):
+    """
+    Tests that the setup matrix is shared by constraints and the objective.
+    """
+    import pyjobshop.solvers.utils as utils
+    from pyjobshop.solvers.cpoptimizer.CPModel import CPModel
+
+    original = utils.setup_times_matrix
+    calls = 0
+
+    def counted(data):
+        nonlocal calls
+        calls += 1
+        return original(data)
+
+    monkeypatch.setattr(utils, "setup_times_matrix", counted)
+    CPModel(complete_data)
+
+    assert_equal(calls, 1)
+
+
 def test_solve_initial_solution(
     require_cpoptimizer,
     complete_data,

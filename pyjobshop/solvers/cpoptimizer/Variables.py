@@ -1,3 +1,4 @@
+import numpy as np
 from docplex.cp.expression import (
     CpoIntervalVar,
     CpoSequenceVar,
@@ -6,6 +7,7 @@ from docplex.cp.expression import (
 )
 from docplex.cp.model import CpoModel
 
+import pyjobshop.solvers.utils as utils
 from pyjobshop.constants import MAX_VALUE
 from pyjobshop.ProblemData import ProblemData
 from pyjobshop.Solution import Solution
@@ -24,6 +26,7 @@ class Variables:
         self._task_vars = self._make_task_variables()
         self._mode_vars = self._make_mode_variables()
         self._sequence_vars = self._make_sequence_variables()
+        self._setup_times = utils.setup_times_matrix(data)
 
     @property
     def job_vars(self) -> list[CpoIntervalVar]:
@@ -52,6 +55,13 @@ class Variables:
         Returns the sequence variables.
         """
         return self._sequence_vars
+
+    @property
+    def setup_times(self) -> np.ndarray | None:
+        """
+        Returns the setup time matrix.
+        """
+        return self._setup_times
 
     def _make_job_variables(self) -> list[CpoIntervalVar]:
         """
