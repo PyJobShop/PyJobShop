@@ -23,7 +23,7 @@ def test_setup_matrix_is_built_once(
         return original(data)
 
     monkeypatch.setattr(utils, "setup_times_matrix", counted)
-    CPModel(complete_data, global_setup_matrix=True)
+    CPModel(complete_data, compact=False)
 
     assert_equal(calls, 1)
 
@@ -75,7 +75,7 @@ def test_global_setup_matrix_uses_task_indices(
 
     variables = CPModel(
         complete_data,
-        global_setup_matrix=True,
+        compact=False,
     ).variables
 
     for task_types in variables.sequence_task_types.values():
@@ -99,6 +99,22 @@ def test_break_constraints_only_for_modes_with_breaks(
     assert_equal(model.count("forbidStart"), 1)
     assert_equal(model.count("forbidEnd"), 1)
     assert_equal(model.count("forbidExtent"), 0)
+
+
+def test_uncompacted_model_preserves_break_expressions(
+    require_cpoptimizer,
+    complete_data,
+):
+    """
+    Tests the original break encoding used for compatibility searches.
+    """
+    from pyjobshop.solvers.cpoptimizer.CPModel import CPModel
+
+    model = CPModel(complete_data, compact=False).model.get_cpo_string()
+
+    assert_equal(model.count("forbidStart"), 9)
+    assert_equal(model.count("forbidEnd"), 9)
+    assert_equal(model.count("forbidExtent"), 8)
 
 
 def test_resource_constraints_ignore_unused_resources(require_cpoptimizer):

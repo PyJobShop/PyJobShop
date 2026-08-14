@@ -19,11 +19,16 @@ class Constraints:
     """
 
     def __init__(
-        self, model: CpoModel, data: ProblemData, variables: Variables
+        self,
+        model: CpoModel,
+        data: ProblemData,
+        variables: Variables,
+        compact: bool = True,
     ):
         self._model = model
         self._data = data
         self._variables = variables
+        self._compact = compact
 
     def _job_spans_tasks(self):
         """
@@ -62,7 +67,12 @@ class Constraints:
                 continue  # skip because cpo warns if there are no modes
 
             seq_var = variables.sequence_vars[idx]
-            matrix = variables.setup_matrices.get(idx)
+            candidate = variables.setup_matrices.get(idx)
+            matrix = (
+                candidate
+                if candidate is not None and candidate.any()
+                else None
+            )
 
             # ``is_direct`` enforces setup times between direct successors.
             # See ICAPS 2017 presentation for details.
@@ -113,6 +123,10 @@ class Constraints:
         """
         Creates constraints for renewable resources that have breaks.
         """
+        if not self._compact:
+            self._uncompacted_resource_breaks_constraints()
+            return
+
         model, data, variables = self._model, self._data, self._variables
         steps: dict[tuple[tuple[int, int], ...], CpoStepFunction] = {}
 
@@ -159,6 +173,35 @@ class Constraints:
                 mode_var.set_intensity(step)
             else:
                 # No overlap allowed between breaks and tasks.
+                model.add(cpo.forbid_extent(mode_var, step))
+
+    def _uncompacted_resource_breaks_constraints(self):
+        """
+        Creates the original break expressions for compatibility searches.
+        """
+        model, data, variables = self._model, self._data, self._variables
+
+        for mode_idx, mode_var in enumerate(variables.mode_vars):
+            mode = data.modes[mode_idx]
+            all_breaks = [
+                brk
+                for res_idx in mode.resources
+                for brk in data.resources[res_idx].breaks
+            ]
+            breaks = utils.merge(all_breaks)
+
+            step = CpoStepFunction()
+            step.set_value(-1, MAX_VALUE, 100)
+
+            for start, end in breaks:
+                step.set_value(start, end, 0)
+
+            model.add(cpo.forbid_start(mode_var, step))
+            model.add(cpo.forbid_end(mode_var, step))
+
+            if data.tasks[mode.task].allow_breaks:
+                mode_var.set_intensity(step)
+            else:
                 model.add(cpo.forbid_extent(mode_var, step))
 
     def _timing_constraints(self):
@@ -212,6 +255,41 @@ class Constraints:
         Creates constraints for identical and different resources constraints.
         """
         model, data, variables = self._model, self._data, self._variables
+
+        if not self._compact:
+            for task1, task2 in data.constraints.identical_resources:
+                modes1 = data.task2modes(task1)
+                modes2 = data.task2modes(task2)
+                for res_idx in range(data.num_resources):
+                    expr1 = sum(
+                        presence_of(variables.mode_vars[idx])
+                        for idx in modes1
+                        if res_idx in data.modes[idx].resources
+                    )
+                    expr2 = sum(
+                        presence_of(variables.mode_vars[idx])
+                        for idx in modes2
+                        if res_idx in data.modes[idx].resources
+                    )
+                    model.add(expr1 == expr2)
+
+            for task1, task2 in data.constraints.different_resources:
+                modes1 = data.task2modes(task1)
+                modes2 = data.task2modes(task2)
+                for res_idx in range(data.num_resources):
+                    expr1 = sum(
+                        presence_of(variables.mode_vars[idx])
+                        for idx in modes1
+                        if res_idx in data.modes[idx].resources
+                    )
+                    expr2 = sum(
+                        presence_of(variables.mode_vars[idx])
+                        for idx in modes2
+                        if res_idx in data.modes[idx].resources
+                    )
+                    model.add(expr1 + expr2 <= 1)
+
+            return
 
         def modes_by_resources(
             task_idx: int,

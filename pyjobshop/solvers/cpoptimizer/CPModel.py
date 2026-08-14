@@ -24,6 +24,10 @@ class CPModel:
         Whether to use global task indices and a global setup matrix in the
         machine sequences. Default ``False`` uses compact machine-local task
         indices and setup matrices.
+    compact
+        Whether to omit redundant CP expressions. Default ``True``. Setting
+        this to ``False`` also enables the global setup matrix so the original
+        model encoding can be reproduced for search-sensitive instances.
     """
 
     def __init__(
@@ -31,6 +35,7 @@ class CPModel:
         data: ProblemData,
         model: CpoModel | None = None,
         global_setup_matrix: bool = False,
+        compact: bool = True,
     ):
         self._data = data
 
@@ -38,10 +43,20 @@ class CPModel:
         self._variables = Variables(
             self._model,
             data,
-            global_setup_matrix,
+            global_setup_matrix or not compact,
         )
-        self._constraints = Constraints(self._model, data, self._variables)
-        self._objective = Objective(self._model, data, self._variables)
+        self._constraints = Constraints(
+            self._model,
+            data,
+            self._variables,
+            compact,
+        )
+        self._objective = Objective(
+            self._model,
+            data,
+            self._variables,
+            compact,
+        )
 
         self._constraints.add_constraints()
         self._objective.add_objective()

@@ -199,8 +199,7 @@ class Variables:
 
             return {
                 res_idx: setup_times[res_idx]
-                for res_idx in data.machine_idcs
-                if setup_times[res_idx].any()
+                for res_idx in self._sequence_task_types
             }
 
         matrices: dict[int, np.ndarray] = {}

@@ -13,10 +13,15 @@ class Objective:
     """
 
     def __init__(
-        self, model: CpoModel, data: ProblemData, variables: Variables
+        self,
+        model: CpoModel,
+        data: ProblemData,
+        variables: Variables,
+        compact: bool = True,
     ):
         self._model = model
         self._data = data
+        self._compact = compact
         self._task_vars = variables.task_vars
         self._job_vars = variables.job_vars
         self._mode_vars = variables.mode_vars
@@ -103,7 +108,7 @@ class Objective:
             if not modes:
                 continue
 
-            if weight == 0:
+            if self._compact and weight == 0:
                 has_zero_weight = True
                 continue
 
@@ -113,7 +118,7 @@ class Objective:
             )
             workloads.append(weight * completion)
 
-        if has_zero_weight:
+        if self._compact and has_zero_weight:
             workloads.append(0)
 
         if not workloads:
