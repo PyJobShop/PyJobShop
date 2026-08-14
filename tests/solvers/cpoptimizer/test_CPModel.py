@@ -85,6 +85,22 @@ def test_global_setup_matrix_uses_task_indices(
         assert_equal(matrix.shape, (complete_data.num_tasks,) * 2)
 
 
+def test_break_constraints_only_for_modes_with_breaks(
+    require_cpoptimizer,
+    complete_data,
+):
+    """
+    Tests that modes without resource breaks get no break constraints.
+    """
+    from pyjobshop.solvers.cpoptimizer.CPModel import CPModel
+
+    model = CPModel(complete_data).model.get_cpo_string()
+
+    assert_equal(model.count("forbidStart"), 1)
+    assert_equal(model.count("forbidEnd"), 1)
+    assert_equal(model.count("forbidExtent"), 0)
+
+
 def test_solve_initial_solution(
     require_cpoptimizer,
     complete_data,

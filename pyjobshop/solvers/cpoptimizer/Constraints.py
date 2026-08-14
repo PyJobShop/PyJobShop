@@ -113,6 +113,7 @@ class Constraints:
         Creates constraints for renewable resources that have breaks.
         """
         model, data, variables = self._model, self._data, self._variables
+        steps: dict[tuple[tuple[int, int], ...], CpoStepFunction] = {}
 
         for mode_idx, mode_var in enumerate(variables.mode_vars):
             mode = data.modes[mode_idx]
@@ -121,22 +122,31 @@ class Constraints:
             # breaks, merged to handle overlapping intervals. This means
             # a task is interrupted whenever any of its resources is on
             # break.
-            all_breaks = []
-            for res_idx in mode.resources:
-                all_breaks.extend(data.resources[res_idx].breaks)
-            breaks = utils.merge(all_breaks)
+            all_breaks = [
+                brk
+                for res_idx in mode.resources
+                for brk in data.resources[res_idx].breaks
+            ]
+            breaks = tuple(utils.merge(all_breaks))
+            if not breaks:
+                continue
 
             # The step function represents the time periods in which an
             # interval can be processed: a nonzero value means that processing
             # is allowed, while a zero means that processing is not allowed.
-            step = CpoStepFunction()
+            if breaks not in steps:
+                step = CpoStepFunction()
 
-            # Domain includes -1 to allow ending at t=0, and the value 100
-            # refers to the intensity (i.e., percentage available).
-            step.set_value(-1, MAX_VALUE, 100)
+                # Domain includes -1 to allow ending at t=0, and the value 100
+                # refers to the intensity (i.e., percentage available).
+                step.set_value(-1, MAX_VALUE, 100)
 
-            for start, end in breaks:
-                step.set_value(start, end, 0)
+                for start, end in breaks:
+                    step.set_value(start, end, 0)
+
+                steps[breaks] = step
+
+            step = steps[breaks]
 
             # Not allowed to start/end during breaks.
             model.add(cpo.forbid_start(mode_var, step))
