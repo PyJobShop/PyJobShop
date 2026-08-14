@@ -20,13 +20,26 @@ class CPModel:
         The problem data instance.
     model
         CpoModel instance to use. If None (default), a new one is created.
+    global_setup_matrix
+        Whether to use global task indices and a global setup matrix in the
+        machine sequences. Default ``False`` uses compact machine-local task
+        indices and setup matrices.
     """
 
-    def __init__(self, data: ProblemData, model: CpoModel | None = None):
+    def __init__(
+        self,
+        data: ProblemData,
+        model: CpoModel | None = None,
+        global_setup_matrix: bool = False,
+    ):
         self._data = data
 
         self._model = model if model is not None else CpoModel()
-        self._variables = Variables(self._model, data)
+        self._variables = Variables(
+            self._model,
+            data,
+            global_setup_matrix,
+        )
         self._constraints = Constraints(self._model, data, self._variables)
         self._objective = Objective(self._model, data, self._variables)
 

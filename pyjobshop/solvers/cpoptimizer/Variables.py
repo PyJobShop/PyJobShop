@@ -18,15 +18,22 @@ class Variables:
     Manages the core variables of the CP Optimizer model.
     """
 
-    def __init__(self, model: CpoModel, data: ProblemData):
+    def __init__(
+        self,
+        model: CpoModel,
+        data: ProblemData,
+        global_setup_matrix: bool = False,
+    ):
         self._model = model
         self._data = data
+        self._global_setup_matrix = global_setup_matrix
+        self._sequence_task_types: dict[int, dict[int, int]] = {}
 
         self._job_vars = self._make_job_variables()
         self._task_vars = self._make_task_variables()
         self._mode_vars = self._make_mode_variables()
         self._sequence_vars = self._make_sequence_variables()
-        self._setup_times = utils.setup_times_matrix(data)
+        self._setup_matrices = self._make_setup_matrices()
 
     @property
     def job_vars(self) -> list[CpoIntervalVar]:
@@ -57,11 +64,18 @@ class Variables:
         return self._sequence_vars
 
     @property
-    def setup_times(self) -> np.ndarray | None:
+    def sequence_task_types(self) -> dict[int, dict[int, int]]:
         """
-        Returns the setup time matrix.
+        Maps task indices to sequence types for each machine.
         """
-        return self._setup_times
+        return self._sequence_task_types
+
+    @property
+    def setup_matrices(self) -> dict[int, np.ndarray]:
+        """
+        Returns setup matrices indexed by machine.
+        """
+        return self._setup_matrices
 
     def _make_job_variables(self) -> list[CpoIntervalVar]:
         """
@@ -144,23 +158,73 @@ class Variables:
         data = self._data
         variables: dict[int, CpoSequenceVar] = {}
 
-        for idx in data.machine_idcs:
-            if not (modes := data.resource2modes(idx)):
+        for res_idx in data.machine_idcs:
+            if not (modes := data.resource2modes(res_idx)):
                 # Skip machines without modes to avoid CPO warning
                 # about unused sequence variables.
                 continue
 
-            intervals = [self.mode_vars[mode] for mode in modes]
-            tasks = [data.modes[mode].task for mode in modes]
+            task_idcs = sorted({data.modes[idx].task for idx in modes})
+            if self._global_setup_matrix:
+                task_types = {task_idx: task_idx for task_idx in task_idcs}
+            else:
+                task_types = {
+                    task_idx: type_idx
+                    for type_idx, task_idx in enumerate(task_idcs)
+                }
+
+            intervals = [self.mode_vars[idx] for idx in modes]
+            types = [task_types[data.modes[idx].task] for idx in modes]
             seq_var = sequence_var(
-                name=f"S{idx}",
-                types=tasks,  # needed for total setup time objective
+                name=f"S{res_idx}",
+                types=types,
                 vars=intervals,
             )
             self._model.add(seq_var)
-            variables[idx] = seq_var
+            self._sequence_task_types[res_idx] = task_types
+            variables[res_idx] = seq_var
 
         return variables
+
+    def _make_setup_matrices(self) -> dict[int, np.ndarray]:
+        """
+        Builds the setup matrix used by each machine sequence.
+        """
+        data = self._data
+
+        if self._global_setup_matrix:
+            setup_times = utils.setup_times_matrix(data)
+            if setup_times is None:
+                return {}
+
+            return {
+                res_idx: setup_times[res_idx]
+                for res_idx in data.machine_idcs
+                if setup_times[res_idx].any()
+            }
+
+        matrices: dict[int, np.ndarray] = {}
+        for res_idx, task1, task2, duration in data.constraints.setup_times:
+            task_types = self._sequence_task_types.get(res_idx)
+            if task_types is None:
+                continue
+
+            type1 = task_types.get(task1)
+            type2 = task_types.get(task2)
+            if type1 is None or type2 is None:
+                continue
+
+            if res_idx not in matrices:
+                size = len(task_types)
+                matrices[res_idx] = np.zeros((size, size), dtype=int)
+
+            matrices[res_idx][type1, type2] = duration
+
+        return {
+            res_idx: matrix
+            for res_idx, matrix in matrices.items()
+            if matrix.any()
+        }
 
     def warmstart(self, solution: Solution):
         """

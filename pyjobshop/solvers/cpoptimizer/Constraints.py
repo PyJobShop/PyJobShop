@@ -55,19 +55,13 @@ class Constraints:
         available, the setup times are enforced as well.
         """
         model, data, variables = self._model, self._data, self._variables
-        setup_times = variables.setup_times
 
         for idx in data.machine_idcs:
             if not data.resource2modes(idx):
                 continue  # skip because cpo warns if there are no modes
 
             seq_var = variables.sequence_vars[idx]
-            matrix = None
-
-            if setup_times is not None and setup_times[idx].any():
-                # The indexing of setup times is correctly handled by the
-                # interval variable's task index "type".
-                matrix = setup_times[idx, :, :]
+            matrix = variables.setup_matrices.get(idx)
 
             # ``is_direct`` enforces setup times between direct successors.
             # See ICAPS 2017 presentation for details.

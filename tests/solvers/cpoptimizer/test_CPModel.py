@@ -23,9 +23,66 @@ def test_setup_matrix_is_built_once(
         return original(data)
 
     monkeypatch.setattr(utils, "setup_times_matrix", counted)
-    CPModel(complete_data)
+    CPModel(complete_data, global_setup_matrix=True)
 
     assert_equal(calls, 1)
+
+
+def test_machine_local_sequence_types(require_cpoptimizer, complete_data):
+    """
+    Tests that sequence types are dense and local to each machine.
+    """
+    from pyjobshop.solvers.cpoptimizer.CPModel import CPModel
+
+    variables = CPModel(complete_data).variables
+
+    for res_idx, task_types in variables.sequence_task_types.items():
+        task_idcs = {
+            complete_data.modes[idx].task
+            for idx in complete_data.resource2modes(res_idx)
+        }
+        assert_equal(set(task_types), task_idcs)
+        assert_equal(set(task_types.values()), set(range(len(task_idcs))))
+
+
+def test_machine_local_setup_matrices(require_cpoptimizer, complete_data):
+    """
+    Tests that local setup matrices preserve every setup time.
+    """
+    from pyjobshop.solvers.cpoptimizer.CPModel import CPModel
+
+    variables = CPModel(complete_data).variables
+
+    for (
+        res_idx,
+        task1,
+        task2,
+        duration,
+    ) in complete_data.constraints.setup_times:
+        task_types = variables.sequence_task_types[res_idx]
+        matrix = variables.setup_matrices[res_idx]
+        assert_equal(matrix[task_types[task1], task_types[task2]], duration)
+
+
+def test_global_setup_matrix_uses_task_indices(
+    require_cpoptimizer,
+    complete_data,
+):
+    """
+    Tests the global setup encoding used by search-sensitive models.
+    """
+    from pyjobshop.solvers.cpoptimizer.CPModel import CPModel
+
+    variables = CPModel(
+        complete_data,
+        global_setup_matrix=True,
+    ).variables
+
+    for task_types in variables.sequence_task_types.values():
+        assert_equal(task_types, {idx: idx for idx in task_types})
+
+    for matrix in variables.setup_matrices.values():
+        assert_equal(matrix.shape, (complete_data.num_tasks,) * 2)
 
 
 def test_solve_initial_solution(

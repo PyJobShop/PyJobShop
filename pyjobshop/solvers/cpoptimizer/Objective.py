@@ -21,7 +21,8 @@ class Objective:
         self._job_vars = variables.job_vars
         self._mode_vars = variables.mode_vars
         self._sequence_vars = variables.sequence_vars
-        self._setup_times = variables.setup_times
+        self._sequence_task_types = variables.sequence_task_types
+        self._setup_matrices = variables.setup_matrices
 
     def _makespan_expr(self) -> CpoExpr:
         """
@@ -120,29 +121,29 @@ class Objective:
         total = []
 
         for res_idx in data.machine_idcs:
-            if not data.resource2modes(res_idx):
-                continue
-
-            if self._setup_times is None:
+            matrix = self._setup_matrices.get(res_idx)
+            if matrix is None:
                 continue
 
             seq_var = self._sequence_vars[res_idx]
             intervals = seq_var.get_interval_variables()
             resource_modes = data.resource2modes(res_idx)
-            task_idcs = [data.modes[m].task for m in resource_modes]
+            task_types = self._sequence_task_types[res_idx]
+            absent_type = len(matrix)
 
             for idx, interval in enumerate(intervals):
                 # The setup time for the current interval is a variable that
                 # depends on the next interval's task in the sequence. If the
                 # interval is last or absent, we set the setup time to 0.
-                task_idx = task_idcs[idx]
-                setup_array = self._setup_times[res_idx, task_idx, :].tolist()
+                task_idx = data.modes[resource_modes[idx]].task
+                task_type = task_types[task_idx]
+                setup_array = matrix[task_type].tolist()
                 setup_array.append(0)  # padding for last or absent
                 next_idx = cpo.type_of_next(
                     seq_var,
                     interval,
-                    lastValue=data.num_tasks,
-                    absentValue=data.num_tasks,
+                    lastValue=absent_type,
+                    absentValue=absent_type,
                 )
                 setup_time = cpo.element(setup_array, next_idx)
                 total.append(setup_time)
