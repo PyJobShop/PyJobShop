@@ -263,11 +263,15 @@ class Constraints:
 
             if task_idcs1 is None:
                 mode_idcs1 = data.resource2modes(res_idx1)
-                task_idcs1 = sorted(data.modes[idx].task for idx in mode_idcs1)
+                task_idcs1 = sorted(
+                    {data.modes[idx].task for idx in mode_idcs1}
+                )
 
             if task_idcs2 is None:
                 mode_idcs2 = data.resource2modes(res_idx2)
-                task_idcs2 = sorted(data.modes[idx].task for idx in mode_idcs2)
+                task_idcs2 = sorted(
+                    {data.modes[idx].task for idx in mode_idcs2}
+                )
 
             pairs1 = product(task_idcs1, repeat=2)
             pairs2 = product(task_idcs2, repeat=2)
